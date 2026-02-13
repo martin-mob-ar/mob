@@ -1,0 +1,2968 @@
+[
+  {
+    "id": "banco-galicia-prestamoshipotecariosuva-1ra-vivienda-10.0-20-999999999",
+    "banco": "Banco Galicia",
+    "producto": "﻿prestamoshipotecariosuva",
+    "fecha_info": "2025-05-23",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 55
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-6.0-30-312715620",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 312715620,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-6.0-30-312715620",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 312715620,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-refacción-12.0-15-430190800",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 430190800,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-prestamos-hipotecarios-en-uva-1ra-vivienda-12.0-30-521192700",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "prestamos hipotecarios en uva",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 521192700,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-12.0-15-430190800",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 430190800,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-con-cuenta-en-la-entidad-refacción-6.0-15-260596350",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 260596350,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-refacción-6.0-15-260596350",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 260596350,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-prestamos-hipotecarios-en-uva-refacción-6.0-15-312715620",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "prestamos hipotecarios en uva",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 312715620,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-refacción-6.0-15-312715620",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 312715620,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-6.0-30-260596350",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 260596350,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-12.0-15-521192700",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 521192700,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-prestamos-hipotecarios-en-uva-1ra-vivienda-6.0-30-260596350",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "prestamos hipotecarios en uva",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 260596350,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-construcción-6.0-30-260596350",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 260596350,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-construcción-6.0-30-260596350",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 260596350,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-construcción-12.0-30-521192700",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 521192700,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-prestamos-hipotecarios-en-uva-construcción-6.0-30-312715620",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "prestamos hipotecarios en uva",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 312715620,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-construcción-12.0-30-430190800",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 430190800,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-con-cuenta-en-la-entidad-construcción-6.0-30-312715620",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 312715620,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-12.0-30-430190800",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 430190800,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-prestamos-hipotecarios-en-uva-2da-vivienda-12.0-30-430190800",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "prestamos hipotecarios en uva",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 430190800,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-con-cuenta-en-la-entidad-2da-vivienda-12.0-30-521192700",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 521192700,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-refacción-12.0-15-521192700",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 521192700,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-12.0-30-430190800",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 430190800,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-nación-argentina-prestamos-hipotecarios-en-uva-2da-vivienda-6.0-30-521192700",
+    "banco": "Banco de la Nación Argentina",
+    "producto": "prestamos hipotecarios en uva",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 6.0,
+    "monto_max": 521192700,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 90.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 85
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-refacción-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Refacción",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-41.0-15-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Personas humanas Monotributistas",
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-personas-humanas-en-relación-de-dependencia-refacción-41.0-15-362687500",
+    "banco": null,
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "Refacción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas en relación de dependencia",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-provincia-vivienda-otros-destinos-41.0-15-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "provincia vivienda",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "Otros destinos",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad",
+      "Personas humanas en relación de dependencia",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas",
+      "Empleados públicos"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-clientes-con-cuenta-en-la-entidad-construcción-41.0-15-362687500",
+    "banco": null,
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas",
+      "Personas humanas en relación de dependencia",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-empleados-públicos-otros-destinos-41.0-15-362687500",
+    "banco": null,
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "Otros destinos",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-clientes-con-cuenta-en-la-entidad-1ra-vivienda-41.0-15-362687500",
+    "banco": null,
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Monotributistas",
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-provincia-vivienda-construcción-41.0-15-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "provincia vivienda",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas en relación de dependencia",
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-empleados-públicos-refacción-41.0-15-362687500",
+    "banco": null,
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "Refacción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Monotributistas",
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-personas-humanas-responsables-inscriptos-1ra-vivienda-41.0-15-362687500",
+    "banco": null,
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas en relación de dependencia",
+      "Personas humanas Monotributistas",
+      "Empleados públicos"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-clientes-con-cuenta-en-la-entidad-1ra-vivienda-36.0-20-362687500",
+    "banco": null,
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-provincia-vivienda-otros-destinos-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "provincia vivienda",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Otros destinos",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-41.0-15-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 41.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad",
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-personas-humanas-en-relación-de-dependencia-1ra-vivienda-36.0-20-362687500",
+    "banco": null,
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-provincia-vivienda-otros-destinos-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "provincia vivienda",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Otros destinos",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-construcción-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Construcción",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-refacción-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Refacción",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-de-la-provincia-de-buenos-aires-provincia-vivienda-construcción-36.0-20-362687500",
+    "banco": "Banco de la Provincia de Buenos Aires",
+    "producto": "provincia vivienda",
+    "fecha_info": "2025-12-01",
+    "tipo_credito": "Pesos",
+    "tna": 36.0,
+    "monto_max": 362687500,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Construcción",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "banco-icbc-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-10.5-20-300000000",
+    "banco": "Banco ICBC",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-07-10",
+    "tipo_credito": "UVA",
+    "tna": 10.5,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Todos los beneficiarios"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-icbc-todos-los-beneficiarios-1ra-vivienda-8.9-20-300000000",
+    "banco": "Banco ICBC",
+    "producto": "Todos los beneficiarios",
+    "fecha_info": "2025-07-10",
+    "tipo_credito": "UVA",
+    "tna": 8.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 0.75,
+    "beneficiarios": [],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-bbva-argentina-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-7.5-20-999999999",
+    "banco": "Banco BBVA Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "UVA",
+    "tna": 7.5,
+    "monto_max": 999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-bbva-argentina-ph-adquisicion-de-vivienda-no-permanente-en-uvas-2da-vivienda-17.0-30-999999999",
+    "banco": "Banco BBVA Argentina",
+    "producto": "ph adquisicion de vivienda no permanente en uvas",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 999999999,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas en relación de dependencia",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-bbva-argentina-empleados-públicos-1ra-vivienda-10.9-30-999999999",
+    "banco": "Banco BBVA Argentina",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "UVA",
+    "tna": 10.9,
+    "monto_max": 999999999,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-bbva-argentina-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-17.0-30-999999999",
+    "banco": "Banco BBVA Argentina",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 999999999,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-bbva-argentina-personas-humanas-responsables-inscriptos-1ra-vivienda-17.0-30-999999999",
+    "banco": "Banco BBVA Argentina",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 999999999,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-bbva-argentina-ph-adquisicion-de-vivienda-permanente-en-uvas-1ra-vivienda-17.0-30-999999999",
+    "banco": "Banco BBVA Argentina",
+    "producto": "ph adquisicion de vivienda permanente en uvas",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 999999999,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "casa-bancor-uvas-personas-humanas-monotributistas-1ra-vivienda-8.6-20-322240000",
+    "banco": "casa bancor uvas",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2024-12-23",
+    "tipo_credito": "UVA",
+    "tna": 8.6,
+    "monto_max": 322240000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "casa-bancor-uvas-personas-humanas-monotributistas-1ra-vivienda-8.6-20-322240000",
+    "banco": "casa bancor uvas",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2024-12-23",
+    "tipo_credito": "UVA",
+    "tna": 8.6,
+    "monto_max": 322240000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "casa-bancor-uvas-personas-humanas-responsables-inscriptos-1ra-vivienda-8.6-20-322240000",
+    "banco": "casa bancor uvas",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2024-12-23",
+    "tipo_credito": "UVA",
+    "tna": 8.6,
+    "monto_max": 322240000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "casa-bancor-uvas-casa-bancor-uvas-1ra-vivienda-8.6-20-322240000",
+    "banco": "casa bancor uvas",
+    "producto": "casa bancor uvas",
+    "fecha_info": "2024-12-23",
+    "tipo_credito": "UVA",
+    "tna": 8.6,
+    "monto_max": 322240000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas en relación de dependencia",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "casa-bancor-uvas-empleados-públicos-1ra-vivienda-8.6-20-322240000",
+    "banco": "casa bancor uvas",
+    "producto": "Empleados públicos",
+    "fecha_info": "2024-12-23",
+    "tipo_credito": "UVA",
+    "tna": 8.6,
+    "monto_max": 322240000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "casa-bancor-uvas-personas-humanas-en-relación-de-dependencia-1ra-vivienda-8.6-20-322240000",
+    "banco": "casa bancor uvas",
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2024-12-23",
+    "tipo_credito": "UVA",
+    "tna": 8.6,
+    "monto_max": 322240000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "banco-supervielle-personas-humanas-en-relación-de-dependencia-refacción-17.0-15-99999999",
+    "banco": "Banco Supervielle",
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 99999999,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 65.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-supervielle-prestamohipotecarioviviendapermanenteuva-1ra-vivienda-17.0-15-99999999",
+    "banco": "Banco Supervielle",
+    "producto": "prestamohipotecarioviviendapermanenteuva",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 99999999,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 65.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-supervielle-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-17.0-15-99999999",
+    "banco": "Banco Supervielle",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 99999999,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 65.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-refacción-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-11.1-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 11.1,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas",
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-hipotecarios-uva-plan-sueldo-2da-vivienda-11.1-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "hipotecarios uva plan sueldo",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 11.1,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-empleados-públicos-refacción-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-personas-humanas-responsables-inscriptos-1ra-vivienda-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-empleados-públicos-1ra-vivienda-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-hipotecarios-uva-plan-sueldo-1ra-vivienda-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "hipotecarios uva plan sueldo",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-personas-humanas-responsables-inscriptos-1ra-vivienda-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-clientes-que-acrediten-sueldos-en-la-entidad-refacción-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-personas-humanas-responsables-inscriptos-2da-vivienda-11.1-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 11.1,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-hipotecarios-uva-plan-sueldo-refacción-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "hipotecarios uva plan sueldo",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas Monotributistas",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-empleados-públicos-2da-vivienda-11.1-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 11.1,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Empleados públicos",
+      "Personas humanas Monotributistas",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-personas-humanas-responsables-inscriptos-2da-vivienda-11.1-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 11.1,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-la-ciudad-de-buenos-aires-empleados-públicos-1ra-vivienda-9.9-20-300000000",
+    "banco": "Banco de la Ciudad de Buenos Aires",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-10-07",
+    "tipo_credito": "UVA",
+    "tna": 9.9,
+    "monto_max": 300000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-patagonia-prestamos-hipotecarios-uva-1ra-vivienda-14.0-30-120000000",
+    "banco": "Banco Patagonia",
+    "producto": "prestamos hipotecarios uva",
+    "fecha_info": "2025-09-30",
+    "tipo_credito": "UVA",
+    "tna": 14.0,
+    "monto_max": 120000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 74
+  },
+  {
+    "id": "banco-patagonia-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-14.0-30-120000000",
+    "banco": "Banco Patagonia",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-30",
+    "tipo_credito": "UVA",
+    "tna": 14.0,
+    "monto_max": 120000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 74
+  },
+  {
+    "id": "banco-patagonia-clientes-que-acrediten-sueldos-en-la-entidad-refacción-14.0-30-120000000",
+    "banco": "Banco Patagonia",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-30",
+    "tipo_credito": "UVA",
+    "tna": 14.0,
+    "monto_max": 120000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 25.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 74
+  },
+  {
+    "id": "banco-hipotecario-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-13.9-15-250000000",
+    "banco": "Banco Hipotecario",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-10",
+    "tipo_credito": "UVA",
+    "tna": 13.9,
+    "monto_max": 250000000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 64
+  },
+  {
+    "id": "banco-hipotecario-prestamo-hipotecario-construccion-ajustable-uva-construcción-13.9-15-250000000",
+    "banco": "Banco Hipotecario",
+    "producto": "prestamo hipotecario construccion ajustable uva",
+    "fecha_info": "2025-09-10",
+    "tipo_credito": "UVA",
+    "tna": 13.9,
+    "monto_max": 250000000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 64
+  },
+  {
+    "id": "banco-de-san-juan-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-7.7-20-335970000",
+    "banco": "Banco de San Juan",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-19",
+    "tipo_credito": "UVA",
+    "tna": 7.7,
+    "monto_max": 335970000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-san-juan-empleados-públicos-1ra-vivienda-7.7-20-335970000",
+    "banco": "Banco de San Juan",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-12-19",
+    "tipo_credito": "UVA",
+    "tna": 7.7,
+    "monto_max": 335970000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-san-juan-empleados-públicos-1ra-vivienda-7.7-20-335970000",
+    "banco": "Banco de San Juan",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-12-19",
+    "tipo_credito": "UVA",
+    "tna": 7.7,
+    "monto_max": 335970000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-municipal-de-rosario-creditos-hipotecarios-clientela-general-vivienda-permanente-1ra-vivienda-4.2-20-100000000",
+    "banco": "Banco Municipal de Rosario",
+    "producto": "creditos hipotecarios clientela general vivienda permanente",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 4.2,
+    "monto_max": 100000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Personas humanas en relación de dependencia",
+      "Personas humanas Responsables Inscriptos",
+      "Empleados públicos",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-monotributistas-1ra-vivienda-15.0-30-999999999",
+    "banco": null,
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-09-08",
+    "tipo_credito": "UVA",
+    "tna": 15.0,
+    "monto_max": 999999999,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-del-chubut-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-10.0-15-180000000",
+    "banco": "Banco del Chubut",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "Pesos",
+    "tna": 10.0,
+    "monto_max": 180000000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-de-santa-cruz-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-16.2-20-305682000",
+    "banco": "Banco de Santa Cruz",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-12",
+    "tipo_credito": "UVA",
+    "tna": 16.2,
+    "monto_max": 305682000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-santa-cruz-prestamos-hipotecarios-uva-1ra-vivienda-16.2-20-305682000",
+    "banco": "Banco de Santa Cruz",
+    "producto": "prestamos hipotecarios uva",
+    "fecha_info": "2025-12-12",
+    "tipo_credito": "UVA",
+    "tna": 16.2,
+    "monto_max": 305682000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-corrientes-empleados-públicos-1ra-vivienda-12.0-15-9999999999",
+    "banco": "Banco de Corrientes",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-09-09",
+    "tipo_credito": "UVA",
+    "tna": 12.0,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-provincia-del-neuquén-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-9.5-20-150000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 9.5,
+    "monto_max": 150000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-responsables-inscriptos-2da-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-d80-prestamos-hipotecarios-para-la-compra-de-vivienda-unica-monotributistas-1ra-vivienda-9.5-20-150000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "d80 prestamos hipotecarios para la compra de vivienda unica monotributistas",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 9.5,
+    "monto_max": 150000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-personas-humanas-monotributistas-1ra-vivienda-8.5-20-150000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 8.5,
+    "monto_max": 150000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-9.5-20-150000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 9.5,
+    "monto_max": 150000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-personas-humanas-responsables-inscriptos-1ra-vivienda-8.5-20-150000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 8.5,
+    "monto_max": 150000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-d80-prestamos-hipotecarios-para-la-compra-de-vivienda-unica-responsables-inscriptos-1ra-vivienda-4.5-20-75000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "d80 prestamos hipotecarios para la compra de vivienda unica responsables inscriptos",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 4.5,
+    "monto_max": 75000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-personas-humanas-responsables-inscriptos-1ra-vivienda-4.5-20-75000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 4.5,
+    "monto_max": 75000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-personas-humanas-monotributistas-1ra-vivienda-3.5-20-75000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 3.5,
+    "monto_max": 75000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-4.5-20-75000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 4.5,
+    "monto_max": 75000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-d80-prestamos-hipotecarios-para-la-compra-de-vivienda-unica-con-acreditacion-de-haberes-1ra-vivienda-3.5-20-75000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "d80 prestamos hipotecarios para la compra de vivienda unica con acreditacion de haberes",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 3.5,
+    "monto_max": 75000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-9.5-20-150000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 9.5,
+    "monto_max": 150000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 99.99,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-provincia-del-neuquén-personas-humanas-monotributistas-1ra-vivienda-4.5-20-75000000",
+    "banco": "Banco Provincia del Neuquén",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-12-16",
+    "tipo_credito": "UVA",
+    "tna": 4.5,
+    "monto_max": 75000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-monotributistas-1ra-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-prestamo-hipotecario-uva-2da-vivienda-ri-pba-2da-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "prestamo hipotecario uva 2da vivienda ri pba",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-responsables-inscriptos-1ra-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-responsables-inscriptos-1ra-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-monotributistas-2da-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-prestamo-hipotecario-uva-1er-vivienda-clientes-pba-1ra-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "prestamo hipotecario uva 1er vivienda clientes pba",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-clientes-con-cuenta-en-la-entidad-2da-vivienda-8.0-30-250000000",
+    "banco": null,
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 8.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-monotributistas-1ra-vivienda-8.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 8.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-prestamo-hipotecario-uva-2da-vivienda-mono-caba-2da-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "prestamo hipotecario uva 2da vivienda mono caba",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-monotributistas-1ra-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-clientes-con-cuenta-en-la-entidad-1ra-vivienda-8.0-30-250000000",
+    "banco": null,
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 8.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-8.0-30-250000000",
+    "banco": null,
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 8.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-prestamo-hipotecario-uva-1er-vivienda-rel-depen-caba-1ra-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "prestamo hipotecario uva 1er vivienda rel depen caba",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "na-personas-humanas-en-relación-de-dependencia-2da-vivienda-10.0-30-250000000",
+    "banco": null,
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-11-28",
+    "tipo_credito": "UVA",
+    "tna": 10.0,
+    "monto_max": 250000000,
+    "plazo_max_anios": 30,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-responsables-inscriptos-2da-vivienda-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos",
+      "Personas humanas en relación de dependencia"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Clientes que acrediten sueldos en la entidad",
+      "Empleados públicos"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-construccion-refaccion-vivienda-tasa-variable-construcción-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "construccion refaccion vivienda tasa variable",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-en-relación-de-dependencia-1ra-vivienda-12.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos",
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-en-relación-de-dependencia-2da-vivienda-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Empleados públicos",
+      "Personas humanas en relación de dependencia"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-adquisicion-vivienda-tasa-variable-1ra-vivienda-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "adquisicion vivienda tasa variable",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-clientes-con-cuenta-en-la-entidad-1ra-vivienda-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-en-relación-de-dependencia-2da-vivienda-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-monotributistas-construcción-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-construccion-refaccion-vivienda-en-uvas-construcción-12.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "construccion refaccion vivienda en uvas",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-responsables-inscriptos-2da-vivienda-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Empleados públicos"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-en-relación-de-dependencia-construcción-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-construccion-refaccion-vivienda-tasa-variable-2da-vivienda-44.4-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "construccion refaccion vivienda tasa variable",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "Pesos",
+    "tna": 44.4,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Variable",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-monotributistas-construcción-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "Construcción",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-clientes-con-cuenta-en-la-entidad-1ra-vivienda-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos",
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-personas-humanas-responsables-inscriptos-2da-vivienda-13.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Personas humanas Responsables Inscriptos",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 13.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 50
+  },
+  {
+    "id": "banco-credicoop-construccion-refaccion-vivienda-en-uvas-2da-vivienda-12.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "construccion refaccion vivienda en uvas",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-credicoop-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-12.5-20-200000000",
+    "banco": "Banco Credicoop",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-04",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 200000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 45
+  },
+  {
+    "id": "banco-provincia-de-tierra-del-fuego-clientes-que-acrediten-sueldos-en-la-entidad-otros-destinos-78.3-5-999999999",
+    "banco": "Banco Provincia de Tierra del Fuego",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-12-09",
+    "tipo_credito": "Pesos",
+    "tna": 78.3,
+    "monto_max": 999999999,
+    "plazo_max_anios": 5,
+    "tipo_tasa": "Variable",
+    "destino": "Otros destinos",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 74
+  },
+  {
+    "id": "banco-macro-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-12.2-20-9999999999",
+    "banco": "Banco Macro",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-08-29",
+    "tipo_credito": "UVA",
+    "tna": 12.2,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia",
+      "Clientes con cuenta en la entidad",
+      "Personas humanas Monotributistas",
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-macro-prestamos-hipotecario-uva-1ra-vivienda-11.0-20-9999999999",
+    "banco": "Banco Macro",
+    "producto": "prestamos hipotecario uva",
+    "fecha_info": "2025-08-29",
+    "tipo_credito": "UVA",
+    "tna": 11.0,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-macro-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-11.0-20-9999999999",
+    "banco": "Banco Macro",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-08-29",
+    "tipo_credito": "UVA",
+    "tna": 11.0,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-macro-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-11.0-20-9999999999",
+    "banco": "Banco Macro",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-08-29",
+    "tipo_credito": "UVA",
+    "tna": 11.0,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-macro-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-11.0-20-9999999999",
+    "banco": "Banco Macro",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-08-29",
+    "tipo_credito": "UVA",
+    "tna": 11.0,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 60.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-macro-prestamos-hipotecario-uva-1ra-vivienda-11.0-20-9999999999",
+    "banco": "Banco Macro",
+    "producto": "prestamos hipotecario uva",
+    "fecha_info": "2025-08-29",
+    "tipo_credito": "UVA",
+    "tna": 11.0,
+    "monto_max": 9999999999,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-comafi-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-12.5-20-350000000",
+    "banco": "Banco Comafi",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 350000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-comafi-clientes-con-cuenta-en-la-entidad-refacción-12.5-10-350000000",
+    "banco": "Banco Comafi",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 350000000,
+    "plazo_max_anios": 10,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-comafi-clientes-con-cuenta-en-la-entidad-1ra-vivienda-10.5-20-350000000",
+    "banco": "Banco Comafi",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "UVA",
+    "tna": 10.5,
+    "monto_max": 350000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-comafi-prestamo-hipotecario-uva-refacción-10.5-10-350000000",
+    "banco": "Banco Comafi",
+    "producto": "prestamo hipotecario uva",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "UVA",
+    "tna": 10.5,
+    "monto_max": 350000000,
+    "plazo_max_anios": 10,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-comafi-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-10.5-20-350000000",
+    "banco": "Banco Comafi",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "UVA",
+    "tna": 10.5,
+    "monto_max": 350000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-comafi-clientes-que-acrediten-sueldos-en-la-entidad-1ra-vivienda-12.5-20-350000000",
+    "banco": "Banco Comafi",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-09-26",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 350000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-del-sol-clientes-con-cuenta-en-la-entidad-2da-vivienda-12.5-20-250000000",
+    "banco": "Banco del Sol",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-01-28",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 250000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "banco-del-sol-prestamo-hipotecario-uva-1ra-vivienda-12.5-20-250000000",
+    "banco": "Banco del Sol",
+    "producto": "prestamo hipotecario uva",
+    "fecha_info": "2025-01-28",
+    "tipo_credito": "UVA",
+    "tna": 12.5,
+    "monto_max": 250000000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 80.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 65
+  },
+  {
+    "id": "nuevo-banco-de-santa-fé-clientes-con-cuenta-en-la-entidad-1ra-vivienda-10.2-20-335970000",
+    "banco": "Nuevo Banco de Santa Fé",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-12-19",
+    "tipo_credito": "UVA",
+    "tna": 10.2,
+    "monto_max": 335970000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [
+      "Empleados públicos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "banco-de-servicios-y-transacciones-empleados-públicos-1ra-vivienda-15.0-10-12000000",
+    "banco": "Banco de Servicios y Transacciones",
+    "producto": "Empleados públicos",
+    "fecha_info": "2025-10-31",
+    "tipo_credito": "Pesos",
+    "tna": 15.0,
+    "monto_max": 12000000,
+    "plazo_max_anios": 10,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 30.0,
+    "beneficiarios": [
+      "Todos los beneficiarios"
+    ],
+    "edad_max": 75
+  },
+  {
+    "id": "nuevo-banco-de-entre-ríos-todos-los-beneficiarios-1ra-vivienda-10.2-20-335970000",
+    "banco": "Nuevo Banco de Entre Ríos",
+    "producto": "Todos los beneficiarios",
+    "fecha_info": "2025-12-19",
+    "tipo_credito": "UVA",
+    "tna": 10.2,
+    "monto_max": 335970000,
+    "plazo_max_anios": 20,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 70.0,
+    "beneficiarios": [],
+    "edad_max": 75
+  },
+  {
+    "id": "banco-dino-prestamo-hipotecario-uva-para-la-adquisicion-de-vivienda-unica-familiar-y-de-ocupacion-permanente-tasa-fija-1ra-vivienda-15.0-15-320302000",
+    "banco": "Banco Dino",
+    "producto": "prestamo hipotecario uva para la adquisicion de vivienda unica familiar y de ocupacion permanente tasa fija",
+    "fecha_info": "2025-10-02",
+    "tipo_credito": "UVA",
+    "tna": 15.0,
+    "monto_max": 320302000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "banco-dino-clientes-con-cuenta-en-la-entidad-2da-vivienda-19.0-15-320302000",
+    "banco": "Banco Dino",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-10-02",
+    "tipo_credito": "UVA",
+    "tna": 19.0,
+    "monto_max": 320302000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "banco-dino-clientes-que-acrediten-sueldos-en-la-entidad-2da-vivienda-17.0-15-320302000",
+    "banco": "Banco Dino",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-10-02",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 320302000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "2da vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "banco-dino-clientes-con-cuenta-en-la-entidad-refacción-17.0-15-320302000",
+    "banco": "Banco Dino",
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-10-02",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 320302000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 35.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "banco-dino-prestamo-hipotecario-uva-para-la-adquisicion-de-vivienda-unica-familiar-y-de-ocupacion-permanente-tasa-fija-1ra-vivienda-17.0-15-320302000",
+    "banco": "Banco Dino",
+    "producto": "prestamo hipotecario uva para la adquisicion de vivienda unica familiar y de ocupacion permanente tasa fija",
+    "fecha_info": "2025-10-02",
+    "tipo_credito": "UVA",
+    "tna": 17.0,
+    "monto_max": 320302000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "1ra vivienda",
+    "ltv": 75.0,
+    "beneficiarios": [
+      "Clientes que acrediten sueldos en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "banco-dino-clientes-que-acrediten-sueldos-en-la-entidad-refacción-15.0-15-320302000",
+    "banco": "Banco Dino",
+    "producto": "Clientes que acrediten sueldos en la entidad",
+    "fecha_info": "2025-10-02",
+    "tipo_credito": "UVA",
+    "tna": 15.0,
+    "monto_max": 320302000,
+    "plazo_max_anios": 15,
+    "tipo_tasa": "Fija",
+    "destino": "Refacción",
+    "ltv": 35.0,
+    "beneficiarios": [
+      "Clientes con cuenta en la entidad"
+    ],
+    "edad_max": 59
+  },
+  {
+    "id": "na-clientes-con-cuenta-en-la-entidad-otros-destinos-146.1-4-5000000",
+    "banco": null,
+    "producto": "Clientes con cuenta en la entidad",
+    "fecha_info": "2025-08-11",
+    "tipo_credito": "Pesos",
+    "tna": 146.1,
+    "monto_max": 5000000,
+    "plazo_max_anios": 4,
+    "tipo_tasa": "Fija",
+    "destino": "Otros destinos",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas Monotributistas"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "na-personas-humanas-monotributistas-otros-destinos-146.1-4-5000000",
+    "banco": null,
+    "producto": "Personas humanas Monotributistas",
+    "fecha_info": "2025-08-11",
+    "tipo_credito": "Pesos",
+    "tna": 146.1,
+    "monto_max": 5000000,
+    "plazo_max_anios": 4,
+    "tipo_tasa": "Fija",
+    "destino": "Otros destinos",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas Responsables Inscriptos"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "na-hipotecario-para-personas-en-relacion-de-dependencia-otros-destinos-146.1-4-50000000",
+    "banco": null,
+    "producto": "hipotecario para personas en relacion de dependencia",
+    "fecha_info": "2025-08-11",
+    "tipo_credito": "Pesos",
+    "tna": 146.1,
+    "monto_max": 50000000,
+    "plazo_max_anios": 4,
+    "tipo_tasa": "Fija",
+    "destino": "Otros destinos",
+    "ltv": 50.0,
+    "beneficiarios": [
+      "Personas humanas en relación de dependencia"
+    ],
+    "edad_max": 70
+  },
+  {
+    "id": "na-personas-humanas-en-relación-de-dependencia-otros-destinos-46.0-4-100000000",
+    "banco": null,
+    "producto": "Personas humanas en relación de dependencia",
+    "fecha_info": "2025-12-05",
+    "tipo_credito": "Pesos",
+    "tna": 46.0,
+    "monto_max": 100000000,
+    "plazo_max_anios": 4,
+    "tipo_tasa": "Variable",
+    "destino": "Otros destinos",
+    "ltv": 55.0,
+    "beneficiarios": [
+      "Todos los beneficiarios"
+    ],
+    "edad_max": 100
+  },
+  {
+    "id": "na-todos-los-beneficiarios-otros-destinos-72.0-3-30000000",
+    "banco": null,
+    "producto": "Todos los beneficiarios",
+    "fecha_info": "2025-12-05",
+    "tipo_credito": "Pesos",
+    "tna": 72.0,
+    "monto_max": 30000000,
+    "plazo_max_anios": 3,
+    "tipo_tasa": "Fija",
+    "destino": "Otros destinos",
+    "ltv": 55.0,
+    "beneficiarios": [],
+    "edad_max": 100
+  }
+]

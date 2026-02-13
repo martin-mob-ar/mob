@@ -1,0 +1,243 @@
+/* Montserrat - Primary font for titles and headings */
+@import '@fontsource/montserrat/400.css';
+@import '@fontsource/montserrat/500.css';
+@import '@fontsource/montserrat/600.css';
+@import '@fontsource/montserrat/700.css';
+@import '@fontsource/montserrat/800.css';
+
+/* Inter - Secondary font for body text */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+
+/* Ubuntu - Brand font for "mob" mentions */
+@import '@fontsource/ubuntu/400.css';
+@import '@fontsource/ubuntu/500.css';
+@import '@fontsource/ubuntu/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbar for horizontal scroll on mobile badges */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* MOB Design System - Clean, Modern, Professional */
+
+@layer base {
+  :root {
+    /* Core brand colors - #5170FF */
+    --mob-blue: 227 100% 66%;
+    --mob-blue-light: 227 100% 95%;
+    --mob-blue-hover: 227 100% 58%;
+    
+    /* Semantic colors */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 227 100% 66%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 227 100% 95%;
+    --accent-foreground: 227 100% 66%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 227 100% 66%;
+
+    --radius: 0.75rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.08), 0 4px 16px -4px hsl(0 0% 0% / 0.12);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 227 100% 66%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 227 100% 95%;
+    --sidebar-accent-foreground: 227 100% 66%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 227 100% 66%;
+  }
+
+  .dark {
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 227 100% 70%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 227 100% 70%;
+    
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 227 100% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 227 100% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* MOB Button variants */
+  .btn-mob-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors;
+  }
+
+  .btn-mob-outline {
+    @apply border border-border bg-background hover:bg-secondary transition-colors;
+  }
+
+  /* MOB Card styles */
+  .card-mob {
+    @apply bg-card rounded-2xl border border-border/50;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-mob-hover {
+    @apply card-mob transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Trust badge */
+  .trust-badge {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border bg-background text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground;
+  }
+
+  /* Search bar */
+  .search-bar-mob {
+    @apply flex items-center bg-card md:rounded-full rounded-lg border-transparent md:border-border border;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Property badge */
+  .property-badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wider;
+  }
+
+  .property-badge-inmobiliaria {
+    @apply property-badge bg-primary text-primary-foreground;
+  }
+
+  .property-badge-dueno {
+    @apply property-badge bg-foreground text-background;
+  }
+
+  /* Icon container */
+  .icon-container {
+    @apply w-14 h-14 rounded-2xl flex items-center justify-center;
+    background: hsl(var(--accent));
+  }
+
+  /* Feature card */
+  .feature-card {
+    @apply p-8 rounded-2xl border border-border/50 bg-card transition-all duration-300 hover:border-primary/20 hover:shadow-lg;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply p-6 rounded-2xl border border-border/50 bg-card;
+  }
+}
+
+@layer utilities {
+  .text-gradient-mob {
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  .font-display {
+    font-family: 'Montserrat', system-ui, sans-serif;
+  }
+
+  .font-ubuntu {
+    font-family: 'Ubuntu', system-ui, sans-serif;
+  }
+
+  /* Pulse glow animation for CTA button */
+  .animate-pulse-glow {
+    animation: pulse-glow 0.5s ease-in-out 3;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 20px 8px hsl(var(--primary) / 0.3);
+      transform: scale(1.03);
+    }
+  }
+}
