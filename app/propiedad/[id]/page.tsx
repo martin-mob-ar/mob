@@ -14,6 +14,8 @@ export default async function PropiedadDetailPage({
   let description: string | null = null;
   let branchName: string | null = null;
   let locationFull: string | null = null;
+  let geoLat: number | null = null;
+  let geoLong: number | null = null;
 
   try {
     const supabase = await createClient();
@@ -32,6 +34,10 @@ export default async function PropiedadDetailPage({
       // Build location string from real data
       const locationParts = [propertyData.location_name, propertyData.state_name].filter(Boolean);
       locationFull = locationParts.join(", ") || null;
+
+      // Extract geo coordinates
+      geoLat = propertyData.geo_lat ? Number(propertyData.geo_lat) : null;
+      geoLong = propertyData.geo_long ? Number(propertyData.geo_long) : null;
 
       // Collect tags from all types
       const allTags: string[] = [];
@@ -83,6 +89,8 @@ export default async function PropiedadDetailPage({
       description={description}
       branchName={branchName}
       locationFull={locationFull}
+      geoLat={geoLat}
+      geoLong={geoLong}
     />
   );
 }

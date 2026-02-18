@@ -81,7 +81,7 @@ const SearchResultsInner = () => {
   const activeFiltersCount = [
     filters.location,
     filters.minPrice || filters.maxPrice,
-    filters.rooms,
+    filters.minRooms || filters.maxRooms || filters.minAmbientes || filters.maxAmbientes,
     filters.parking,
     filters.minSurface || filters.maxSurface,
     filters.propertyType,

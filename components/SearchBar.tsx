@@ -1,12 +1,14 @@
 "use client";
 
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const dormitoriosOptions = [
   { value: "sin-minimo", label: "Sin mínimo" },
@@ -30,31 +32,118 @@ const SearchBar = () => {
   const router = useRouter();
   const isMobile = useIsMobile();
   const [roomsOpen, setRoomsOpen] = useState(false);
-  const [dormitoriosMin, setDormitoriosMin] = useState<string>("sin-minimo");
-  const [dormitoriosMax, setDormitoriosMax] = useState<string>("sin-minimo");
-  const [ambientesMin, setAmbientesMin] = useState<string>("sin-minimo");
-  const [ambientesMax, setAmbientesMax] = useState<string>("sin-minimo");
+  const [dormitoriosMin, setDormitoriosMinRaw] = useState<string>("sin-minimo");
+  const [dormitoriosMax, setDormitoriosMaxRaw] = useState<string>("sin-minimo");
+  const [ambientesMin, setAmbientesMinRaw] = useState<string>("sin-minimo");
+  const [ambientesMax, setAmbientesMaxRaw] = useState<string>("sin-minimo");
+
+  // Auto-correct: if min > max, adjust the other value
+  const setDormitoriosMin = (v: string) => {
+    setDormitoriosMinRaw(v);
+    if (v !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
+      const n = parseInt(v); const m = parseInt(dormitoriosMax);
+      if (!isNaN(n) && !isNaN(m) && n > m) setDormitoriosMaxRaw(v);
+    }
+  };
+  const setDormitoriosMax = (v: string) => {
+    setDormitoriosMaxRaw(v);
+    if (v !== "sin-minimo" && dormitoriosMin !== "sin-minimo") {
+      const n = parseInt(dormitoriosMin); const m = parseInt(v);
+      if (!isNaN(n) && !isNaN(m) && m < n) setDormitoriosMinRaw(v);
+    }
+  };
+  const setAmbientesMin = (v: string) => {
+    setAmbientesMinRaw(v);
+    if (v !== "sin-minimo" && ambientesMax !== "sin-minimo") {
+      const n = parseInt(v); const m = parseInt(ambientesMax);
+      if (!isNaN(n) && !isNaN(m) && n > m) setAmbientesMaxRaw(v);
+    }
+  };
+  const setAmbientesMax = (v: string) => {
+    setAmbientesMaxRaw(v);
+    if (v !== "sin-minimo" && ambientesMin !== "sin-minimo") {
+      const n = parseInt(ambientesMin); const m = parseInt(v);
+      if (!isNaN(n) && !isNaN(m) && m < n) setAmbientesMinRaw(v);
+    }
+  };
+
+  // Location state
+  const [locationQuery, setLocationQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const { results: locationResults, isLoading: locationLoading } = useLocationSearch(locationQuery, {
+    enabled: !selectedLocation,
+  });
+
+  // Price state
+  const [price, setPrice] = useState("");
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(e.target as Node) &&
+        locationInputRef.current &&
+        !locationInputRef.current.contains(e.target as Node)
+      ) {
+        setShowLocationDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLocationSelect = (loc: LocationResult) => {
+    setSelectedLocation(loc);
+    setLocationQuery(loc.name);
+    setShowLocationDropdown(false);
+  };
+
+  const handleLocationInputChange = (value: string) => {
+    setLocationQuery(value);
+    setSelectedLocation(null);
+    setShowLocationDropdown(value.length >= 2);
+  };
 
   const handleSearch = () => {
-    router.push("/buscar");
+    const params = new URLSearchParams();
+    if (selectedLocation) {
+      params.set("location", selectedLocation.name);
+      params.set("locationId", String(selectedLocation.id));
+    } else if (locationQuery.trim()) {
+      params.set("location", locationQuery.trim());
+    }
+    if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
+    if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
+    if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
+    if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+    if (price) {
+      const numericPrice = price.replace(/[^\d]/g, "");
+      if (numericPrice) params.set("maxPrice", numericPrice);
+    }
+    const qs = params.toString();
+    router.push(qs ? `/buscar?${qs}` : "/buscar");
   };
 
   const handleClearRooms = () => {
-    setDormitoriosMin("sin-minimo");
-    setDormitoriosMax("sin-minimo");
-    setAmbientesMin("sin-minimo");
-    setAmbientesMax("sin-minimo");
+    setDormitoriosMinRaw("sin-minimo");
+    setDormitoriosMaxRaw("sin-minimo");
+    setAmbientesMinRaw("sin-minimo");
+    setAmbientesMaxRaw("sin-minimo");
   };
 
   const getRoomsLabel = () => {
-    const hasSelection = 
-      dormitoriosMin !== "sin-minimo" || 
-      dormitoriosMax !== "sin-minimo" || 
-      ambientesMin !== "sin-minimo" || 
+    const hasSelection =
+      dormitoriosMin !== "sin-minimo" ||
+      dormitoriosMax !== "sin-minimo" ||
+      ambientesMin !== "sin-minimo" ||
       ambientesMax !== "sin-minimo";
-    
+
     if (!hasSelection) return "Dormitorios";
-    
+
     const parts: string[] = [];
     if (dormitoriosMin !== "sin-minimo" || dormitoriosMax !== "sin-minimo") {
       if (dormitoriosMin !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
@@ -77,7 +166,41 @@ const SearchBar = () => {
     return parts.join(", ") || "Dormitorios";
   };
 
-  const RoomsPopoverContent = ({ widthClass = "w-80" }: { widthClass?: string }) => (
+  const locationDropdown = showLocationDropdown ? (
+    <div
+      ref={locationDropdownRef}
+      className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+    >
+      {locationLoading ? (
+        <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Buscando...
+        </div>
+      ) : locationResults.length > 0 ? (
+        locationResults.map((loc) => (
+          <button
+            key={loc.id}
+            onClick={() => handleLocationSelect(loc)}
+            className="w-full text-left px-4 py-2.5 hover:bg-secondary/50 transition-colors flex items-start gap-2"
+          >
+            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-foreground block">{loc.name}</span>
+              {loc.display && (
+                <span className="text-xs text-muted-foreground block truncate">{loc.display}</span>
+              )}
+            </div>
+          </button>
+        ))
+      ) : locationQuery.length >= 2 ? (
+        <div className="px-4 py-3 text-sm text-muted-foreground">
+          No se encontraron ubicaciones
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
+  const roomsContent = (widthClass: string) => (
     <PopoverContent className={`${widthClass} p-4 bg-background z-50`} align="center">
       <div className="space-y-5">
         {/* Dormitorios */}
@@ -106,7 +229,7 @@ const SearchBar = () => {
             </Select>
           </div>
         </div>
-        
+
         {/* Ambientes */}
         <div>
           <label className="text-sm font-semibold text-foreground block mb-3">Ambientes</label>
@@ -133,20 +256,20 @@ const SearchBar = () => {
             </Select>
           </div>
         </div>
-        
+
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-border">
-          <button 
+          <button
             onClick={handleClearRooms}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Limpiar
           </button>
-          <Button 
+          <Button
             onClick={() => setRoomsOpen(false)}
             className="rounded-xl px-6"
           >
-            Ver resultados
+            Aceptar
           </Button>
         </div>
       </div>
@@ -159,17 +282,23 @@ const SearchBar = () => {
       <div className="w-full max-w-4xl mx-auto search-bar-mob">
         <div className="flex items-center p-2 bg-card rounded-full border border-border shadow-md">
           <div className="flex-1 grid grid-cols-3 divide-x divide-border">
-            <div className="px-6 py-3">
+            <div className="px-6 py-3 relative">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Ubicación
               </label>
               <input
+                ref={locationInputRef}
                 type="text"
                 placeholder="Provincia, barrio..."
+                value={locationQuery}
+                onChange={(e) => handleLocationInputChange(e.target.value)}
+                onFocus={() => locationQuery.length >= 2 && !selectedLocation && setShowLocationDropdown(true)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none mt-1"
               />
+              {locationDropdown}
             </div>
-            
+
             <div className="px-6 py-3 relative">
               <Popover open={roomsOpen} onOpenChange={setRoomsOpen} modal={true}>
                 <PopoverTrigger asChild>
@@ -183,25 +312,28 @@ const SearchBar = () => {
                     </button>
                   </div>
                 </PopoverTrigger>
-                <RoomsPopoverContent widthClass="w-80" />
+                {roomsContent("w-80")}
               </Popover>
             </div>
-            
+
             <div className="px-6 py-3">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Precio (Alq + Exp)
+                Precio total
               </label>
-              <input
-                type="text"
-                placeholder="$ 800.000"
-                className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none mt-1"
-              />
+              <div className="mt-1">
+                <CurrencyInput
+                  value={price}
+                  onChange={setPrice}
+                  placeholder="$ 800.000"
+                  className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                />
+              </div>
             </div>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={handleSearch}
-            size="icon" 
+            size="icon"
             className="h-12 w-12 rounded-full flex-shrink-0"
           >
             <Search className="h-5 w-5" />
@@ -214,20 +346,26 @@ const SearchBar = () => {
   // Mobile Layout
   return (
     <div className="w-full px-4 box-border">
-      <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-background border border-border rounded-xl shadow-sm overflow-visible">
         <div className="divide-y divide-border">
           {/* Ubicación */}
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 relative">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Ubicación
             </label>
             <input
+              ref={locationInputRef}
               type="text"
               placeholder="Provincia, barrio..."
+              value={locationQuery}
+              onChange={(e) => handleLocationInputChange(e.target.value)}
+              onFocus={() => locationQuery.length >= 2 && !selectedLocation && setShowLocationDropdown(true)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none mt-1 text-base"
             />
+            {locationDropdown}
           </div>
-          
+
           {/* Dormitorios */}
           <div className="px-4 py-3">
             <Popover open={roomsOpen} onOpenChange={setRoomsOpen} modal={true}>
@@ -242,26 +380,29 @@ const SearchBar = () => {
                   </button>
                 </div>
               </PopoverTrigger>
-              <RoomsPopoverContent widthClass="w-[calc(100vw-2rem)] max-w-sm" />
+              {roomsContent("w-[calc(100vw-2rem)] max-w-sm")}
             </Popover>
           </div>
-          
+
           {/* Precio */}
           <div className="px-4 py-3">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Precio (Alq + Exp)
+              Precio total
             </label>
-            <input
-              type="text"
-              placeholder="$ 800.000"
-              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none mt-1 text-base"
-            />
+            <div className="mt-1">
+              <CurrencyInput
+                value={price}
+                onChange={setPrice}
+                placeholder="$ 800.000"
+                className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
+              />
+            </div>
           </div>
         </div>
-        
+
         {/* Search Button - Full width on mobile */}
         <div className="p-4 pt-2">
-          <Button 
+          <Button
             onClick={handleSearch}
             className="w-full h-12 rounded-xl font-semibold text-base"
           >

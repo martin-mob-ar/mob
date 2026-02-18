@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
@@ -11,9 +11,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMockUser } from "@/contexts/MockUserContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { CurrencyInput } from "@/components/ui/currency-input";
 const mobLogo = "/assets/mob-logo-new.png";
 
 const dormitoriosOptions = [
@@ -56,22 +58,65 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
 
   // Rooms dropdown state
   const [headerRoomsOpen, setHeaderRoomsOpen] = useState(false);
-  const [dormitoriosMin, setDormitoriosMin] = useState<string>("sin-minimo");
-  const [dormitoriosMax, setDormitoriosMax] = useState<string>("sin-minimo");
-  const [ambientesMin, setAmbientesMin] = useState<string>("sin-minimo");
-  const [ambientesMax, setAmbientesMax] = useState<string>("sin-minimo");
+  const [dormitoriosMin, setDormitoriosMinRaw] = useState<string>("sin-minimo");
+  const [dormitoriosMax, setDormitoriosMaxRaw] = useState<string>("sin-minimo");
+  const [ambientesMin, setAmbientesMinRaw] = useState<string>("sin-minimo");
+  const [ambientesMax, setAmbientesMaxRaw] = useState<string>("sin-minimo");
+
+  // Auto-correct: if min > max, adjust the other value
+  const setDormitoriosMin = (v: string) => {
+    setDormitoriosMinRaw(v);
+    if (v !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
+      const n = parseInt(v); const m = parseInt(dormitoriosMax);
+      if (!isNaN(n) && !isNaN(m) && n > m) setDormitoriosMaxRaw(v);
+    }
+  };
+  const setDormitoriosMax = (v: string) => {
+    setDormitoriosMaxRaw(v);
+    if (v !== "sin-minimo" && dormitoriosMin !== "sin-minimo") {
+      const n = parseInt(dormitoriosMin); const m = parseInt(v);
+      if (!isNaN(n) && !isNaN(m) && m < n) setDormitoriosMinRaw(v);
+    }
+  };
+  const setAmbientesMin = (v: string) => {
+    setAmbientesMinRaw(v);
+    if (v !== "sin-minimo" && ambientesMax !== "sin-minimo") {
+      const n = parseInt(v); const m = parseInt(ambientesMax);
+      if (!isNaN(n) && !isNaN(m) && n > m) setAmbientesMaxRaw(v);
+    }
+  };
+  const setAmbientesMax = (v: string) => {
+    setAmbientesMaxRaw(v);
+    if (v !== "sin-minimo" && ambientesMin !== "sin-minimo") {
+      const n = parseInt(ambientesMin); const m = parseInt(v);
+      if (!isNaN(n) && !isNaN(m) && m < n) setAmbientesMinRaw(v);
+    }
+  };
+
+  // Location search state
+  const router = useRouter();
+  const [headerLocationQuery, setHeaderLocationQuery] = useState("");
+  const [headerSelectedLocation, setHeaderSelectedLocation] = useState<LocationResult | null>(null);
+  const [showHeaderLocationDropdown, setShowHeaderLocationDropdown] = useState(false);
+  const headerLocationInputRef = useRef<HTMLInputElement>(null);
+  const headerLocationDropdownRef = useRef<HTMLDivElement>(null);
+  const { results: headerLocationResults, isLoading: headerLocationLoading } = useLocationSearch(headerLocationQuery, {
+    enabled: !headerSelectedLocation && showHeaderLocationDropdown,
+  });
 
   // Price popover state
   const [priceOpen, setPriceOpen] = useState(false);
   const [priceType, setPriceType] = useState<"total" | "alquiler">("total");
+  const [priceCurrency, setPriceCurrency] = useState<"ARS" | "USD">("ARS");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const { rate: usdRate } = useExchangeRate();
 
   const handleClearRooms = () => {
-    setDormitoriosMin("sin-minimo");
-    setDormitoriosMax("sin-minimo");
-    setAmbientesMin("sin-minimo");
-    setAmbientesMax("sin-minimo");
+    setDormitoriosMinRaw("sin-minimo");
+    setDormitoriosMaxRaw("sin-minimo");
+    setAmbientesMinRaw("sin-minimo");
+    setAmbientesMaxRaw("sin-minimo");
   };
 
   const getRoomsLabel = () => {
@@ -121,12 +166,100 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isHome]);
 
-  
+  // Close header location dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        headerLocationDropdownRef.current &&
+        !headerLocationDropdownRef.current.contains(e.target as Node) &&
+        headerLocationInputRef.current &&
+        !headerLocationInputRef.current.contains(e.target as Node)
+      ) {
+        setShowHeaderLocationDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleHeaderLocationSelect = (loc: LocationResult) => {
+    setHeaderSelectedLocation(loc);
+    setHeaderLocationQuery(loc.name);
+    setShowHeaderLocationDropdown(false);
+  };
+
+  const handleHeaderLocationInputChange = (value: string) => {
+    setHeaderLocationQuery(value);
+    setHeaderSelectedLocation(null);
+    setShowHeaderLocationDropdown(value.length >= 2);
+  };
+
+  const handleHeaderSearch = () => {
+    const params = new URLSearchParams();
+    if (headerSelectedLocation) {
+      params.set("location", headerSelectedLocation.name);
+      params.set("locationId", String(headerSelectedLocation.id));
+    } else if (headerLocationQuery.trim()) {
+      params.set("location", headerLocationQuery.trim());
+    }
+    if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
+    if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
+    if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
+    if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+    const priceARS = getPriceARS();
+    if (priceARS.min) params.set("minPrice", priceARS.min);
+    if (priceARS.max) params.set("maxPrice", priceARS.max);
+    const qs = params.toString();
+    router.push(qs ? `/buscar?${qs}` : "/buscar");
+  };
+
+  const handlePriceCurrencySwitch = (newCurrency: "ARS" | "USD") => {
+    if (newCurrency === priceCurrency || !usdRate) {
+      setPriceCurrency(newCurrency);
+      return;
+    }
+    if (newCurrency === "USD") {
+      setMinPrice(minPrice ? String(Math.round(parseFloat(minPrice) / usdRate)) : "");
+      setMaxPrice(maxPrice ? String(Math.round(parseFloat(maxPrice) / usdRate)) : "");
+    } else {
+      setMinPrice(minPrice ? String(Math.round(parseFloat(minPrice) * usdRate)) : "");
+      setMaxPrice(maxPrice ? String(Math.round(parseFloat(maxPrice) * usdRate)) : "");
+    }
+    setPriceCurrency(newCurrency);
+  };
+
+  // Abbreviate large numbers: 1500000 → "$1,5M", 500000 → "$500K"
+  const abbreviatePrice = (val: string, cur: "ARS" | "USD"): string => {
+    const n = parseInt(val);
+    if (isNaN(n)) return "";
+    const sym = cur === "USD" ? "US$" : "$";
+    if (n >= 1_000_000_000) return `${sym}${(n / 1_000_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}B`;
+    if (n >= 1_000_000) return `${sym}${(n / 1_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}M`;
+    if (n >= 1_000) return `${sym}${(n / 1_000).toLocaleString("es-AR", { maximumFractionDigits: 0 })}K`;
+    return `${sym}${n.toLocaleString("es-AR")}`;
+  };
+
+  // Get min/max in ARS for the search (auto-swaps if min > max)
+  const getPriceARS = () => {
+    let min = minPrice;
+    let max = maxPrice;
+    if (priceCurrency === "USD" && usdRate) {
+      if (min) min = String(Math.round(parseFloat(min) * usdRate));
+      if (max) max = String(Math.round(parseFloat(max) * usdRate));
+    }
+    if (min && max && parseInt(min) > parseInt(max)) {
+      [min, max] = [max, min];
+    }
+    return { min, max };
+  };
+
   const getPriceLabel = () => {
     if (minPrice || maxPrice) {
-      if (minPrice && maxPrice) return `$${parseInt(minPrice).toLocaleString()} - $${parseInt(maxPrice).toLocaleString()}`;
-      if (minPrice) return `Desde $${parseInt(minPrice).toLocaleString()}`;
-      return `Hasta $${parseInt(maxPrice).toLocaleString()}`;
+      const abbrevMin = minPrice ? abbreviatePrice(minPrice, priceCurrency) : "";
+      const abbrevMax = maxPrice ? abbreviatePrice(maxPrice, priceCurrency) : "";
+      if (abbrevMin && abbrevMax) return `${abbrevMin} - ${abbrevMax}`;
+      if (abbrevMin) return `Desde ${abbrevMin}`;
+      return `Hasta ${abbrevMax}`;
     }
     return "Precio";
   };
@@ -147,9 +280,51 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
           {!hideSearch && (!isHome || showHeaderSearch) && (
             <div className={`hidden lg:flex items-center justify-center absolute left-1/2 -translate-x-1/2 transition-all duration-300 ${isHome && !showHeaderSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center h-10 rounded-full border border-border bg-background shadow-sm">
-                <div className="flex items-center gap-2 px-4 border-r border-border flex-1">
+                <div className="flex items-center gap-2 px-4 border-r border-border flex-1 relative">
                   <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <input type="text" placeholder="Provincia, barrio..." className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground" />
+                  <input
+                    ref={headerLocationInputRef}
+                    type="text"
+                    placeholder="Provincia, barrio..."
+                    value={headerLocationQuery}
+                    onChange={(e) => handleHeaderLocationInputChange(e.target.value)}
+                    onFocus={() => headerLocationQuery.length >= 2 && !headerSelectedLocation && setShowHeaderLocationDropdown(true)}
+                    onKeyDown={(e) => e.key === "Enter" && handleHeaderSearch()}
+                    className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                  />
+                  {showHeaderLocationDropdown && (
+                    <div
+                      ref={headerLocationDropdownRef}
+                      className="absolute left-0 right-0 top-full mt-2 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto min-w-[280px]"
+                    >
+                      {headerLocationLoading ? (
+                        <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Buscando...
+                        </div>
+                      ) : headerLocationResults.length > 0 ? (
+                        headerLocationResults.map((loc) => (
+                          <button
+                            key={loc.id}
+                            onClick={() => handleHeaderLocationSelect(loc)}
+                            className="w-full text-left px-4 py-2.5 hover:bg-secondary/50 transition-colors flex items-start gap-2"
+                          >
+                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <span className="text-sm font-medium text-foreground block">{loc.name}</span>
+                              {loc.display && (
+                                <span className="text-xs text-muted-foreground block truncate">{loc.display}</span>
+                              )}
+                            </div>
+                          </button>
+                        ))
+                      ) : headerLocationQuery.length >= 2 ? (
+                        <div className="px-4 py-3 text-sm text-muted-foreground">
+                          No se encontraron ubicaciones
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
                 
                 <Popover open={headerRoomsOpen} onOpenChange={setHeaderRoomsOpen} modal={true}>
@@ -245,8 +420,9 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       <ChevronDown className={`h-3 w-3 transition-transform ${priceOpen ? "rotate-180" : ""}`} />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 p-4 bg-background z-50" align="center">
+                  <PopoverContent className="w-[340px] p-4 bg-background z-50" align="center">
                     <div className="space-y-4">
+                      {/* Valor total / Alquiler toggle */}
                       <div className="flex rounded-full border border-border p-1">
                         <button onClick={() => setPriceType("total")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceType === "total" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                           Valor total
@@ -256,27 +432,67 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         </button>
                       </div>
 
+                      {/* Pesos / Dólares toggle */}
+                      <div className="flex rounded-full border border-border p-1">
+                        <button onClick={() => handlePriceCurrencySwitch("ARS")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceCurrency === "ARS" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                          Pesos
+                        </button>
+                        <button onClick={() => handlePriceCurrencySwitch("USD")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceCurrency === "USD" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                          Dólares
+                        </button>
+                      </div>
+
+                      {/* Exchange rate badge */}
+                      {usdRate && (
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground bg-muted/30 rounded-lg py-1.5 px-2">
+                          <ArrowRightLeft className="h-3 w-3" />
+                          <span>1 USD = ${usdRate.toLocaleString("es-AR")} ARS</span>
+                        </div>
+                      )}
+
+                      {/* Min / Max inputs */}
                       <div className="flex gap-3">
                         <div className="flex-1">
                           <label className="text-xs text-muted-foreground mb-1 block">Mínimo</label>
-                          <Input type="number" placeholder="$0" value={minPrice} onChange={e => setMinPrice(e.target.value)} className="rounded-lg h-9" />
+                          <CurrencyInput
+                            value={minPrice}
+                            onChange={setMinPrice}
+                            currency={priceCurrency}
+                            placeholder={priceCurrency === "USD" ? "US$ 0" : "$ 0"}
+                            className="rounded-xl h-10 text-sm"
+                          />
                         </div>
                         <div className="flex-1">
                           <label className="text-xs text-muted-foreground mb-1 block">Máximo</label>
-                          <Input type="number" placeholder="$1.000.000" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} className="rounded-lg h-9" />
+                          <CurrencyInput
+                            value={maxPrice}
+                            onChange={setMaxPrice}
+                            currency={priceCurrency}
+                            placeholder={priceCurrency === "USD" ? "US$ 5.000" : "$ 1.000.000"}
+                            className="rounded-xl h-10 text-sm"
+                          />
                         </div>
                       </div>
 
-                      <Button onClick={() => setPriceOpen(false)} className="w-full rounded-full h-9 text-sm">
-                        Aplicar
-                      </Button>
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <button
+                          onClick={() => { setMinPrice(""); setMaxPrice(""); setPriceCurrency("ARS"); setPriceType("total"); }}
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Limpiar
+                        </button>
+                        <Button onClick={() => setPriceOpen(false)} className="rounded-xl px-6">
+                          Aplicar
+                        </Button>
+                      </div>
                     </div>
                   </PopoverContent>
                 </Popover>
                 
-                <Link href="/buscar" className="h-8 w-8 m-1 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors">
+                <button onClick={handleHeaderSearch} className="h-8 w-8 m-1 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors">
                   <Search className="h-4 w-4 text-primary-foreground" />
-                </Link>
+                </button>
               </div>
             </div>
           )}

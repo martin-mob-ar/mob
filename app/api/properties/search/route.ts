@@ -5,15 +5,21 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
 
   const location = searchParams.get("location");
+  const locationId = searchParams.get("locationId");
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
-  const rooms = searchParams.get("rooms");
+  const minRooms = searchParams.get("minRooms");     // dormitorios → suite_amount
+  const maxRooms = searchParams.get("maxRooms");
+  const minAmbientes = searchParams.get("minAmbientes"); // ambientes → room_amount
+  const maxAmbientes = searchParams.get("maxAmbientes");
   const bathrooms = searchParams.get("bathrooms");
   const parking = searchParams.get("parking");
   const minSurface = searchParams.get("minSurface");
   const maxSurface = searchParams.get("maxSurface");
+  const surfaceType = searchParams.get("surfaceType") || "total"; // "total" | "cubierta"
   const propertyType = searchParams.get("propertyType"); // "inmobiliaria" | "dueno"
   const propertyTypeNames = searchParams.get("propertyTypeNames"); // comma-separated: "Apartment,House"
+  const tagIds = searchParams.get("tagIds"); // comma-separated tag IDs
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
@@ -23,8 +29,28 @@ export async function GET(request: NextRequest) {
     .from("properties_read")
     .select("*", { count: "exact" });
 
-  // Apply filters
-  if (location) {
+  // Apply location filter - prefer locationId for precise matching
+  if (locationId) {
+    const locId = parseInt(locationId);
+    // Get the selected location's depth to decide if we need to include children
+    const { data: loc } = await supabaseAdmin
+      .from("tokko_location")
+      .select("id, depth")
+      .eq("id", locId)
+      .single();
+
+    if (loc && loc.depth <= 3) {
+      // For depth 3 (partido/departamento), include the location itself + all direct children
+      const { data: children } = await supabaseAdmin
+        .from("tokko_location")
+        .select("id")
+        .eq("parent_location_id", locId);
+      const ids = [locId, ...(children?.map((c) => c.id) || [])];
+      query = query.in("location_id", ids);
+    } else {
+      query = query.eq("location_id", locId);
+    }
+  } else if (location) {
     query = query.or(
       `location_name.ilike.%${location}%,address.ilike.%${location}%,state_name.ilike.%${location}%`
     );
@@ -38,8 +64,20 @@ export async function GET(request: NextRequest) {
     query = query.lte("valor_total_primary", parseInt(maxPrice));
   }
 
-  if (rooms) {
-    query = query.gte("room_amount", parseInt(rooms));
+  // Dormitorios (bedrooms) → suite_amount
+  if (minRooms) {
+    query = query.gte("suite_amount", parseInt(minRooms));
+  }
+  if (maxRooms) {
+    query = query.lte("suite_amount", parseInt(maxRooms));
+  }
+
+  // Ambientes (total rooms) → room_amount
+  if (minAmbientes) {
+    query = query.gte("room_amount", parseInt(minAmbientes));
+  }
+  if (maxAmbientes) {
+    query = query.lte("room_amount", parseInt(maxAmbientes));
   }
 
   if (bathrooms) {
@@ -50,12 +88,13 @@ export async function GET(request: NextRequest) {
     query = query.gte("parking_lot_amount", parseInt(parking));
   }
 
+  const surfaceColumn = surfaceType === "cubierta" ? "roofed_surface" : "total_surface";
   if (minSurface) {
-    query = query.gte("total_surface", parseInt(minSurface));
+    query = query.gte(surfaceColumn, parseInt(minSurface));
   }
 
   if (maxSurface) {
-    query = query.lte("total_surface", parseInt(maxSurface));
+    query = query.lte(surfaceColumn, parseInt(maxSurface));
   }
 
   if (propertyType === "inmobiliaria") {
@@ -68,6 +107,14 @@ export async function GET(request: NextRequest) {
     const names = propertyTypeNames.split(",").map((n) => n.trim()).filter(Boolean);
     if (names.length > 0) {
       query = query.in("property_type_name", names);
+    }
+  }
+
+  // Filter by tags — property must have ALL selected tags (contains operator)
+  if (tagIds) {
+    const ids = tagIds.split(",").map((n) => parseInt(n.trim())).filter((n) => !isNaN(n));
+    if (ids.length > 0) {
+      query = query.contains("all_tag_ids", ids);
     }
   }
 

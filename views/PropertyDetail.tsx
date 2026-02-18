@@ -18,6 +18,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import PropertyMap from "@/components/PropertyMap";
 
 interface PropertyDetailProps {
   property?: Property;
@@ -26,9 +27,11 @@ interface PropertyDetailProps {
   description?: string | null;
   branchName?: string | null;
   locationFull?: string | null;
+  geoLat?: number | null;
+  geoLong?: number | null;
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, branchName: propBranchName, locationFull: propLocationFull }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, branchName: propBranchName, locationFull: propLocationFull, geoLat, geoLong }: PropertyDetailProps) => {
   const { id } = useParams();
   const router = useRouter();
   const property = propProperty || mockProperties.find((p) => p.id === (id as string)?.split("-")[0]) || mockProperties[0];
@@ -273,12 +276,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               {galleryImages.map((image, index) => (
                 <CarouselItem key={index} className="pl-0">
                   <div className="aspect-[4/3] relative">
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={image}
                       alt={`Vista ${index + 1}`}
-                      fill
-                      sizes="100vw"
-                      className="object-cover"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   </div>
                 </CarouselItem>
@@ -325,14 +327,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           </p>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 rounded-xl overflow-hidden mb-6 h-[400px]">
+        <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-xl overflow-hidden mb-6 h-[400px]">
           <div className="col-span-2 row-span-2 relative cursor-pointer" onClick={() => { setGalleryIndex(0); setShowGallery(true); }}>
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={galleryImages[0] || property.image}
               alt={property.address}
-              fill
-              sizes="50vw"
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Verified Badge - Desktop */}
             {property.verified && (
@@ -347,15 +348,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           {galleryImages.slice(1, 5).map((img, index) => (
             <div
               key={index}
-              className={`col-span-1 cursor-pointer relative`}
+              className="col-span-1 cursor-pointer relative"
               onClick={() => { setGalleryIndex(index + 1); setShowGallery(true); }}
             >
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={img}
                 alt={`Vista ${index + 2}`}
-                fill
-                sizes="25vw"
-                className="object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
               />
               {index === 3 && galleryImages.length > 5 && (
                 <button
@@ -492,13 +492,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <MapPin className="h-4 w-4" />
             {property.address}, {locationSuffix}
           </p>
-          <div className="aspect-[16/10] bg-secondary rounded-xl flex items-center justify-center">
-            <MapPin className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <button className="text-sm font-medium text-foreground mt-3 flex items-center gap-1">
-            Ver en mapa
-            <ChevronRight className="h-4 w-4" />
-          </button>
+          {geoLat && geoLong ? (
+            <PropertyMap lat={geoLat} lng={geoLong} className="aspect-[16/10]" />
+          ) : (
+            <div className="aspect-[16/10] bg-secondary rounded-xl flex items-center justify-center">
+              <MapPin className="h-10 w-10 text-muted-foreground" />
+            </div>
+          )}
         </div>
 
         {/* Trust MOB Section - Clean redesign */}
@@ -603,9 +603,9 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
       {/* Desktop Layout */}
       <main className="hidden md:block max-w-6xl mx-auto px-6 pb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-3 gap-10">
           {/* Left Column - Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="col-span-2 space-y-6">
             {/* Quick Stats */}
             <div className="grid grid-cols-4 gap-3">
               {[
@@ -661,14 +661,18 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <h2 className="font-display text-lg font-bold text-foreground mb-3">
                 {property.address}, {locationSuffix}
               </h2>
-              <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center">
-                <MapPin className="h-10 w-10 text-muted-foreground" />
-              </div>
+              {geoLat && geoLong ? (
+                <PropertyMap lat={geoLat} lng={geoLong} className="aspect-video" />
+              ) : (
+                <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center">
+                  <MapPin className="h-10 w-10 text-muted-foreground" />
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right Column - Booking Card */}
-          <div className="lg:col-span-1">
+          <div className="col-span-1">
             <div className="card-mob p-5 sticky top-20 space-y-5">
               {/* Price */}
               <div>

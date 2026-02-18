@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server-component";
 import { transformPropertyReadList } from "@/lib/transforms/property";
 import SearchResults from "@/views/SearchResults";
@@ -23,9 +24,11 @@ export default async function BuscarPage() {
   }
 
   return (
-    <SearchResults
-      initialProperties={initialProperties}
-      initialTotal={initialTotal}
-    />
+    <Suspense>
+      <SearchResults
+        initialProperties={initialProperties}
+        initialTotal={initialTotal}
+      />
+    </Suspense>
   );
 }

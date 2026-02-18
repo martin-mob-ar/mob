@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bed } from "lucide-react";
 import {
   Popover,
@@ -19,11 +19,45 @@ import { useSearchFilters } from "@/contexts/SearchFiltersContext";
 
 const RoomsFilter = () => {
   const [open, setOpen] = useState(false);
-  const { filters, setFilter } = useSearchFilters();
-  const [minRooms, setMinRooms] = useState<string>(filters.rooms || "");
-  const [maxRooms, setMaxRooms] = useState<string>("");
-  const [minAmbientes, setMinAmbientes] = useState<string>("");
-  const [maxAmbientes, setMaxAmbientes] = useState<string>("");
+  const { filters, setFilters } = useSearchFilters();
+  const [minRooms, setMinRoomsRaw] = useState<string>(filters.minRooms || "");
+  const [maxRooms, setMaxRoomsRaw] = useState<string>(filters.maxRooms || "");
+  const [minAmbientes, setMinAmbientesRaw] = useState<string>(filters.minAmbientes || "");
+  const [maxAmbientes, setMaxAmbientesRaw] = useState<string>(filters.maxAmbientes || "");
+
+  // Auto-correct: if min > max, adjust the other value
+  const setMinRooms = (v: string) => {
+    setMinRoomsRaw(v);
+    const n = parseInt(v);
+    const m = parseInt(maxRooms);
+    if (v && v !== "none" && maxRooms && maxRooms !== "none" && !isNaN(n) && !isNaN(m) && n > m) {
+      setMaxRoomsRaw(v);
+    }
+  };
+  const setMaxRooms = (v: string) => {
+    setMaxRoomsRaw(v);
+    const n = parseInt(minRooms);
+    const m = parseInt(v);
+    if (v && v !== "none" && minRooms && minRooms !== "none" && !isNaN(n) && !isNaN(m) && m < n) {
+      setMinRoomsRaw(v);
+    }
+  };
+  const setMinAmbientes = (v: string) => {
+    setMinAmbientesRaw(v);
+    const n = parseInt(v);
+    const m = parseInt(maxAmbientes);
+    if (v && v !== "none" && maxAmbientes && maxAmbientes !== "none" && !isNaN(n) && !isNaN(m) && n > m) {
+      setMaxAmbientesRaw(v);
+    }
+  };
+  const setMaxAmbientes = (v: string) => {
+    setMaxAmbientesRaw(v);
+    const n = parseInt(minAmbientes);
+    const m = parseInt(v);
+    if (v && v !== "none" && minAmbientes && minAmbientes !== "none" && !isNaN(n) && !isNaN(m) && m < n) {
+      setMinAmbientesRaw(v);
+    }
+  };
 
   const dormitoriosMinOptions = [
     { label: "Sin mínimo", value: "" },
@@ -60,6 +94,14 @@ const RoomsFilter = () => {
     { label: "4", value: "4" },
     { label: "5", value: "5" },
   ];
+
+  // Sync local state when context changes externally (e.g. via MoreFiltersPanel)
+  useEffect(() => {
+    setMinRoomsRaw(filters.minRooms || "");
+    setMaxRoomsRaw(filters.maxRooms || "");
+    setMinAmbientesRaw(filters.minAmbientes || "");
+    setMaxAmbientesRaw(filters.maxAmbientes || "");
+  }, [filters.minRooms, filters.maxRooms, filters.minAmbientes, filters.maxAmbientes]);
 
   const hasMinRooms = minRooms !== "" && minRooms !== "none";
   const hasMaxRooms = maxRooms !== "" && maxRooms !== "none";
@@ -99,17 +141,20 @@ const RoomsFilter = () => {
   };
 
   const handleClear = () => {
-    setMinRooms("");
-    setMaxRooms("");
-    setMinAmbientes("");
-    setMaxAmbientes("");
-    setFilter("rooms", "");
+    setMinRoomsRaw("");
+    setMaxRoomsRaw("");
+    setMinAmbientesRaw("");
+    setMaxAmbientesRaw("");
+    setFilters({ minRooms: "", maxRooms: "", minAmbientes: "", maxAmbientes: "" });
   };
 
   const handleApply = () => {
-    // Send the minimum rooms to the search context
-    const rooms = hasMinRooms ? minRooms : "";
-    setFilter("rooms", rooms);
+    setFilters({
+      minRooms: hasMinRooms ? minRooms : "",
+      maxRooms: hasMaxRooms ? maxRooms : "",
+      minAmbientes: hasMinAmbientes ? minAmbientes : "",
+      maxAmbientes: hasMaxAmbientes ? maxAmbientes : "",
+    });
     setOpen(false);
   };
 

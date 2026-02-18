@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin, resolveUserId } from '@/lib/supabase/server';
+import { supabaseAdmin, getOrCreateUserFromAuth } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -41,13 +41,15 @@ export async function POST(request: Request) {
       key_coordination,
       visit_days,
       visit_hours,
+      duration_months,
+      ipc_adjustment,
     } = body;
 
     if (!profile_id) {
       return NextResponse.json({ error: 'profile_id es requerido' }, { status: 400 });
     }
 
-    const resolvedUserId = await resolveUserId(profile_id);
+    const resolvedUserId = await getOrCreateUserFromAuth(profile_id);
 
     const { data: property, error: propError } = await supabaseAdmin
       .from('properties')
@@ -76,7 +78,6 @@ export async function POST(request: Request) {
         disposition: disposition ?? null,
         floor: floor ?? null,
         apartment_door: apartment_door ?? null,
-        expenses: expenses ?? null,
         available_date: available_date ?? null,
         key_coordination: key_coordination ?? null,
         visit_days: visit_days ?? null,
@@ -110,6 +111,9 @@ export async function POST(request: Request) {
         currency: currency || 'ARS',
         price: Number(price) || 0,
         period: 0,
+        expenses: expenses ?? null,
+        duration_months: duration_months ?? null,
+        ipc_adjustment: ipc_adjustment ?? null,
       });
     }
 

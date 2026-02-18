@@ -1,20 +1,27 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Property } from "@/components/PropertyCard";
 import { transformPropertyReadList } from "@/lib/transforms/property";
 
 export interface SearchFilters {
   location: string;
+  locationId: string;
   minPrice: string;
   maxPrice: string;
-  rooms: string;
+  minRooms: string;   // dormitorios min → suite_amount
+  maxRooms: string;   // dormitorios max → suite_amount
+  minAmbientes: string; // ambientes min → room_amount
+  maxAmbientes: string; // ambientes max → room_amount
   bathrooms: string;
   parking: string;
   minSurface: string;
   maxSurface: string;
+  surfaceType: string; // "total" | "cubierta"
   propertyType: string; // "inmobiliaria" | "dueno" | ""
   propertyTypeNames: string[]; // ["Apartment", "House", ...]
+  tagIds: number[];    // selected tag IDs from tokko_property_tag
   sort: string;
 }
 
@@ -33,15 +40,21 @@ interface SearchFiltersContextValue {
 
 const defaultFilters: SearchFilters = {
   location: "",
+  locationId: "",
   minPrice: "",
   maxPrice: "",
-  rooms: "",
+  minRooms: "",
+  maxRooms: "",
+  minAmbientes: "",
+  maxAmbientes: "",
   bathrooms: "",
   parking: "",
   minSurface: "",
   maxSurface: "",
+  surfaceType: "total",
   propertyType: "",
   propertyTypeNames: [],
+  tagIds: [],
   sort: "recent",
 };
 
@@ -59,44 +72,130 @@ interface SearchFiltersProviderProps {
   initialTotal?: number;
 }
 
+function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<SearchFilters> {
+  const updates: Partial<SearchFilters> = {};
+  const location = searchParams.get("location");
+  const locationId = searchParams.get("locationId");
+  const minPrice = searchParams.get("minPrice");
+  const maxPrice = searchParams.get("maxPrice");
+  const minRooms = searchParams.get("minRooms");
+  const maxRooms = searchParams.get("maxRooms");
+  const minAmbientes = searchParams.get("minAmbientes");
+  const maxAmbientes = searchParams.get("maxAmbientes");
+  const bathrooms = searchParams.get("bathrooms");
+  const parking = searchParams.get("parking");
+  const minSurface = searchParams.get("minSurface");
+  const maxSurface = searchParams.get("maxSurface");
+  const surfaceType = searchParams.get("surfaceType");
+  const propertyTypeNames = searchParams.get("propertyTypeNames");
+  const tagIds = searchParams.get("tagIds");
+  const sort = searchParams.get("sort");
+
+  if (location) updates.location = location;
+  if (locationId) updates.locationId = locationId;
+  if (minPrice) updates.minPrice = minPrice;
+  if (maxPrice) updates.maxPrice = maxPrice;
+  if (minRooms) updates.minRooms = minRooms;
+  if (maxRooms) updates.maxRooms = maxRooms;
+  if (minAmbientes) updates.minAmbientes = minAmbientes;
+  if (maxAmbientes) updates.maxAmbientes = maxAmbientes;
+  if (bathrooms) updates.bathrooms = bathrooms;
+  if (parking) updates.parking = parking;
+  if (minSurface) updates.minSurface = minSurface;
+  if (maxSurface) updates.maxSurface = maxSurface;
+  if (surfaceType) updates.surfaceType = surfaceType;
+  if (propertyTypeNames) updates.propertyTypeNames = propertyTypeNames.split(",").filter(Boolean);
+  if (tagIds) updates.tagIds = tagIds.split(",").map(Number).filter(Boolean);
+  if (sort) updates.sort = sort;
+
+  return updates;
+}
+
 export function SearchFiltersProvider({
   children,
   initialResults,
   initialTotal,
 }: SearchFiltersProviderProps) {
-  const [filters, setFiltersState] = useState<SearchFilters>(defaultFilters);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const urlUpdates = getInitialFiltersFromParams(searchParams);
+  const hasUrlFilters = Object.keys(urlUpdates).length > 0;
+  const isInitialMount = useRef(true);
+
+  const [filters, setFiltersState] = useState<SearchFilters>({
+    ...defaultFilters,
+    ...urlUpdates,
+  });
   const [results, setResults] = useState<Property[]>(initialResults || []);
   const [total, setTotal] = useState(initialTotal || 0);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
 
   const setFilter = useCallback((key: keyof SearchFilters, value: string) => {
-    setFiltersState((prev) => ({ ...prev, [key]: value }));
+    setFiltersState((prev) => {
+      if (prev[key] === value) return prev;
+      return { ...prev, [key]: value };
+    });
+    setPage(1);
   }, []);
 
   const setFilters = useCallback((updates: Partial<SearchFilters>) => {
-    setFiltersState((prev) => ({ ...prev, ...updates }));
+    setFiltersState((prev) => {
+      const hasChange = Object.entries(updates).some(([k, v]) => {
+        const key = k as keyof SearchFilters;
+        if (Array.isArray(v) && Array.isArray(prev[key])) {
+          return JSON.stringify(v) !== JSON.stringify(prev[key]);
+        }
+        return prev[key] !== v;
+      });
+      if (!hasChange) return prev;
+      return { ...prev, ...updates };
+    });
+    setPage(1);
   }, []);
 
   const clearFilters = useCallback(() => {
-    setFiltersState(defaultFilters);
+    setFiltersState((prev) => {
+      const hasChange = (Object.keys(defaultFilters) as (keyof SearchFilters)[]).some((k) => {
+        if (Array.isArray(defaultFilters[k]) && Array.isArray(prev[k])) {
+          return JSON.stringify(defaultFilters[k]) !== JSON.stringify(prev[k]);
+        }
+        return prev[k] !== defaultFilters[k];
+      });
+      if (!hasChange) return prev;
+      return defaultFilters;
+    });
     setPage(1);
+  }, []);
+
+  // Build URL params from filter state (shared by search + URL sync)
+  const buildFilterParams = useCallback((f: SearchFilters) => {
+    const params = new URLSearchParams();
+    if (f.location) params.set("location", f.location);
+    if (f.locationId) params.set("locationId", f.locationId);
+    if (f.minPrice) params.set("minPrice", f.minPrice);
+    if (f.maxPrice) params.set("maxPrice", f.maxPrice);
+    if (f.minRooms) params.set("minRooms", f.minRooms);
+    if (f.maxRooms) params.set("maxRooms", f.maxRooms);
+    if (f.minAmbientes) params.set("minAmbientes", f.minAmbientes);
+    if (f.maxAmbientes) params.set("maxAmbientes", f.maxAmbientes);
+    if (f.bathrooms) params.set("bathrooms", f.bathrooms);
+    if (f.parking) params.set("parking", f.parking);
+    if (f.minSurface) params.set("minSurface", f.minSurface);
+    if (f.maxSurface) params.set("maxSurface", f.maxSurface);
+    if (f.surfaceType && f.surfaceType !== "total") params.set("surfaceType", f.surfaceType);
+    if (f.propertyType) params.set("propertyType", f.propertyType);
+    if (f.propertyTypeNames.length > 0) params.set("propertyTypeNames", f.propertyTypeNames.join(","));
+    if (f.tagIds.length > 0) params.set("tagIds", f.tagIds.join(","));
+    if (f.sort && f.sort !== "recent") params.set("sort", f.sort);
+    return params;
   }, []);
 
   const search = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (filters.location) params.set("location", filters.location);
-      if (filters.minPrice) params.set("minPrice", filters.minPrice);
-      if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
-      if (filters.rooms) params.set("rooms", filters.rooms);
-      if (filters.bathrooms) params.set("bathrooms", filters.bathrooms);
-      if (filters.parking) params.set("parking", filters.parking);
-      if (filters.minSurface) params.set("minSurface", filters.minSurface);
-      if (filters.maxSurface) params.set("maxSurface", filters.maxSurface);
-      if (filters.propertyType) params.set("propertyType", filters.propertyType);
-      if (filters.propertyTypeNames.length > 0) params.set("propertyTypeNames", filters.propertyTypeNames.join(","));
+      const params = buildFilterParams(filters);
       params.set("sort", filters.sort);
       params.set("page", String(page));
       params.set("limit", "20");
@@ -113,12 +212,27 @@ export function SearchFiltersProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [filters, page]);
+  }, [filters, page, buildFilterParams]);
 
-  // Auto-search when filters or page change (skip initial if we have initialResults)
+  // Sync filters to URL (skip initial mount to avoid loop)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (pathname !== "/buscar") return;
+
+    const params = buildFilterParams(filters);
+    const qs = params.toString();
+    const newUrl = qs ? `/buscar?${qs}` : "/buscar";
+    router.replace(newUrl, { scroll: false });
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-search when filters or page change
+  // If URL has filters, always search on mount (don't skip with initialResults)
   const [hasSearched, setHasSearched] = useState(false);
   useEffect(() => {
-    if (!hasSearched && initialResults && initialResults.length > 0) {
+    if (!hasSearched && !hasUrlFilters && initialResults && initialResults.length > 0) {
       setHasSearched(true);
       return;
     }
