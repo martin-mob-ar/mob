@@ -187,6 +187,7 @@ const SubirPropiedad = () => {
   const handleLocationSelect = (location: LocationResult) => {
     setSelectedLocation(location);
     setLocationId(location.id);
+    setShowErrors(false);
   };
 
   const handleLocationClear = () => {
@@ -217,6 +218,7 @@ const SubirPropiedad = () => {
     setGeoLat(String(geo.lat));
     setGeoLong(String(geo.lng));
     setPlaceSelected(true);
+    setShowErrors(false);
   }, []);
 
   const validateStep = (step: number): boolean => {
@@ -428,7 +430,7 @@ const SubirPropiedad = () => {
                 {propertyTypes.map((type) => (
                   <button
                     key={type.id}
-                    onClick={() => setTypeId(type.id)}
+                    onClick={() => { setTypeId(type.id); setShowErrors(false); }}
                     className={cn(
                       "py-3 sm:py-4 px-2 sm:px-6 rounded-2xl border-2 text-xs sm:text-sm font-semibold transition-all",
                       typeId === type.id
