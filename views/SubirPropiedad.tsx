@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getGeometryFromPlace } from "@/lib/google-maps/places";
 import { createClient } from "@/lib/supabase/client";
@@ -1055,12 +1056,7 @@ const SubirPropiedad = () => {
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-secondary">
-          <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <Progress value={progress} className="h-1 rounded-none" />
       </header>
 
       {/* Content */}

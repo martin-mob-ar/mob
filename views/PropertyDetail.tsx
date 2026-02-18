@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Property } from "@/components/PropertyCard";
+import Image from "next/image";
 const KeyRoundIcon = "/assets/key-round-icon.svg";
 import {
   Carousel,
@@ -21,9 +22,13 @@ import {
 interface PropertyDetailProps {
   property?: Property;
   photos?: string[];
+  tags?: string[];
+  description?: string | null;
+  branchName?: string | null;
+  locationFull?: string | null;
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, branchName: propBranchName, locationFull: propLocationFull }: PropertyDetailProps) => {
   const { id } = useParams();
   const router = useRouter();
   const property = propProperty || mockProperties.find((p) => p.id === (id as string)?.split("-")[0]) || mockProperties[0];
@@ -67,16 +72,21 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
     };
   }, [carouselApi]);
 
-  const amenities = [
-    "Balcón",
-    "Seguridad 24hs",
-    "Luminoso",
-    "Cocina integrada",
-    "Laundry",
-    "Apto mascotas",
-  ];
+  const amenities = propTags && propTags.length > 0
+    ? propTags
+    : [
+        "Balcón",
+        "Seguridad 24hs",
+        "Luminoso",
+        "Cocina integrada",
+        "Laundry",
+        "Apto mascotas",
+      ];
 
-  const description = `Increíble departamento ubicado en una de las mejores zonas de ${property.neighborhood}. Muy luminoso, con balcón al frente y terminaciones de categoría. Edificio moderno con seguridad y excelentes accesos. Ideal para quienes buscan comodidad y diseño en un solo lugar.`;
+  const description = propDescription || `Increíble departamento ubicado en una de las mejores zonas de ${property.neighborhood}. Muy luminoso, con balcón al frente y terminaciones de categoría. Edificio moderno con seguridad y excelentes accesos. Ideal para quienes buscan comodidad y diseño en un solo lugar.`;
+
+  const branchName = propBranchName || null;
+  const locationSuffix = propLocationFull || `${property.neighborhood}`;
 
   // Detect scroll to show/hide bottom bar
   useEffect(() => {
@@ -170,8 +180,9 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
                 document.addEventListener('touchend', handleTouchEnd);
               }}
             >
-              <img 
-                src={galleryImages[galleryIndex]} 
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={galleryImages[galleryIndex]}
                 alt={`Vista ${galleryIndex + 1}`}
                 className="max-w-full max-h-[60vh] object-contain select-none rounded-lg"
                 draggable={false}
@@ -193,11 +204,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
               <button
                 key={index}
                 onClick={(e) => { e.stopPropagation(); setGalleryIndex(index); }}
-                className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all relative ${
                   index === galleryIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-80'
                 }`}
               >
-                <img src={img} alt={`Miniatura ${index + 1}`} className="w-full h-full object-cover" />
+                <Image src={img} alt={`Miniatura ${index + 1}`} fill sizes="64px" className="object-cover" />
               </button>
             ))}
           </div>
@@ -261,11 +272,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
             <CarouselContent className="ml-0">
               {galleryImages.map((image, index) => (
                 <CarouselItem key={index} className="pl-0">
-                  <div className="aspect-[4/3]">
-                    <img 
-                      src={image} 
+                  <div className="aspect-[4/3] relative">
+                    <Image
+                      src={image}
                       alt={`Vista ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="100vw"
+                      className="object-cover"
                     />
                   </div>
                 </CarouselItem>
@@ -308,17 +321,18 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
           </h1>
           <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
             <MapPin className="h-3.5 w-3.5" />
-            {property.address}, {property.neighborhood}, CABA
+            {property.address}, {locationSuffix}
           </p>
         </div>
 
         <div className="grid grid-cols-4 gap-2 rounded-xl overflow-hidden mb-6 h-[400px]">
-          <div className="col-span-2 row-span-2 relative">
-            <img
+          <div className="col-span-2 row-span-2 relative cursor-pointer" onClick={() => { setGalleryIndex(0); setShowGallery(true); }}>
+            <Image
               src={galleryImages[0] || property.image}
               alt={property.address}
-              className="w-full h-full object-cover cursor-pointer"
-              onClick={() => { setGalleryIndex(0); setShowGallery(true); }}
+              fill
+              sizes="50vw"
+              className="object-cover"
             />
             {/* Verified Badge - Desktop */}
             {property.verified && (
@@ -333,13 +347,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
           {galleryImages.slice(1, 5).map((img, index) => (
             <div
               key={index}
-              className={`col-span-1 cursor-pointer ${index === 3 ? 'relative' : ''}`}
+              className={`col-span-1 cursor-pointer relative`}
               onClick={() => { setGalleryIndex(index + 1); setShowGallery(true); }}
             >
-              <img
+              <Image
                 src={img}
                 alt={`Vista ${index + 2}`}
-                className="w-full h-full object-cover"
+                fill
+                sizes="25vw"
+                className="object-cover"
               />
               {index === 3 && galleryImages.length > 5 && (
                 <button
@@ -404,7 +420,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
               className="w-full rounded-xl h-12 font-medium text-base bg-secondary hover:bg-secondary/80 text-foreground border-0"
               onClick={() => router.push("/reserva/verificacion-intro")}
             >
-              <img src={KeyRoundIcon} alt="" className="h-5 w-5 mr-2" />
+              <Image src={KeyRoundIcon} alt="" width={20} height={20} className="mr-2" />
               Reservar
             </Button>
           </div>
@@ -474,7 +490,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
           </h2>
           <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1">
             <MapPin className="h-4 w-4" />
-            {property.address}, {property.neighborhood}, CABA
+            {property.address}, {locationSuffix}
           </p>
           <div className="aspect-[16/10] bg-secondary rounded-xl flex items-center justify-center">
             <MapPin className="h-10 w-10 text-muted-foreground" />
@@ -534,31 +550,33 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
         </div>
 
         {/* Agent/Owner Section */}
-        <div className="px-4 py-5 border-b border-border">
-          <h2 className="font-display text-lg font-bold text-foreground mb-4">
-            Publicado por
-          </h2>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-              V
+        {branchName && (
+          <div className="px-4 py-5 border-b border-border">
+            <h2 className="font-display text-lg font-bold text-foreground mb-4">
+              Publicado por
+            </h2>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
+                {branchName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">{branchName}</p>
+                <p className="text-xs text-primary uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  Inmobiliaria verificada
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">Valencia Propiedades</p>
-              <p className="text-xs text-primary uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                <Shield className="h-3.5 w-3.5" />
-                Inmobiliaria verificada
-              </p>
-            </div>
+            <Button variant="outline" className="w-full rounded-xl h-11">
+              Ver perfil
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+            <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
+              Esta inmobiliaria utiliza la infraestructura digital de{" "}
+              <span className="font-ubuntu text-primary font-medium">mob</span>
+            </p>
           </div>
-          <Button variant="outline" className="w-full rounded-xl h-11">
-            Ver perfil
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-          <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
-            Esta inmobiliaria utiliza la infraestructura digital de{" "}
-            <span className="font-ubuntu text-primary font-medium">mob</span>
-          </p>
-        </div>
+        )}
       </div>
 
       {/* Mobile Fixed Bottom CTA - Only shows after scrolling past main CTA */}
@@ -641,7 +659,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
             {/* Location */}
             <div>
               <h2 className="font-display text-lg font-bold text-foreground mb-3">
-                {property.address}, {property.neighborhood}, CABA
+                {property.address}, {locationSuffix}
               </h2>
               <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center">
                 <MapPin className="h-10 w-10 text-muted-foreground" />
@@ -691,7 +709,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
                   className="w-full rounded-xl py-5 font-medium text-sm bg-secondary hover:bg-secondary/80 text-foreground border-0"
                   onClick={() => router.push("/reserva/verificacion-intro")}
                 >
-                  <img src={KeyRoundIcon} alt="" className="h-4 w-4 mr-2" />
+                  <Image src={KeyRoundIcon} alt="" width={16} height={16} className="mr-2" />
                   Reservar
                 </Button>
               </div>
@@ -730,27 +748,29 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
               </div>
 
               {/* Agent */}
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                    V
+              {branchName && (
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      {branchName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">{branchName}</p>
+                      <p className="text-[10px] text-primary uppercase tracking-wider flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Inmobiliaria verificada
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">Valencia Propiedades</p>
-                    <p className="text-[10px] text-primary uppercase tracking-wider flex items-center gap-1">
-                      <Shield className="h-3 w-3" />
-                      Inmobiliaria verificada
-                    </p>
-                  </div>
+                  <Button variant="outline" className="w-full rounded-xl text-sm">
+                    Ver perfil comercial
+                  </Button>
+                  <p className="text-[10px] text-center text-muted-foreground mt-2 leading-snug">
+                    Esta inmobiliaria utiliza la infraestructura digital de{" "}
+                    <span className="font-ubuntu text-primary font-medium">mob</span> para agilizar tu alquiler.
+                  </p>
                 </div>
-                <Button variant="outline" className="w-full rounded-xl text-sm">
-                  Ver perfil comercial
-                </Button>
-                <p className="text-[10px] text-center text-muted-foreground mt-2 leading-snug">
-                  Esta inmobiliaria utiliza la infraestructura digital de{" "}
-                  <span className="font-ubuntu text-primary font-medium">mob</span> para agilizar tu alquiler.
-                </p>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -763,16 +783,18 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos }: Property
       {/* Mobile Footer - Compact */}
       <div className="md:hidden border-t border-border bg-secondary/30 px-4 py-6 mb-16">
         <div className="flex items-center justify-center mb-4">
-          <img 
-            alt="mob" 
-            className="h-5 opacity-60" 
-            src="/lovable-uploads/cda8dadd-0c9e-4b61-abb0-42cf7667cd56.png" 
+          <Image
+            alt="mob"
+            width={80}
+            height={20}
+            className="h-5 w-auto opacity-60"
+            src="/lovable-uploads/cda8dadd-0c9e-4b61-abb0-42cf7667cd56.png"
           />
         </div>
         <div className="flex justify-center gap-6 text-xs text-muted-foreground">
           <Link href="/" className="hover:text-foreground">Inicio</Link>
           <Link href="/buscar" className="hover:text-foreground">Buscar</Link>
-          <Link href="/propietarios" className="hover:text-foreground">Publicar</Link>
+          <Link href="/subir-propiedad" className="hover:text-foreground">Publicar</Link>
         </div>
         <p className="text-[10px] text-center text-muted-foreground mt-4">
           © 2024 <span className="font-ubuntu">mob</span>. Todos los derechos reservados.

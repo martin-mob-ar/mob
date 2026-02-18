@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -139,7 +140,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container relative flex h-14 md:h-16 items-center gap-4">
           <Link href="/" className="flex items-center shrink-0">
-            <img alt="mob" className="h-6 md:h-7" src={mobLogo} />
+            <Image alt="mob" width={112} height={28} className="h-6 md:h-7 w-auto" src={mobLogo} />
           </Link>
 
           {/* Compact Search Bar - Desktop only - Completely unmount on home until scrolled */}

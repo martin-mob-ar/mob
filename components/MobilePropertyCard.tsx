@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef } from "react";
@@ -76,8 +77,8 @@ const MobilePropertyCard = ({
               }
             }}
           >
-            {images.map((img, index) => <div key={index} className="flex-shrink-0 w-full h-full snap-center">
-                <img src={img} alt={`${property.address} - ${index + 1}`} className="h-full w-full object-cover" draggable={false} />
+            {images.map((img, index) => <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
+                <Image src={img} alt={`${property.address} - ${index + 1}`} fill sizes="100vw" className="object-cover" draggable={false} />
               </div>)}
           </div>
 

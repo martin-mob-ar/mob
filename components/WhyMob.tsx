@@ -2,16 +2,20 @@ import { useState, useEffect, useRef } from "react";
 
 type Section = "buscar" | "certificate" | "alquilar" | "sinaval" | null;
 
-const concepts = {
+import { ReactNode } from "react";
+
+const MobBrand = () => <span className="font-ubuntu">mob</span>;
+
+const concepts: Record<string, { title: string; subtitle: string; description: ReactNode }> = {
   buscar: {
     title: "Buscar",
     subtitle: "Propiedades de propietarios e inmobiliarias verificadas",
-    description: "Encontrá alquileres publicados por inmobiliarias y propietarios verificados. Con <span class=\"font-ubuntu\">mob</span>, los procesos son ágiles y no perdés tiempo en consultas que no llegan a nada.",
+    description: <>Encontrá alquileres publicados por inmobiliarias y propietarios verificados. Con <MobBrand />, los procesos son ágiles y no perdés tiempo en consultas que no llegan a nada.</>,
   },
   certificate: {
     title: "Certificate",
     subtitle: "Verificá tu perfil una sola vez y accedé a procesos más ágiles.",
-    description: "Una vez verificado por <span class=\"font-ubuntu\">mob</span>, propietarios e inmobiliarias ya confían en tu perfil, reduciendo demoras y mejorando la velocidad para alquilar.",
+    description: <>Una vez verificado por <MobBrand />, propietarios e inmobiliarias ya confían en tu perfil, reduciendo demoras y mejorando la velocidad para alquilar.</>,
   },
   sinaval: {
     title: "Sin aval",

@@ -136,7 +136,7 @@ export default function SimulacionContrato() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={startDate} onSelect={setStartDate} disabled={(d) => d < MIN_DATE} className="p-3 pointer-events-auto" locale={es} captionLayout="dropdown-buttons" fromYear={2020} toYear={new Date().getFullYear() + 1} />
+                <Calendar mode="single" selected={startDate} onSelect={setStartDate} disabled={(d) => d < MIN_DATE} className="p-3 pointer-events-auto" locale={es} captionLayout="dropdown" fromYear={2020} toYear={new Date().getFullYear() + 1} />
               </PopoverContent>
             </Popover>
           </div>

@@ -1,31 +1,53 @@
 "use client";
 
-import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageCircle } from "lucide-react";
+import { useTokkoSync } from "@/hooks/useTokkoSync";
+import { MessageCircle, Building2 } from "lucide-react";
 
-type AuthStep = "email" | "password" | "register";
+type AuthStep = "email" | "password" | "register" | "register-inmobiliaria";
 
 const AuthModal = () => {
-  const { isAuthModalOpen, closeAuthModal, login, register, authError, clearError } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Auto-open modal when ?auth=open is present (e.g., from /login redirect)
+  useEffect(() => {
+    if (searchParams.get("auth") === "open" && !isAuthModalOpen) {
+      openAuthModal();
+    }
+  }, [searchParams, isAuthModalOpen, openAuthModal]);
+  const { startSync } = useTokkoSync();
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [tokkoApiKey, setTokkoApiKey] = useState("");
   const [loading, setLoading] = useState(false);
 
   const resetForm = () => {
     setStep("email");
     setEmail("");
     setPassword("");
+    setTokkoApiKey("");
     clearError();
   };
 
   const handleClose = () => {
     closeAuthModal();
     resetForm();
+    // Remove ?auth=open from URL if present
+    if (searchParams.get("auth") === "open") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("auth");
+      const newQuery = params.toString();
+      router.replace(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
+    }
   };
 
   const handleEmailContinue = (e: React.FormEvent) => {
@@ -61,6 +83,21 @@ const AuthModal = () => {
     }
   };
 
+  const handleInmobiliariaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await register(email, password, true);
+      handleClose();
+      // Fire background sync + start polling toast
+      startSync(tokkoApiKey);
+    } catch {
+      // Error is set in AuthContext
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = () => {
     // TODO: Implement Google OAuth
     console.log("Google login");
@@ -79,6 +116,7 @@ const AuthModal = () => {
   return (
     <Dialog open={isAuthModalOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-sm p-6 gap-0">
+        <DialogTitle className="sr-only">Autenticación</DialogTitle>
         {step === "email" && (
           <div className="space-y-5">
             {/* Header */}
@@ -281,6 +319,91 @@ const AuthModal = () => {
                 className="text-sm text-primary hover:underline font-medium"
               >
                 Iniciar sesión
+              </button>
+            </div>
+
+            {/* Separator */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-sm text-muted-foreground">o</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* Inmobiliaria CTA */}
+            <Button
+              variant="outline"
+              className="w-full h-11 rounded-lg font-medium justify-center gap-3"
+              onClick={() => { setStep("register-inmobiliaria"); clearError(); }}
+            >
+              <Building2 className="h-5 w-5" />
+              Soy una inmobiliaria
+            </Button>
+          </div>
+        )}
+
+        {step === "register-inmobiliaria" && (
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="text-center">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Registro inmobiliaria
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Conectá tu cuenta de Tokko Broker
+              </p>
+            </div>
+
+            {/* Error display */}
+            {authError && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+                {authError}
+              </div>
+            )}
+
+            {/* Inmobiliaria Form */}
+            <form onSubmit={handleInmobiliariaSubmit} className="space-y-4">
+              <Input
+                type="email"
+                placeholder="Ingresá tu e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-11 rounded-lg"
+              />
+              <Input
+                type="password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-11 rounded-lg"
+              />
+              <Input
+                type="text"
+                placeholder="Tokko API Key"
+                value={tokkoApiKey}
+                onChange={(e) => setTokkoApiKey(e.target.value)}
+                required
+                className="h-11 rounded-lg font-mono text-sm"
+              />
+
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-lg font-semibold"
+                disabled={loading}
+              >
+                {loading ? "Creando cuenta..." : "Crear cuenta y sincronizar"}
+              </Button>
+            </form>
+
+            {/* Back link */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setStep("register"); clearError(); }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Volver
               </button>
             </div>
           </div>

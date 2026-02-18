@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -99,11 +100,13 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
             }}
           >
             {images.map((img, index) => (
-              <div key={index} className="flex-shrink-0 w-full h-full snap-center">
-                <img
+              <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
+                <Image
                   src={img}
                   alt={`${property.address} - ${index + 1}`}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                   draggable={false}
                 />
               </div>

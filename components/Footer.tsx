@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 const mobLogo = "/assets/mob-logo-new.png";
 const navLinks = [{
   path: "/",
@@ -7,14 +8,8 @@ const navLinks = [{
   path: "/buscar",
   label: "Buscar propiedades"
 }, {
-  path: "/propietarios",
-  label: "Propietarios"
-}, {
-  path: "/inmobiliarias",
-  label: "Inmobiliarias"
-}, {
-  path: "/auth",
-  label: "Acceder"
+  path: "/subir-propiedad",
+  label: "Publicar propiedad"
 }];
 const Footer = () => {
   return <footer className="border-t border-border bg-secondary/30 py-12 mt-12">
@@ -22,7 +17,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and description */}
           <div className="md:col-span-2">
-            <img src={mobLogo} alt="MOB" className="h-7 mb-4" />
+            <Image src={mobLogo} alt="MOB" width={112} height={28} className="h-7 w-auto mb-4" />
             <p className="text-muted-foreground text-sm max-w-sm">La infraestructura digital del alquiler. Procesos claros, seguros y 100% online para inquilinos, inmobiliarias y propietarios</p>
           </div>
           

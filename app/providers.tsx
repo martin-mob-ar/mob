@@ -9,7 +9,7 @@ import { MockUserProvider } from "@/contexts/MockUserContext";
 import { ReservationProvider } from "@/contexts/ReservationContext";
 import { VisitaProvider } from "@/contexts/VisitaContext";
 import AuthModal from "@/components/AuthModal";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -23,7 +23,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                <AuthModal />
+                <Suspense fallback={null}>
+                  <AuthModal />
+                </Suspense>
                 {children}
               </TooltipProvider>
             </VisitaProvider>

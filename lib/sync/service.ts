@@ -560,6 +560,25 @@ export async function checkExistingUser(apiKey: string): Promise<string | null> 
 }
 
 /**
+ * Update sync status in users table for progress tracking
+ */
+async function updateSyncStatus(
+  apiKeyHash: string,
+  status: 'syncing' | 'done' | 'error',
+  message?: string | null,
+  propertiesCount?: number | null
+): Promise<void> {
+  await supabaseAdmin
+    .from('users')
+    .update({
+      sync_status: status,
+      sync_message: message ?? null,
+      ...(propertiesCount !== undefined ? { sync_properties_count: propertiesCount } : {}),
+    })
+    .eq('tokko_api_hash', apiKeyHash);
+}
+
+/**
  * Main sync function
  * @param apiKey - Tokko API key
  * @param propertyLimit - Max number of properties to sync (default 5, clamped 1–500)
@@ -572,11 +591,16 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
 
   console.log('[Tokko Sync] Starting sync (user will be created or updated by API key hash)');
   try {
+    // Mark sync as started
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Conectando con Tokko...');
+
     console.log(`[Tokko Sync] Fetching up to ${limit} properties from Tokko API...`);
     const properties = await client.getAllProperties(limit);
     console.log(`[Tokko Sync] Fetched ${properties.length} properties`);
+    await updateSyncStatus(apiKeyHash, 'syncing', `Obtenidas ${properties.length} propiedades de Tokko...`);
 
     if (properties.length === 0) {
+      await updateSyncStatus(apiKeyHash, 'error', 'No se encontraron propiedades para esta API key');
       throw new Error('No properties found for this API key');
     }
 
@@ -695,6 +719,7 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
       );
 
       console.log(`[Tokko Sync] Batch ${batchNumber}/${totalBatches} complete (${propertiesSynced}/${properties.length} total)`);
+      await updateSyncStatus(apiKeyHash, 'syncing', `Sincronizando ${propertiesSynced}/${properties.length} propiedades...`);
     }
 
     console.log('[Tokko Sync] Sync finished:', {
@@ -704,6 +729,9 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
       ownersSynced: ownerMap.size,
       errors: errors.length,
     });
+
+    // Mark sync as complete
+    await updateSyncStatus(apiKeyHash, 'done', null, propertiesSynced);
 
     return {
       userId,
@@ -715,6 +743,8 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
       errors,
     };
   } catch (error) {
+    // Mark sync as failed
+    await updateSyncStatus(apiKeyHash, 'error', error instanceof Error ? error.message : 'Error desconocido');
     throw new Error(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
