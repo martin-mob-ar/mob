@@ -15,6 +15,7 @@ export interface Property {
   price: number;
   rentPrice?: number;
   expensas?: number;
+  currency?: string;
   type: "inmobiliaria" | "dueno";
   rooms?: number;
   surface?: number;
@@ -84,7 +85,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
           {/* Swipeable image container */}
           <div 
             ref={scrollContainerRef}
-            className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide touch-pan-x" 
+            className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
@@ -202,19 +203,41 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
           </p>
           
           <div className="mt-2">
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="font-display font-bold text-sm text-foreground">
-                ${property.price.toLocaleString()}
-              </span>
-              <span className="text-[10px] text-muted-foreground uppercase">
-                Total
-              </span>
-              {property.rentPrice && property.expensas && (
+            {property.currency === "USD" ? (
+              <>
+                <div className="flex items-baseline gap-1 flex-wrap">
+                  <span className="font-display font-bold text-sm text-foreground">
+                    us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    Alquiler 
+                  </span>
+                </div>
                 <span className="text-[10px] text-muted-foreground">
-                  (${property.rentPrice.toLocaleString()} Alq + ${property.expensas.toLocaleString()} Exp)
+                  {property.expensas != null && property.expensas > 0
+                    ? `$${property.expensas.toLocaleString()} expensas`
+                    : "Expensas incluidas"}
                 </span>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex items-baseline gap-1 flex-wrap">
+                <span className="font-display font-bold text-sm text-foreground">
+                  ${property.price.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase">
+                  Total
+                </span>
+                {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
+                  <span className="text-[10px] text-muted-foreground">
+                    (${property.rentPrice.toLocaleString()} Alq + ${property.expensas.toLocaleString()} Exp)
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground">
+                    Expensas incluidas
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           
           {property.rooms !== undefined && (

@@ -15,11 +15,6 @@ const propertyTypes = [
   { id: "Apartment", label: "Departamento" },
   { id: "House", label: "Casa" },
   { id: "Condo", label: "PH" },
-  { id: "Land", label: "Terreno" },
-  { id: "Office", label: "Oficina" },
-  { id: "Bussiness Premises", label: "Local comercial" },
-  { id: "Warehouse", label: "Depósito" },
-  { id: "Garage", label: "Cochera" },
 ];
 
 const PropertyTypeFilter = () => {

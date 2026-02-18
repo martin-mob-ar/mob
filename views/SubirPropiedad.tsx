@@ -68,6 +68,7 @@ const SubirPropiedad = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   // Step 2: Tipo de propiedad
   const [typeId, setTypeId] = useState<number | null>(null);
@@ -94,8 +95,8 @@ const SubirPropiedad = () => {
   const [banos, setBanos] = useState(1);
   const [cocheras, setCocheras] = useState(0);
   const [antiguedad, setAntiguedad] = useState("");
-  const [superficieTechada, setSuperficieTechada] = useState("");
-  const [superficieDescubierta, setSuperficieDescubierta] = useState("");
+  const [superficieCubierta, setSuperficieCubierta] = useState("");
+  const [superficieTotal, setSuperficieTotal] = useState("");
   const [disposicion, setDisposicion] = useState("Frente");
 
   // Step 6: Precio y características
@@ -106,7 +107,7 @@ const SubirPropiedad = () => {
   const [amoblado, setAmoblado] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [duracionContrato, setDuracionContrato] = useState<number>(12);
-  const [ipcEnabled, setIpcEnabled] = useState(false);
+  const [ipcEnabled, setIpcEnabled] = useState(true);
   const [ipcPeriodo, setIpcPeriodo] = useState<string>("trimestral");
 
   // Step 8: Logística
@@ -128,6 +129,16 @@ const SubirPropiedad = () => {
   });
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
+
+  // Reset validation errors when step changes
+  useEffect(() => {
+    setShowErrors(false);
+  }, [currentStep]);
+
+  // Default IPC based on currency: ON for ARS, OFF for USD
+  useEffect(() => {
+    setIpcEnabled(moneda === "ARS");
+  }, [moneda]);
 
   // Initialize/update map on Step 3 (map confirmation)
   // Map div is always in DOM (hidden when not step 3) to prevent Google Maps orphaned elements
@@ -208,9 +219,35 @@ const SubirPropiedad = () => {
     setPlaceSelected(true);
   }, []);
 
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 2:
+        if (!typeId || !selectedLocation || !address || !placeSelected) return false;
+        if ((typeId === 2 || typeId === 13) && (!piso || !depto)) return false;
+        return true;
+      case 3:
+        return !!geoLat && !!geoLong;
+      case 4:
+        return !!antiguedad && !!superficieCubierta && !!superficieTotal;
+      case 5:
+        return !!precioMensual && (expensasIncluidas || !!expensas);
+      case 6:
+        return true; // No validation for photos/videos
+      case 7:
+        return !!fechaDisponible && !!coordinacionLlaves && diasVisita.length > 0;
+      default:
+        return true;
+    }
+  };
+
   const handleNext = () => {
     if (currentStep < TOTAL_STEPS) {
-      setCurrentStep(currentStep + 1);
+      if (validateStep(currentStep)) {
+        setShowErrors(false);
+        setCurrentStep(currentStep + 1);
+      } else {
+        setShowErrors(true);
+      }
     }
   };
 
@@ -280,10 +317,10 @@ const SubirPropiedad = () => {
         suite_amount: dormitorios,
         bathroom_amount: banos,
         parking_lot_amount: cocheras,
-        roofed_surface: superficieTechada ? String(superficieTechada) : null,
-        unroofed_surface: superficieDescubierta ? String(superficieDescubierta) : null,
-        total_surface: (superficieTechada || superficieDescubierta)
-          ? String((Number(superficieTechada) || 0) + (Number(superficieDescubierta) || 0))
+        roofed_surface: superficieCubierta ? String(superficieCubierta) : null,
+        total_surface: superficieTotal ? String(superficieTotal) : null,
+        unroofed_surface: (superficieTotal && superficieCubierta)
+          ? String(Math.max(0, (Number(superficieTotal) || 0) - (Number(superficieCubierta) || 0)))
           : null,
         age: antiguedad ? parseInt(antiguedad) : null,
         disposition: disposicion || null,
@@ -384,16 +421,16 @@ const SubirPropiedad = () => {
         return (
           <div className="max-w-xl mx-auto space-y-8">
             <div className="space-y-4">
-              <h1 className="font-display text-3xl font-bold">
+              <h1 className="font-display text-xl sm:text-3xl font-bold">
                 ¿Qué tipo de propiedad es?
               </h1>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {propertyTypes.map((type) => (
                   <button
                     key={type.id}
                     onClick={() => setTypeId(type.id)}
                     className={cn(
-                      "py-4 px-6 rounded-2xl border-2 text-sm font-semibold transition-all",
+                      "py-3 sm:py-4 px-2 sm:px-6 rounded-2xl border-2 text-xs sm:text-sm font-semibold transition-all",
                       typeId === type.id
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -403,6 +440,9 @@ const SubirPropiedad = () => {
                   </button>
                 ))}
               </div>
+              {showErrors && !typeId && (
+                <p className="text-sm text-red-500">Seleccioná un tipo de propiedad</p>
+              )}
             </div>
 
             <AnimateHeight show={!!typeId}>
@@ -421,6 +461,9 @@ const SubirPropiedad = () => {
                     onSelect={handleLocationSelect}
                     onClear={handleLocationClear}
                   />
+                  {showErrors && !selectedLocation && (
+                    <p className="text-sm text-red-500 mt-1">Seleccioná un barrio o localidad</p>
+                  )}
                 </div>
 
                 {/* Google Address Autocomplete — only after barrio selected */}
@@ -459,6 +502,9 @@ const SubirPropiedad = () => {
                         Seleccioná una dirección de las sugerencias de Google Maps
                       </p>
                     )}
+                    {showErrors && !address && (
+                      <p className="text-sm text-red-500 mt-2">Ingresá una dirección</p>
+                    )}
                   </div>
                 </AnimateHeight>
 
@@ -479,7 +525,10 @@ const SubirPropiedad = () => {
                           }
                         }}
                         placeholder="Ej: 4"
-                        className="h-14 rounded-xl border-2 text-base ring-0 ring-offset-0 focus-visible:ring-0 focus-visible:border-primary"
+                        className={cn(
+                          "h-14 rounded-xl border-2 text-base ring-0 ring-offset-0 focus-visible:ring-0 focus-visible:border-primary",
+                          showErrors && !piso && "border-red-500"
+                        )}
                       />
                     </div>
                     <div>
@@ -495,7 +544,10 @@ const SubirPropiedad = () => {
                           }
                         }}
                         placeholder="Ej: B"
-                        className="h-14 rounded-xl border-2 text-base ring-0 ring-offset-0 focus-visible:ring-0 focus-visible:border-primary"
+                        className={cn(
+                          "h-14 rounded-xl border-2 text-base ring-0 ring-offset-0 focus-visible:ring-0 focus-visible:border-primary",
+                          showErrors && !depto && "border-red-500"
+                        )}
                       />
                     </div>
                   </div>
@@ -530,31 +582,31 @@ const SubirPropiedad = () => {
                   onChange={(e) => setAntiguedad(e.target.value)}
                   placeholder="0"
                   type="number"
-                  className="h-14 rounded-xl text-base"
+                  className={cn("h-14 rounded-xl text-base", showErrors && !antiguedad && "border-red-500")}
                 />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                  Sup. techada (m²)
+                  Sup. cubierta (m²)
                 </label>
                 <Input
-                  value={superficieTechada}
-                  onChange={(e) => setSuperficieTechada(e.target.value)}
+                  value={superficieCubierta}
+                  onChange={(e) => setSuperficieCubierta(e.target.value)}
                   placeholder="0"
                   type="number"
-                  className="h-14 rounded-xl text-base"
+                  className={cn("h-14 rounded-xl text-base", showErrors && !superficieCubierta && "border-red-500")}
                 />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                  Sup. descubierta (m²)
+                  Sup. total (m²)
                 </label>
                 <Input
-                  value={superficieDescubierta}
-                  onChange={(e) => setSuperficieDescubierta(e.target.value)}
+                  value={superficieTotal}
+                  onChange={(e) => setSuperficieTotal(e.target.value)}
                   placeholder="0"
                   type="number"
-                  className="h-14 rounded-xl text-base"
+                  className={cn("h-14 rounded-xl text-base", showErrors && !superficieTotal && "border-red-500")}
                 />
               </div>
             </div>
@@ -602,7 +654,7 @@ const SubirPropiedad = () => {
                     onChange={setPrecioMensual}
                     currency={moneda}
                     placeholder={moneda === "USD" ? "US$ 0" : "AR$ 0"}
-                    className="h-14 rounded-xl text-base"
+                    className={cn("h-14 rounded-xl text-base", showErrors && !precioMensual && "border-red-500")}
                   />
                 </div>
                 <div className="flex items-center p-1 rounded-xl border border-border bg-secondary/30 shrink-0">
@@ -654,7 +706,7 @@ const SubirPropiedad = () => {
                     onChange={setExpensas}
                     currency="ARS"
                     placeholder="$ 0"
-                    className="h-14 rounded-xl text-base"
+                    className={cn("h-14 rounded-xl text-base", showErrors && !expensasIncluidas && !expensas && "border-red-500")}
                   />
                 </div>
               </AnimateHeight>
@@ -782,7 +834,7 @@ const SubirPropiedad = () => {
                   type="date"
                   value={fechaDisponible}
                   onChange={(e) => setFechaDisponible(e.target.value)}
-                  className="h-14 rounded-xl text-base pr-12"
+                  className={cn("h-14 rounded-xl text-base pr-12", showErrors && !fechaDisponible && "border-red-500")}
                 />
                 <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
               </div>
@@ -813,6 +865,9 @@ const SubirPropiedad = () => {
                   </button>
                 ))}
               </div>
+              {showErrors && !coordinacionLlaves && (
+                <p className="text-sm text-red-500">Seleccioná una opción</p>
+              )}
             </div>
 
             <div>
@@ -875,6 +930,9 @@ const SubirPropiedad = () => {
                   </div>
                 ))}
               </div>
+              {showErrors && diasVisita.length === 0 && (
+                <p className="text-sm text-red-500">Seleccioná al menos un día de visita</p>
+              )}
             </div>
           </div>
         );
@@ -913,9 +971,8 @@ const SubirPropiedad = () => {
                 <span>{banos} baños</span>
                 <span>{cocheras} cocheras</span>
                 {antiguedad && <span>{antiguedad} años</span>}
-                {(superficieTechada || superficieDescubierta) && (
-                  <span>{(Number(superficieTechada) || 0) + (Number(superficieDescubierta) || 0)} m² total</span>
-                )}
+                {superficieCubierta && <span>{superficieCubierta} m² cubierta</span>}
+                {superficieTotal && <span>{superficieTotal} m² total</span>}
                 <span>{disposicion}</span>
               </div>
             </SummarySection>
@@ -988,7 +1045,7 @@ const SubirPropiedad = () => {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-dvh bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="shrink-0 border-b border-border">
         <div className="container flex items-center h-16">

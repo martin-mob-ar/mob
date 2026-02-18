@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTokkoSync } from "@/hooks/useTokkoSync";
-import { MessageCircle, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 
-type AuthStep = "email" | "password" | "register" | "register-inmobiliaria";
+type AuthStep = "email" | "register" | "register-inmobiliaria";
 
 const AuthModal = () => {
   const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError } = useAuth();
@@ -50,14 +50,7 @@ const AuthModal = () => {
     }
   };
 
-  const handleEmailContinue = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setStep("password");
-    }
-  };
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -103,16 +96,6 @@ const AuthModal = () => {
     console.log("Google login");
   };
 
-  const handleWhatsAppLogin = () => {
-    // TODO: Implement WhatsApp login
-    console.log("WhatsApp login");
-  };
-
-  const handleAppleLogin = () => {
-    // TODO: Implement Apple login
-    console.log("Apple login");
-  };
-
   return (
     <Dialog open={isAuthModalOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-sm p-6 gap-0">
@@ -126,8 +109,15 @@ const AuthModal = () => {
               </h2>
             </div>
 
-            {/* Email Input */}
-            <form onSubmit={handleEmailContinue} className="space-y-4">
+            {/* Error display */}
+            {authError && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+                {authError}
+              </div>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
               <Input
                 type="email"
                 placeholder="Ingresá tu e-mail"
@@ -136,11 +126,20 @@ const AuthModal = () => {
                 required
                 className="h-11 rounded-lg"
               />
+              <Input
+                type="password"
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-11 rounded-lg"
+              />
               <Button
                 type="submit"
                 className="w-full h-11 rounded-lg font-semibold"
+                disabled={loading}
               >
-                Continuar
+                {loading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 
@@ -191,77 +190,6 @@ const AuthModal = () => {
                 </svg>
                 Continuar con Google
               </Button>
-
-              {/* WhatsApp */}
-              <Button
-                variant="outline"
-                className="w-full h-11 rounded-lg font-medium justify-center gap-3"
-                onClick={handleWhatsAppLogin}
-              >
-                <MessageCircle className="h-5 w-5 text-[#25D366]" />
-                Continuar con WhatsApp
-              </Button>
-
-              {/* Apple */}
-              <Button
-                variant="outline"
-                className="w-full h-11 rounded-lg font-medium justify-center gap-3"
-                onClick={handleAppleLogin}
-              >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                </svg>
-                Continuar con Apple
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === "password" && (
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="text-center">
-              <h2 className="font-display text-xl font-semibold text-foreground">
-                Ingresá tu contraseña
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">{email}</p>
-            </div>
-
-            {/* Error display */}
-            {authError && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
-                {authError}
-              </div>
-            )}
-
-            {/* Password Form */}
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <Input
-                type="password"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11 rounded-lg"
-              />
-              <Button
-                type="submit"
-                className="w-full h-11 rounded-lg font-semibold"
-                disabled={loading}
-              >
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-
-            {/* Back link */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => { setStep("email"); clearError(); }}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Volver
-              </button>
             </div>
           </div>
         )}

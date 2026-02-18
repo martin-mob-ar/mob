@@ -325,6 +325,7 @@ const SearchBar = () => {
                   value={price}
                   onChange={setPrice}
                   placeholder="$ 800.000"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                 />
               </div>

@@ -62,7 +62,7 @@ const MobilePropertyCard = ({
         <div className="relative aspect-[4/3] overflow-hidden group">
           <div 
             ref={scrollContainerRef}
-            className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide touch-pan-x" 
+            className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
@@ -133,17 +133,41 @@ const MobilePropertyCard = ({
           {/* Price Row */}
           <div className="flex items-center justify-between mb-2">
             <div>
-              <div className="flex items-baseline gap-1.5 flex-wrap">
-                <span className="font-display font-bold text-xl text-foreground">
-                  ${property.price.toLocaleString()}
-                </span>
-                <span className="text-sm text-muted-foreground uppercase">
-                  Total
-                </span>
-                {property.rentPrice && property.expensas && <span className="text-sm text-muted-foreground">
-                    (${property.rentPrice.toLocaleString()} Alq + ${property.expensas.toLocaleString()} Exp)
-                  </span>}
-              </div>
+              {property.currency === "USD" ? (
+                <>
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <span className="font-display font-bold text-xl text-foreground">
+                      us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-muted-foreground uppercase">
+                      Alquiler
+                    </span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {property.expensas != null && property.expensas > 0
+                      ? `$${property.expensas.toLocaleString()} expensas`
+                      : "Expensas incluidas"}
+                  </span>
+                </>
+              ) : (
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="font-display font-bold text-xl text-foreground">
+                    ${property.price.toLocaleString()}
+                  </span>
+                  <span className="text-sm text-muted-foreground uppercase">
+                    Total
+                  </span>
+                  {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
+                    <span className="text-sm text-muted-foreground">
+                      (${property.rentPrice.toLocaleString()} Alq + ${property.expensas.toLocaleString()} Exp)
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Expensas incluidas
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Favorite Button - Always visible */}

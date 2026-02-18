@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { createClient } from "@/lib/supabase/client";
 const mobLogo = "/assets/mob-logo-new.png";
 
 const dormitoriosOptions = [
@@ -52,6 +53,37 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
   const { isVerified } = useMockUser();
   const pathname = usePathname();
   const isHome = pathname === "/";
+
+  // User role detection for dynamic "Gestión" label
+  const [userRoles, setUserRoles] = useState<{ hasProperties: boolean; hasTenantOps: boolean }>({ hasProperties: false, hasTenantOps: false });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUserRoles({ hasProperties: false, hasTenantOps: false });
+      return;
+    }
+    const supabase = createClient();
+    const checkRoles = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const [propResult, tenantResult] = await Promise.all([
+        supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", authUser.id),
+        supabase.from("operaciones").select("id", { count: "exact", head: true }).eq("tenant_id", authUser.id),
+      ]);
+      setUserRoles({
+        hasProperties: (propResult.count ?? 0) > 0,
+        hasTenantOps: (tenantResult.count ?? 0) > 0,
+      });
+    };
+    checkRoles();
+  }, [isAuthenticated]);
+
+  const getGestionLabel = () => {
+    if (userRoles.hasProperties && userRoles.hasTenantOps) return "Gestionar";
+    if (userRoles.hasProperties) return "Gestionar propiedades";
+    if (userRoles.hasTenantOps) return "Gestionar alquileres";
+    return "Gestión";
+  };
 
   // Search bar visibility on scroll
   const [showHeaderSearch, setShowHeaderSearch] = useState(false);
@@ -500,7 +532,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
             {isAuthenticated && <Button variant="outline" className="rounded-full px-6 font-medium" asChild>
-                <Link href="/gestion">Gestión</Link>
+                <Link href="/gestion">{getGestionLabel()}</Link>
               </Button>}
             
             {isAuthenticated ? (
@@ -616,7 +648,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         asChild
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Link href="/gestion">Ir a Gestión</Link>
+                        <Link href="/gestion">Ir a {getGestionLabel()}</Link>
                       </Button>
                       <Button 
                         variant="ghost" 

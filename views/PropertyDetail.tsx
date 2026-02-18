@@ -319,7 +319,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         {/* Title - Desktop */}
         <div className="mb-4">
           <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">
-            Depto de {property.rooms} ambientes en {property.neighborhood}
+            {property.address}
           </h1>
           <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
             <MapPin className="h-3.5 w-3.5" />
@@ -376,7 +376,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         {/* Property Info Block */}
         <div className="px-4 py-5 border-b border-border">
           <h1 className="font-display text-xl font-bold text-foreground mb-1">
-            Depto de {property.rooms} ambientes en {property.neighborhood}
+            {property.address}
           </h1>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
@@ -387,24 +387,50 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
         {/* Price + CTA Block - Priority section */}
         <div className="px-4 py-5 bg-secondary/30 border-b border-border">
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className="font-display text-2xl font-bold text-foreground">
-              ${property.price.toLocaleString()}
-            </span>
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">
-              Total
-            </span>
-          </div>
-          
+          {property.currency === "USD" ? (
+            <>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="font-display text-2xl font-bold text-foreground">
+                  us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                </span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Alquiler
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                {property.expensas != null && property.expensas > 0
+                  ? `$${property.expensas.toLocaleString()} expensas`
+                  : "Expensas incluidas"}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="font-display text-2xl font-bold text-foreground">
+                  ${property.price.toLocaleString()}
+                </span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Total
+                </span>
+              </div>
+            </>
+          )}
+
           {/* Reference for bottom bar visibility - triggers when this price breakdown scrolls out */}
-          <div ref={mainCtaRef} className="flex gap-4 text-sm mb-5">
-            <div>
-              <span className="text-muted-foreground text-xs">Alquiler</span>
-              <p className="font-medium">${(property.price * 0.92).toLocaleString()}</p>
-            </div>
+          <div ref={mainCtaRef} className={`flex gap-4 text-sm mb-5 ${property.currency === "USD" ? "hidden" : ""}`}>
+            {property.rentPrice != null && property.rentPrice > 0 && (
+              <div>
+                <span className="text-muted-foreground text-xs">Alquiler</span>
+                <p className="font-medium">${property.rentPrice.toLocaleString()}</p>
+              </div>
+            )}
             <div>
               <span className="text-muted-foreground text-xs">Expensas</span>
-              <p className="font-medium">${(property.price * 0.08).toLocaleString()}</p>
+              <p className="font-medium">
+                {property.expensas != null && property.expensas > 0
+                  ? `$${property.expensas.toLocaleString()}`
+                  : "Incluidas"}
+              </p>
             </div>
           </div>
 
@@ -468,21 +494,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           )}
         </div>
 
-        {/* Amenities Section */}
-        <div className="px-4 py-5 border-b border-border">
-          <h2 className="font-display text-lg font-bold text-foreground mb-4">
-            Qué ofrece este lugar
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {amenities.map((amenity) => (
-              <div key={amenity} className="flex items-center gap-2.5">
-                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="text-sm text-foreground">{amenity}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Location Section */}
         <div className="px-4 py-5 border-b border-border">
           <h2 className="font-display text-lg font-bold text-foreground mb-3">
@@ -499,6 +510,21 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <MapPin className="h-10 w-10 text-muted-foreground" />
             </div>
           )}
+        </div>
+
+        {/* Amenities Section */}
+        <div className="px-4 py-5 border-b border-border">
+          <h2 className="font-display text-lg font-bold text-foreground mb-4">
+            Qué ofrece este lugar
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {amenities.map((amenity) => (
+              <div key={amenity} className="flex items-center gap-2.5">
+                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="text-sm text-foreground">{amenity}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Trust MOB Section - Clean redesign */}
@@ -587,10 +613,29 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       >
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <p className="font-display text-lg font-bold text-foreground">
-              ${property.price.toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground">Total mensual</p>
+            {property.currency === "USD" ? (
+              <>
+                <p className="font-display text-lg font-bold text-foreground">
+                  us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {property.expensas != null && property.expensas > 0
+                    ? `$${property.expensas.toLocaleString()} expensas`
+                    : "Expensas incluidas"}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-display text-lg font-bold text-foreground">
+                  ${property.price.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {property.expensas != null && property.expensas > 0
+                    ? "Total mensual"
+                    : "Expensas incluidas"}
+                </p>
+              </>
+            )}
           </div>
           <Button 
             className="rounded-xl h-11 px-6 font-semibold"
@@ -639,6 +684,22 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
             <hr className="border-border" />
 
+            {/* Location */}
+            <div>
+              <h2 className="font-display text-lg font-bold text-foreground mb-3">
+                {property.address}, {locationSuffix}
+              </h2>
+              {geoLat && geoLong ? (
+                <PropertyMap lat={geoLat} lng={geoLong} className="aspect-video" />
+              ) : (
+                <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center">
+                  <MapPin className="h-10 w-10 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+
+            <hr className="border-border" />
+
             {/* Amenities */}
             <div>
               <h2 className="font-display text-lg font-bold text-foreground mb-3">
@@ -653,22 +714,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 ))}
               </div>
             </div>
-
-            <hr className="border-border" />
-
-            {/* Location */}
-            <div>
-              <h2 className="font-display text-lg font-bold text-foreground mb-3">
-                {property.address}, {locationSuffix}
-              </h2>
-              {geoLat && geoLong ? (
-                <PropertyMap lat={geoLat} lng={geoLong} className="aspect-video" />
-              ) : (
-                <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center">
-                  <MapPin className="h-10 w-10 text-muted-foreground" />
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Right Column - Booking Card */}
@@ -676,28 +721,54 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <div className="card-mob p-5 sticky top-20 space-y-5">
               {/* Price */}
               <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold text-foreground">
-                    ${property.price.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Total
-                  </span>
-                </div>
-                <div className="mt-3 space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                      Alquiler mensual
-                    </span>
-                    <span className="font-medium text-sm">${(property.price * 0.92).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                      Expensas aprox.
-                    </span>
-                    <span className="font-medium text-sm">${(property.price * 0.08).toLocaleString()}</span>
-                  </div>
-                </div>
+                {property.currency === "USD" ? (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-2xl font-bold text-foreground">
+                        us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Alquiler
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {property.expensas != null && property.expensas > 0
+                        ? `$${property.expensas.toLocaleString()} expensas`
+                        : "Expensas incluidas"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-2xl font-bold text-foreground">
+                        ${property.price.toLocaleString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Total
+                      </span>
+                    </div>
+                    <div className="mt-3 space-y-1.5">
+                      {property.rentPrice != null && property.rentPrice > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                            Alquiler mensual
+                          </span>
+                          <span className="font-medium text-sm">${property.rentPrice.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                          Expensas
+                        </span>
+                        <span className="font-medium text-sm">
+                          {property.expensas != null && property.expensas > 0
+                            ? `$${property.expensas.toLocaleString()}`
+                            : "Incluidas"}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* CTAs */}

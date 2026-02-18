@@ -9,6 +9,7 @@ interface CurrencyInputProps {
   currency?: "ARS" | "USD";
   placeholder?: string;
   className?: string;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
 function formatNumber(num: number): string {
@@ -21,7 +22,7 @@ function parseRawValue(formatted: string): string {
 }
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ value, onChange, currency = "ARS", placeholder, className }, ref) => {
+  ({ value, onChange, currency = "ARS", placeholder, className, onKeyDown }, ref) => {
     const symbol = currency === "USD" ? "US$" : "AR$";
 
     // Display formatted value
@@ -50,6 +51,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
           value={displayValue}
           onChange={handleChange}
           onFocus={handleFocus}
+          onKeyDown={onKeyDown}
           placeholder={placeholder || `${symbol} 0`}
           className={cn(
             "flex h-11 w-full rounded-xl border border-input bg-background pl-3 pr-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm font-medium tabular-nums",

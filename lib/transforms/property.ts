@@ -13,6 +13,7 @@ export function transformPropertyRead(row: any): Property {
     price: row.valor_total_primary || row.price || 0,
     rentPrice: row.price || 0,
     expensas: row.expenses || 0,
+    currency: row.currency || "ARS",
     type: row.tokko ? "inmobiliaria" : "dueno",
     rooms: row.room_amount || undefined,
     surface: row.total_surface ? Number(row.total_surface) : undefined,
