@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Property } from "@/components/PropertyCard";
+import { getPropertyUrl } from "@/lib/utils/property-url";
 
 interface MobilePropertyCardProps {
   property: Property;
@@ -56,7 +57,7 @@ const MobilePropertyCard = ({
     scrollToImage(newIndex);
   };
 
-  return <Link href={`/propiedad/${property.id}`} className="block">
+  return <Link href={getPropertyUrl(property)} className="block">
       <div className="bg-card rounded-xl overflow-hidden shadow-sm border border-border">
         {/* Image Section - Horizontal scroll gallery */}
         <div className="relative aspect-[4/3] overflow-hidden group">
@@ -137,7 +138,7 @@ const MobilePropertyCard = ({
                 <>
                   <div className="flex items-baseline gap-1.5 flex-wrap">
                     <span className="font-display font-bold text-xl text-foreground">
-                      us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                      USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
                     </span>
                     <span className="text-sm text-muted-foreground uppercase">
                       Alquiler
@@ -146,7 +147,7 @@ const MobilePropertyCard = ({
                   <span className="text-sm text-muted-foreground">
                     {property.expensas != null && property.expensas > 0
                       ? `$${property.expensas.toLocaleString()} expensas`
-                      : "Expensas incluidas"}
+                      : "Sin expensas"}
                   </span>
                 </>
               ) : (
@@ -163,7 +164,7 @@ const MobilePropertyCard = ({
                     </span>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      Expensas incluidas
+                      Sin expensas
                     </span>
                   )}
                 </div>

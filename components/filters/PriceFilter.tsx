@@ -12,11 +12,6 @@ import { useSearchFilters } from "@/contexts/SearchFiltersContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
 
-function formatARS(value: string): string {
-  if (!value) return "";
-  return `$${Number(value).toLocaleString("es-AR")}`;
-}
-
 const PriceFilter = () => {
   const [open, setOpen] = useState(false);
   const { filters, setFilters } = useSearchFilters();
@@ -77,11 +72,17 @@ const PriceFilter = () => {
 
   const getDisplayText = () => {
     if (filters.minPrice || filters.maxPrice) {
-      if (filters.minPrice && filters.maxPrice) {
-        return `${formatARS(filters.minPrice)} - ${formatARS(filters.maxPrice)}`;
-      }
-      if (filters.minPrice) return `Desde ${formatARS(filters.minPrice)}`;
-      return `Hasta ${formatARS(filters.maxPrice)}`;
+      const sym = currency === "USD" ? "USD" : "$";
+      const fmt = (v: string) => {
+        const n = Number(v);
+        if (n >= 1_000_000_000) return `${sym}${(n / 1_000_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}B`;
+        if (n >= 1_000_000) return `${sym}${(n / 1_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}M`;
+        if (n >= 1_000) return `${sym}${(n / 1_000).toLocaleString("es-AR", { maximumFractionDigits: 0 })}K`;
+        return `${sym}${n.toLocaleString("es-AR")}`;
+      };
+      if (minPrice && maxPrice) return `${fmt(minPrice)} - ${fmt(maxPrice)}`;
+      if (minPrice) return `Desde ${fmt(minPrice)}`;
+      if (maxPrice) return `Hasta ${fmt(maxPrice)}`;
     }
     return "Precio";
   };
@@ -124,25 +125,23 @@ const PriceFilter = () => {
           <div className="flex rounded-full border border-border p-1 bg-muted/30">
             <button
               onClick={() => handleCurrencySwitch("ARS")}
-              className={`flex-1 py-1.5 px-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 px-3 rounded-full text-sm font-medium transition-all ${
                 currency === "ARS"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span>$</span>
-              <span>Pesos</span>
+              Pesos
             </button>
             <button
               onClick={() => handleCurrencySwitch("USD")}
-              className={`flex-1 py-1.5 px-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 px-3 rounded-full text-sm font-medium transition-all ${
                 currency === "USD"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span>US$</span>
-              <span>Dólares</span>
+              Dólares
             </button>
           </div>
 
@@ -162,7 +161,7 @@ const PriceFilter = () => {
                 value={minPrice}
                 onChange={setMinPrice}
                 currency={currency}
-                placeholder={currency === "USD" ? "US$ 0" : "$ 0"}
+                placeholder={currency === "USD" ? "USD 0" : "$ 0"}
               />
             </div>
             <div className="flex-1 space-y-1.5">
@@ -171,7 +170,7 @@ const PriceFilter = () => {
                 value={maxPrice}
                 onChange={setMaxPrice}
                 currency={currency}
-                placeholder={currency === "USD" ? "US$ 1.000" : "$ 1.000.000"}
+                placeholder={currency === "USD" ? "USD 1.000" : "$ 1.000.000"}
               />
             </div>
           </div>

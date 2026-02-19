@@ -6,9 +6,10 @@ import { Property } from "@/components/PropertyCard";
 export function transformPropertyRead(row: any): Property {
   return {
     id: String(row.property_id),
+    slug: row.slug || undefined,
     image: row.cover_photo_url || "/assets/property-new-1.png",
     address: row.address || row.title || "",
-    neighborhood: row.location_name || "",
+    neighborhood: [row.location_name, row.parent_location_name].filter(Boolean).join(", ") || "",
     description: row.title || row.description || "",
     price: row.valor_total_primary || row.price || 0,
     rentPrice: row.price || 0,
@@ -40,7 +41,7 @@ export function transformToOwnerPanelProperty(row: any) {
   return {
     id: String(row.property_id),
     name: row.title || row.address || "Propiedad",
-    location: [row.location_name, row.state_name].filter(Boolean).join(", ") || "",
+    location: [row.location_name, row.parent_location_name].filter(Boolean).join(", ") || "",
     price: `$${Number(price).toLocaleString()} ${currency}`,
     status: "activa" as const,
     image: row.cover_photo_url || "/assets/property-new-1.png",
@@ -59,7 +60,7 @@ export function transformToInmobiliariaPanelProperty(row: any) {
   return {
     id: String(row.property_id),
     name: row.title || row.address || "Propiedad",
-    location: [row.location_name, row.state_name].filter(Boolean).join(", ") || "",
+    location: [row.location_name, row.parent_location_name].filter(Boolean).join(", ") || "",
     price: `$${Number(price).toLocaleString()} ${currency}`,
     status: "activa" as const,
     image: row.cover_photo_url || "/assets/property-new-1.png",

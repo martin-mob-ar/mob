@@ -32,9 +32,11 @@ interface PropertyDetailProps {
 }
 
 const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, branchName: propBranchName, locationFull: propLocationFull, geoLat, geoLong }: PropertyDetailProps) => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const router = useRouter();
-  const property = propProperty || mockProperties.find((p) => p.id === (id as string)?.split("-")[0]) || mockProperties[0];
+  // Extract numeric ID from slug for mock data fallback
+  const idFromSlug = (slug as string)?.match(/(\d+)$/)?.[1] || (slug as string);
+  const property = propProperty || mockProperties.find((p) => p.id === idFromSlug) || mockProperties[0];
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showBottomBar, setShowBottomBar] = useState(false);
   const mainCtaRef = useRef<HTMLDivElement>(null);
@@ -391,7 +393,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <>
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="font-display text-2xl font-bold text-foreground">
-                  us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                  USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
                 </span>
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">
                   Alquiler
@@ -400,7 +402,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <p className="text-sm text-muted-foreground mb-3">
                 {property.expensas != null && property.expensas > 0
                   ? `$${property.expensas.toLocaleString()} expensas`
-                  : "Expensas incluidas"}
+                  : "Sin expensas"}
               </p>
             </>
           ) : (
@@ -429,7 +431,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <p className="font-medium">
                 {property.expensas != null && property.expensas > 0
                   ? `$${property.expensas.toLocaleString()}`
-                  : "Incluidas"}
+                  : "Sin expensas"}
               </p>
             </div>
           </div>
@@ -616,12 +618,12 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             {property.currency === "USD" ? (
               <>
                 <p className="font-display text-lg font-bold text-foreground">
-                  us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                  USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
                     ? `$${property.expensas.toLocaleString()} expensas`
-                    : "Expensas incluidas"}
+                    : "Sin expensas"}
                 </p>
               </>
             ) : (
@@ -632,7 +634,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <p className="text-xs text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
                     ? "Total mensual"
-                    : "Expensas incluidas"}
+                    : "Sin expensas"}
                 </p>
               </>
             )}
@@ -725,7 +727,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <>
                     <div className="flex items-baseline gap-2">
                       <span className="font-display text-2xl font-bold text-foreground">
-                        us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                        USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
                       </span>
                       <span className="text-xs text-muted-foreground uppercase tracking-wider">
                         Alquiler
@@ -734,7 +736,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     <p className="text-sm text-muted-foreground mt-1">
                       {property.expensas != null && property.expensas > 0
                         ? `$${property.expensas.toLocaleString()} expensas`
-                        : "Expensas incluidas"}
+                        : "Sin expensas"}
                     </p>
                   </>
                 ) : (
@@ -763,7 +765,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                         <span className="font-medium text-sm">
                           {property.expensas != null && property.expensas > 0
                             ? `$${property.expensas.toLocaleString()}`
-                            : "Incluidas"}
+                            : "Sin expensas"}
                         </span>
                       </div>
                     </div>

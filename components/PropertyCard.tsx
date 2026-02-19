@@ -4,9 +4,11 @@ import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { getPropertyUrl } from "@/lib/utils/property-url";
 
 export interface Property {
   id: string;
+  slug?: string;
   image: string;
   images?: string[];
   address: string;
@@ -75,7 +77,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   };
 
   return (
-    <Link href={`/propiedad/${property.id}`} className="group block">
+    <Link href={getPropertyUrl(property)} className="group block">
       <div className="card-mob-hover overflow-hidden">
         <div 
           className="relative aspect-[4/3] overflow-hidden"
@@ -207,7 +209,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
               <>
                 <div className="flex items-baseline gap-1 flex-wrap">
                   <span className="font-display font-bold text-sm text-foreground">
-                    us${property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                    USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
                     Alquiler 
@@ -216,7 +218,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 <span className="text-[10px] text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
                     ? `$${property.expensas.toLocaleString()} expensas`
-                    : "Expensas incluidas"}
+                    : "Sin expensas"}
                 </span>
               </>
             ) : (
@@ -233,7 +235,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                   </span>
                 ) : (
                   <span className="text-[10px] text-muted-foreground">
-                    Expensas incluidas
+                    Sin expensas
                   </span>
                 )}
               </div>

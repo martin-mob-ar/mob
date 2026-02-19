@@ -23,7 +23,7 @@ function parseRawValue(formatted: string): string {
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ value, onChange, currency = "ARS", placeholder, className, onKeyDown }, ref) => {
-    const symbol = currency === "USD" ? "US$" : "AR$";
+    const symbol = currency === "USD" ? "USD" : "AR$";
 
     // Display formatted value
     const displayValue = value

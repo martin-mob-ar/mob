@@ -8,8 +8,48 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useSearchFilters } from "@/contexts/SearchFiltersContext";
+
+function SurfaceInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (raw: string) => void;
+  placeholder?: string;
+}) {
+  const displayValue = value
+    ? Number(value).toLocaleString("es-AR")
+    : "";
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value.replace(/[^\d]/g, ""));
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    requestAnimationFrame(() => {
+      e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+    });
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={displayValue}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        placeholder={placeholder}
+        className="flex h-11 w-full rounded-xl border border-input bg-background pl-3 pr-10 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm font-medium tabular-nums"
+      />
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+        m²
+      </span>
+    </div>
+  );
+}
 
 const SurfaceFilter = () => {
   const [open, setOpen] = useState(false);
@@ -52,15 +92,21 @@ const SurfaceFilter = () => {
   };
 
   const getDisplayText = () => {
-    if (filters.minSurface || filters.maxSurface) {
+    if (minSurface || maxSurface) {
       const type = surfaceType === "cubierta" ? "Cub." : "Tot.";
-      if (filters.minSurface && filters.maxSurface) {
-        return `${filters.minSurface}-${filters.maxSurface} m² ${type}`;
+      const fmt = (v: string) => {
+        const n = Number(v);
+        return n >= 1_000_000
+          ? new Intl.NumberFormat("es-AR", { notation: "compact", maximumFractionDigits: 1 }).format(n)
+          : n.toLocaleString("es-AR");
+      };
+      if (minSurface && maxSurface) {
+        return `${fmt(minSurface)}-${fmt(maxSurface)} m² ${type}`;
       }
-      if (filters.minSurface) {
-        return `Desde ${filters.minSurface} m² ${type}`;
+      if (minSurface) {
+        return `Desde ${fmt(minSurface)} m² ${type}`;
       }
-      return `Hasta ${filters.maxSurface} m² ${type}`;
+      return `Hasta ${fmt(maxSurface)} m² ${type}`;
     }
     return "Superficie";
   };
@@ -111,22 +157,18 @@ const SurfaceFilter = () => {
             </p>
             <div className="flex gap-3 items-center">
               <div className="flex-1">
-                <Input
-                  inputMode="numeric"
-                  placeholder="Desde"
+                <SurfaceInput
                   value={minSurface}
-                  onChange={(e) => setMinSurface(e.target.value.replace(/[^\d]/g, ""))}
-                  className="rounded-xl text-sm"
+                  onChange={setMinSurface}
+                  placeholder="0"
                 />
               </div>
               <span className="text-muted-foreground">-</span>
               <div className="flex-1">
-                <Input
-                  inputMode="numeric"
-                  placeholder="Hasta"
+                <SurfaceInput
                   value={maxSurface}
-                  onChange={(e) => setMaxSurface(e.target.value.replace(/[^\d]/g, ""))}
-                  className="rounded-xl text-sm"
+                  onChange={setMaxSurface}
+                  placeholder="0"
                 />
               </div>
             </div>

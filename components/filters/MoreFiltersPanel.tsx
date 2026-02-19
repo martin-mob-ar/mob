@@ -1,7 +1,6 @@
 import { X, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -28,6 +27,37 @@ const propertyTypes = [
   { id: "House", label: "Casa" },
   { id: "Condo", label: "PH" },
 ];
+
+function SurfaceInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (raw: string) => void;
+  placeholder?: string;
+}) {
+  const displayValue = value
+    ? Number(value).toLocaleString("es-AR")
+    : "";
+
+  return (
+    <div className="relative flex-1">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={displayValue}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ""))}
+        onFocus={(e) => requestAnimationFrame(() => e.target.setSelectionRange(e.target.value.length, e.target.value.length))}
+        placeholder={placeholder}
+        className="flex h-11 w-full rounded-xl border border-input bg-background pl-3 pr-10 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm font-medium tabular-nums"
+      />
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+        m²
+      </span>
+    </div>
+  );
+}
 
 const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
   const { filters, setFilters, clearFilters, search } = useSearchFilters();
@@ -267,7 +297,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                         : "text-muted-foreground"
                     }`}
                   >
-                    $ Pesos
+                    Pesos
                   </button>
                   <button
                     onClick={() => handleCurrencySwitch("USD")}
@@ -277,7 +307,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                         : "text-muted-foreground"
                     }`}
                   >
-                    US$ Dólares
+                    Dólares
                   </button>
                 </div>
                 {currency === "USD" && usdRate && (
@@ -291,13 +321,13 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                     value={minPrice}
                     onChange={setMinPrice}
                     currency={currency}
-                    placeholder={currency === "USD" ? "US$ 0" : "$ 0"}
+                    placeholder={currency === "USD" ? "USD 0" : "$ 0"}
                   />
                   <CurrencyInput
                     value={maxPrice}
                     onChange={setMaxPrice}
                     currency={currency}
-                    placeholder={currency === "USD" ? "US$ 1.000" : "$ 1.000.000"}
+                    placeholder={currency === "USD" ? "USD 1.000" : "$ 1.000.000"}
                   />
                 </div>
               </div>
@@ -446,17 +476,15 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                   </button>
                 </div>
                 <div className="flex gap-3">
-                  <Input
-                    placeholder="Mínima (m²)"
-                    className="rounded-xl"
+                  <SurfaceInput
                     value={minSurface}
-                    onChange={(e) => setMinSurface(e.target.value.replace(/[^\d]/g, ""))}
+                    onChange={setMinSurface}
+                    placeholder="0"
                   />
-                  <Input
-                    placeholder="Máxima (m²)"
-                    className="rounded-xl"
+                  <SurfaceInput
                     value={maxSurface}
-                    onChange={(e) => setMaxSurface(e.target.value.replace(/[^\d]/g, ""))}
+                    onChange={setMaxSurface}
+                    placeholder="0"
                   />
                 </div>
               </div>

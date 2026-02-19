@@ -264,7 +264,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
   const abbreviatePrice = (val: string, cur: "ARS" | "USD"): string => {
     const n = parseInt(val);
     if (isNaN(n)) return "";
-    const sym = cur === "USD" ? "US$" : "$";
+    const sym = cur === "USD" ? "USD" : "$";
     if (n >= 1_000_000_000) return `${sym}${(n / 1_000_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}B`;
     if (n >= 1_000_000) return `${sym}${(n / 1_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}M`;
     if (n >= 1_000) return `${sym}${(n / 1_000).toLocaleString("es-AR", { maximumFractionDigits: 0 })}K`;
@@ -490,7 +490,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                             value={minPrice}
                             onChange={setMinPrice}
                             currency={priceCurrency}
-                            placeholder={priceCurrency === "USD" ? "US$ 0" : "$ 0"}
+                            placeholder={priceCurrency === "USD" ? "USD 0" : "$ 0"}
                             className="rounded-xl h-10 text-sm"
                           />
                         </div>
@@ -500,7 +500,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                             value={maxPrice}
                             onChange={setMaxPrice}
                             currency={priceCurrency}
-                            placeholder={priceCurrency === "USD" ? "US$ 5.000" : "$ 1.000.000"}
+                            placeholder={priceCurrency === "USD" ? "USD 5.000" : "$ 1.000.000"}
                             className="rounded-xl h-10 text-sm"
                           />
                         </div>
