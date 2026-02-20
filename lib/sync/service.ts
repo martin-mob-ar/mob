@@ -2,6 +2,11 @@ import { TokkoClient, TokkoProperty, TokkoBranch, TokkoUser, TokkoOwner, TokkoLo
 import { supabaseAdmin } from '@/lib/supabase/server';
 import CryptoJS from 'crypto-js';
 
+/** Tokko operation type ID for Rent. Sale=1, Rent=2, Temporary Rent=3. */
+const RENT_OPERATION_ID = 2;
+/** Property type IDs to sync: Apartment=2, House=3, PH=13. */
+const SYNC_PROPERTY_TYPES = [2, 3, 13];
+
 export interface SyncResult {
   userId: string;
   propertiesSynced: number;
@@ -477,12 +482,15 @@ async function syncProperty(
   const operationsToInsert: any[] = [];
 
   if (property.operations && property.operations.length > 0) {
-    // Sync operation types in parallel
+    // Sync operation types as reference data (all types, not just rent)
     await Promise.all(
       property.operations.map(op => syncOperationType(op.operation_id, op.operation_type))
     );
 
-    for (const operation of property.operations) {
+    // Only store Rent operations
+    const rentOperations = property.operations.filter(op => op.operation_id === RENT_OPERATION_ID);
+
+    for (const operation of rentOperations) {
       const prices = operation.prices || [];
       const primaryPrice = prices[0];
       const secondaryPrice = prices[1];
@@ -493,6 +501,7 @@ async function syncProperty(
 
       operationsToInsert.push({
         property_id: propertyId,
+        tokko_operation_id: operation.operation_id,
         status: 'available',
         currency: primaryPrice?.currency || null,
         price: primaryPrice?.price || null,
@@ -661,8 +670,11 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
     });
     console.log('[Tokko Sync] User ID:', userId);
 
-    console.log(`[Tokko Sync] Fetching up to ${limit} properties from Tokko API...`);
-    const properties = await client.getAllProperties(limit);
+    console.log(`[Tokko Sync] Searching up to ${limit} rent properties (Apartment/House/PH) from Tokko API...`);
+    const properties = await client.searchProperties(limit, {
+      operation_types: [RENT_OPERATION_ID],
+      property_types: SYNC_PROPERTY_TYPES,
+    });
     console.log(`[Tokko Sync] Fetched ${properties.length} properties`);
     await updateSyncStatus(apiKeyHash, 'syncing', `Obtenidas ${properties.length} propiedades de Tokko...`);
 
@@ -671,14 +683,14 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
       throw new Error('No properties found for this API key');
     }
 
-    // Collect unique users and owners from properties
-    const users = new Map<number, TokkoUser>();
-    const owners = new Map<number, TokkoOwner>();
+    // Fetch all users (producers) from the /user/ endpoint
+    console.log('[Tokko Sync] Fetching all users from Tokko API...');
+    const allUsers = await client.getAllUsers();
+    console.log(`[Tokko Sync] Fetched ${allUsers.length} users`);
 
+    // Collect owners from properties
+    const owners = new Map<number, TokkoOwner>();
     for (const property of properties) {
-      if (property.producer) {
-        users.set(property.producer.id, property.producer);
-      }
       if (property.internal_data?.property_owners) {
         const propOwners = property.internal_data.property_owners;
         for (const owner of propOwners) {
@@ -686,7 +698,7 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
         }
       }
     }
-    console.log('[Tokko Sync] Collected:', { branches: allBranches.length, users: users.size, owners: owners.size });
+    console.log('[Tokko Sync] Collected:', { branches: allBranches.length, users: allUsers.length, owners: owners.size });
 
     // Sync branches (from API endpoint), users, and owners in parallel
     console.log('[Tokko Sync] Syncing branches, users, and owners in parallel...');
@@ -708,9 +720,9 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
           }
         })
       ),
-      // Sync all users in parallel
+      // Sync all users from /user/ endpoint in parallel
       Promise.all(
-        Array.from(users.values()).map(async (user) => {
+        allUsers.map(async (user) => {
           try {
             const syncedTokkoUserId = await syncUser(userId, user);
             userMap.set(user.id, syncedTokkoUserId);
@@ -741,7 +753,7 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
     // Sync properties in parallel batches (locations are looked up from pre-seeded reference data only)
     const locationCache = new Map<number, number>();
     let propertiesSynced = 0;
-    const BATCH_SIZE = 10; // Process 10 properties at a time
+    const BATCH_SIZE = 20; // Process 20 properties at a time
     console.log(`[Tokko Sync] Syncing properties in batches of ${BATCH_SIZE} (locations must exist in DB)...`);
 
     // Process properties in batches

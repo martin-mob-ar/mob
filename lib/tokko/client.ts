@@ -279,10 +279,85 @@ export class TokkoClient {
   }
 
   /**
+   * Search properties with server-side filtering via /property/search/.
+   * Supports filtering by operation_types and property_types.
+   * If maxTotal is provided, stops once that many properties have been collected.
+   */
+  async searchProperties(
+    maxTotal?: number,
+    filters?: { operation_types?: number[]; property_types?: number[] }
+  ): Promise<TokkoProperty[]> {
+    const allProperties: TokkoProperty[] = [];
+    let offset = 0;
+    const limit = 20; // Tokko recommends pages of max 20 for search
+    let hasMore = true;
+    let page = 0;
+
+    const data = JSON.stringify({
+      ...(filters?.operation_types?.length ? { operation_types: filters.operation_types } : {}),
+      ...(filters?.property_types?.length ? { property_types: filters.property_types } : {}),
+      price_from: 0,
+      price_to: 999999999,
+    });
+
+    while (hasMore) {
+      page++;
+      console.log(`[Tokko API] Searching properties page ${page} (offset: ${offset}, limit: ${limit}${maxTotal ? `, maxTotal: ${maxTotal}` : ''})`);
+
+      // Build URL manually — Tokko expects raw JSON in the `data` query param,
+      // not the URL-encoded version that searchParams.set produces.
+      const url = `${this.baseUrl}/property/search/?key=${this.apiKey}&limit=${limit}&offset=${offset}&format=json&data=${encodeURIComponent(data)}`;
+
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Tokko API error: ${res.status} ${res.statusText}. ${errorText}`);
+      }
+
+      const response: TokkoApiResponse<TokkoProperty> = await res.json();
+      console.log(`[Tokko API] Search page ${page}: got ${response.objects.length} properties (total_count: ${response.meta.total_count})`);
+
+      allProperties.push(...response.objects);
+
+      // If a maxTotal was specified, stop once we've reached it
+      if (typeof maxTotal === 'number' && maxTotal > 0 && allProperties.length >= maxTotal) {
+        allProperties.length = maxTotal;
+        console.log(`[Tokko API] Reached maxTotal (${maxTotal}), stopping fetch`);
+        hasMore = false;
+      } else {
+        if (response.meta.next) {
+          offset += limit;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Safety check to prevent infinite loops
+      if (allProperties.length >= response.meta.total_count) {
+        hasMore = false;
+      }
+    }
+
+    console.log(`[Tokko API] searchProperties done: ${allProperties.length} properties total`);
+    return allProperties;
+  }
+
+  /**
    * Fetch all branches from the /branch/ endpoint
    */
   async getAllBranches(): Promise<TokkoBranch[]> {
     const response = await this.fetch<TokkoBranch>('/branch/', { limit: 100 });
+    return response.objects;
+  }
+
+  /**
+   * Fetch all users (producers) from the /user/ endpoint
+   */
+  async getAllUsers(): Promise<TokkoUser[]> {
+    const response = await this.fetch<TokkoUser>('/user/', { limit: 100 });
     return response.objects;
   }
 
