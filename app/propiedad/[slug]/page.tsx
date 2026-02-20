@@ -166,7 +166,9 @@ export default async function PropiedadDetailPage({
   let photos: string[] = [];
   let tags: string[] = [];
   let description: string | null = null;
-  let branchName: string | null = null;
+  let publisherName: string | null = null;
+  let publisherLogo: string | null = null;
+  const isTokko = propertyData.tokko === true;
   let locationFull: string | null = null;
   let geoLat: number | null = null;
   let geoLong: number | null = null;
@@ -207,22 +209,17 @@ export default async function PropiedadDetailPage({
     photos = photoData.map((p: any) => p.image).filter(Boolean);
   }
 
-  // Fetch branch name if property has a branch_id
-  const { data: propRow } = await supabase
-    .from("properties")
-    .select("branch_id")
-    .eq("id", propertyId)
-    .single();
-
-  if (propRow?.branch_id) {
-    const { data: branchData } = await supabase
-      .from("tokko_branch")
-      .select("name, display_name")
-      .eq("id", propRow.branch_id)
+  // Fetch publisher info from users table (works for both Tokko and non-Tokko properties)
+  if (propertyData.user_id) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("name, logo")
+      .eq("id", propertyData.user_id)
       .single();
 
-    if (branchData) {
-      branchName = branchData.display_name || branchData.name || null;
+    if (userData) {
+      publisherName = userData.name || null;
+      publisherLogo = userData.logo || null;
     }
   }
 
@@ -232,7 +229,9 @@ export default async function PropiedadDetailPage({
       photos={photos}
       tags={tags}
       description={description}
-      branchName={branchName}
+      publisherName={publisherName}
+      publisherLogo={publisherLogo}
+      isTokko={isTokko}
       locationFull={locationFull}
       geoLat={geoLat}
       geoLong={geoLong}

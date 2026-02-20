@@ -9,6 +9,7 @@ import ExploreRentals from "@/components/ExploreRentals";
 import Footer from "@/components/Footer";
 import { properties as mockProperties } from "@/data/properties";
 import { Property } from "@/components/PropertyCard";
+import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
 
 interface IndexProps {
   properties?: Property[];
@@ -16,6 +17,7 @@ interface IndexProps {
 
 const Index = ({ properties }: IndexProps) => {
   const displayProperties = properties && properties.length > 0 ? properties : mockProperties;
+  const enrichedProperties = usePropertyPhotos(displayProperties);
 
   return <div className="min-h-screen bg-background">
       <Header />
@@ -43,10 +45,10 @@ const Index = ({ properties }: IndexProps) => {
 
       {/* Properties Sections */}
       <div className="-mt-6">
-        <PropertySection title="Propiedades para vos" properties={displayProperties} />
+        <PropertySection title="Propiedades para vos" properties={enrichedProperties} />
       </div>
 
-      <PropertySection title="Últimas propiedades" properties={[...displayProperties].reverse()} />
+      <PropertySection title="Últimas propiedades" properties={[...enrichedProperties].reverse()} />
 
       {/* Why MOB Section */}
       <WhyMob />

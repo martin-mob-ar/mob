@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
@@ -25,13 +25,15 @@ interface PropertyDetailProps {
   photos?: string[];
   tags?: string[];
   description?: string | null;
-  branchName?: string | null;
+  publisherName?: string | null;
+  publisherLogo?: string | null;
+  isTokko?: boolean;
   locationFull?: string | null;
   geoLat?: number | null;
   geoLong?: number | null;
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, branchName: propBranchName, locationFull: propLocationFull, geoLat, geoLong }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   // Extract numeric ID from slug for mock data fallback
@@ -90,7 +92,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
   const description = propDescription || `Increíble departamento ubicado en una de las mejores zonas de ${property.neighborhood}. Muy luminoso, con balcón al frente y terminaciones de categoría. Edificio moderno con seguridad y excelentes accesos. Ideal para quienes buscan comodidad y diseño en un solo lugar.`;
 
-  const branchName = propBranchName || null;
+  const publisherName = propPublisherName || null;
+  const publisherLogo = propPublisherLogo || null;
   const locationSuffix = propLocationFull || `${property.neighborhood}`;
 
   // Detect scroll to show/hide bottom bar
@@ -577,32 +580,46 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           </p>
         </div>
 
-        {/* Agent/Owner Section */}
-        {branchName && (
+        {/* Publisher Section */}
+        {publisherName && (
           <div className="px-4 py-5 border-b border-border">
             <h2 className="font-display text-lg font-bold text-foreground mb-4">
               Publicado por
             </h2>
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-                {branchName.charAt(0).toUpperCase()}
-              </div>
+              {publisherLogo ? (
+                <Image
+                  src={publisherLogo}
+                  alt={publisherName}
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-14 w-14 rounded-full bg-secondary flex items-center justify-center">
+                  <User className="h-7 w-7 text-muted-foreground" />
+                </div>
+              )}
               <div className="flex-1">
-                <p className="font-semibold text-foreground">{branchName}</p>
-                <p className="text-xs text-primary uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                  <Shield className="h-3.5 w-3.5" />
-                  Inmobiliaria verificada
-                </p>
+                <p className="font-semibold text-foreground">{publisherName}</p>
+                {isTokko && (
+                  <p className="text-xs text-primary uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                    <Shield className="h-3.5 w-3.5" />
+                    Inmobiliaria verificada
+                  </p>
+                )}
               </div>
             </div>
             <Button variant="outline" className="w-full rounded-xl h-11">
               Ver perfil
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
-            <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
-              Esta inmobiliaria utiliza la infraestructura digital de{" "}
-              <span className="font-ubuntu text-primary font-medium">mob</span>
-            </p>
+            {isTokko && (
+              <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
+                Esta inmobiliaria utiliza la infraestructura digital de{" "}
+                <span className="font-ubuntu text-primary font-medium">mob</span>
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -824,28 +841,42 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 </p>
               </div>
 
-              {/* Agent */}
-              {branchName && (
+              {/* Publisher */}
+              {publisherName && (
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center gap-2.5 mb-3">
-                    <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                      {branchName.charAt(0).toUpperCase()}
-                    </div>
+                    {publisherLogo ? (
+                      <Image
+                        src={publisherLogo}
+                        alt={publisherName}
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
                     <div>
-                      <p className="font-semibold text-sm text-foreground">{branchName}</p>
-                      <p className="text-[10px] text-primary uppercase tracking-wider flex items-center gap-1">
-                        <Shield className="h-3 w-3" />
-                        Inmobiliaria verificada
-                      </p>
+                      <p className="font-semibold text-sm text-foreground">{publisherName}</p>
+                      {isTokko && (
+                        <p className="text-[10px] text-primary uppercase tracking-wider flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          Inmobiliaria verificada
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Button variant="outline" className="w-full rounded-xl text-sm">
                     Ver perfil comercial
                   </Button>
-                  <p className="text-[10px] text-center text-muted-foreground mt-2 leading-snug">
-                    Esta inmobiliaria utiliza la infraestructura digital de{" "}
-                    <span className="font-ubuntu text-primary font-medium">mob</span> para agilizar tu alquiler.
-                  </p>
+                  {isTokko && (
+                    <p className="text-[10px] text-center text-muted-foreground mt-2 leading-snug">
+                      Esta inmobiliaria utiliza la infraestructura digital de{" "}
+                      <span className="font-ubuntu text-primary font-medium">mob</span> para agilizar tu alquiler.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

@@ -279,6 +279,14 @@ export class TokkoClient {
   }
 
   /**
+   * Fetch all branches from the /branch/ endpoint
+   */
+  async getAllBranches(): Promise<TokkoBranch[]> {
+    const response = await this.fetch<TokkoBranch>('/branch/', { limit: 100 });
+    return response.objects;
+  }
+
+  /**
    * Fetch property types
    */
   async getPropertyTypes() {

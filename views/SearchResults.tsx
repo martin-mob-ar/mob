@@ -19,6 +19,7 @@ import MoreFiltersPanel from "@/components/filters/MoreFiltersPanel";
 import Footer from "@/components/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SearchFiltersProvider, useSearchFilters } from "@/contexts/SearchFiltersContext";
+import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +54,7 @@ const SearchResultsInner = () => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showBottomActions, setShowBottomActions] = useState(true);
   const { filters, setFilter, results, total, isLoading } = useSearchFilters();
+  const enrichedResults = usePropertyPhotos(results);
   const isMobile = useIsMobile();
   const footerRef = useRef<HTMLDivElement>(null);
 
@@ -144,8 +146,8 @@ const SearchResultsInner = () => {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : results.length > 0 ? (
-            results.map((property, index) => (
+          ) : enrichedResults.length > 0 ? (
+            enrichedResults.map((property, index) => (
               <MobilePropertyCard
                 key={`${property.id}-${index}`}
                 property={property}
@@ -248,9 +250,9 @@ const SearchResultsInner = () => {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
-        ) : results.length > 0 ? (
+        ) : enrichedResults.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {results.map((property, index) => (
+            {enrichedResults.map((property, index) => (
               <PropertyCard
                 key={`${property.id}-${index}`}
                 property={property}

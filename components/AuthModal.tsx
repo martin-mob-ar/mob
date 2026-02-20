@@ -81,9 +81,12 @@ const AuthModal = () => {
     setLoading(true);
     try {
       await register(email, password, true);
+      // Get the auth user ID to link with the public users row during sync
+      const supabase = (await import("@/lib/supabase/client")).createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       handleClose();
-      // Fire background sync + start polling toast
-      startSync(tokkoApiKey);
+      // Fire background sync + start polling toast, passing auth info
+      startSync(tokkoApiKey, authUser?.id, authUser?.email || email);
     } catch {
       // Error is set in AuthContext
     } finally {

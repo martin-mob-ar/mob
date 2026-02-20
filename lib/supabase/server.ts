@@ -65,19 +65,13 @@ export async function resolveUserId(input: string): Promise<string> {
 }
 
 /**
- * Verify an auth user ID and return the corresponding public users row,
- * creating one if it doesn't exist yet.
- * Works for all users — with or without a Tokko API key.
+ * Return the public users row for a given auth user ID.
+ * The row is auto-created by a DB trigger on auth.users INSERT,
+ * so this should always find an existing row.
  */
 export async function getOrCreateUserFromAuth(authId: string): Promise<string> {
-  // Verify the auth user exists
-  const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(authId);
-
-  if (authError || !authUser) {
-    throw new Error('Auth user not found');
-  }
-
-  // Try to find existing public users row by auth_id
+  // The DB trigger auto-creates the public.users row on signup,
+  // so we just need to find it
   const { data: existing } = await supabaseAdmin
     .from('users')
     .select('id')
@@ -86,14 +80,19 @@ export async function getOrCreateUserFromAuth(authId: string): Promise<string> {
 
   if (existing) return existing.id;
 
-  // Create a new public users row linked to this auth user
+  // Fallback: trigger may not have fired yet (race condition) — create manually
+  const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(authId);
+  if (authError || !authUser) {
+    throw new Error('Auth user not found');
+  }
+
   const { data: newUser, error } = await supabaseAdmin
     .from('users')
-    .insert({
+    .upsert({
       auth_id: authId,
-      email: authUser.email!,
+      email: authUser.email || '',
       name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
-    })
+    }, { onConflict: 'auth_id' })
     .select('id')
     .single();
 

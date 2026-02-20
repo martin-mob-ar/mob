@@ -7,13 +7,21 @@ export async function POST(request: NextRequest) {
   console.log('[Tokko Sync API] POST /api/tokko/sync received');
   try {
     const body = await request.json();
-    const { apiKey, limit: rawLimit } = body;
+    const { apiKey, limit: rawLimit, authId, authEmail } = body;
 
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       console.warn('[Tokko Sync API] Rejected: API key missing or empty');
       return NextResponse.json(
         { error: 'API key is required' },
         { status: 400 }
+      );
+    }
+
+    if (!authId || !authEmail) {
+      console.warn('[Tokko Sync API] Rejected: authId or authEmail missing');
+      return NextResponse.json(
+        { error: 'Authentication required — authId and authEmail are required' },
+        { status: 401 }
       );
     }
 
@@ -31,8 +39,8 @@ export async function POST(request: NextRequest) {
       : typeof rawLimit === 'string' && rawLimit.trim() !== ''
         ? Math.min(500, Math.max(1, parseInt(rawLimit, 10) || 5))
         : 5;
-    console.log('[Tokko Sync API] Starting sync (API key masked, property limit:', propertyLimit, ')');
-    const result = await syncTokkoData(apiKey.trim(), propertyLimit);
+    console.log('[Tokko Sync API] Starting sync (API key masked, property limit:', propertyLimit, ', authId:', authId || 'none', ')');
+    const result = await syncTokkoData(apiKey.trim(), propertyLimit, authId, authEmail);
     console.log('[Tokko Sync API] Sync completed:', {
       userId: result.userId,
       propertiesSynced: result.propertiesSynced,

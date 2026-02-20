@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export function useTokkoSync() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startSync = useCallback((apiKey: string) => {
+  const startSync = useCallback((apiKey: string, authId?: string, authEmail?: string) => {
     const apiKeyHash = CryptoJS.SHA256(apiKey).toString();
 
     // Fire-and-forget POST — keepalive ensures the request survives page navigation
@@ -15,7 +15,7 @@ export function useTokkoSync() {
       method: "POST",
       keepalive: true,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey, limit: 500 }),
+      body: JSON.stringify({ apiKey, limit: 500, authId, authEmail }),
     });
 
     // Show persistent loading toast

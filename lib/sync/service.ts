@@ -53,6 +53,21 @@ async function getLocationIdById(locationId: number, cache: Map<number, number>)
 }
 
 /**
+ * Find the primary branch: prefer is_default=true, then fall back to oldest by created_date.
+ */
+function findPrimaryBranch(branches: TokkoBranch[]): TokkoBranch | undefined {
+  if (branches.length === 0) return undefined;
+
+  const defaultBranch = branches.find(b => b.is_default === true);
+  if (defaultBranch) return defaultBranch;
+
+  return branches
+    .filter(b => b.created_date)
+    .sort((a, b) => new Date(a.created_date!).getTime() - new Date(b.created_date!).getTime())[0]
+    || branches[0];
+}
+
+/**
  * Find or create user
  */
 interface UserPhone {
@@ -62,48 +77,70 @@ interface UserPhone {
   telefono_extension?: string;
 }
 
-async function getOrCreateUser(apiKeyHash: string, name?: string, phone?: UserPhone): Promise<string> {
-  // Try to find existing user
-  const { data: existing } = await supabaseAdmin
+interface TokkoUserData {
+  name?: string;
+  phone?: UserPhone;
+  logo?: string;
+  tokkoEmail?: string;
+}
+
+/**
+ * Find existing user by auth_id, email, or tokko_api_hash.
+ * The user MUST already exist (created by the DB trigger on auth signup).
+ */
+async function findUser(authId: string, authEmail: string, apiKeyHash: string): Promise<string> {
+  // 1. By auth_id (should always hit — trigger creates the row on signup)
+  const { data: byAuth } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('auth_id', authId)
+    .maybeSingle();
+  if (byAuth) return byAuth.id;
+
+  // 2. By email
+  const { data: byEmail } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('email', authEmail)
+    .maybeSingle();
+  if (byEmail) return byEmail.id;
+
+  // 3. By tokko_api_hash (re-sync scenario)
+  const { data: byHash } = await supabaseAdmin
     .from('users')
     .select('id')
     .eq('tokko_api_hash', apiKeyHash)
-    .single();
+    .maybeSingle();
+  if (byHash) return byHash.id;
 
-  if (existing) {
-    // Update name and phone fields if provided
-    const updates: Record<string, string> = { updated_at: new Date().toISOString() };
-    if (name) updates.name = name;
-    if (phone?.telefono) updates.telefono = phone.telefono;
-    if (phone?.telefono_area) updates.telefono_area = phone.telefono_area;
-    if (phone?.telefono_country_code) updates.telefono_country_code = phone.telefono_country_code;
-    if (phone?.telefono_extension) updates.telefono_extension = phone.telefono_extension;
-    await supabaseAdmin
-      .from('users')
-      .update(updates)
-      .eq('id', existing.id);
-    return existing.id;
-  }
+  throw new Error('User not found — user must register before syncing');
+}
 
-  // Create new user
-  const { data: newUser, error } = await supabaseAdmin
+/**
+ * Update an existing user row with Tokko data (name, phone, logo, etc.)
+ * and link the tokko_api_hash if not already set.
+ */
+async function updateUserWithTokkoData(
+  userId: string,
+  apiKeyHash: string,
+  data: TokkoUserData
+): Promise<void> {
+  const updates: Record<string, string | null> = {
+    tokko_api_hash: apiKeyHash,
+    updated_at: new Date().toISOString(),
+  };
+  if (data.name) updates.name = data.name;
+  if (data.phone?.telefono) updates.telefono = data.phone.telefono;
+  if (data.phone?.telefono_area) updates.telefono_area = data.phone.telefono_area;
+  if (data.phone?.telefono_country_code) updates.telefono_country_code = data.phone.telefono_country_code;
+  if (data.phone?.telefono_extension) updates.telefono_extension = data.phone.telefono_extension;
+  if (data.logo !== undefined) updates.logo = data.logo || null;
+  if (data.tokkoEmail) updates.tokko_email = data.tokkoEmail;
+
+  await supabaseAdmin
     .from('users')
-    .insert({
-      tokko_api_hash: apiKeyHash,
-      name,
-      telefono: phone?.telefono,
-      telefono_area: phone?.telefono_area,
-      telefono_country_code: phone?.telefono_country_code,
-      telefono_extension: phone?.telefono_extension,
-    })
-    .select('id')
-    .single();
-
-  if (error || !newUser) {
-    throw new Error(`Failed to create user: ${error?.message || 'Unknown error'}`);
-  }
-
-  return newUser.id;
+    .update(updates)
+    .eq('id', userId);
 }
 
 /**
@@ -583,7 +620,7 @@ async function updateSyncStatus(
  * @param apiKey - Tokko API key
  * @param propertyLimit - Max number of properties to sync (default 5, clamped 1–500)
  */
-export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): Promise<SyncResult> {
+export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, authId: string, authEmail: string): Promise<SyncResult> {
   const errors: string[] = [];
   const apiKeyHash = hashApiKey(apiKey);
   const client = new TokkoClient(apiKey);
@@ -593,6 +630,36 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
   try {
     // Mark sync as started
     await updateSyncStatus(apiKeyHash, 'syncing', 'Conectando con Tokko...');
+
+    // Fetch all branches from the /branch/ endpoint
+    console.log('[Tokko Sync] Fetching all branches from Tokko API...');
+    const allBranches = await client.getAllBranches();
+    console.log(`[Tokko Sync] Fetched ${allBranches.length} branches`);
+
+    // Determine user identity from the primary (default/oldest) branch
+    const primaryBranch = findPrimaryBranch(allBranches);
+    const userName = primaryBranch?.display_name || primaryBranch?.name || undefined;
+    const userPhone: UserPhone = {
+      telefono: primaryBranch?.phone || undefined,
+      telefono_area: primaryBranch?.phone_area || undefined,
+      telefono_country_code: primaryBranch?.phone_country_code || undefined,
+      telefono_extension: primaryBranch?.phone_extension || undefined,
+    };
+    const userLogo = primaryBranch?.logo || undefined;
+    const tokkoEmail = primaryBranch?.email || undefined;
+    console.log('[Tokko Sync] Primary branch:', primaryBranch?.name || '(none)',
+      '| is_default:', primaryBranch?.is_default, '| Name:', userName || '(none)');
+
+    // Find existing user (created by DB trigger on auth signup) and link Tokko data
+    console.log('[Tokko Sync] Finding user...');
+    const userId = await findUser(authId, authEmail, apiKeyHash);
+    await updateUserWithTokkoData(userId, apiKeyHash, {
+      name: userName,
+      phone: userPhone,
+      logo: userLogo,
+      tokkoEmail,
+    });
+    console.log('[Tokko Sync] User ID:', userId);
 
     console.log(`[Tokko Sync] Fetching up to ${limit} properties from Tokko API...`);
     const properties = await client.getAllProperties(limit);
@@ -604,31 +671,11 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
       throw new Error('No properties found for this API key');
     }
 
-    // Determine name and phone from first property's branch
-    const branch0 = properties[0]?.branch;
-    const userName = branch0?.display_name || branch0?.name || undefined;
-    const userPhone: UserPhone = {
-      telefono: branch0?.phone || undefined,
-      telefono_area: branch0?.phone_area || undefined,
-      telefono_country_code: branch0?.phone_country_code || undefined,
-      telefono_extension: branch0?.phone_extension || undefined,
-    };
-    console.log('[Tokko Sync] Name:', userName || '(none)', '| Phone:', userPhone.telefono || '(none)');
-
-    // Get or create user
-    console.log('[Tokko Sync] Getting or creating user...');
-    const userId = await getOrCreateUser(apiKeyHash, userName, userPhone);
-    console.log('[Tokko Sync] User ID:', userId);
-
-    // Collect unique branches, users, and owners
-    const branches = new Map<number, TokkoBranch>();
+    // Collect unique users and owners from properties
     const users = new Map<number, TokkoUser>();
     const owners = new Map<number, TokkoOwner>();
 
     for (const property of properties) {
-      if (property.branch) {
-        branches.set(property.branch.id, property.branch);
-      }
       if (property.producer) {
         users.set(property.producer.id, property.producer);
       }
@@ -639,18 +686,18 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5): 
         }
       }
     }
-    console.log('[Tokko Sync] Collected:', { branches: branches.size, users: users.size, owners: owners.size });
+    console.log('[Tokko Sync] Collected:', { branches: allBranches.length, users: users.size, owners: owners.size });
 
-    // Sync branches, users, and owners in parallel
+    // Sync branches (from API endpoint), users, and owners in parallel
     console.log('[Tokko Sync] Syncing branches, users, and owners in parallel...');
     const branchMap = new Map<number, number>();
     const userMap = new Map<number, number>();
     const ownerMap = new Map<number, number>();
 
     await Promise.all([
-      // Sync all branches in parallel
+      // Sync all branches from the /branch/ endpoint
       Promise.all(
-        Array.from(branches.values()).map(async (branch) => {
+        allBranches.map(async (branch) => {
           try {
             const branchId = await syncBranch(userId, branch);
             branchMap.set(branch.id, branchId);
