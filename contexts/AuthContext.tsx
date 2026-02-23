@@ -8,6 +8,7 @@ interface User {
   email: string;
   name: string;
   isOwner: boolean;
+  publicUserId: string | null;
 }
 
 interface AuthContextType {
@@ -26,11 +27,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function mapSupabaseUser(supabaseUser: SupabaseUser): User {
+function mapSupabaseUser(supabaseUser: SupabaseUser, publicUserId?: string | null): User {
   return {
     email: supabaseUser.email || "",
     name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "",
     isOwner: supabaseUser.user_metadata?.isOwner ?? false,
+    publicUserId: publicUserId ?? null,
   };
 }
 
@@ -42,11 +44,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const supabase = createClient();
 
+  // Resolve auth user → public users.id
+  const resolvePublicUserId = async (authId: string): Promise<string | null> => {
+    const { data } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_id", authId)
+      .maybeSingle();
+    return data?.id ?? null;
+  };
+
   useEffect(() => {
     // Get initial session
-    supabase.auth.getUser().then(({ data: { user: supabaseUser } }) => {
+    supabase.auth.getUser().then(async ({ data: { user: supabaseUser } }) => {
       if (supabaseUser) {
-        setUser(mapSupabaseUser(supabaseUser));
+        const publicId = await resolvePublicUserId(supabaseUser.id);
+        setUser(mapSupabaseUser(supabaseUser, publicId));
       }
       setIsLoading(false);
     });
@@ -54,9 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
+        const publicId = await resolvePublicUserId(session.user.id);
+        setUser(mapSupabaseUser(session.user, publicId));
       } else {
         setUser(null);
       }

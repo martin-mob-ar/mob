@@ -569,7 +569,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 </div>
                 <div>
                   <p className="font-semibold text-base text-foreground">Inquilinos verificados</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Validación previa por Hoggax, una sola vez.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Validación previa por Mob, una sola vez.</p>
                 </div>
               </div>
             </div>
@@ -823,7 +823,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   },
                   { 
                     icon: BadgeCheck, 
-                    title: "Validación por Hoggax",
+                    title: "Validación por Mob",
                     description: "Una vez validado, aplica a cualquier alquiler."
                   },
                 ].map((item) => (

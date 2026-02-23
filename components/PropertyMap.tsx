@@ -27,10 +27,10 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
 
       const map = new google.maps.Map(mapRef.current, {
         center,
-        zoom: 15,
+        zoom: 16,
         disableDefaultUI: true,
         zoomControl: true,
-        gestureHandling: "cooperative",
+        gestureHandling: "greedy",
         styles: [
           { featureType: "poi", stylers: [{ visibility: "off" }] },
           { featureType: "transit", stylers: [{ visibility: "off" }] },

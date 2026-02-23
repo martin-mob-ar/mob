@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 const dormitoriosOptions = [
   { value: "sin-minimo", label: "Sin mínimo" },
@@ -79,6 +80,8 @@ const SearchBar = () => {
 
   // Price state
   const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
+  const { rate: usdRate } = useExchangeRate();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -121,8 +124,14 @@ const SearchBar = () => {
     if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
     if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
     if (price) {
-      const numericPrice = price.replace(/[^\d]/g, "");
-      if (numericPrice) params.set("maxPrice", numericPrice);
+      let numericPrice = price.replace(/[^\d]/g, "");
+      if (numericPrice) {
+        // Convert USD to ARS for the backend (DB stores ARS)
+        if (currency === "USD" && usdRate) {
+          numericPrice = String(Math.round(parseFloat(numericPrice) * usdRate));
+        }
+        params.set("maxPrice", numericPrice);
+      }
     }
     const qs = params.toString();
     router.push(qs ? `/buscar?${qs}` : "/buscar");
@@ -169,7 +178,7 @@ const SearchBar = () => {
   const locationDropdown = showLocationDropdown ? (
     <div
       ref={locationDropdownRef}
-      className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto"
+      className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
     >
       {locationLoading ? (
         <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
@@ -317,14 +326,41 @@ const SearchBar = () => {
             </div>
 
             <div className="px-6 py-3">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Precio total
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Precio total
+                </label>
+                <div className="flex rounded-full border border-border p-0.5 bg-muted/30">
+                  <button
+                    type="button"
+                    onClick={() => setCurrency("ARS")}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+                      currency === "ARS"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    ARS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrency("USD")}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+                      currency === "USD"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    USD
+                  </button>
+                </div>
+              </div>
               <div className="mt-1">
                 <CurrencyInput
                   value={price}
                   onChange={setPrice}
-                  placeholder="$ 800.000"
+                  currency={currency}
+                  placeholder={currency === "USD" ? "USD 100.000" : "$ 800.000"}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                 />
@@ -387,14 +423,41 @@ const SearchBar = () => {
 
           {/* Precio */}
           <div className="px-4 py-3">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Precio total
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Precio total
+              </label>
+              <div className="flex rounded-full border border-border p-0.5 bg-muted/30">
+                <button
+                  type="button"
+                  onClick={() => setCurrency("ARS")}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all ${
+                    currency === "ARS"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  ARS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrency("USD")}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all ${
+                    currency === "USD"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  USD
+                </button>
+              </div>
+            </div>
             <div className="mt-1">
               <CurrencyInput
                 value={price}
                 onChange={setPrice}
-                placeholder="$ 800.000"
+                currency={currency}
+                placeholder={currency === "USD" ? "USD 100.000" : "$ 800.000"}
                 className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
               />
             </div>

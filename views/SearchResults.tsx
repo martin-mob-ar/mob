@@ -30,8 +30,8 @@ import {
 const sortOptions = [
   { value: "recent", label: "Más recientes" },
   { value: "relevant", label: "Más relevantes" },
-  { value: "price-low", label: "Menor precio total" },
-  { value: "price-high", label: "Mayor precio total" },
+  { value: "price-low", label: "Precio: menor a mayor" },
+  { value: "price-high", label: "Precio: mayor a menor" },
 ];
 
 interface SearchResultsProps {

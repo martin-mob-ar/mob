@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 // Cache the exchange rate in memory for 1 hour
 let cachedRate: { value: number; timestamp: number } | null = null;
@@ -75,6 +76,10 @@ export async function GET() {
 
   if (rate) {
     cachedRate = { value: rate, timestamp: Date.now() };
+    // Sync rate to DB in the background (don't block the response)
+    syncRateToDb(rate).catch((e) =>
+      console.error("[exchange-rate] DB sync failed:", e)
+    );
     return NextResponse.json({ rate, source });
   }
 
@@ -83,4 +88,43 @@ export async function GET() {
     { rate: null, error: "Could not fetch exchange rate" },
     { status: 502 }
   );
+}
+
+/**
+ * POST /api/exchange-rate
+ * Force-refresh the exchange rate: fetch latest, update DB, rebuild all listings.
+ */
+export async function POST() {
+  let rate = await fetchBCRARate();
+  let source = "bcra";
+
+  if (!rate) {
+    rate = await fetchDolarApiRate();
+    source = "dolarapi";
+  }
+
+  if (!rate) {
+    return NextResponse.json(
+      { error: "Could not fetch exchange rate" },
+      { status: 502 }
+    );
+  }
+
+  cachedRate = { value: rate, timestamp: Date.now() };
+
+  // Update DB and rebuild listings
+  await syncRateToDb(rate);
+  await supabaseAdmin.rpc("rebuild_all_property_listings");
+
+  return NextResponse.json({ rate, source, rebuilt: true });
+}
+
+/** Update the exchange_rates table with the latest rate */
+async function syncRateToDb(rate: number) {
+  await supabaseAdmin
+    .from("exchange_rates")
+    .upsert(
+      { currency_pair: "USD_ARS", rate, updated_at: new Date().toISOString() },
+      { onConflict: "currency_pair" }
+    );
 }

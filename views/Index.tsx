@@ -24,7 +24,7 @@ const Index = ({ properties }: IndexProps) => {
 
       {/* Hero Section */}
       <section className="py-8 md:py-[45px] shadow-none opacity-100">
-        <div className="container px-4 md:px-8 max-w-full overflow-hidden">
+        <div className="container px-4 md:px-8 max-w-full">
           <div className="text-center mb-6 md:mb-10">
             <h1 className="font-display text-2xl md:text-5xl font-bold mb-2">
               <span className="text-primary">Alquilá fácil.</span>{" "}

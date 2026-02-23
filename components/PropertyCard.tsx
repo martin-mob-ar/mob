@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
-import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, CheckCircle, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPropertyUrl } from "@/lib/utils/property-url";
@@ -34,6 +34,7 @@ interface PropertyCardProps {
 
 const PropertyCard = ({ property, showDetails = false, compactVerified = false }: PropertyCardProps) => {
   const images = property.images?.length ? property.images : [property.image];
+  const totalSlides = images.length + 1; // +1 for CTA slide
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -51,13 +52,13 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    setCurrentImageIndex((prev) => Math.min(prev + 1, totalSlides - 1));
   };
 
   const prevImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
   };
 
   const goToImage = (e: React.MouseEvent, index: number) => {
@@ -77,8 +78,8 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   };
 
   return (
-    <Link href={getPropertyUrl(property)} className="group block">
-      <div className="card-mob-hover overflow-hidden">
+    <Link href={getPropertyUrl(property)} className="group block h-full">
+      <div className="card-mob-hover overflow-hidden h-full flex flex-col">
         <div 
           className="relative aspect-[4/3] overflow-hidden"
           onMouseEnter={() => setIsHovering(true)}
@@ -97,7 +98,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
               const scrollLeft = container.scrollLeft;
               const itemWidth = container.offsetWidth;
               const newIndex = Math.round(scrollLeft / itemWidth);
-              if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < images.length) {
+              if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < totalSlides) {
                 setCurrentImageIndex(newIndex);
               }
             }}
@@ -114,38 +115,58 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 />
               </div>
             ))}
+            {/* CTA Slide */}
+            <div className="flex-shrink-0 w-full h-full snap-center relative">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                }}
+                className="flex flex-col items-center justify-center w-full h-full bg-accent gap-2.5 cursor-pointer hover:bg-accent/80 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-xs font-medium text-primary text-center px-4">
+                  Abrir ficha en nueva pestaña
+                </span>
+              </button>
+            </div>
           </div>
           
           {/* Navigation Arrows */}
-          {images.length > 1 && isHovering && (
+          {isHovering && (
             <>
-              <button
-                onClick={(e) => {
-                  prevImage(e);
-                  const newIndex = (currentImageIndex - 1 + images.length) % images.length;
-                  scrollToImage(newIndex);
-                }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md"
-              >
-                <ChevronLeft className="h-4 w-4 text-foreground" />
-              </button>
-              <button
-                onClick={(e) => {
-                  nextImage(e);
-                  const newIndex = (currentImageIndex + 1) % images.length;
-                  scrollToImage(newIndex);
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md"
-              >
-                <ChevronRight className="h-4 w-4 text-foreground" />
-              </button>
+              {currentImageIndex > 0 && (
+                <button
+                  onClick={(e) => {
+                    prevImage(e);
+                    scrollToImage(Math.max(currentImageIndex - 1, 0));
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md"
+                >
+                  <ChevronLeft className="h-4 w-4 text-foreground" />
+                </button>
+              )}
+              {currentImageIndex < totalSlides - 1 && (
+                <button
+                  onClick={(e) => {
+                    nextImage(e);
+                    scrollToImage(Math.min(currentImageIndex + 1, totalSlides - 1));
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md"
+                >
+                  <ChevronRight className="h-4 w-4 text-foreground" />
+                </button>
+              )}
             </>
           )}
 
           {/* Dots Indicator */}
-          {images.length > 1 && (
+          {totalSlides > 1 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {images.map((_, index) => (
+              {Array.from({ length: totalSlides }, (_, index) => (
                 <button
                   key={index}
                   onClick={(e) => {
@@ -196,8 +217,8 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
           </button>
         </div>
         
-        <div className="p-3">
-          <h3 className="font-display font-semibold text-foreground text-xs leading-tight line-clamp-2">
+        <div className="p-3 flex-1 flex flex-col min-w-0">
+          <h3 className="font-display font-semibold text-foreground text-xs leading-tight line-clamp-2 min-h-[2lh]">
             {property.address}
           </h3>
           <p className="text-muted-foreground text-xs mt-0.5 truncate">
@@ -222,34 +243,36 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 </span>
               </>
             ) : (
-              <div className="flex items-baseline gap-1 flex-wrap">
-                <span className="font-display font-bold text-sm text-foreground">
-                  ${property.price.toLocaleString()}
-                </span>
-                <span className="text-[10px] text-muted-foreground uppercase">
-                  Total
-                </span>
-                {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
-                  <span className="text-[10px] text-muted-foreground">
-                    (${property.rentPrice.toLocaleString()} Alq + ${property.expensas.toLocaleString()} Exp)
+              <>
+                <div className="flex items-baseline gap-1 flex-wrap">
+                  <span className="font-display font-bold text-sm text-foreground">
+                    ${property.price.toLocaleString()}
                   </span>
-                ) : (
-                  <span className="text-[10px] text-muted-foreground">
-                    Sin expensas
+                  <span className="text-[10px] text-muted-foreground uppercase">
+                    Total
                   </span>
-                )}
-              </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
+                    ? `($${property.rentPrice.toLocaleString()} Alq + $${property.expensas.toLocaleString()} Exp)`
+                    : "Sin expensas"}
+                </span>
+              </>
             )}
           </div>
           
-          {property.rooms !== undefined && (
-            <div className="text-[9px] text-muted-foreground mt-1.5 truncate">
-              <span>{property.rooms} dorm</span>
-              {property.bathrooms !== undefined && <span> · {property.bathrooms} baño</span>}
-              {property.parking !== undefined && property.parking > 0 && <span> · {property.parking} coch</span>}
-              {property.surface !== undefined && <span> · {property.surface} m²</span>}
-            </div>
-          )}
+          <div className="text-[9px] text-muted-foreground mt-auto pt-1.5 truncate min-w-0">
+            {property.rooms !== undefined ? (
+              <>
+                <span>{property.rooms} dorm</span>
+                {property.bathrooms !== undefined && <span> · {property.bathrooms} baño</span>}
+                {property.parking !== undefined && property.parking > 0 && <span> · {property.parking} coch</span>}
+                {property.surface !== undefined && <span> · {property.surface} m²</span>}
+              </>
+            ) : (
+              <span>&nbsp;</span>
+            )}
+          </div>
         </div>
       </div>
     </Link>

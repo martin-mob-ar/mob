@@ -58,17 +58,16 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
   const [userRoles, setUserRoles] = useState<{ hasProperties: boolean; hasTenantOps: boolean }>({ hasProperties: false, hasTenantOps: false });
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user?.publicUserId) {
       setUserRoles({ hasProperties: false, hasTenantOps: false });
       return;
     }
     const supabase = createClient();
+    const publicUserId = user.publicUserId;
     const checkRoles = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
       const [propResult, tenantResult] = await Promise.all([
-        supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", authUser.id),
-        supabase.from("operaciones").select("id", { count: "exact", head: true }).eq("tenant_id", authUser.id),
+        supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", publicUserId),
+        supabase.from("operaciones").select("id", { count: "exact", head: true }).eq("tenant_id", publicUserId),
       ]);
       setUserRoles({
         hasProperties: (propResult.count ?? 0) > 0,
@@ -76,7 +75,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
       });
     };
     checkRoles();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.publicUserId]);
 
   const getGestionLabel = () => {
     if (userRoles.hasProperties && userRoles.hasTenantOps) return "Gestionar";

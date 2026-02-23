@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Plus, Bell, LogOut, Home } from "lucide-react";
+
+
+import { Plus, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
 const PanelLayout = ({ children }: { children: React.ReactNode }) => {
-  const pathname = usePathname();
   const { user, logout } = useAuth();
 
   const getInitials = (name: string) => {
@@ -19,8 +19,6 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
       .slice(0, 2);
   };
 
-  const isPropertyDetail = pathname.includes("/gestion/propiedad/");
-
   return (
     <div className="min-h-screen bg-secondary/30">
       {/* Header */}
@@ -31,15 +29,6 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
             <Link href="/">
               <img src="/assets/mob-logo-new.png" alt="MOB" className="h-7" />
             </Link>
-            {isPropertyDetail && (
-              <Link
-                href="/gestion"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Home className="h-4 w-4" />
-                Mis propiedades
-              </Link>
-            )}
           </div>
 
           {/* Right: Actions */}
@@ -51,10 +40,6 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
               </Link>
             </Button>
 
-            <button className="p-2 rounded-full hover:bg-secondary transition-colors relative">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-            </button>
-
             {/* User menu */}
             <div className="flex items-center gap-3 pl-4 border-l border-border">
               <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
@@ -62,7 +47,6 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
               </div>
               <div className="hidden md:block">
                 <p className="font-medium text-sm">{user?.name || "Juan Pérez"}</p>
-                <p className="text-xs text-muted-foreground">Propietario</p>
               </div>
               <button
                 onClick={logout}

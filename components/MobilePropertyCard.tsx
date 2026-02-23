@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, CheckCircle, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,7 @@ const MobilePropertyCard = ({
   property
 }: MobilePropertyCardProps) => {
   const images = property.images?.length ? property.images : [property.image];
+  const totalSlides = images.length + 1; // +1 for CTA slide
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +45,7 @@ const MobilePropertyCard = ({
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const newIndex = (currentImageIndex + 1) % images.length;
+    const newIndex = Math.min(currentImageIndex + 1, totalSlides - 1);
     setCurrentImageIndex(newIndex);
     scrollToImage(newIndex);
   };
@@ -52,7 +53,7 @@ const MobilePropertyCard = ({
   const prevImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const newIndex = (currentImageIndex - 1 + images.length) % images.length;
+    const newIndex = Math.max(currentImageIndex - 1, 0);
     setCurrentImageIndex(newIndex);
     scrollToImage(newIndex);
   };
@@ -73,7 +74,7 @@ const MobilePropertyCard = ({
               const scrollLeft = container.scrollLeft;
               const itemWidth = container.offsetWidth;
               const newIndex = Math.round(scrollLeft / itemWidth);
-              if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < images.length) {
+              if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < totalSlides) {
                 setCurrentImageIndex(newIndex);
               }
             }}
@@ -81,25 +82,45 @@ const MobilePropertyCard = ({
             {images.map((img, index) => <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
                 <Image src={img} alt={`${property.address} - ${index + 1}`} fill sizes="100vw" className="object-cover" draggable={false} />
               </div>)}
+            {/* CTA Slide */}
+            <div className="flex-shrink-0 w-full h-full snap-center relative">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                }}
+                className="flex flex-col items-center justify-center w-full h-full bg-accent gap-3 cursor-pointer hover:bg-accent/80 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <ExternalLink className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-primary text-center px-6">
+                  Abrir ficha en nueva pestaña
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Navigation Arrows */}
-          {images.length > 1 && (
-            <>
+          <>
+            {currentImageIndex > 0 && (
               <button
                 onClick={prevImage}
                 className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md opacity-0 group-hover:opacity-100 md:opacity-100"
               >
                 <ChevronLeft className="h-4 w-4 text-foreground" />
               </button>
+            )}
+            {currentImageIndex < totalSlides - 1 && (
               <button
                 onClick={nextImage}
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md opacity-0 group-hover:opacity-100 md:opacity-100"
               >
                 <ChevronRight className="h-4 w-4 text-foreground" />
               </button>
-            </>
-          )}
+            )}
+          </>
 
           {/* Badge */}
           <div className="absolute top-3 left-3 pointer-events-none">
@@ -109,8 +130,8 @@ const MobilePropertyCard = ({
           </div>
 
           {/* Dots Indicator */}
-          {images.length > 1 && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none">
-              {images.map((_, index) => <div key={index} className={`h-1.5 rounded-full transition-all ${index === currentImageIndex ? "w-5 bg-background" : "w-1.5 bg-background/60"}`} />)}
+          {totalSlides > 1 && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none">
+              {Array.from({ length: totalSlides }, (_, index) => <div key={index} className={`h-1.5 rounded-full transition-all ${index === currentImageIndex ? "w-5 bg-background" : "w-1.5 bg-background/60"}`} />)}
             </div>}
 
           {/* Verified Badge */}
