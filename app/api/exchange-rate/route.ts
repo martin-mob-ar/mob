@@ -1,62 +1,49 @@
 import { NextResponse } from "next/server";
+import https from "node:https";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 // Cache the exchange rate in memory for 1 hour
 let cachedRate: { value: number; timestamp: number } | null = null;
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
-async function fetchBCRARate(): Promise<number | null> {
-  try {
-    const res = await fetch(
+// BCRA has an incomplete SSL certificate chain — use Node's https directly to bypass it
+function fetchBCRARate(): Promise<number | null> {
+  return new Promise((resolve) => {
+    const req = https.get(
       "https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones/USD",
-      {
-        headers: { Accept: "application/json" },
-        // Skip SSL verification for BCRA's certificate issues
-        next: { revalidate: 3600 },
+      { headers: { Accept: "application/json" }, rejectUnauthorized: false },
+      (res) => {
+        let body = "";
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => {
+          try {
+            if (res.statusCode !== 200) {
+              console.error(`[exchange-rate] BCRA API returned ${res.statusCode}`);
+              return resolve(null);
+            }
+            const data = JSON.parse(body);
+            // BCRA response: { results: [{ fecha, detalle: [{ tipoCotizacion, ... }] }] }
+            const detalle = data?.results?.[0]?.detalle;
+            if (Array.isArray(detalle) && detalle.length > 0) {
+              const rate = detalle[detalle.length - 1]?.tipoCotizacion;
+              if (typeof rate === "number" || typeof rate === "string") {
+                return resolve(parseFloat(String(rate)));
+              }
+            }
+            resolve(null);
+          } catch (e) {
+            console.error("[exchange-rate] BCRA parse failed:", e);
+            resolve(null);
+          }
+        });
       }
     );
-
-    if (!res.ok) throw new Error(`BCRA API returned ${res.status}`);
-
-    const data = await res.json();
-
-    // BCRA response: { status: 200, results: { detalle: [{ tipoCotizacion: "...", ... }] } }
-    // The tipoCotizacion in the "detalle" array contains the sell rate
-    const detalle = data?.results?.detalle;
-    if (Array.isArray(detalle) && detalle.length > 0) {
-      // Find the "Venta" (sell) rate, or use tipoCotizacion from the last entry
-      const ventaEntry = detalle.find(
-        (d: Record<string, unknown>) =>
-          typeof d.tipoPase === "string" && d.tipoPase.toLowerCase().includes("venta")
-      );
-      const rate = ventaEntry?.tipoCotizacion ?? detalle[detalle.length - 1]?.tipoCotizacion;
-      if (typeof rate === "number" || typeof rate === "string") {
-        return parseFloat(String(rate));
-      }
-    }
-
-    return null;
-  } catch (e) {
-    console.error("[exchange-rate] BCRA fetch failed:", e);
-    return null;
-  }
-}
-
-// Fallback: try dolarapi.com (public, no auth, reliable)
-async function fetchDolarApiRate(): Promise<number | null> {
-  try {
-    const res = await fetch("https://dolarapi.com/v1/dolares/oficial", {
-      next: { revalidate: 3600 },
+    req.on("error", (e) => {
+      console.error("[exchange-rate] BCRA fetch failed:", e);
+      resolve(null);
     });
-    if (!res.ok) throw new Error(`dolarapi returned ${res.status}`);
-    const data = await res.json();
-    // Response: { moneda: "USD", casa: "oficial", nombre: "Oficial", compra: X, venta: Y, ... }
-    if (data?.venta) return parseFloat(String(data.venta));
-    return null;
-  } catch (e) {
-    console.error("[exchange-rate] dolarapi fallback failed:", e);
-    return null;
-  }
+    req.end();
+  });
 }
 
 export async function GET() {
@@ -65,27 +52,18 @@ export async function GET() {
     return NextResponse.json({ rate: cachedRate.value, source: "cache" });
   }
 
-  // Try BCRA first, then dolarapi as fallback
-  let rate = await fetchBCRARate();
-  let source = "bcra";
-
-  if (!rate) {
-    rate = await fetchDolarApiRate();
-    source = "dolarapi";
-  }
+  const rate = await fetchBCRARate();
 
   if (rate) {
     cachedRate = { value: rate, timestamp: Date.now() };
-    // Sync rate to DB in the background (don't block the response)
     syncRateToDb(rate).catch((e) =>
       console.error("[exchange-rate] DB sync failed:", e)
     );
-    return NextResponse.json({ rate, source });
+    return NextResponse.json({ rate, source: "bcra" });
   }
 
-  // If both fail, return a reasonable fallback
   return NextResponse.json(
-    { rate: null, error: "Could not fetch exchange rate" },
+    { rate: null, error: "Could not fetch exchange rate from BCRA" },
     { status: 502 }
   );
 }
@@ -95,17 +73,11 @@ export async function GET() {
  * Force-refresh the exchange rate: fetch latest, update DB, rebuild all listings.
  */
 export async function POST() {
-  let rate = await fetchBCRARate();
-  let source = "bcra";
-
-  if (!rate) {
-    rate = await fetchDolarApiRate();
-    source = "dolarapi";
-  }
+  const rate = await fetchBCRARate();
 
   if (!rate) {
     return NextResponse.json(
-      { error: "Could not fetch exchange rate" },
+      { error: "Could not fetch exchange rate from BCRA" },
       { status: 502 }
     );
   }
@@ -116,7 +88,7 @@ export async function POST() {
   await syncRateToDb(rate);
   await supabaseAdmin.rpc("rebuild_all_property_listings");
 
-  return NextResponse.json({ rate, source, rebuilt: true });
+  return NextResponse.json({ rate, source: "bcra", rebuilt: true });
 }
 
 /** Update the exchange_rates table with the latest rate */

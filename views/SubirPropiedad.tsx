@@ -93,6 +93,7 @@ const SubirPropiedad = () => {
   const [ambientes, setAmbientes] = useState(2);
   const [dormitorios, setDormitorios] = useState(1);
   const [banos, setBanos] = useState(1);
+  const [toilettes, setToilettes] = useState(0);
   const [cocheras, setCocheras] = useState(0);
   const [antiguedad, setAntiguedad] = useState("");
   const [superficieCubierta, setSuperficieCubierta] = useState("");
@@ -106,7 +107,9 @@ const SubirPropiedad = () => {
   const [expensasIncluidas, setExpensasIncluidas] = useState(false);
   const [amoblado, setAmoblado] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-  const [duracionContrato, setDuracionContrato] = useState<number>(12);
+  const [duracionContrato, setDuracionContrato] = useState<number | null>(12);
+  const [customDuracion, setCustomDuracion] = useState("");
+  const [showDuracionHint, setShowDuracionHint] = useState(false);
   const [ipcEnabled, setIpcEnabled] = useState(true);
   const [ipcPeriodo, setIpcPeriodo] = useState<string>("trimestral");
 
@@ -318,6 +321,7 @@ const SubirPropiedad = () => {
         room_amount: ambientes,
         suite_amount: dormitorios,
         bathroom_amount: banos,
+        toilet_amount: toilettes,
         parking_lot_amount: cocheras,
         roofed_surface: superficieCubierta ? String(superficieCubierta) : null,
         total_surface: superficieTotal ? String(superficieTotal) : null,
@@ -571,6 +575,7 @@ const SubirPropiedad = () => {
               <CounterInput label="Ambientes" value={ambientes} onChange={setAmbientes} />
               <CounterInput label="Dormitorios" value={dormitorios} onChange={setDormitorios} />
               <CounterInput label="Baños" value={banos} onChange={setBanos} />
+              <CounterInput label="Toilettes" value={toilettes} onChange={setToilettes} />
               <CounterInput label="Cocheras" value={cocheras} onChange={setCocheras} />
             </div>
 
@@ -721,20 +726,24 @@ const SubirPropiedad = () => {
 
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                Duración de contrato
+                Duración de contrato (meses)
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 {[
-                  { months: 12, label: "1 año" },
-                  { months: 24, label: "2 años" },
-                  { months: 36, label: "3 años" },
+                  { months: 12, label: "12 meses" },
+                  { months: 24, label: "24 meses" },
+                  { months: 36, label: "36 meses" },
                 ].map((opt) => (
                   <button
                     key={opt.months}
-                    onClick={() => setDuracionContrato(opt.months)}
+                    onClick={() => {
+                      setDuracionContrato(opt.months);
+                      setCustomDuracion("");
+                      setShowDuracionHint(false);
+                    }}
                     className={cn(
-                      "py-4 px-6 rounded-2xl border-2 text-sm font-semibold transition-all",
-                      duracionContrato === opt.months
+                      "py-4 px-4 rounded-2xl border-2 text-sm font-semibold transition-all",
+                      duracionContrato === opt.months && !customDuracion
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
                     )}
@@ -742,7 +751,38 @@ const SubirPropiedad = () => {
                     {opt.label.toUpperCase()}
                   </button>
                 ))}
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={6}
+                  placeholder="Meses"
+                  value={customDuracion}
+                  onFocus={() => {
+                    setDuracionContrato(null);
+                    setShowDuracionHint(true);
+                  }}
+                  onBlur={() => setShowDuracionHint(false)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomDuracion(val);
+                    if (val) {
+                      const num = Math.max(6, Number(val));
+                      setDuracionContrato(num);
+                    } else {
+                      setDuracionContrato(null);
+                    }
+                  }}
+                  className={cn(
+                    "h-full rounded-2xl border-2 text-sm text-center font-semibold transition-all",
+                    customDuracion
+                      ? "border-primary bg-accent text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  )}
+                />
               </div>
+              <AnimateHeight show={showDuracionHint}>
+                <p className="text-xs text-muted-foreground mt-2">Mínimo 6 meses</p>
+              </AnimateHeight>
             </div>
 
             <div>
@@ -829,7 +869,7 @@ const SubirPropiedad = () => {
 
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                ¿Cuándo se puede alquilar?
+                Disponible a partir de
               </label>
               <div className="relative">
                 <Input
@@ -971,6 +1011,7 @@ const SubirPropiedad = () => {
                 <span>{ambientes} ambientes</span>
                 <span>{dormitorios} dormitorios</span>
                 <span>{banos} baños</span>
+                <span>{toilettes} toilettes</span>
                 <span>{cocheras} cocheras</span>
                 {antiguedad && <span>{antiguedad} años</span>}
                 {superficieCubierta && <span>{superficieCubierta} m² cubierta</span>}
@@ -995,7 +1036,7 @@ const SubirPropiedad = () => {
                       : "Sin expensas informadas"}
                 </p>
                 <p className="text-muted-foreground">
-                  Contrato: {duracionContrato / 12} {duracionContrato === 12 ? "año" : "años"}
+                  Contrato: {duracionContrato} meses
                 </p>
                 {ipcEnabled && (
                   <p className="text-muted-foreground capitalize">

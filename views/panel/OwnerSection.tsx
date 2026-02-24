@@ -81,7 +81,7 @@ const OwnerSection = ({ properties, mockMode }: OwnerSectionProps) => {
                 Ingresos del mes
               </p>
               <p className="font-display font-bold text-lg text-success">
-                ${totalIncome.toLocaleString()} {mainCurrency}
+                ${totalIncome.toLocaleString("es-AR")} {mainCurrency}
               </p>
             </div>
           </div>
@@ -155,7 +155,7 @@ const OwnerSection = ({ properties, mockMode }: OwnerSectionProps) => {
                     </p>
                     {property.expenses && property.expenses > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        + ${property.expenses.toLocaleString()} expensas
+                        + ${property.expenses.toLocaleString("es-AR")} expensas
                       </p>
                     )}
                   </div>

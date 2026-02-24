@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server-component";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   transformToTenantRental,
@@ -7,10 +7,7 @@ import {
 import GestionView from "@/views/panel/GestionView";
 
 export default async function GestionPage() {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const authUser = await getAuthUser();
 
   if (!authUser) {
     return <GestionView tenantRentals={[]} ownerProperties={[]} roles={{ isTenant: false, isOwner: false }} />;

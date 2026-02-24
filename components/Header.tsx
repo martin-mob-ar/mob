@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft } from "lucide-react";
+import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
@@ -521,8 +521,8 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                   </PopoverContent>
                 </Popover>
                 
-                <button onClick={handleHeaderSearch} className="h-8 w-8 m-1 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors">
-                  <Search className="h-4 w-4 text-primary-foreground" />
+                <button onClick={handleHeaderSearch} aria-label="Buscar propiedades" className="h-8 w-8 m-1 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <Search className="h-4 w-4 text-primary-foreground" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -530,99 +530,118 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
-            {isAuthenticated && <Button variant="outline" className="rounded-full px-6 font-medium" asChild>
-                <Link href="/gestion">{getGestionLabel()}</Link>
-              </Button>}
-            
             {isAuthenticated ? (
-              <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
-                Publicar mi propiedad
-              </Button>
+              <>
+                <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
+                  Publicar mi propiedad
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
+                      aria-label="Menú de usuario"
+                    >
+                      {(user?.name || user?.email)?.charAt(0).toUpperCase() ?? "U"}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64 bg-background">
+                    <div className="px-3 py-2">
+                      <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    {/* CTA de verificación si no está verificado */}
+                    {!isVerified && (
+                      <>
+                        <div className="p-3">
+                          <Link href="/verificacion" className="block">
+                            <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl hover:bg-primary/10 transition-colors border border-primary/10">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <BadgeCheck className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-foreground">Verificarme</p>
+                                <p className="text-xs text-muted-foreground">Menos de 2 minutos</p>
+                              </div>
+                              <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+                            </div>
+                          </Link>
+                        </div>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/gestion">
+                        <Building2 className="mr-2 h-4 w-4" />
+                        {getGestionLabel()}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
-              <Button onClick={() => setShowPublishModal(true)} className="rounded-full px-6 font-bold">
-                Quiero publicar
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowPublishModal(true)}
+                  className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Quiero publicar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={openAuthModal}
+                  className="rounded-full px-5 font-medium gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Iniciar sesión
+                </Button>
+              </>
             )}
-
-            {isAuthenticated ? <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="rounded-full">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-background">
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    {user?.email}
-                  </div>
-                  <DropdownMenuSeparator />
-                  {/* CTA de verificación si no está verificado */}
-                  {!isVerified && (
-                    <>
-                      <div className="p-3">
-                        <Link href="/verificacion" className="block">
-                          <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl hover:bg-primary/10 transition-colors border border-primary/10">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <BadgeCheck className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-foreground">Verificarme</p>
-                              <p className="text-xs text-muted-foreground">Menos de 2 minutos</p>
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-                          </div>
-                        </Link>
-                      </div>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={logout} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu> : <Button variant="outline" size="icon" className="rounded-full" onClick={openAuthModal}>
-                  <User className="h-5 w-5" />
-              </Button>}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden ml-auto">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <button className="p-2">
-                  <Menu className="h-6 w-6 text-foreground" />
+                <button className="relative p-2" aria-label="Abrir menú">
+                  {isAuthenticated ? (
+                    <div className="relative">
+                      <Menu className="h-6 w-6 text-foreground" />
+                      <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" aria-hidden="true" />
+                    </div>
+                  ) : (
+                    <Menu className="h-6 w-6 text-foreground" />
+                  )}
                 </button>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-auto rounded-t-3xl px-6 pb-8 pt-6">
                 <div className="flex flex-col gap-4">
                   {isAuthenticated ? (
-                    <Button 
-                      onClick={() => { setMobileMenuOpen(false); window.location.href = '/subir-propiedad'; }}
-                      className="w-full rounded-full h-12 font-bold text-base"
-                    >
-                      Publicar mi propiedad
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={handlePublishClick}
-                      className="w-full rounded-full h-12 font-bold text-base"
-                    >
-                      Quiero publicar
-                    </Button>
-                  )}
-                  
-                  {isAuthenticated ? (
                     <>
+                      {/* User identity card */}
                       <div className="flex items-center gap-3 px-4 py-3 bg-secondary/30 rounded-xl">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="h-5 w-5 text-primary" />
+                        <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
+                          {(user?.name || user?.email)?.charAt(0).toUpperCase() ?? "U"}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{user?.email}</p>
-                          <p className="text-xs text-muted-foreground">Mi cuenta</p>
+                          <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                         </div>
                       </div>
-                      
+
+                      <Button
+                        onClick={() => { setMobileMenuOpen(false); window.location.href = '/subir-propiedad'; }}
+                        className="w-full rounded-full h-12 font-bold text-base"
+                      >
+                        Publicar mi propiedad
+                      </Button>
+
                       {/* CTA de verificación mobile */}
                       {!isVerified && (
                         <Link
@@ -640,17 +659,17 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                           <ArrowRight className="h-4 w-4 text-primary shrink-0" />
                         </Link>
                       )}
-                      
-                      <Button 
-                        variant="outline" 
+
+                      <Button
+                        variant="outline"
                         className="w-full rounded-full h-12 font-medium"
                         asChild
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <Link href="/gestion">Ir a {getGestionLabel()}</Link>
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         onClick={() => { logout(); setMobileMenuOpen(false); }}
                         className="w-full rounded-full h-12 text-muted-foreground hover:text-foreground"
                       >
@@ -659,14 +678,25 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       </Button>
                     </>
                   ) : (
-                    <Button 
-                      variant="outline" 
-                      className="w-full rounded-full h-12 font-medium"
-                      onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
-                    >
-                        <User className="mr-2 h-4 w-4" />
+                    <>
+                      <div className="text-center py-2">
+                        <p className="text-base font-semibold text-foreground">Bienvenido a mob</p>
+                        <p className="text-sm text-muted-foreground mt-1">Iniciá sesión para gestionar tus propiedades</p>
+                      </div>
+                      <Button
+                        className="w-full rounded-full h-12 font-bold text-base"
+                        onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
+                      >
                         Iniciar sesión
-                    </Button>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handlePublishClick}
+                        className="w-full rounded-full h-12 font-medium"
+                      >
+                        Quiero publicar
+                      </Button>
+                    </>
                   )}
                 </div>
               </SheetContent>

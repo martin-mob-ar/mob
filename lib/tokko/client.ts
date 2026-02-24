@@ -342,7 +342,32 @@ export class TokkoClient {
     }
 
     console.log(`[Tokko API] searchProperties done: ${allProperties.length} properties total`);
+    console.log(`[Tokko API] Property IDs returned: [${allProperties.map(p => p.id).join(', ')}]`);
     return allProperties;
+  }
+
+  /**
+   * Fetch a single property by ID (for debugging/verification).
+   */
+  async getPropertyById(propertyId: number): Promise<TokkoProperty | null> {
+    try {
+      const url = new URL(`${this.baseUrl}/property/${propertyId}/`);
+      url.searchParams.set('key', this.apiKey);
+
+      const res = await fetch(url.toString(), {
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!res.ok) {
+        console.warn(`[Tokko API] getPropertyById(${propertyId}): ${res.status} ${res.statusText}`);
+        return null;
+      }
+
+      return res.json();
+    } catch (error) {
+      console.warn(`[Tokko API] getPropertyById(${propertyId}) failed:`, error);
+      return null;
+    }
   }
 
   /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -27,12 +28,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function mapSupabaseUser(supabaseUser: SupabaseUser, publicUserId?: string | null): User {
+function mapSupabaseUser(
+  supabaseUser: SupabaseUser,
+  publicUser?: { id: string; name: string | null } | null
+): User {
   return {
     email: supabaseUser.email || "",
-    name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "",
+    name:
+      publicUser?.name ||
+      supabaseUser.user_metadata?.name ||
+      supabaseUser.email?.split("@")[0] ||
+      "",
     isOwner: supabaseUser.user_metadata?.isOwner ?? false,
-    publicUserId: publicUserId ?? null,
+    publicUserId: publicUser?.id ?? null,
   };
 }
 
@@ -41,25 +49,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const router = useRouter();
 
   const supabase = createClient();
 
-  // Resolve auth user → public users.id
-  const resolvePublicUserId = async (authId: string): Promise<string | null> => {
+  // Resolve auth user → public users row (id + name)
+  const resolvePublicUser = async (authId: string): Promise<{ id: string; name: string | null } | null> => {
     const { data } = await supabase
       .from("users")
-      .select("id")
+      .select("id, name")
       .eq("auth_id", authId)
       .maybeSingle();
-    return data?.id ?? null;
+    return data ?? null;
   };
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getUser().then(async ({ data: { user: supabaseUser } }) => {
       if (supabaseUser) {
-        const publicId = await resolvePublicUserId(supabaseUser.id);
-        setUser(mapSupabaseUser(supabaseUser, publicId));
+        const publicUser = await resolvePublicUser(supabaseUser.id);
+        setUser(mapSupabaseUser(supabaseUser, publicUser));
       }
       setIsLoading(false);
     });
@@ -69,8 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const publicId = await resolvePublicUserId(session.user.id);
-        setUser(mapSupabaseUser(session.user, publicId));
+        const publicUser = await resolvePublicUser(session.user.id);
+        setUser(mapSupabaseUser(session.user, publicUser));
       } else {
         setUser(null);
       }
@@ -117,6 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    router.push("/");
+    router.refresh();
   };
 
   return (

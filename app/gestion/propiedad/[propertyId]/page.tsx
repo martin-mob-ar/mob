@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server-component";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { transformToOperationHistory } from "@/lib/transforms/property";
@@ -28,15 +28,14 @@ export default async function GestionPropertyDetailPage({
         currentTenant={mockData.currentTenant}
         currentOperation={mockData.currentOperation}
         mockMode
+        tokko={mockData.tokko}
+        tokkoId={mockData.tokkoId}
       />
     );
   }
 
   // ─── Real data ─────────────────────────────────────────────────────
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const authUser = await getAuthUser();
 
   if (!authUser) redirect("/login");
 
@@ -58,6 +57,14 @@ export default async function GestionPropertyDetailPage({
     .maybeSingle();
 
   if (!property) redirect("/gestion");
+
+  // Fetch tokko source info (tokko_id not in properties_read)
+  const { data: propertySource } = await supabaseAdmin
+    .from("properties")
+    .select("tokko, tokko_id")
+    .eq("id", Number(propertyId))
+    .eq("user_id", publicUser.id)
+    .single();
 
   // Fetch ALL operations for this property (history)
   const { data: operations } = await supabaseAdmin
@@ -105,6 +112,8 @@ export default async function GestionPropertyDetailPage({
       operations={operationHistory}
       currentTenant={currentTenant}
       currentOperation={currentOp}
+      tokko={propertySource?.tokko ?? false}
+      tokkoId={propertySource?.tokko_id ?? null}
     />
   );
 }

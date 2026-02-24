@@ -185,7 +185,7 @@ const TenantSection = ({ rentals, mockMode }: TenantSectionProps) => {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="font-display font-bold text-lg">
-                            ${rental.price?.toLocaleString()} {rental.currency}
+                            ${rental.price?.toLocaleString("es-AR")} {rental.currency}
                             <span className="text-sm font-normal text-muted-foreground">
                               {" "}
                               /mes
@@ -193,7 +193,7 @@ const TenantSection = ({ rentals, mockMode }: TenantSectionProps) => {
                           </p>
                           {rental.expenses && rental.expenses > 0 && (
                             <p className="text-sm text-muted-foreground">
-                              + ${rental.expenses.toLocaleString()} expensas
+                              + ${rental.expenses.toLocaleString("es-AR")} expensas
                             </p>
                           )}
                         </div>
@@ -270,7 +270,7 @@ const TenantSection = ({ rentals, mockMode }: TenantSectionProps) => {
                         {formatDate(rental.endDate)}
                         {rental.price && (
                           <>
-                            {" · "}${rental.price.toLocaleString()}{" "}
+                            {" · "}${rental.price.toLocaleString("es-AR")}{" "}
                             {rental.currency}/mes
                           </>
                         )}

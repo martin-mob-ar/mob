@@ -94,7 +94,7 @@ const ResumenView = ({ properties: propsProp }: ResumenViewProps) => {
           </div>
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Ingresos del mes</p>
-            <p className="font-display font-bold text-lg text-success">${totalIncome.toLocaleString()} USD</p>
+            <p className="font-display font-bold text-lg text-success">${totalIncome.toLocaleString("es-AR")} USD</p>
           </div>
         </div>
       </div>

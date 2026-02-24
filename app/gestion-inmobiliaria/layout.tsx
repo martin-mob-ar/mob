@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server-component";
+import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/supabase/auth";
 import InmobiliariaPanelLayout from "@/views/panel-inmobiliaria/InmobiliariaPanelLayout";
 
 export default async function GestionInmobiliariaLayout({
@@ -7,11 +8,12 @@ export default async function GestionInmobiliariaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
-    redirect("/login");
+    const headersList = await headers();
+    const pathname = headersList.get("x-pathname") || "/gestion-inmobiliaria";
+    redirect(`/login?redirect=${encodeURIComponent(pathname)}`);
   }
 
   return <InmobiliariaPanelLayout>{children}</InmobiliariaPanelLayout>;

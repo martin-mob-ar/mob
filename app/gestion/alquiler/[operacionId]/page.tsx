@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server-component";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getMockTenantRentalDetail } from "@/lib/mock/gestion-mock-data";
@@ -31,10 +31,7 @@ export default async function TenantRentalDetailPage({
   }
 
   // ─── Real data ─────────────────────────────────────────────────────
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const authUser = await getAuthUser();
 
   if (!authUser) redirect("/login");
 

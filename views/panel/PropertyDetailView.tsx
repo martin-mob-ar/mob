@@ -90,6 +90,8 @@ interface PropertyDetailViewProps {
   currentTenant: { name: string; email: string } | null;
   currentOperation: any | null;
   mockMode?: boolean;
+  tokko?: boolean;
+  tokkoId?: number | null;
 }
 
 const PropertyDetailView = ({
@@ -98,6 +100,8 @@ const PropertyDetailView = ({
   currentTenant,
   currentOperation,
   mockMode,
+  tokko,
+  tokkoId,
 }: PropertyDetailViewProps) => {
   const title = property.title || property.address || "Propiedad";
   const address = property.address || "";
@@ -169,7 +173,7 @@ const PropertyDetailView = ({
                   Alquiler mensual
                 </p>
                 <p className="font-display font-bold text-2xl">
-                  ${price.toLocaleString()} {currency}
+                  ${price.toLocaleString("es-AR")} {currency}
                 </p>
               </div>
             </div>
@@ -231,6 +235,37 @@ const PropertyDetailView = ({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-3">
+        {tokko && tokkoId ? (
+          <Button asChild variant="outline" className="rounded-full gap-2">
+            <a
+              href={`https://www.tokkobroker.com/property/${tokkoId}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Editar en Tokko
+            </a>
+          </Button>
+        ) : !tokko ? (
+          <Button asChild variant="outline" className="rounded-full gap-2">
+            <Link href={`/gestion/propiedad/${propertyId}/editar`}>
+              <FileText className="h-4 w-4" />
+              Editar información
+            </Link>
+          </Button>
+        ) : null}
+        {slug && (
+          <Button asChild variant="outline" className="rounded-full gap-2">
+            <Link href={`/propiedad/${slug}`}>
+              <ExternalLink className="h-4 w-4" />
+              Ver publicación
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -326,7 +361,7 @@ const PropertyDetailView = ({
                       Precio mensual
                     </p>
                     <p className="font-medium mt-1">
-                      ${Number(currentOperation.price || 0).toLocaleString()}{" "}
+                      ${Number(currentOperation.price || 0).toLocaleString("es-AR")}{" "}
                       {currentOperation.currency || "ARS"}
                     </p>
                   </div>
@@ -336,7 +371,7 @@ const PropertyDetailView = ({
                         Expensas
                       </p>
                       <p className="font-medium mt-1">
-                        ${currentOperation.expenses.toLocaleString()}
+                        ${currentOperation.expenses.toLocaleString("es-AR")}
                       </p>
                     </div>
                   )}
@@ -350,7 +385,7 @@ const PropertyDetailView = ({
                         $
                         {Number(
                           currentOperation.secondary_price
-                        ).toLocaleString()}{" "}
+                        ).toLocaleString("es-AR")}{" "}
                         {currentOperation.secondary_currency || "ARS"}
                       </p>
                     </div>
@@ -427,7 +462,7 @@ const PropertyDetailView = ({
                     Precio
                   </p>
                   <p className="font-medium mt-1">
-                    ${price.toLocaleString()} {currency}
+                    ${price.toLocaleString("es-AR")} {currency}
                   </p>
                 </div>
                 <div>
@@ -456,21 +491,6 @@ const PropertyDetailView = ({
                 )}
               </div>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="rounded-full gap-2">
-              <FileText className="h-4 w-4" />
-              Editar información
-            </Button>
-            {slug && (
-              <Button asChild variant="outline" className="rounded-full gap-2">
-                <Link href={`/propiedad/${slug}`}>
-                  <ExternalLink className="h-4 w-4" />
-                  Ver publicación
-                </Link>
-              </Button>
-            )}
           </div>
         </TabsContent>
       </Tabs>

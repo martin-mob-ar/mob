@@ -42,7 +42,7 @@ export function transformToOwnerPanelProperty(row: any) {
     id: String(row.property_id),
     name: row.title || row.address || "Propiedad",
     location: [row.location_name, row.parent_location_name].filter(Boolean).join(", ") || "",
-    price: `$${Number(price).toLocaleString()} ${currency}`,
+    price: `$${Number(price).toLocaleString("es-AR")} ${currency}`,
     status: "activa" as const,
     image: row.cover_photo_url || "/assets/property-new-1.png",
     openTickets: 0,
@@ -61,7 +61,7 @@ export function transformToInmobiliariaPanelProperty(row: any) {
     id: String(row.property_id),
     name: row.title || row.address || "Propiedad",
     location: [row.location_name, row.parent_location_name].filter(Boolean).join(", ") || "",
-    price: `$${Number(price).toLocaleString()} ${currency}`,
+    price: `$${Number(price).toLocaleString("es-AR")} ${currency}`,
     status: "activa" as const,
     image: row.cover_photo_url || "/assets/property-new-1.png",
     propietario: "",
@@ -186,7 +186,7 @@ export function transformToOwnerProperty(
         .join(", ") || "",
     price,
     priceFormatted: price
-      ? `$${price.toLocaleString()} ${currency}`
+      ? `$${price.toLocaleString("es-AR")} ${currency}`
       : "Sin precio",
     currency,
     status: (row.operacion_status as OperacionStatus) || "available",

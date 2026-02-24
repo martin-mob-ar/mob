@@ -70,7 +70,7 @@ const VisitaSolicitud = () => {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-display text-xl font-bold">
-                  ${property.price.toLocaleString()}
+                  ${property.price.toLocaleString("es-AR")}
                 </span>
                 <span className="text-xs text-muted-foreground">/mes</span>
               </div>

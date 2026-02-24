@@ -396,7 +396,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <>
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="font-display text-2xl font-bold text-foreground">
-                  USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                  USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                 </span>
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">
                   Alquiler
@@ -404,7 +404,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               </div>
               <p className="text-sm text-muted-foreground mb-3">
                 {property.expensas != null && property.expensas > 0
-                  ? `$${property.expensas.toLocaleString()} expensas`
+                  ? `$${property.expensas.toLocaleString("es-AR")} expensas`
                   : "Sin expensas"}
               </p>
             </>
@@ -412,7 +412,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <>
               <div className="flex items-baseline gap-2 mb-3">
                 <span className="font-display text-2xl font-bold text-foreground">
-                  ${property.price.toLocaleString()}
+                  ${property.price.toLocaleString("es-AR")}
                 </span>
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">
                   Total
@@ -426,14 +426,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             {property.rentPrice != null && property.rentPrice > 0 && (
               <div>
                 <span className="text-muted-foreground text-xs">Alquiler</span>
-                <p className="font-medium">${property.rentPrice.toLocaleString()}</p>
+                <p className="font-medium">${property.rentPrice.toLocaleString("es-AR")}</p>
               </div>
             )}
             <div>
               <span className="text-muted-foreground text-xs">Expensas</span>
               <p className="font-medium">
                 {property.expensas != null && property.expensas > 0
-                  ? `$${property.expensas.toLocaleString()}`
+                  ? `$${property.expensas.toLocaleString("es-AR")}`
                   : "Sin expensas"}
               </p>
             </div>
@@ -635,18 +635,18 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             {property.currency === "USD" ? (
               <>
                 <p className="font-display text-lg font-bold text-foreground">
-                  USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                  USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
-                    ? `$${property.expensas.toLocaleString()} expensas`
+                    ? `$${property.expensas.toLocaleString("es-AR")} expensas`
                     : "Sin expensas"}
                 </p>
               </>
             ) : (
               <>
                 <p className="font-display text-lg font-bold text-foreground">
-                  ${property.price.toLocaleString()}
+                  ${property.price.toLocaleString("es-AR")}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
@@ -744,7 +744,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <>
                     <div className="flex items-baseline gap-2">
                       <span className="font-display text-2xl font-bold text-foreground">
-                        USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                        USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                       </span>
                       <span className="text-xs text-muted-foreground uppercase tracking-wider">
                         Alquiler
@@ -752,7 +752,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
                       {property.expensas != null && property.expensas > 0
-                        ? `$${property.expensas.toLocaleString()} expensas`
+                        ? `$${property.expensas.toLocaleString("es-AR")} expensas`
                         : "Sin expensas"}
                     </p>
                   </>
@@ -760,7 +760,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <>
                     <div className="flex items-baseline gap-2">
                       <span className="font-display text-2xl font-bold text-foreground">
-                        ${property.price.toLocaleString()}
+                        ${property.price.toLocaleString("es-AR")}
                       </span>
                       <span className="text-xs text-muted-foreground uppercase tracking-wider">
                         Total
@@ -772,7 +772,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                           <span className="text-muted-foreground text-xs uppercase tracking-wider">
                             Alquiler mensual
                           </span>
-                          <span className="font-medium text-sm">${property.rentPrice.toLocaleString()}</span>
+                          <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
@@ -781,7 +781,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                         </span>
                         <span className="font-medium text-sm">
                           {property.expensas != null && property.expensas > 0
-                            ? `$${property.expensas.toLocaleString()}`
+                            ? `$${property.expensas.toLocaleString("es-AR")}`
                             : "Sin expensas"}
                         </span>
                       </div>

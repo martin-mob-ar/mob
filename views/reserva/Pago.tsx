@@ -78,7 +78,7 @@ const Pago = () => {
             {/* Amount */}
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <span className="text-sm text-muted-foreground">Total a pagar</span>
-              <span className="font-semibold text-foreground">${reservationAmount.toLocaleString()}</span>
+              <span className="font-semibold text-foreground">${reservationAmount.toLocaleString("es-AR")}</span>
             </div>
 
             {/* Card Number */}

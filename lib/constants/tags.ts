@@ -34,16 +34,6 @@ export const TAG_SECTIONS: TagSection[] = [
     ],
   },
   {
-    title: "Bienestar",
-    tags: [
-      { id: 2178, label: "Ventanales grandes" },
-      { id: 1874, label: "Calle tranquila" },
-      { id: 1860, label: "Sol de mañana" },
-      { id: 1805, label: "Sol de tarde" },
-      { id: 1893, label: "Vista despejada" },
-    ],
-  },
-  {
     title: "Electrodomésticos",
     tags: [
       { id: 2141, label: "Cocina" },

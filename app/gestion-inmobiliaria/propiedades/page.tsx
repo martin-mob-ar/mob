@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server-component";
 import { transformToInmobiliariaPanelProperty } from "@/lib/transforms/property";
 import InmobiliariaPropiedadesView from "@/views/panel-inmobiliaria/InmobiliariaPropiedadesView";
@@ -6,10 +7,10 @@ export default async function GestionInmobiliariaPropiedadesPage() {
   let properties;
 
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     if (user) {
+      const supabase = await createClient();
       const { data } = await supabase
         .from("properties_read")
         .select("*")

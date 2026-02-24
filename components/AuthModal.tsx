@@ -12,17 +12,33 @@ import { Building2 } from "lucide-react";
 type AuthStep = "email" | "register" | "register-inmobiliaria";
 
 const AuthModal = () => {
-  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   // Auto-open modal when ?auth=open is present (e.g., from /login redirect)
+  // Skip if already authenticated (prevents re-opening after login while URL updates)
   useEffect(() => {
-    if (searchParams.get("auth") === "open" && !isAuthModalOpen) {
-      openAuthModal();
+    if (searchParams.get("auth") === "open" && !isLoading) {
+      if (!isAuthenticated && !isAuthModalOpen) {
+        openAuthModal();
+      } else if (isAuthenticated) {
+        // Already logged in — clean auth/redirect params from URL
+        const params = new URLSearchParams(searchParams.toString());
+        const redirectTo = params.get("redirect");
+        params.delete("auth");
+        params.delete("redirect");
+        const newQuery = params.toString();
+        if (redirectTo) {
+          router.push(redirectTo);
+          router.refresh();
+        } else {
+          router.replace(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
+        }
+      }
     }
-  }, [searchParams, isAuthModalOpen, openAuthModal]);
+  }, [searchParams, isAuthModalOpen, openAuthModal, isAuthenticated, isLoading, pathname, router]);
   const { startSync } = useTokkoSync();
   const [step, setStep] = useState<AuthStep>("email");
   const [email, setEmail] = useState("");
@@ -41,10 +57,11 @@ const AuthModal = () => {
   const handleClose = () => {
     closeAuthModal();
     resetForm();
-    // Remove ?auth=open from URL if present
-    if (searchParams.get("auth") === "open") {
+    // Remove ?auth=open and ?redirect from URL if present
+    if (searchParams.get("auth") === "open" || searchParams.get("redirect")) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("auth");
+      params.delete("redirect");
       const newQuery = params.toString();
       router.replace(`${pathname}${newQuery ? `?${newQuery}` : ""}`, { scroll: false });
     }
@@ -55,7 +72,16 @@ const AuthModal = () => {
     setLoading(true);
     try {
       await login(email, password);
-      handleClose();
+      const redirectTo = searchParams.get("redirect");
+      if (redirectTo) {
+        // Navigate to the originally-intended page after login
+        closeAuthModal();
+        resetForm();
+        router.push(redirectTo);
+        router.refresh();
+      } else {
+        handleClose();
+      }
     } catch {
       // Error is set in AuthContext
     } finally {
@@ -68,7 +94,15 @@ const AuthModal = () => {
     setLoading(true);
     try {
       await register(email, password, false);
-      handleClose();
+      const redirectTo = searchParams.get("redirect");
+      if (redirectTo) {
+        closeAuthModal();
+        resetForm();
+        router.push(redirectTo);
+        router.refresh();
+      } else {
+        handleClose();
+      }
     } catch {
       // Error is set in AuthContext
     } finally {

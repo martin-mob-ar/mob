@@ -99,3 +99,17 @@ export const addPropertyFormSchema = z.object({
 });
 
 export type AddPropertyFormValues = z.infer<typeof addPropertyFormSchema>;
+
+// Edit schema — relaxed requirements since fields are already populated
+export const editPropertyFormSchema = addPropertyFormSchema.extend({
+  type_id: z.number().optional(),
+  address: z.string().optional(),
+  geo_lat: z.string().optional(),
+  geo_long: z.string().optional(),
+  location_id: z.number().optional(),
+  // Operacion fields
+  duration_months: z.number().int().min(0).optional().nullable(),
+  ipc_adjustment: z.string().optional().nullable(),
+});
+
+export type EditPropertyFormValues = z.infer<typeof editPropertyFormSchema>;

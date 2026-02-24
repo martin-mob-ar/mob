@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Heart, ChevronLeft, ChevronRight, CheckCircle, ExternalLink } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { getPropertyUrl } from "@/lib/utils/property-url";
 
@@ -34,11 +35,38 @@ interface PropertyCardProps {
 
 const PropertyCard = ({ property, showDetails = false, compactVerified = false }: PropertyCardProps) => {
   const images = property.images?.length ? property.images : [property.image];
-  const totalSlides = images.length + 1; // +1 for CTA slide
+  const totalSlides = images.length;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const { isAuthenticated, openAuthModal } = useAuth();
+  const touchStartX = useRef<number | null>(null);
+  const wheelAccumulator = useRef(0);
+  const navigatingRef = useRef(false);
+  const currentIndexRef = useRef(currentImageIndex);
+  currentIndexRef.current = currentImageIndex;
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (navigatingRef.current) { e.preventDefault(); return; }
+      if (currentIndexRef.current === totalSlides - 1 && e.deltaX > 0) {
+        e.preventDefault();
+        wheelAccumulator.current += e.deltaX;
+        if (wheelAccumulator.current > 100) {
+          navigatingRef.current = true;
+          window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+          setTimeout(() => { navigatingRef.current = false; wheelAccumulator.current = 0; }, 1000);
+        }
+      } else if (e.deltaX < 0) {
+        wheelAccumulator.current = 0;
+      }
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [totalSlides, property]);
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -102,6 +130,18 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 setCurrentImageIndex(newIndex);
               }
             }}
+            onTouchStart={e => {
+              touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={e => {
+              if (touchStartX.current !== null && currentImageIndex === totalSlides - 1) {
+                const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+                if (deltaX < -50) {
+                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                }
+              }
+              touchStartX.current = null;
+            }}
           >
             {images.map((img, index) => (
               <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
@@ -115,24 +155,6 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 />
               </div>
             ))}
-            {/* CTA Slide */}
-            <div className="flex-shrink-0 w-full h-full snap-center relative">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
-                }}
-                className="flex flex-col items-center justify-center w-full h-full bg-accent gap-2.5 cursor-pointer hover:bg-accent/80 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ExternalLink className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-xs font-medium text-primary text-center px-4">
-                  Abrir ficha en nueva pestaña
-                </span>
-              </button>
-            </div>
           </div>
           
           {/* Navigation Arrows */}
@@ -149,17 +171,21 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                   <ChevronLeft className="h-4 w-4 text-foreground" />
                 </button>
               )}
-              {currentImageIndex < totalSlides - 1 && (
-                <button
-                  onClick={(e) => {
+              <button
+                onClick={(e) => {
+                  if (currentImageIndex === totalSlides - 1) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                  } else {
                     nextImage(e);
                     scrollToImage(Math.min(currentImageIndex + 1, totalSlides - 1));
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md"
-                >
-                  <ChevronRight className="h-4 w-4 text-foreground" />
-                </button>
-              )}
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md"
+              >
+                <ChevronRight className="h-4 w-4 text-foreground" />
+              </button>
             </>
           )}
 
@@ -230,7 +256,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
               <>
                 <div className="flex items-baseline gap-1 flex-wrap">
                   <span className="font-display font-bold text-sm text-foreground">
-                    USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                    USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
                     Alquiler 
@@ -238,7 +264,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
-                    ? `$${property.expensas.toLocaleString()} expensas`
+                    ? `$${property.expensas.toLocaleString("es-AR")} expensas`
                     : "Sin expensas"}
                 </span>
               </>
@@ -246,7 +272,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
               <>
                 <div className="flex items-baseline gap-1 flex-wrap">
                   <span className="font-display font-bold text-sm text-foreground">
-                    ${property.price.toLocaleString()}
+                    ${property.price.toLocaleString("es-AR")}
                   </span>
                   <span className="text-[10px] text-muted-foreground uppercase">
                     Total
@@ -254,7 +280,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
-                    ? `($${property.rentPrice.toLocaleString()} Alq + $${property.expensas.toLocaleString()} Exp)`
+                    ? `($${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp)`
                     : "Sin expensas"}
                 </span>
               </>

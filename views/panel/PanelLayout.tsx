@@ -43,10 +43,10 @@ const PanelLayout = ({ children }: { children: React.ReactNode }) => {
             {/* User menu */}
             <div className="flex items-center gap-3 pl-4 border-l border-border">
               <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
-                {getInitials(user?.name || "JP")}
+                {getInitials(user?.name || user?.email || "")}
               </div>
               <div className="hidden md:block">
-                <p className="font-medium text-sm">{user?.name || "Juan Pérez"}</p>
+                <p className="font-medium text-sm">{user?.name || user?.email || ""}</p>
               </div>
               <button
                 onClick={logout}

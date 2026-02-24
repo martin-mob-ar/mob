@@ -325,19 +325,19 @@ const InmobiliariaPropertyDetailView = () => {
             <div className="bg-card rounded-xl border border-border p-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Ingresos totales</p>
               <p className="font-display font-bold text-2xl mt-1 text-green-600">
-                ${transactions.filter(t => t.amount > 0).reduce((a, b) => a + b.amount, 0).toLocaleString()}
+                ${transactions.filter(t => t.amount > 0).reduce((a, b) => a + b.amount, 0).toLocaleString("es-AR")}
               </p>
             </div>
             <div className="bg-card rounded-xl border border-border p-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Egresos totales</p>
               <p className="font-display font-bold text-2xl mt-1 text-destructive">
-                ${Math.abs(transactions.filter(t => t.amount < 0).reduce((a, b) => a + b.amount, 0)).toLocaleString()}
+                ${Math.abs(transactions.filter(t => t.amount < 0).reduce((a, b) => a + b.amount, 0)).toLocaleString("es-AR")}
               </p>
             </div>
             <div className="bg-card rounded-xl border border-border p-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Balance neto</p>
               <p className="font-display font-bold text-2xl mt-1">
-                ${transactions.reduce((a, b) => a + b.amount, 0).toLocaleString()}
+                ${transactions.reduce((a, b) => a + b.amount, 0).toLocaleString("es-AR")}
               </p>
             </div>
           </div>
@@ -361,7 +361,7 @@ const InmobiliariaPropertyDetailView = () => {
                     <TableCell className="text-muted-foreground">{tx.date}</TableCell>
                     <TableCell>{tx.concept}</TableCell>
                     <TableCell className={`text-right font-medium ${tx.amount > 0 ? "text-green-600" : "text-destructive"}`}>
-                      {tx.amount > 0 ? "+" : ""}${Math.abs(tx.amount).toLocaleString()}
+                      {tx.amount > 0 ? "+" : ""}${Math.abs(tx.amount).toLocaleString("es-AR")}
                     </TableCell>
                   </TableRow>
                 ))}

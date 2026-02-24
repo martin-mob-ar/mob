@@ -1,8 +1,9 @@
 "use client";
 import Image from "next/image";
-import { Heart, ChevronLeft, ChevronRight, CheckCircle, ExternalLink } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Property } from "@/components/PropertyCard";
 import { getPropertyUrl } from "@/lib/utils/property-url";
@@ -15,10 +16,36 @@ const MobilePropertyCard = ({
   property
 }: MobilePropertyCardProps) => {
   const images = property.images?.length ? property.images : [property.image];
-  const totalSlides = images.length + 1; // +1 for CTA slide
+  const totalSlides = images.length;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const wheelAccumulator = useRef(0);
+  const navigatingRef = useRef(false);
+  const currentIndexRef = useRef(currentImageIndex);
+  currentIndexRef.current = currentImageIndex;
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (navigatingRef.current) { e.preventDefault(); return; }
+      if (currentIndexRef.current === totalSlides - 1 && e.deltaX > 0) {
+        e.preventDefault();
+        wheelAccumulator.current += e.deltaX;
+        if (wheelAccumulator.current > 100) {
+          navigatingRef.current = true;
+          window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+          setTimeout(() => { navigatingRef.current = false; wheelAccumulator.current = 0; }, 1000);
+        }
+      } else if (e.deltaX < 0) {
+        wheelAccumulator.current = 0;
+      }
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [totalSlides, property]);
   const {
     isAuthenticated,
     openAuthModal
@@ -78,28 +105,22 @@ const MobilePropertyCard = ({
                 setCurrentImageIndex(newIndex);
               }
             }}
+            onTouchStart={e => {
+              touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={e => {
+              if (touchStartX.current !== null && currentImageIndex === totalSlides - 1) {
+                const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+                if (deltaX < -50) {
+                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                }
+              }
+              touchStartX.current = null;
+            }}
           >
             {images.map((img, index) => <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
                 <Image src={img} alt={`${property.address} - ${index + 1}`} fill sizes="100vw" className="object-cover" draggable={false} />
               </div>)}
-            {/* CTA Slide */}
-            <div className="flex-shrink-0 w-full h-full snap-center relative">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
-                }}
-                className="flex flex-col items-center justify-center w-full h-full bg-accent gap-3 cursor-pointer hover:bg-accent/80 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ExternalLink className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-sm font-medium text-primary text-center px-6">
-                  Abrir ficha en nueva pestaña
-                </span>
-              </button>
-            </div>
           </div>
 
           {/* Navigation Arrows */}
@@ -112,14 +133,20 @@ const MobilePropertyCard = ({
                 <ChevronLeft className="h-4 w-4 text-foreground" />
               </button>
             )}
-            {currentImageIndex < totalSlides - 1 && (
-              <button
-                onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md opacity-0 group-hover:opacity-100 md:opacity-100"
-              >
-                <ChevronRight className="h-4 w-4 text-foreground" />
-              </button>
-            )}
+            <button
+              onClick={(e) => {
+                if (currentImageIndex === totalSlides - 1) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                } else {
+                  nextImage(e);
+                }
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur flex items-center justify-center hover:bg-background transition-all shadow-md opacity-0 group-hover:opacity-100 md:opacity-100"
+            >
+              <ChevronRight className="h-4 w-4 text-foreground" />
+            </button>
           </>
 
           {/* Badge */}
@@ -159,7 +186,7 @@ const MobilePropertyCard = ({
                 <>
                   <div className="flex items-baseline gap-1.5 flex-wrap">
                     <span className="font-display font-bold text-xl text-foreground">
-                      USD {property.rentPrice?.toLocaleString() ?? property.price.toLocaleString()}
+                      USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                     </span>
                     <span className="text-sm text-muted-foreground uppercase">
                       Alquiler
@@ -167,21 +194,21 @@ const MobilePropertyCard = ({
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {property.expensas != null && property.expensas > 0
-                      ? `$${property.expensas.toLocaleString()} expensas`
+                      ? `$${property.expensas.toLocaleString("es-AR")} expensas`
                       : "Sin expensas"}
                   </span>
                 </>
               ) : (
                 <div className="flex items-baseline gap-1.5 flex-wrap">
                   <span className="font-display font-bold text-xl text-foreground">
-                    ${property.price.toLocaleString()}
+                    ${property.price.toLocaleString("es-AR")}
                   </span>
                   <span className="text-sm text-muted-foreground uppercase">
                     Total
                   </span>
                   {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
                     <span className="text-sm text-muted-foreground">
-                      (${property.rentPrice.toLocaleString()} Alq + ${property.expensas.toLocaleString()} Exp)
+                      (${property.rentPrice.toLocaleString("es-AR")} Alq + ${property.expensas.toLocaleString("es-AR")} Exp)
                     </span>
                   ) : (
                     <span className="text-sm text-muted-foreground">

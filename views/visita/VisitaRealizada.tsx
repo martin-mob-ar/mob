@@ -67,7 +67,7 @@ const VisitaRealizada = () => {
               <h3 className="font-semibold">{property.title || `Depto en ${property.neighborhood}`}</h3>
               <p className="text-sm text-muted-foreground">{property.address}, {property.neighborhood}</p>
               <p className="font-display text-lg font-bold mt-2">
-                ${property.price.toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/mes</span>
+                ${property.price.toLocaleString("es-AR")}<span className="text-sm font-normal text-muted-foreground">/mes</span>
               </p>
             </div>
           </div>

@@ -77,7 +77,7 @@ const Checkout = () => {
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="text-sm text-muted-foreground">Alquiler mensual</span>
-                <span className="font-semibold">${property.price.toLocaleString()}</span>
+                <span className="font-semibold">${property.price.toLocaleString("es-AR")}</span>
               </div>
             </div>
           </div>
@@ -90,7 +90,7 @@ const Checkout = () => {
                 <p className="text-sm text-muted-foreground">10% del primer mes</p>
               </div>
               <p className="font-display text-2xl font-bold text-primary">
-                ${reservationAmount.toLocaleString()}
+                ${reservationAmount.toLocaleString("es-AR")}
               </p>
             </div>
           </div>

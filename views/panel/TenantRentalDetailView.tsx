@@ -181,7 +181,7 @@ const TenantRentalDetailView = ({
             {/* Price */}
             <div className="mt-4 pt-4 border-t border-border">
               <p className="font-display font-bold text-2xl">
-                ${Number(operacion.price || 0).toLocaleString()}{" "}
+                ${Number(operacion.price || 0).toLocaleString("es-AR")}{" "}
                 {operacion.currency || "ARS"}
                 <span className="text-sm font-normal text-muted-foreground">
                   {" "}
@@ -190,7 +190,7 @@ const TenantRentalDetailView = ({
               </p>
               {operacion.expenses && operacion.expenses > 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  + ${operacion.expenses.toLocaleString()} expensas
+                  + ${operacion.expenses.toLocaleString("es-AR")} expensas
                 </p>
               )}
             </div>
@@ -243,7 +243,7 @@ const TenantRentalDetailView = ({
               Precio mensual
             </p>
             <p className="font-medium mt-1">
-              ${Number(operacion.price || 0).toLocaleString()}{" "}
+              ${Number(operacion.price || 0).toLocaleString("es-AR")}{" "}
               {operacion.currency || "ARS"}
             </p>
           </div>
@@ -253,7 +253,7 @@ const TenantRentalDetailView = ({
                 Expensas
               </p>
               <p className="font-medium mt-1">
-                ${operacion.expenses.toLocaleString()} ARS
+                ${operacion.expenses.toLocaleString("es-AR")} ARS
               </p>
             </div>
           )}
@@ -263,7 +263,7 @@ const TenantRentalDetailView = ({
                 Precio en {operacion.secondary_currency || "ARS"}
               </p>
               <p className="font-medium mt-1">
-                ${Number(operacion.secondary_price).toLocaleString()}{" "}
+                ${Number(operacion.secondary_price).toLocaleString("es-AR")}{" "}
                 {operacion.secondary_currency || "ARS"}
               </p>
             </div>
@@ -282,7 +282,7 @@ const TenantRentalDetailView = ({
                 Depósito
               </p>
               <p className="font-medium mt-1">
-                ${Number(operacion.down_payment).toLocaleString()}{" "}
+                ${Number(operacion.down_payment).toLocaleString("es-AR")}{" "}
                 {operacion.currency || "ARS"}
               </p>
             </div>
@@ -293,7 +293,7 @@ const TenantRentalDetailView = ({
                 Seguro de incendio
               </p>
               <p className="font-medium mt-1">
-                ${Number(operacion.fire_insurance_cost).toLocaleString()}
+                ${Number(operacion.fire_insurance_cost).toLocaleString("es-AR")}
               </p>
             </div>
           )}

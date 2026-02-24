@@ -49,8 +49,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'profile_id es requerido' }, { status: 400 });
     }
 
+    console.log('[properties/create] Resolving user for profile_id:', profile_id);
     const resolvedUserId = await getOrCreateUserFromAuth(profile_id);
+    console.log('[properties/create] Resolved user_id:', resolvedUserId);
 
+    console.log('[properties/create] Inserting property...');
     const { data: property, error: propError } = await supabaseAdmin
       .from('properties')
       .insert({
@@ -94,7 +97,7 @@ export async function POST(request: Request) {
       .single();
 
     if (propError) {
-      console.error('[properties/create]', propError);
+      console.error('[properties/create] Property insert error:', propError);
       return NextResponse.json(
         { error: propError.message || 'Error al crear la propiedad' },
         { status: 500 }
@@ -102,57 +105,86 @@ export async function POST(request: Request) {
     }
 
     const propertyId = property.id;
+    console.log('[properties/create] Property created:', propertyId);
 
     // Create operacion with pricing
     if (price != null || currency) {
-      await supabaseAdmin.from('operaciones').insert({
+      console.log('[properties/create] Inserting operacion...');
+      const { error: opError } = await supabaseAdmin.from('operaciones').insert({
         property_id: propertyId,
         status: 'available',
         currency: currency || 'ARS',
         price: Number(price) || 0,
-        period: 0,
-        expenses: expenses ?? null,
+        period: '0',
+        expenses: expenses != null ? Math.round(Number(expenses)) : null,
         duration_months: duration_months ?? null,
         ipc_adjustment: ipc_adjustment ?? null,
       });
+      if (opError) {
+        console.error('[properties/create] Operacion insert error:', opError);
+      }
     }
 
+    // Insert photos
     const photos = Array.isArray(photoUrls) ? photoUrls.filter((u: string) => u && u.trim()) : [];
-    for (let i = 0; i < photos.length; i++) {
-      const url = photos[i].trim();
-      await supabaseAdmin.from('tokko_property_photo').insert({
+    if (photos.length > 0) {
+      console.log('[properties/create] Inserting', photos.length, 'photos...');
+      const photoRows = photos.map((url: string, i: number) => ({
         property_id: propertyId,
-        image: url,
-        original: url,
-        thumb: url,
+        image: url.trim(),
+        original: url.trim(),
+        thumb: url.trim(),
         description: null,
         is_blueprint: false,
         is_front_cover: i === 0,
         order: i,
-      });
+      }));
+      const { error: photoError } = await supabaseAdmin
+        .from('tokko_property_photo')
+        .insert(photoRows);
+      if (photoError) {
+        console.error('[properties/create] Photos insert error:', photoError);
+      }
     }
 
+    // Insert videos
     const videos = Array.isArray(videoUrls) ? videoUrls.filter((u: string) => u && u.trim()) : [];
-    for (let i = 0; i < videos.length; i++) {
-      await supabaseAdmin.from('tokko_property_video').insert({
+    if (videos.length > 0) {
+      console.log('[properties/create] Inserting', videos.length, 'videos...');
+      const videoRows = videos.map((url: string, i: number) => ({
         property_id: propertyId,
-        url: videos[i].trim(),
+        url: url.trim(),
         description: null,
         order: i,
-      });
+      }));
+      const { error: videoError } = await supabaseAdmin
+        .from('tokko_property_video')
+        .insert(videoRows);
+      if (videoError) {
+        console.error('[properties/create] Videos insert error:', videoError);
+      }
     }
 
+    // Insert tags
     const tagIdsArr = Array.isArray(tagIds) ? tagIds : [];
-    for (const tagId of tagIdsArr) {
-      await supabaseAdmin.from('tokko_property_property_tag').insert({
+    if (tagIdsArr.length > 0) {
+      console.log('[properties/create] Inserting', tagIdsArr.length, 'tags...');
+      const tagRows = tagIdsArr.map((tagId: number) => ({
         property_id: propertyId,
         tag_id: Number(tagId),
-      });
+      }));
+      const { error: tagError } = await supabaseAdmin
+        .from('tokko_property_property_tag')
+        .insert(tagRows);
+      if (tagError) {
+        console.error('[properties/create] Tags insert error:', tagError);
+      }
     }
 
+    console.log('[properties/create] Done. Property ID:', propertyId);
     return NextResponse.json({ id: propertyId });
   } catch (e) {
-    console.error('[properties/create]', e);
+    console.error('[properties/create] Unhandled error:', e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Error al crear la propiedad' },
       { status: 500 }

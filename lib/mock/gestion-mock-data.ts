@@ -284,9 +284,13 @@ export const mockOwnerProperties: OwnerProperty[] = [
 // ─── Property detail mock data (per property ID) ────────────────────
 
 // Simulated properties_read rows (raw DB shape)
+// tokko=true + tokko_id → synced from Tokko (edit opens tokkobroker.com)
+// tokko=false + tokko_id=null → manually uploaded (edit opens our form)
 const mockPropertyRows: Record<string, any> = {
   "5001": {
     property_id: 5001,
+    tokko: true,
+    tokko_id: 7778691,
     title: "Departamento en Recoleta",
     address: "Av. Alvear 1500, Recoleta",
     location_name: "Recoleta",
@@ -306,6 +310,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5002": {
     property_id: 5002,
+    tokko: true,
+    tokko_id: 7508271,
     title: "PH en Villa Crespo",
     address: "Acevedo 700, Villa Crespo",
     location_name: "Villa Crespo",
@@ -325,6 +331,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5003": {
     property_id: 5003,
+    tokko: true,
+    tokko_id: 7752047,
     title: "Loft en Puerto Madero",
     address: "Azucena Villaflor 200, Dique 1",
     location_name: "Puerto Madero",
@@ -344,6 +352,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5004": {
     property_id: 5004,
+    tokko: true,
+    tokko_id: 7801234,
     title: "Casa en Martínez",
     address: "Paraná 300, Martínez",
     location_name: "Martínez",
@@ -363,6 +373,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5005": {
     property_id: 5005,
+    tokko: false,
+    tokko_id: null,
     title: "Monoambiente en Caballito",
     address: "Av. Rivadavia 5200",
     location_name: "Caballito",
@@ -382,6 +394,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5006": {
     property_id: 5006,
+    tokko: false,
+    tokko_id: null,
     title: "Departamento en Núñez",
     address: "Av. Cabildo 3900",
     location_name: "Núñez",
@@ -401,6 +415,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5007": {
     property_id: 5007,
+    tokko: true,
+    tokko_id: 7845678,
     title: "Dúplex en San Isidro",
     address: "Av. Libertador 16000",
     location_name: "San Isidro",
@@ -420,6 +436,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5008": {
     property_id: 5008,
+    tokko: true,
+    tokko_id: 7890123,
     title: "Local en Palermo Hollywood",
     address: "Honduras 5600",
     location_name: "Palermo",
@@ -439,6 +457,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5009": {
     property_id: 5009,
+    tokko: false,
+    tokko_id: null,
     title: "Estudio en Colegiales",
     address: "Álvarez Thomas 1200",
     location_name: "Colegiales",
@@ -458,6 +478,8 @@ const mockPropertyRows: Record<string, any> = {
   },
   "5010": {
     property_id: 5010,
+    tokko: true,
+    tokko_id: 7912345,
     title: "Penthouse en Belgrano",
     address: "Juramento 2100, Piso 12",
     location_name: "Belgrano",
@@ -831,8 +853,10 @@ export function getMockPropertyDetail(propertyId: string) {
   const operations = mockOperationHistories[propertyId] || [];
   const currentOperation = mockCurrentOperations[propertyId] || null;
   const currentTenant = mockTenants[propertyId] || null;
+  const tokko: boolean = property.tokko ?? false;
+  const tokkoId: number | null = property.tokko_id ?? null;
 
-  return { property, operations, currentOperation, currentTenant };
+  return { property, operations, currentOperation, currentTenant, tokko, tokkoId };
 }
 
 // ─── Tenant rental detail mock data ─────────────────────────────────

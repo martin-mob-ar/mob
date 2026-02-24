@@ -127,6 +127,7 @@ async function findUser(authId: string, authEmail: string, apiKeyHash: string): 
  */
 async function updateUserWithTokkoData(
   userId: string,
+  authId: string,
   apiKeyHash: string,
   data: TokkoUserData
 ): Promise<void> {
@@ -146,6 +147,13 @@ async function updateUserWithTokkoData(
     .from('users')
     .update(updates)
     .eq('id', userId);
+
+  // Sync auth.users display_name to match users.name
+  if (data.name) {
+    await supabaseAdmin.auth.admin.updateUserById(authId, {
+      user_metadata: { display_name: data.name },
+    });
+  }
 }
 
 /**
@@ -662,7 +670,7 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
     // Find existing user (created by DB trigger on auth signup) and link Tokko data
     console.log('[Tokko Sync] Finding user...');
     const userId = await findUser(authId, authEmail, apiKeyHash);
-    await updateUserWithTokkoData(userId, apiKeyHash, {
+    await updateUserWithTokkoData(userId, authId, apiKeyHash, {
       name: userName,
       phone: userPhone,
       logo: userLogo,

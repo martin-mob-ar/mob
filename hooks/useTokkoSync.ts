@@ -49,7 +49,7 @@ export function useTokkoSync() {
       } catch {
         // Network error during poll — keep trying
       }
-    }, 5000);
+    }, 2000);
   }, []);
 
   return { startSync };
