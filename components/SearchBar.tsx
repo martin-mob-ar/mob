@@ -290,7 +290,7 @@ const SearchBar = () => {
     return (
       <div className="w-full max-w-4xl mx-auto search-bar-mob">
         <div className="flex items-center p-2 bg-card rounded-full border border-border shadow-md">
-          <div className="flex-1 grid grid-cols-3 divide-x divide-border">
+          <div className="flex-1 grid grid-cols-[1.4fr_0.8fr_1fr] divide-x divide-border">
             <div className="px-6 py-3 relative">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Ubicación

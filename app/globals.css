@@ -4,6 +4,7 @@
 @import '@fontsource/montserrat/600.css';
 @import '@fontsource/montserrat/700.css';
 @import '@fontsource/montserrat/800.css';
+@import '@fontsource/montserrat/900.css';
 
 /* Inter - Secondary font for body text */
 @import '@fontsource/inter/400.css';
@@ -239,5 +240,19 @@
       box-shadow: 0 0 20px 8px hsl(var(--primary) / 0.3);
       transform: scale(1.03);
     }
+  }
+
+  /* Floating badge animation */
+  @keyframes badge-float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  .animate-badge-float {
+    animation: badge-float 3s ease-in-out infinite;
   }
 }

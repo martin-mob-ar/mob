@@ -5,6 +5,7 @@ import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import { getPropertyUrl } from "@/lib/utils/property-url";
 
 export interface Property {
@@ -38,8 +39,8 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   const totalSlides = images.length;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const { isAuthenticated, openAuthModal } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const touchStartX = useRef<number | null>(null);
   const wheelAccumulator = useRef(0);
   const navigatingRef = useRef(false);
@@ -74,7 +75,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
       openAuthModal();
       return;
     }
-    setIsFavorite(!isFavorite);
+    toggleFavorite(Number(property.id));
   };
 
   const nextImage = (e: React.MouseEvent) => {
@@ -233,12 +234,12 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
             onClick={handleFavoriteClick}
             className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/50 backdrop-blur flex items-center justify-center hover:bg-background transition-colors group/fav"
           >
-            <Heart 
+            <Heart
               className={`h-4 w-4 transition-colors ${
-                isFavorite 
-                  ? "fill-primary text-primary" 
+                isFavorite(Number(property.id))
+                  ? "fill-primary text-primary"
                   : "text-foreground/50 group-hover/fav:text-primary"
-              }`} 
+              }`}
             />
           </button>
         </div>

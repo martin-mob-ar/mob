@@ -475,7 +475,7 @@ export default function PropertyEditForm({
               <Input
                 type="number"
                 min={6}
-                placeholder="Meses"
+                placeholder="Otro"
                 value={durationMonths && ![12, 24, 36].includes(durationMonths) ? durationMonths : ""}
                 onFocus={() => { setDurationMonths(null); setShowDurationHint(true); }}
                 onBlur={() => setShowDurationHint(false)}
@@ -523,6 +523,7 @@ export default function PropertyEditForm({
             <div className="relative">
               <Input
                 type="date"
+                max="9999-12-31"
                 value={fechaDisponible}
                 onChange={(e) => setFechaDisponible(e.target.value)}
                 className="h-11 rounded-xl text-sm pr-12"

@@ -8,6 +8,9 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 interface User {
   email: string;
   name: string;
+  phone: string;
+  phoneArea: string;
+  phoneCountryCode: string;
   isOwner: boolean;
   publicUserId: string | null;
 }
@@ -24,13 +27,14 @@ interface AuthContextType {
   register: (email: string, password: string, isOwner: boolean) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapSupabaseUser(
   supabaseUser: SupabaseUser,
-  publicUser?: { id: string; name: string | null } | null
+  publicUser?: { id: string; name: string | null; telefono: string | null; telefono_area: string | null; telefono_country_code: string | null } | null
 ): User {
   return {
     email: supabaseUser.email || "",
@@ -39,6 +43,9 @@ function mapSupabaseUser(
       supabaseUser.user_metadata?.name ||
       supabaseUser.email?.split("@")[0] ||
       "",
+    phone: publicUser?.telefono || "",
+    phoneArea: publicUser?.telefono_area || "",
+    phoneCountryCode: publicUser?.telefono_country_code || "+54",
     isOwner: supabaseUser.user_metadata?.isOwner ?? false,
     publicUserId: publicUser?.id ?? null,
   };
@@ -54,10 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const supabase = createClient();
 
   // Resolve auth user → public users row (id + name)
-  const resolvePublicUser = async (authId: string): Promise<{ id: string; name: string | null } | null> => {
+  const resolvePublicUser = async (authId: string): Promise<{ id: string; name: string | null; telefono: string | null; telefono_area: string | null; telefono_country_code: string | null } | null> => {
     const { data } = await supabase
       .from("users")
-      .select("id, name")
+      .select("id, name, telefono, telefono_area, telefono_country_code")
       .eq("auth_id", authId)
       .maybeSingle();
     return data ?? null;
@@ -99,6 +106,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   const clearError = () => setAuthError(null);
 
+  const claimGuestLeads = () => {
+    // Fire and forget — link any guest leads submitted with this email
+    fetch('/api/leads/claim', { method: 'POST' }).catch(() => {});
+  };
+
   const login = async (email: string, password: string) => {
     setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -106,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAuthError(error.message);
       throw error;
     }
+    claimGuestLeads();
   };
 
   const register = async (email: string, password: string, isOwner: boolean) => {
@@ -121,6 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAuthError(error.message);
       throw error;
     }
+    claimGuestLeads();
   };
 
   const logout = async () => {
@@ -128,6 +142,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     router.push("/");
     router.refresh();
+  };
+
+  const refreshUser = async () => {
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+    if (supabaseUser) {
+      const publicUser = await resolvePublicUser(supabaseUser.id);
+      setUser(mapSupabaseUser(supabaseUser, publicUser));
+    }
   };
 
   return (
@@ -144,6 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         logout,
         clearError,
+        refreshUser,
       }}
     >
       {children}

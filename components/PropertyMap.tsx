@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLoadScript } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/components/GoogleMapsProvider";
 import { MapPin } from "lucide-react";
 
 interface PropertyMapProps {
@@ -15,9 +15,7 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const [error, setError] = useState(false);
 
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-  });
+  const { isLoaded, loadError } = useGoogleMaps();
 
   useEffect(() => {
     if (!isLoaded || loadError || !mapRef.current || mapInstanceRef.current) return;

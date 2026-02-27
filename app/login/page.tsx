@@ -13,7 +13,8 @@ export default async function LoginPage({
   // and pass the intended destination as ?redirect= for post-login navigation.
   const isProtected =
     redirectTo?.startsWith("/gestion") ||
-    redirectTo?.startsWith("/gestion-inmobiliaria");
+    redirectTo?.startsWith("/gestion-inmobiliaria") ||
+    redirectTo?.startsWith("/perfil");
 
   if (isProtected) {
     redirect(`/?auth=open&redirect=${encodeURIComponent(redirectTo!)}`);

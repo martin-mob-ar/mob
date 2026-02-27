@@ -5,14 +5,32 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTokkoSync } from "@/hooks/useTokkoSync";
 import { Building2 } from "lucide-react";
 
-type AuthStep = "email" | "register" | "register-inmobiliaria";
+const COUNTRY_CODES = [
+  { value: "+54", label: "🇦🇷 +54" },
+  { value: "+55", label: "🇧🇷 +55" },
+  { value: "+56", label: "🇨🇱 +56" },
+  { value: "+57", label: "🇨🇴 +57" },
+  { value: "+598", label: "🇺🇾 +598" },
+  { value: "+52", label: "🇲🇽 +52" },
+  { value: "+1", label: "🇺🇸 +1" },
+  { value: "+34", label: "🇪🇸 +34" },
+];
+
+type AuthStep = "email" | "register" | "register-inmobiliaria" | "complete-profile";
 
 const AuthModal = () => {
-  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading, refreshUser } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -45,12 +63,26 @@ const AuthModal = () => {
   const [password, setPassword] = useState("");
   const [tokkoApiKey, setTokkoApiKey] = useState("");
   const [loading, setLoading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+54");
+  const [phoneArea, setPhoneArea] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dni, setDni] = useState("");
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const resetForm = () => {
     setStep("email");
     setEmail("");
     setPassword("");
     setTokkoApiKey("");
+    setFirstName("");
+    setLastName("");
+    setPhoneCountryCode("+54");
+    setPhoneArea("");
+    setPhone("");
+    setDni("");
+    setProfileError(null);
     clearError();
   };
 
@@ -94,6 +126,36 @@ const AuthModal = () => {
     setLoading(true);
     try {
       await register(email, password, false);
+      setStep("complete-profile");
+    } catch {
+      // Error is set in AuthContext
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setProfileError(null);
+    try {
+      const res = await fetch("/api/users/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${firstName.trimEnd()} ${lastName.trim()}`.trim(),
+          telefono: phone,
+          telefono_area: phoneArea,
+          telefono_country_code: phoneCountryCode,
+          dni: dni,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setProfileError(data.error || "Error al guardar");
+        return;
+      }
+      await refreshUser();
       const redirectTo = searchParams.get("redirect");
       if (redirectTo) {
         closeAuthModal();
@@ -104,9 +166,21 @@ const AuthModal = () => {
         handleClose();
       }
     } catch {
-      // Error is set in AuthContext
+      setProfileError("Error al guardar el perfil");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSkipProfile = () => {
+    const redirectTo = searchParams.get("redirect");
+    if (redirectTo) {
+      closeAuthModal();
+      resetForm();
+      router.push(redirectTo);
+      router.refresh();
+    } else {
+      handleClose();
     }
   };
 
@@ -369,6 +443,110 @@ const AuthModal = () => {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 ← Volver
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "complete-profile" && (
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="text-center">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Completá tu perfil
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Estos datos nos ayudan a brindarte un mejor servicio
+              </p>
+            </div>
+
+            {/* Error display */}
+            {profileError && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+                {profileError}
+              </div>
+            )}
+
+            {/* Profile Form */}
+            <form onSubmit={handleProfileSubmit} className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Nombre"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-11 rounded-lg flex-1"
+                />
+                <Input
+                  type="text"
+                  placeholder="Apellido"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-11 rounded-lg flex-1"
+                />
+              </div>
+
+              {/* Structured phone */}
+              <div className="flex items-center h-11 rounded-lg border border-input bg-transparent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1">
+                <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                  <SelectTrigger className="h-full shrink-0 text-sm border-0 shadow-none ring-0 focus:ring-0 focus:ring-offset-0 rounded-r-none px-3 w-auto gap-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRY_CODES.map((code) => (
+                      <SelectItem key={code.value} value={code.value}>
+                        {code.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="w-px h-5 bg-border shrink-0" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="911"
+                  value={phoneArea}
+                  onChange={(e) => setPhoneArea(e.target.value.replace(/\D/g, ""))}
+                  className="w-10 h-full bg-transparent pl-2 text-sm outline-none placeholder:text-muted-foreground text-center"
+                />
+                <span className="text-muted-foreground select-none">-</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="1234-5678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/[^\d-]/g, ""))}
+                  className="flex-1 h-full bg-transparent pl-1 pr-3 text-sm outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+
+              {/* DNI */}
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="DNI (sin puntos)"
+                value={dni}
+                onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
+                className="h-11 rounded-lg"
+              />
+
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-lg font-semibold"
+                disabled={loading}
+              >
+                {loading ? "Guardando..." : "Enviar"}
+              </Button>
+            </form>
+
+            {/* Skip link */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleSkipProfile}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Completar más tarde
               </button>
             </div>
           </div>

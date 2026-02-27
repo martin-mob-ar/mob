@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2 } from "lucide-react";
+import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
@@ -302,9 +302,9 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
 
   return <>
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container relative flex h-14 md:h-16 items-center gap-4">
+        <div className="container relative flex h-16 md:h-20 items-center gap-4">
           <Link href="/" className="flex items-center shrink-0">
-            <Image alt="mob" width={112} height={28} className="h-6 md:h-7 w-auto" src={mobLogo} />
+            <Image alt="mob" width={112} height={44} className="h-7 md:h-11 w-auto" src={mobLogo} />
           </Link>
 
           {/* Compact Search Bar - Desktop only - Completely unmount on home until scrolled */}
@@ -571,6 +571,18 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       </>
                     )}
                     <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/perfil">
+                        <User className="mr-2 h-4 w-4" />
+                        Mi perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/mis-busquedas">
+                        <Heart className="mr-2 h-4 w-4" />
+                        Mis búsquedas
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href="/gestion">
                         <Building2 className="mr-2 h-4 w-4" />
                         {getGestionLabel()}
@@ -660,6 +672,28 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         </Link>
                       )}
 
+                      <Button
+                        variant="ghost"
+                        className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link href="/perfil">
+                          <User className="h-4 w-4" />
+                          Mi perfil
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
+                        asChild
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Link href="/mis-busquedas">
+                          <Heart className="h-4 w-4" />
+                          Mis búsquedas
+                        </Link>
+                      </Button>
                       <Button
                         variant="outline"
                         className="w-full rounded-full h-12 font-medium"

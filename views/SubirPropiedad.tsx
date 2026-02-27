@@ -34,6 +34,7 @@ import LocationSearchInput from "@/components/LocationSearchInput";
 import { LocationResult } from "@/hooks/useLocationSearch";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { TAG_SECTIONS, ALL_TAGS } from "@/lib/constants/tags";
+import PhotoUploader, { UploadedPhoto } from "@/components/PhotoUploader";
 
 const mobLogo = "/assets/mob-logo-new.png";
 
@@ -112,6 +113,9 @@ const SubirPropiedad = () => {
   const [showDuracionHint, setShowDuracionHint] = useState(false);
   const [ipcEnabled, setIpcEnabled] = useState(true);
   const [ipcPeriodo, setIpcPeriodo] = useState<string>("trimestral");
+
+  // Step 7: Fotos
+  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
 
   // Step 8: Logística
   const [fechaDisponible, setFechaDisponible] = useState("");
@@ -338,6 +342,7 @@ const SubirPropiedad = () => {
         duration_months: duracionContrato,
         ipc_adjustment: ipcEnabled ? ipcPeriodo : null,
         tagIds: selectedTagIds,
+        photos: uploadedPhotos,
         publication_title: autoTitle,
         description: null,
         available_date: fechaDisponible || null,
@@ -755,7 +760,7 @@ const SubirPropiedad = () => {
                   type="number"
                   inputMode="numeric"
                   min={6}
-                  placeholder="Meses"
+                  placeholder="Otro"
                   value={customDuracion}
                   onFocus={() => {
                     setDuracionContrato(null);
@@ -837,26 +842,13 @@ const SubirPropiedad = () => {
           </div>
         );
 
-      // Step 6: Fotos y videos (placeholder)
+      // Step 6: Fotos
       case 6:
         return (
-          <div className="max-w-xl mx-auto space-y-6">
-            <h1 className="font-display text-3xl font-bold text-center">
-              Fotos y videos
-            </h1>
-
-            <div className="w-full aspect-[4/3] rounded-3xl border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center justify-center bg-secondary/20">
-              <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
-                <Upload className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="font-display font-semibold uppercase tracking-wider text-sm mb-1">
-                Subí fotos y videos
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Arrastrá tus archivos acá
-              </p>
-            </div>
-          </div>
+          <PhotoUploader
+            photos={uploadedPhotos}
+            onChange={setUploadedPhotos}
+          />
         );
 
       // Step 7: Logística y disponibilidad
@@ -874,6 +866,7 @@ const SubirPropiedad = () => {
               <div className="relative">
                 <Input
                   type="date"
+                  max="9999-12-31"
                   value={fechaDisponible}
                   onChange={(e) => setFechaDisponible(e.target.value)}
                   className={cn("h-14 rounded-xl text-base pr-12", showErrors && !fechaDisponible && "border-red-500")}
@@ -1057,6 +1050,29 @@ const SubirPropiedad = () => {
                   </div>
                 )}
               </div>
+            </SummarySection>
+
+            {/* Fotos */}
+            <SummarySection title="Fotos" onEdit={() => setCurrentStep(6)}>
+              {uploadedPhotos.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">{uploadedPhotos.length} {uploadedPhotos.length === 1 ? "foto" : "fotos"}</p>
+                  <div className="flex gap-2 overflow-x-auto">
+                    {uploadedPhotos.slice(0, 5).map((photo, i) => (
+                      <div key={photo.storagePath} className={cn("relative shrink-0 w-16 h-12 rounded-lg overflow-hidden border", photo.isCover ? "border-primary" : "border-border")}>
+                        <img src={photo.publicUrl} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                    {uploadedPhotos.length > 5 && (
+                      <div className="shrink-0 w-16 h-12 rounded-lg bg-secondary flex items-center justify-center">
+                        <span className="text-xs font-medium text-muted-foreground">+{uploadedPhotos.length - 5}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sin fotos</p>
+              )}
             </SummarySection>
 
             {/* Logística */}

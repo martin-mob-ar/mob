@@ -210,16 +210,35 @@ export default async function PropiedadDetailPage({
   }
 
   // Fetch publisher info from users table (works for both Tokko and non-Tokko properties)
+  let ownerWhatsApp: string | null = null;
   if (propertyData.user_id) {
     const { data: userData } = await supabase
       .from("users")
-      .select("name, logo")
+      .select("name, logo, telefono")
       .eq("id", propertyData.user_id)
       .single();
 
     if (userData) {
       publisherName = userData.name || null;
       publisherLogo = userData.logo || null;
+      ownerWhatsApp = userData.telefono || null;
+    }
+  }
+
+  // For Tokko properties, try to get the owner's cellphone
+  if (isTokko) {
+    const { data: ownerData } = await supabase
+      .from("tokko_property_owner")
+      .select("tokko_owner(cellphone)")
+      .eq("property_id", propertyId)
+      .limit(1)
+      .single();
+
+    if (ownerData?.tokko_owner) {
+      const owner = ownerData.tokko_owner as unknown as { cellphone: string | null };
+      if (owner.cellphone) {
+        ownerWhatsApp = owner.cellphone;
+      }
     }
   }
 
@@ -235,6 +254,9 @@ export default async function PropiedadDetailPage({
       locationFull={locationFull}
       geoLat={geoLat}
       geoLong={geoLong}
+      propertyId={propertyId}
+      ownerWhatsApp={ownerWhatsApp}
+      ownerId={propertyData.user_id}
     />
   );
 }

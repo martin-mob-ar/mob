@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       disposition,
       floor,
       apartment_door,
+      photos: photosInput,
       photoUrls,
       videoUrls,
       tagIds,
@@ -125,11 +126,32 @@ export async function POST(request: Request) {
       }
     }
 
-    // Insert photos
-    const photos = Array.isArray(photoUrls) ? photoUrls.filter((u: string) => u && u.trim()) : [];
-    if (photos.length > 0) {
-      console.log('[properties/create] Inserting', photos.length, 'photos...');
-      const photoRows = photos.map((url: string, i: number) => ({
+    // Insert photos — supports both structured (from PhotoUploader) and legacy URL format
+    const structuredPhotos = Array.isArray(photosInput) ? photosInput : [];
+    const legacyPhotos = Array.isArray(photoUrls) ? photoUrls.filter((u: string) => u && u.trim()) : [];
+
+    if (structuredPhotos.length > 0) {
+      console.log('[properties/create] Inserting', structuredPhotos.length, 'photos (structured)...');
+      const photoRows = structuredPhotos.map((photo: { publicUrl: string; storagePath: string; isCover: boolean; order: number }, i: number) => ({
+        property_id: propertyId,
+        image: photo.publicUrl,
+        original: photo.publicUrl,
+        thumb: photo.publicUrl,
+        storage_path: photo.storagePath,
+        description: null,
+        is_blueprint: false,
+        is_front_cover: photo.isCover ?? i === 0,
+        order: photo.order ?? i,
+      }));
+      const { error: photoError } = await supabaseAdmin
+        .from('tokko_property_photo')
+        .insert(photoRows);
+      if (photoError) {
+        console.error('[properties/create] Photos insert error:', photoError);
+      }
+    } else if (legacyPhotos.length > 0) {
+      console.log('[properties/create] Inserting', legacyPhotos.length, 'photos (legacy URLs)...');
+      const photoRows = legacyPhotos.map((url: string, i: number) => ({
         property_id: propertyId,
         image: url.trim(),
         original: url.trim(),

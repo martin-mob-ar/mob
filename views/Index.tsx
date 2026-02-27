@@ -1,9 +1,10 @@
 "use client";
 
 import Header from "@/components/Header";
-import SearchBar from "@/components/SearchBar";
-import TrustBadges from "@/components/TrustBadges";
+import HeroSection from "@/components/HeroSection";
 import PropertySection from "@/components/PropertySection";
+import Timeline from "@/components/Timeline";
+import BentoGrid from "@/components/BentoGrid";
 import WhyMob from "@/components/WhyMob";
 import ExploreRentals from "@/components/ExploreRentals";
 import Footer from "@/components/Footer";
@@ -23,25 +24,7 @@ const Index = ({ properties }: IndexProps) => {
       <Header />
 
       {/* Hero Section */}
-      <section className="py-8 md:py-[45px] shadow-none opacity-100">
-        <div className="container px-4 md:px-8 max-w-full">
-          <div className="text-center mb-6 md:mb-10">
-            <h1 className="font-display text-2xl md:text-5xl font-bold mb-2">
-              <span className="text-primary">Alquilá fácil.</span>{" "}
-              <span className="text-foreground">100% online.</span>
-            </h1>
-            <p className="hidden md:block text-muted-foreground text-base md:text-lg mt-3 md:mt-4 max-w-xl mx-auto px-4 md:px-0">Encontrá tu próximo hogar de manera digital y costos menores</p>
-          </div>
-
-          <div className="flex justify-center w-full">
-            <SearchBar />
-          </div>
-
-          <div className="mt-6 md:mt-8">
-            <TrustBadges />
-          </div>
-        </div>
-      </section>
+      <HeroSection properties={enrichedProperties.slice(0, 4)} />
 
       {/* Properties Sections */}
       <div className="-mt-6">
@@ -50,7 +33,13 @@ const Index = ({ properties }: IndexProps) => {
 
       <PropertySection title="Últimas propiedades" properties={[...enrichedProperties].reverse()} />
 
-      {/* Why MOB Section */}
+      {/* How it works */}
+      <Timeline />
+
+      {/* Feature Showcase */}
+      <BentoGrid />
+
+      {/* Propuesta MOB */}
       <WhyMob />
 
       {/* Explore Rentals Section */}

@@ -1,6 +1,7 @@
 import { TokkoClient, TokkoProperty, TokkoBranch, TokkoUser, TokkoOwner, TokkoLocation } from '@/lib/tokko/client';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import CryptoJS from 'crypto-js';
+import { encryptApiKey } from '@/lib/crypto';
 
 /** Tokko operation type ID for Rent. Sale=1, Rent=2, Temporary Rent=3. */
 const RENT_OPERATION_ID = 2;
@@ -129,12 +130,14 @@ async function updateUserWithTokkoData(
   userId: string,
   authId: string,
   apiKeyHash: string,
-  data: TokkoUserData
+  data: TokkoUserData,
+  apiKeyEnc?: string
 ): Promise<void> {
   const updates: Record<string, string | null> = {
     tokko_api_hash: apiKeyHash,
     updated_at: new Date().toISOString(),
   };
+  if (apiKeyEnc) updates.tokko_api_key_enc = apiKeyEnc;
   if (data.name) updates.name = data.name;
   if (data.phone?.telefono) updates.telefono = data.phone.telefono;
   if (data.phone?.telefono_area) updates.telefono_area = data.phone.telefono_area;
@@ -565,13 +568,29 @@ async function syncProperty(
 
   // Sync photos (bulk insert)
   if (property.photos && property.photos.length > 0) {
-    // Delete existing photos
+    // Clean up GCS files for existing photos before deletion
+    const { data: existingPhotos } = await supabaseAdmin
+      .from('tokko_property_photo')
+      .select('storage_path')
+      .eq('property_id', propertyId)
+      .not('storage_path', 'is', null);
+
+    if (existingPhotos && existingPhotos.length > 0) {
+      try {
+        const { deletePropertyPhotos } = await import('@/lib/storage/gcs');
+        await deletePropertyPhotos(propertyId);
+      } catch (e) {
+        console.warn(`[sync] Failed to delete GCS photos for property ${propertyId}:`, e);
+      }
+    }
+
+    // Delete existing photo records from DB
     await supabaseAdmin
       .from('tokko_property_photo')
       .delete()
       .eq('property_id', propertyId);
 
-    // Prepare photos for bulk insert
+    // Prepare photos for bulk insert (storage_path = null, will be migrated in background)
     const photosToInsert = property.photos.map(photo => ({
       property_id: propertyId,
       image: photo.image,
@@ -581,6 +600,7 @@ async function syncProperty(
       is_blueprint: photo.is_blueprint,
       is_front_cover: photo.is_front_cover,
       order: photo.order,
+      storage_path: null,
     }));
 
     // Bulk insert photos
@@ -640,6 +660,12 @@ async function updateSyncStatus(
 export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, authId: string, authEmail: string): Promise<SyncResult> {
   const errors: string[] = [];
   const apiKeyHash = hashApiKey(apiKey);
+  let apiKeyEnc: string | undefined;
+  try {
+    apiKeyEnc = encryptApiKey(apiKey);
+  } catch {
+    console.warn('[Tokko Sync] Could not encrypt API key (API_KEY_SECRET may not be set)');
+  }
   const client = new TokkoClient(apiKey);
   const limit = Math.min(500, Math.max(1, Math.floor(propertyLimit)));
 
@@ -675,7 +701,7 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
       phone: userPhone,
       logo: userLogo,
       tokkoEmail,
-    });
+    }, apiKeyEnc);
     console.log('[Tokko Sync] User ID:', userId);
 
     console.log(`[Tokko Sync] Searching up to ${limit} rent properties (Apartment/House/PH) from Tokko API...`);
@@ -799,6 +825,20 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
 
     // Mark sync as complete
     await updateSyncStatus(apiKeyHash, 'done', null, propertiesSynced);
+
+    // Trigger background photo migration (non-blocking)
+    // This downloads Tokko photos and re-uploads them to GCS
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('supabase.co', '') || '';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      fetch(`${appUrl}/api/photos/migrate?userId=${userId}`, {
+        method: 'POST',
+      }).catch(() => {
+        // Silently ignore — migration will be retried later
+      });
+    } catch {
+      // Silently ignore
+    }
 
     return {
       userId,

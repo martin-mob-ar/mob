@@ -19,6 +19,11 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import PropertyMap from "@/components/PropertyMap";
+import GoogleMapsProvider from "@/components/GoogleMapsProvider";
+import LeadForm from "@/components/LeadForm";
+import { AnimateHeight } from "@/components/ui/animate-height";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 interface PropertyDetailProps {
   property?: Property;
@@ -31,11 +36,26 @@ interface PropertyDetailProps {
   locationFull?: string | null;
   geoLat?: number | null;
   geoLong?: number | null;
+  propertyId?: number;
+  ownerWhatsApp?: string | null;
+  ownerId?: string | null;
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, ownerWhatsApp, ownerId }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isOwnProperty = !!ownerId && !!user?.publicUserId && ownerId === user.publicUserId;
+
+  const handleFavoriteClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
+    if (propPropertyId) toggleFavorite(propPropertyId);
+  };
+  const [leadFormType, setLeadFormType] = useState<"visita" | "reserva" | null>(null);
   // Extract numeric ID from slug for mock data fallback
   const idFromSlug = (slug as string)?.match(/(\d+)$/)?.[1] || (slug as string);
   const property = propProperty || mockProperties.find((p) => p.id === idFromSlug) || mockProperties[0];
@@ -131,6 +151,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   }, [showGallery]);
 
   return (
+    <GoogleMapsProvider>
     <div className="min-h-screen bg-background">
       {/* Gallery Modal */}
       {showGallery && (
@@ -188,10 +209,12 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 document.addEventListener('touchend', handleTouchEnd);
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={galleryImages[galleryIndex]}
                 alt={`Vista ${galleryIndex + 1}`}
+                width={1200}
+                height={900}
+                sizes="90vw"
                 className="max-w-full max-h-[60vh] object-contain select-none rounded-lg"
                 draggable={false}
               />
@@ -241,9 +264,19 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <Share2 className="h-4 w-4" />
                 Compartir
               </button>
-              <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <Heart className="h-4 w-4" />
-                Guardar
+              <button
+                onClick={handleFavoriteClick}
+                aria-label={propPropertyId && isFavorite(propPropertyId) ? "Quitar de favoritos" : "Guardar en favoritos"}
+                className={`flex items-center gap-2 text-sm transition-colors ${
+                  propPropertyId && isFavorite(propPropertyId)
+                    ? "text-primary hover:text-primary/70"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Heart
+                  className={`h-4 w-4 ${propPropertyId && isFavorite(propPropertyId) ? "fill-primary" : ""}`}
+                />
+                {propPropertyId && isFavorite(propPropertyId) ? "Guardada" : "Guardar"}
               </button>
             </div>
           </div>
@@ -265,8 +298,16 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <button className="h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center">
                 <Share2 className="h-5 w-5 text-foreground" />
               </button>
-              <button className="h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center">
-                <Heart className="h-5 w-5 text-foreground" />
+              <button
+                onClick={handleFavoriteClick}
+                aria-label={propPropertyId && isFavorite(propPropertyId) ? "Quitar de favoritos" : "Guardar en favoritos"}
+                className="h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+              >
+                <Heart
+                  className={`h-5 w-5 transition-colors ${
+                    propPropertyId && isFavorite(propPropertyId) ? "fill-primary text-primary" : "text-foreground"
+                  }`}
+                />
               </button>
             </div>
           </div>
@@ -281,11 +322,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               {galleryImages.map((image, index) => (
                 <CarouselItem key={index} className="pl-0">
                   <div className="aspect-[4/3] relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={image}
                       alt={`Vista ${index + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      fill
+                      sizes="100vw"
+                      priority={index === 0}
+                      className="object-cover"
                     />
                   </div>
                 </CarouselItem>
@@ -334,11 +377,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
         <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-xl overflow-hidden mb-6 h-[400px]">
           <div className="col-span-2 row-span-2 relative cursor-pointer" onClick={() => { setGalleryIndex(0); setShowGallery(true); }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={galleryImages[0] || property.image}
               alt={property.address}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="(max-width: 1024px) 50vw, 33vw"
+              priority
+              className="object-cover"
             />
             {/* Verified Badge - Desktop */}
             {property.verified && (
@@ -356,11 +401,12 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               className="col-span-1 cursor-pointer relative"
               onClick={() => { setGalleryIndex(index + 1); setShowGallery(true); }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={img}
                 alt={`Vista ${index + 2}`}
-                className="absolute inset-0 w-full h-full object-cover"
+                fill
+                sizes="(max-width: 1024px) 25vw, 17vw"
+                className="object-cover"
               />
               {index === 3 && galleryImages.length > 5 && (
                 <button
@@ -439,22 +485,44 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Button 
-              className="w-full rounded-xl h-12 font-semibold text-base"
-              onClick={() => router.push("/visita/intro")}
-            >
-              <Calendar className="h-5 w-5 mr-2" />
-              Agendar visita
-            </Button>
-            <Button 
-              className="w-full rounded-xl h-12 font-medium text-base bg-secondary hover:bg-secondary/80 text-foreground border-0"
-              onClick={() => router.push("/reserva/verificacion-intro")}
-            >
-              <Image src={KeyRoundIcon} alt="" width={20} height={20} className="mr-2" />
-              Reservar
-            </Button>
-          </div>
+          {isOwnProperty ? (
+            <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
+              <Home className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm font-medium text-primary">Tu propiedad</span>
+            </div>
+          ) : (
+            <>
+              <AnimateHeight show={!leadFormType}>
+                <div className="space-y-2">
+                  <Button
+                    className="w-full rounded-xl h-12 font-semibold text-base"
+                    onClick={() => setLeadFormType("visita")}
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Agendar visita
+                  </Button>
+                  <Button
+                    className="w-full rounded-xl h-12 font-medium text-base bg-secondary hover:bg-secondary/80 text-foreground border-0"
+                    onClick={() => setLeadFormType("reserva")}
+                  >
+                    <Image src={KeyRoundIcon} alt="" width={20} height={20} className="mr-2" />
+                    Quiero reservar
+                  </Button>
+                </div>
+              </AnimateHeight>
+
+              <AnimateHeight show={!!leadFormType}>
+                {leadFormType && propPropertyId && (
+                  <LeadForm
+                    type={leadFormType}
+                    propertyId={propPropertyId}
+                    propertyAddress={property?.address || ""}
+                    onClose={() => setLeadFormType(null)}
+                  />
+                )}
+              </AnimateHeight>
+            </>
+          )}
 
           {/* Quick Stats - Below CTAs */}
           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border/50">
@@ -656,12 +724,19 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               </>
             )}
           </div>
-          <Button 
-            className="rounded-xl h-11 px-6 font-semibold"
-            onClick={() => router.push("/visita/intro")}
-          >
-            Agendar visita
-          </Button>
+          {isOwnProperty ? (
+            <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2">
+              <Home className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Tu propiedad</span>
+            </div>
+          ) : (
+            <Button
+              className="rounded-xl h-11 px-6 font-semibold"
+              onClick={() => setLeadFormType("visita")}
+            >
+              Agendar visita
+            </Button>
+          )}
         </div>
       </div>
 
@@ -791,22 +866,44 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               </div>
 
               {/* CTAs */}
-              <div className="space-y-2">
-                <Button 
-                  className="w-full rounded-xl py-5 font-medium text-sm"
-                  onClick={() => router.push("/visita/intro")}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Agendar visita física
-                </Button>
-                <Button 
-                  className="w-full rounded-xl py-5 font-medium text-sm bg-secondary hover:bg-secondary/80 text-foreground border-0"
-                  onClick={() => router.push("/reserva/verificacion-intro")}
-                >
-                  <Image src={KeyRoundIcon} alt="" width={16} height={16} className="mr-2" />
-                  Reservar
-                </Button>
-              </div>
+              {isOwnProperty ? (
+                <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
+                  <Home className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium text-primary">Tu propiedad</span>
+                </div>
+              ) : (
+                <>
+                  <AnimateHeight show={!leadFormType}>
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full rounded-xl py-5 font-medium text-sm"
+                        onClick={() => setLeadFormType("visita")}
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Agendar visita
+                      </Button>
+                      <Button
+                        className="w-full rounded-xl py-5 font-medium text-sm bg-secondary hover:bg-secondary/80 text-foreground border-0"
+                        onClick={() => setLeadFormType("reserva")}
+                      >
+                        <Image src={KeyRoundIcon} alt="" width={16} height={16} className="mr-2" />
+                        Quiero reservar
+                      </Button>
+                    </div>
+                  </AnimateHeight>
+
+                  <AnimateHeight show={!!leadFormType}>
+                    {leadFormType && propPropertyId && (
+                      <LeadForm
+                        type={leadFormType}
+                        propertyId={propPropertyId}
+                        propertyAddress={property?.address || ""}
+                        onClose={() => setLeadFormType(null)}
+                      />
+                    )}
+                  </AnimateHeight>
+                </>
+              )}
 
               {/* Trust Elements */}
               <div className="space-y-3 pt-4 border-t border-border">
@@ -909,6 +1006,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </p>
       </div>
     </div>
+    </GoogleMapsProvider>
   );
 };
 
