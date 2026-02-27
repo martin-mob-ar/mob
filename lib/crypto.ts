@@ -1,14 +1,17 @@
 import CryptoJS from 'crypto-js';
 
-const SECRET = process.env.API_KEY_SECRET;
+function getSecret(): string {
+  const secret = process.env.API_KEY_SECRET;
+  if (!secret) throw new Error('API_KEY_SECRET environment variable is not set');
+  return secret;
+}
 
 /**
  * AES-encrypt a raw API key for secure storage.
  * Requires API_KEY_SECRET environment variable.
  */
 export function encryptApiKey(rawKey: string): string {
-  if (!SECRET) throw new Error('API_KEY_SECRET environment variable is not set');
-  return CryptoJS.AES.encrypt(rawKey, SECRET).toString();
+  return CryptoJS.AES.encrypt(rawKey, getSecret()).toString();
 }
 
 /**
@@ -16,7 +19,6 @@ export function encryptApiKey(rawKey: string): string {
  * Requires API_KEY_SECRET environment variable.
  */
 export function decryptApiKey(encryptedKey: string): string {
-  if (!SECRET) throw new Error('API_KEY_SECRET environment variable is not set');
-  const bytes = CryptoJS.AES.decrypt(encryptedKey, SECRET);
+  const bytes = CryptoJS.AES.decrypt(encryptedKey, getSecret());
   return bytes.toString(CryptoJS.enc.Utf8);
 }

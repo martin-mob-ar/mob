@@ -1,6 +1,12 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 interface LeadEmailData {
   name: string;
@@ -70,7 +76,7 @@ export async function sendLeadEmail(
   try {
     const fromEmail = process.env.LEAD_FROM_EMAIL || 'onboarding@resend.dev';
     console.log(`[Resend] Sending to: ${to}, cc: ${cc || 'none'}, from: ${fromEmail}`);
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: `mob <${fromEmail}>`,
       to,
       ...(cc ? { cc } : {}),
