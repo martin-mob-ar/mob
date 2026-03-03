@@ -25,6 +25,7 @@ export interface Property {
   surface?: number;
   bathrooms?: number;
   parking?: number;
+  age?: number | null;
   verified?: boolean;
 }
 

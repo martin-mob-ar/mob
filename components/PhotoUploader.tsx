@@ -42,7 +42,7 @@ export interface UploadedPhoto {
 }
 
 interface PhotoUploaderProps {
-  propertyId?: number;
+  propertyId?: number; // For editing existing properties — uploads go directly to {propertyId}/
   photos: UploadedPhoto[];
   onChange: (photos: UploadedPhoto[]) => void;
 }
@@ -166,9 +166,14 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
         <X className="h-4 w-4 text-white" />
       </button>
 
-      {/* Bottom bar — cover toggle + order number */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        {!photo.isCover ? (
+      {/* Order number — always visible */}
+      <div className="absolute bottom-2 right-2 h-6 min-w-6 px-1.5 rounded-md bg-black/50 backdrop-blur-sm flex items-center justify-center">
+        <span className="text-white text-[11px] font-bold">{index + 1}</span>
+      </div>
+
+      {/* Cover toggle — visible on hover only */}
+      {!photo.isCover && (
+        <div className="absolute bottom-0 left-0 right-0 flex items-center px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -179,13 +184,8 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
             <Star className="h-3 w-3" />
             Portada
           </button>
-        ) : (
-          <div />
-        )}
-        <div className="h-6 min-w-6 px-1.5 rounded-md bg-black/50 backdrop-blur-sm flex items-center justify-center">
-          <span className="text-white text-[11px] font-bold">{index + 1}</span>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -203,6 +203,10 @@ export default function PhotoUploader({
   const [activeId, setActiveId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Stable temp folder for this wizard session — photos land here before the
+  // property is created. The create API moves them to {propertyId}/ afterwards.
+  const tempFolderRef = useRef(`tmp/${crypto.randomUUID().slice(0, 8)}`);
+
   // dnd-kit sensors — pointer with activation distance to avoid accidental drags
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -218,6 +222,8 @@ export default function PhotoUploader({
   const processFiles = useCallback(
     async (files: FileList | File[]) => {
       const fileArr = Array.from(files);
+      // Use a local accumulator to avoid stale closure when uploading multiple files
+      let accumulated = [...photos];
 
       for (const file of fileArr) {
         if (!ALLOWED_TYPES.includes(file.type)) {
@@ -245,15 +251,15 @@ export default function PhotoUploader({
         ]);
 
         try {
-          const order = photos.length;
+          const order = accumulated.length;
           const signedRes = await fetch("/api/photos/signed-url", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              propertyId: propertyId || 0,
-              order,
-              contentType: file.type,
-            }),
+            body: JSON.stringify(
+              propertyId != null
+                ? { propertyId, order, contentType: file.type }
+                : { tempFolder: tempFolderRef.current, order, contentType: file.type }
+            ),
           });
 
           if (!signedRes.ok) throw new Error("No se pudo obtener URL de subida");
@@ -279,11 +285,12 @@ export default function PhotoUploader({
           const newPhoto: UploadedPhoto = {
             storagePath,
             publicUrl,
-            order: photos.length,
-            isCover: photos.length === 0,
+            order,
+            isCover: accumulated.length === 0,
           };
 
-          onChange([...photos, newPhoto]);
+          accumulated = [...accumulated, newPhoto];
+          onChange(accumulated);
           setUploading((prev) => prev.filter((u) => u.id !== uploadId));
           URL.revokeObjectURL(preview);
         } catch (err) {
@@ -301,7 +308,7 @@ export default function PhotoUploader({
         }
       }
     },
-    [photos, propertyId, onChange]
+    [photos, propertyId, onChange, tempFolderRef]
   );
 
   const handleDrop = useCallback(
@@ -355,7 +362,12 @@ export default function PhotoUploader({
   };
 
   const setCover = (index: number) => {
-    onChange(photos.map((p, i) => ({ ...p, isCover: i === index })));
+    const reordered = arrayMove(photos, index, 0).map((p, i) => ({
+      ...p,
+      order: i,
+      isCover: i === 0,
+    }));
+    onChange(reordered);
   };
 
   // ─── dnd-kit handlers ──────────────────────────────────────────────────
@@ -376,6 +388,7 @@ export default function PhotoUploader({
     const reordered = arrayMove(photos, oldIndex, newIndex).map((p, i) => ({
       ...p,
       order: i,
+      isCover: i === 0,
     }));
     onChange(reordered);
   };

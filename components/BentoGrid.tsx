@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, Shield, FileText, Users, Zap, Building2, CheckCircle } from "lucide-react";
+import { Search, Fingerprint, Shield, Users, Zap, Building2, CheckCircle, Smartphone } from "lucide-react";
+import Link from "next/link";
 import { useInView } from "@/hooks/useInView";
 
 const BentoGrid = () => {
@@ -46,53 +47,56 @@ const BentoGrid = () => {
               <ul className="space-y-2.5">
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                  Verificación en menos de 2 minutos
+                  Verificate en menos de 2 minutos
                 </li>
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                  Sin aval tradicional
+                  Accedé a garantía 50% off
                 </li>
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                  Contratos 100% digitales
+                  Agendá visitas y reservá online
                 </li>
               </ul>
             </div>
             {/* Mini search preview */}
             <div className="mt-4 bg-background/80 backdrop-blur-sm rounded-xl border border-border p-3 shadow-sm">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Search className="h-3.5 w-3.5 text-primary" />
-                <span>2 amb. en Palermo</span>
-              </div>
-              <div className="flex items-center justify-between mt-2 text-[11px]">
-                <span className="font-semibold text-foreground">$850.000/mes</span>
-                <span className="text-primary font-medium">Ver →</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Search className="h-3.5 w-3.5 text-primary" />
+                  <span>2 ambientes en CABA</span>
+                </div>
+                <Link href="/buscar?minAmbientes=2&location=Capital%20Federal&locationId=51400" className="text-[11px] text-primary font-medium hover:underline">
+                  Ver →
+                </Link>
               </div>
             </div>
           </div>
 
-          {/* Card 2 - Stats: +4.000 */}
+          {/* Card 2 - Verificación en 2 minutos */}
           <div
             className="bg-card border border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center"
             style={cardStyle(80)}
           >
-            <span className="font-display font-extrabold text-4xl text-primary">+4.000</span>
-            <p className="text-sm text-muted-foreground mt-2">Inquilinos verificados cada mes</p>
+            <Fingerprint className="h-8 w-8 text-emerald-500 mb-2" />
+            <h3 className="font-display font-bold text-lg text-foreground">
+              Verificación en <span className="text-primary">2 minutos</span>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1.5">Te aprobamos como inquilino calificado para que alquiles más rápido</p>
           </div>
 
-          {/* Card 3 - Verificación en 2 minutos */}
+          {/* Card 3 - Alquilá con tu celular */}
           <div
             className="bg-card border border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center"
             style={cardStyle(160)}
           >
-            <Shield className="h-8 w-8 text-emerald-500 mb-2" />
+            <Smartphone className="h-8 w-8 text-primary mb-2" />
             <h3 className="font-display font-bold text-lg text-foreground">
-              Verificación en <span className="text-primary">2 minutos</span>
+              Alquilá solo usando tu celular
             </h3>
-            <p className="text-xs text-muted-foreground mt-1.5">Identidad y solvencia al instante</p>
           </div>
 
-          {/* Card 4 - Sin aval tradicional */}
+          {/* Card 4 - Garantía digital */}
           <div
             className="col-span-2 bg-primary rounded-2xl p-6 flex items-center gap-6 text-primary-foreground"
             style={cardStyle(240)}
@@ -104,9 +108,9 @@ const BentoGrid = () => {
               <span className="inline-flex px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold mb-2">
                 Garantía mob
               </span>
-              <h3 className="font-display font-bold text-lg">Sin aval tradicional</h3>
+              <h3 className="font-display font-bold text-lg">Garantía digital</h3>
               <p className="text-sm text-primary-foreground/80 mt-0.5">
-                Olvidate del garante. Nuestra garantía digital te cubre.
+                Accedé a 50% off en una garantía digital con aprobación instantánea
               </p>
             </div>
           </div>
@@ -142,18 +146,18 @@ const BentoGrid = () => {
             </div>
           </div>
 
-          {/* Card 7 - Firma digital */}
+          {/* Card 7 - Inquilinos verificados */}
           <div
             className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5"
             style={cardStyle(480)}
           >
             <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileText className="h-6 w-6 text-primary" />
+              <Shield className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base text-foreground">Firma digital</h3>
+              <h3 className="font-display font-bold text-base text-foreground">Inquilinos verificados</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Contrato con validez legal, firmado desde cualquier dispositivo.
+                Verificamos cada propietario junto con sus antecedentes y situación financiera
               </p>
             </div>
           </div>
@@ -173,40 +177,52 @@ const BentoGrid = () => {
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                Verificación en menos de 2 minutos
+                Verificate en menos de 2 minutos
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                Sin aval tradicional
+                Accedé a garantía 50% off
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                Contratos 100% digitales
+                Agendá visitas y reservá online
               </li>
             </ul>
+            {/* Mini search preview */}
+            <div className="mt-4 bg-background/80 backdrop-blur-sm rounded-xl border border-border p-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Search className="h-3.5 w-3.5 text-primary" />
+                  <span>2 ambientes en CABA</span>
+                </div>
+                <Link href="/buscar?minAmbientes=2&location=Capital%20Federal&locationId=51400" className="text-[11px] text-primary font-medium hover:underline">
+                  Ver →
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Stats row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-card border border-border rounded-2xl p-4 text-center">
-              <span className="font-display font-extrabold text-2xl text-primary">+4.000</span>
-              <p className="text-xs text-muted-foreground mt-1">Verificados/mes</p>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-4 text-center">
-              <Shield className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
+              <Fingerprint className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
               <span className="font-display font-bold text-base text-foreground">2 min</span>
               <p className="text-xs text-muted-foreground mt-0.5">Verificación</p>
             </div>
+            <div className="bg-card border border-border rounded-2xl p-4 text-center flex flex-col items-center justify-center">
+              <Smartphone className="h-6 w-6 text-primary mx-auto mb-1" />
+              <span className="font-display font-bold text-sm text-foreground">Desde tu celular</span>
+            </div>
           </div>
 
-          {/* Sin aval */}
+          {/* Garantía digital */}
           <div className="bg-primary rounded-2xl p-5 text-primary-foreground">
             <span className="inline-flex px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold mb-2">
               Garantía mob
             </span>
-            <h3 className="font-display font-bold text-lg">Sin aval tradicional</h3>
+            <h3 className="font-display font-bold text-lg">Garantía digital</h3>
             <p className="text-sm text-primary-foreground/80 mt-1">
-              Olvidate del garante. Nuestra garantía digital te cubre.
+              Accedé a 50% off en una garantía digital con aprobación instantánea
             </p>
           </div>
 
@@ -229,8 +245,8 @@ const BentoGrid = () => {
               <h3 className="font-display font-bold text-sm text-foreground">Inmobiliarias verificadas</h3>
             </div>
             <div className="bg-card border border-border rounded-2xl p-4">
-              <FileText className="h-6 w-6 text-primary mb-2" />
-              <h3 className="font-display font-bold text-sm text-foreground">Firma digital</h3>
+              <Shield className="h-6 w-6 text-primary mb-2" />
+              <h3 className="font-display font-bold text-sm text-foreground">Inquilinos verificados</h3>
             </div>
           </div>
         </div>

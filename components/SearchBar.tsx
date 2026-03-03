@@ -74,6 +74,8 @@ const SearchBar = () => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const roomsDropdownRef = useRef<HTMLDivElement>(null);
+  const roomsTriggerRef = useRef<HTMLButtonElement>(null);
   const { results: locationResults, isLoading: locationLoading } = useLocationSearch(locationQuery, {
     enabled: !selectedLocation,
   });
@@ -83,16 +85,25 @@ const SearchBar = () => {
   const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
   const { rate: usdRate } = useExchangeRate();
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         locationDropdownRef.current &&
-        !locationDropdownRef.current.contains(e.target as Node) &&
+        !locationDropdownRef.current.contains(target) &&
         locationInputRef.current &&
-        !locationInputRef.current.contains(e.target as Node)
+        !locationInputRef.current.contains(target)
       ) {
         setShowLocationDropdown(false);
+      }
+      if (
+        roomsDropdownRef.current &&
+        !roomsDropdownRef.current.contains(target) &&
+        roomsTriggerRef.current &&
+        !roomsTriggerRef.current.contains(target)
+      ) {
+        setRoomsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -115,7 +126,11 @@ const SearchBar = () => {
     const params = new URLSearchParams();
     if (selectedLocation) {
       params.set("location", selectedLocation.name);
-      params.set("locationId", String(selectedLocation.id));
+      if (selectedLocation.type === "state") {
+        params.set("stateId", String(selectedLocation.id));
+      } else {
+        params.set("locationId", String(selectedLocation.id));
+      }
     } else if (locationQuery.trim()) {
       params.set("location", locationQuery.trim());
     }
@@ -178,7 +193,7 @@ const SearchBar = () => {
   const locationDropdown = showLocationDropdown ? (
     <div
       ref={locationDropdownRef}
-      className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
+      className="absolute left-0 min-w-full w-96 max-w-[calc(100vw-2rem)] top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
     >
       {locationLoading ? (
         <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
@@ -209,80 +224,78 @@ const SearchBar = () => {
     </div>
   ) : null;
 
-  const roomsContent = (widthClass: string) => (
-    <PopoverContent className={`${widthClass} p-4 bg-background z-50`} align="center">
-      <div className="space-y-5">
-        {/* Dormitorios */}
-        <div>
-          <label className="text-sm font-semibold text-foreground block mb-3">Dormitorios</label>
-          <div className="flex gap-3">
-            <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
-              <SelectTrigger className="flex-1 rounded-xl h-11">
-                <SelectValue placeholder="Sin mínimo" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-[100]">
-                {dormitoriosOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={dormitoriosMax} onValueChange={setDormitoriosMax}>
-              <SelectTrigger className="flex-1 rounded-xl h-11">
-                <SelectValue placeholder="sin máximo" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-[100]">
-                {dormitoriosOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Ambientes */}
-        <div>
-          <label className="text-sm font-semibold text-foreground block mb-3">Ambientes</label>
-          <div className="flex gap-3">
-            <Select value={ambientesMin} onValueChange={setAmbientesMin}>
-              <SelectTrigger className="flex-1 rounded-xl h-11">
-                <SelectValue placeholder="Sin mínimo" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-[100]">
-                {ambientesOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={ambientesMax} onValueChange={setAmbientesMax}>
-              <SelectTrigger className="flex-1 rounded-xl h-11">
-                <SelectValue placeholder="sin máximo" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-[100]">
-                {ambientesOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border">
-          <button
-            onClick={handleClearRooms}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Limpiar
-          </button>
-          <Button
-            onClick={() => setRoomsOpen(false)}
-            className="rounded-xl px-6"
-          >
-            Aceptar
-          </Button>
+  const roomsInnerContent = (
+    <div className="space-y-5">
+      {/* Dormitorios */}
+      <div>
+        <label className="text-sm font-semibold text-foreground block mb-3">Dormitorios</label>
+        <div className="flex gap-3">
+          <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
+            <SelectTrigger className="flex-1 rounded-xl h-11">
+              <SelectValue placeholder="Sin mínimo" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-[100]">
+              {dormitoriosOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={dormitoriosMax} onValueChange={setDormitoriosMax}>
+            <SelectTrigger className="flex-1 rounded-xl h-11">
+              <SelectValue placeholder="sin máximo" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-[100]">
+              {dormitoriosOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-    </PopoverContent>
+
+      {/* Ambientes */}
+      <div>
+        <label className="text-sm font-semibold text-foreground block mb-3">Ambientes</label>
+        <div className="flex gap-3">
+          <Select value={ambientesMin} onValueChange={setAmbientesMin}>
+            <SelectTrigger className="flex-1 rounded-xl h-11">
+              <SelectValue placeholder="Sin mínimo" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-[100]">
+              {ambientesOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={ambientesMax} onValueChange={setAmbientesMax}>
+            <SelectTrigger className="flex-1 rounded-xl h-11">
+              <SelectValue placeholder="sin máximo" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-[100]">
+              {ambientesOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-border">
+        <button
+          onClick={handleClearRooms}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Limpiar
+        </button>
+        <Button
+          onClick={() => setRoomsOpen(false)}
+          className="rounded-xl px-6"
+        >
+          Aceptar
+        </Button>
+      </div>
+    </div>
   );
 
   // Desktop Layout
@@ -290,7 +303,7 @@ const SearchBar = () => {
     return (
       <div className="w-full max-w-4xl mx-auto search-bar-mob">
         <div className="flex items-center p-2 bg-card rounded-full border border-border shadow-md">
-          <div className="flex-1 grid grid-cols-[1.4fr_0.8fr_1fr] divide-x divide-border">
+          <div className="flex-1 grid grid-cols-[1.1fr_0.8fr_1.3fr] divide-x divide-border">
             <div className="px-6 py-3 relative">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Ubicación
@@ -298,7 +311,7 @@ const SearchBar = () => {
               <input
                 ref={locationInputRef}
                 type="text"
-                placeholder="Provincia, barrio..."
+                placeholder="Ciudad, barrio..."
                 value={locationQuery}
                 onChange={(e) => handleLocationInputChange(e.target.value)}
                 onFocus={() => locationQuery.length >= 2 && !selectedLocation && setShowLocationDropdown(true)}
@@ -321,7 +334,9 @@ const SearchBar = () => {
                     </button>
                   </div>
                 </PopoverTrigger>
-                {roomsContent("w-80")}
+                <PopoverContent className="w-96 p-4 bg-background z-50 !rounded-xl border border-border shadow-lg" align="center">
+                  {roomsInnerContent}
+                </PopoverContent>
               </Popover>
             </div>
 
@@ -380,97 +395,97 @@ const SearchBar = () => {
     );
   }
 
-  // Mobile Layout
+  // Mobile Layout — 3-row compact search card
   return (
-    <div className="w-full px-4 box-border">
-      <div className="bg-background border border-border rounded-xl shadow-sm overflow-visible">
-        <div className="divide-y divide-border">
-          {/* Ubicación */}
-          <div className="px-4 py-3 relative">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Ubicación
-            </label>
+    <div className="w-full">
+      <div className="bg-background border border-border rounded-2xl shadow-sm overflow-visible relative">
+        {/* Row 1: Location */}
+        <div className="px-4 py-3 relative">
+          <div className="flex items-center gap-2.5">
+            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
             <input
               ref={locationInputRef}
               type="text"
-              placeholder="Provincia, barrio..."
+              placeholder="Ciudad, barrio..."
               value={locationQuery}
               onChange={(e) => handleLocationInputChange(e.target.value)}
               onFocus={() => locationQuery.length >= 2 && !selectedLocation && setShowLocationDropdown(true)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none mt-1 text-base"
+              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-[15px]"
             />
-            {locationDropdown}
           </div>
-
-          {/* Dormitorios */}
-          <div className="px-4 py-3">
-            <Popover open={roomsOpen} onOpenChange={setRoomsOpen} modal={true}>
-              <PopoverTrigger asChild>
-                <div className="cursor-pointer">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Dormitorios
-                  </label>
-                  <button type="button" className="w-full flex items-center justify-between text-foreground mt-1">
-                    <span className="text-base">{getRoomsLabel()}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${roomsOpen ? "rotate-180" : ""}`} />
-                  </button>
-                </div>
-              </PopoverTrigger>
-              {roomsContent("w-[calc(100vw-2rem)] max-w-sm")}
-            </Popover>
-          </div>
-
-          {/* Precio */}
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Precio total
-              </label>
-              <div className="flex rounded-full border border-border p-0.5 bg-muted/30">
-                <button
-                  type="button"
-                  onClick={() => setCurrency("ARS")}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all ${
-                    currency === "ARS"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  ARS
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrency("USD")}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all ${
-                    currency === "USD"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  USD
-                </button>
-              </div>
-            </div>
-            <div className="mt-1">
-              <CurrencyInput
-                value={price}
-                onChange={setPrice}
-                currency={currency}
-                placeholder={currency === "USD" ? "USD 100.000" : "$ 800.000"}
-                className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-base"
-              />
-            </div>
-          </div>
+          {locationDropdown}
         </div>
 
-        {/* Search Button - Full width on mobile */}
-        <div className="p-4 pt-2">
+        {/* Row 2: Dormitorios + Price side by side */}
+        <div className="flex items-center border-t border-border relative">
+          {/* Dormitorios */}
+          <div className="flex-1 border-r border-border">
+            <button
+              ref={roomsTriggerRef}
+              type="button"
+              onClick={() => { setRoomsOpen(!roomsOpen); setShowLocationDropdown(false); }}
+              className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer"
+            >
+              <span className="text-sm text-foreground truncate">{getRoomsLabel()}</span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${roomsOpen ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+
+          {/* Price */}
+          <div className="flex-1 flex items-center justify-between px-4 py-2.5 gap-2">
+            <CurrencyInput
+              value={price}
+              onChange={setPrice}
+              currency={currency}
+              placeholder={currency === "USD" ? "USD 100.000" : "$ 800.000"}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-sm min-w-0 flex-1"
+            />
+            <div className="flex rounded-full border border-border p-0.5 bg-muted/30 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setCurrency("ARS")}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+                  currency === "ARS"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                ARS
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrency("USD")}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+                  currency === "USD"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                USD
+              </button>
+            </div>
+          </div>
+
+          {/* Dormitorios dropdown — same pattern as location dropdown */}
+          {roomsOpen && (
+            <div
+              ref={roomsDropdownRef}
+              className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 p-4 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
+            >
+              {roomsInnerContent}
+            </div>
+          )}
+        </div>
+
+        {/* Row 3: Search button */}
+        <div className="px-4 pb-3 pt-1.5">
           <Button
             onClick={handleSearch}
-            className="w-full h-12 rounded-xl font-semibold text-base"
+            className="w-full h-11 rounded-xl font-semibold text-sm"
           >
-            <Search className="h-5 w-5 mr-2" />
+            <Search className="h-4 w-4 mr-2" />
             Buscar
           </Button>
         </div>

@@ -208,8 +208,9 @@ export class TokkoClient {
   private async fetch<T>(endpoint: string, params?: Record<string, string | number>): Promise<TokkoApiResponse<T>> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
-    // Add API key as query parameter
+    // Add API key and language as query parameters
     url.searchParams.set('key', this.apiKey);
+    url.searchParams.set('lang', 'es_ar');
 
     // Add any additional params
     if (params) {
@@ -306,7 +307,7 @@ export class TokkoClient {
 
       // Build URL manually — Tokko expects raw JSON in the `data` query param,
       // not the URL-encoded version that searchParams.set produces.
-      const url = `${this.baseUrl}/property/search/?key=${this.apiKey}&limit=${limit}&offset=${offset}&format=json&data=${encodeURIComponent(data)}`;
+      const url = `${this.baseUrl}/property/search/?key=${this.apiKey}&lang=es_ar&limit=${limit}&offset=${offset}&format=json&data=${encodeURIComponent(data)}`;
 
       const res = await fetch(url, {
         headers: { 'Accept': 'application/json' },
@@ -353,6 +354,7 @@ export class TokkoClient {
     try {
       const url = new URL(`${this.baseUrl}/property/${propertyId}/`);
       url.searchParams.set('key', this.apiKey);
+      url.searchParams.set('lang', 'es_ar');
 
       const res = await fetch(url.toString(), {
         headers: { 'Accept': 'application/json' },

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, getOrCreateUserFromAuth } from '@/lib/supabase/server';
+import { movePhoto, getPublicUrl } from '@/lib/storage/gcs';
 
 export async function POST(request: Request) {
   try {
@@ -131,21 +132,43 @@ export async function POST(request: Request) {
     const legacyPhotos = Array.isArray(photoUrls) ? photoUrls.filter((u: string) => u && u.trim()) : [];
 
     if (structuredPhotos.length > 0) {
-      console.log('[properties/create] Inserting', structuredPhotos.length, 'photos (structured)...');
-      const photoRows = structuredPhotos.map((photo: { publicUrl: string; storagePath: string; isCover: boolean; order: number }, i: number) => ({
-        property_id: propertyId,
-        image: photo.publicUrl,
-        original: photo.publicUrl,
-        thumb: photo.publicUrl,
-        storage_path: photo.storagePath,
-        description: null,
-        is_blueprint: false,
-        is_front_cover: photo.isCover ?? i === 0,
-        order: photo.order ?? i,
-      }));
+      console.log('[properties/create] Moving', structuredPhotos.length, 'photos to property folder...');
+      // Move each photo from its temp folder (tmp/{uuid}/) to the real property folder ({propertyId}/)
+      const finalPhotos = await Promise.all(
+        structuredPhotos.map(async (photo: { publicUrl: string; storagePath: string; isCover: boolean; order: number }, i: number) => {
+          let finalStoragePath = photo.storagePath;
+          let finalPublicUrl = photo.publicUrl;
+
+          if (photo.storagePath.startsWith('tmp/')) {
+            const filename = photo.storagePath.split('/').slice(2).join('/');
+            const toPath = `${propertyId}/${filename}`;
+            try {
+              const moved = await movePhoto(photo.storagePath, toPath);
+              finalStoragePath = moved.storagePath;
+              finalPublicUrl = moved.publicUrl;
+            } catch (moveErr) {
+              console.error('[properties/create] Failed to move photo:', photo.storagePath, moveErr);
+              // Keep original path on failure rather than blocking property creation
+            }
+          }
+
+          return {
+            property_id: propertyId,
+            image: finalPublicUrl,
+            original: finalPublicUrl,
+            thumb: finalPublicUrl,
+            storage_path: finalStoragePath,
+            description: null,
+            is_blueprint: false,
+            is_front_cover: photo.isCover ?? i === 0,
+            order: photo.order ?? i,
+          };
+        })
+      );
+
       const { error: photoError } = await supabaseAdmin
         .from('tokko_property_photo')
-        .insert(photoRows);
+        .insert(finalPhotos);
       if (photoError) {
         console.error('[properties/create] Photos insert error:', photoError);
       }

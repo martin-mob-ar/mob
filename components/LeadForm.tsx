@@ -27,6 +27,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { leadFormSchema, type LeadFormValues } from "@/lib/validations/lead";
 
+const GUEST_STORAGE_KEY = "mob_guest_contact";
+
+interface GuestContact {
+  name: string;
+  email: string;
+  phone: string;
+  country_code: string;
+}
+
+function getGuestContact(): GuestContact | null {
+  try {
+    const raw = localStorage.getItem(GUEST_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveGuestContact(data: GuestContact) {
+  try {
+    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // quota exceeded or private browsing — ignore
+  }
+}
+
 const COUNTRY_CODES = [
   { value: "+54", label: "🇦🇷 +54" },
   { value: "+55", label: "🇧🇷 +55" },
@@ -63,16 +89,25 @@ export default function LeadForm({
   const [submitted, setSubmitted] = useState(false);
 
   const defaults = useMemo(() => {
-    const phone = user?.phoneArea && user?.phone
-      ? `${user.phoneArea}-${user.phone}`
-      : user?.phone || "";
+    if (user) {
+      const phone = user.phoneArea && user.phone
+        ? `${user.phoneArea}${user.phone}`
+        : user.phone || "";
+      return {
+        name: user.name || "",
+        email: user.email || "",
+        phone,
+        country_code: user.phoneCountryCode || "+54",
+      };
+    }
+    const guest = getGuestContact();
     return {
-      name: user?.name || "",
-      email: user?.email || "",
-      phone,
-      country_code: user?.phoneCountryCode || "+54",
+      name: guest?.name || "",
+      email: guest?.email || "",
+      phone: guest?.phone || "",
+      country_code: guest?.country_code || "+54",
     };
-  }, [user?.name, user?.email, user?.phone, user?.phoneArea, user?.phoneCountryCode]);
+  }, [user]);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -85,7 +120,7 @@ export default function LeadForm({
       if (user.email && !form.getValues("email")) form.setValue("email", user.email);
       if ((user.phoneArea || user.phone) && !form.getValues("phone")) {
         const phone = user.phoneArea && user.phone
-          ? `${user.phoneArea}-${user.phone}`
+          ? `${user.phoneArea}${user.phone}`
           : user.phone;
         form.setValue("phone", phone);
       }
@@ -109,7 +144,7 @@ export default function LeadForm({
           type,
           name: values.name,
           email: values.email,
-          phone: values.phone?.replace(/-/g, "") || undefined,
+          phone: values.phone || undefined,
           country_code: values.country_code,
           message: getDefaultMessage(type, propertyAddress),
           source: "web",
@@ -120,6 +155,15 @@ export default function LeadForm({
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Error al enviar la consulta");
+      }
+
+      if (!user) {
+        saveGuestContact({
+          name: values.name,
+          email: values.email,
+          phone: values.phone || "",
+          country_code: values.country_code,
+        });
       }
 
       toast.success("¡Consulta enviada!", {
@@ -263,9 +307,14 @@ export default function LeadForm({
                     <FormControl>
                       <Input
                         type="tel"
-                        placeholder="11-1234-5678"
+                        inputMode="numeric"
+                        placeholder="11 1234 5678"
                         className="h-9 text-sm"
                         {...field}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/\D/g, "");
+                          field.onChange(cleaned);
+                        }}
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />

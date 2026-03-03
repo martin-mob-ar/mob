@@ -123,7 +123,7 @@ const SurfaceFilter = () => {
         <div className="space-y-4">
           {/* Surface Type Selector */}
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
+            <p className="font-display font-semibold text-sm uppercase tracking-wider mb-3">
               Tipo de superficie
             </p>
             <div className="flex gap-2">
@@ -152,7 +152,7 @@ const SurfaceFilter = () => {
 
           {/* Min/Max Inputs */}
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
+            <p className="font-display font-semibold text-sm uppercase tracking-wider mb-3">
               Rango de m²
             </p>
             <div className="flex gap-3 items-center">

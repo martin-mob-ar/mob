@@ -7,6 +7,7 @@ export interface LocationResult {
   name: string;
   depth: number;
   display: string;
+  type: "location" | "state";
 }
 
 export function useLocationSearch(query: string, { enabled = true, limit = 15 } = {}) {

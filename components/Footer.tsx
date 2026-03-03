@@ -38,19 +38,19 @@ const Footer = () => {
             <h4 className="font-display font-semibold text-foreground mb-4">Legal</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/terminos-y-condiciones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Términos y condiciones
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/politica-de-privacidad" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Política de privacidad
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Contacto
-                </Link>
+                <a href="https://wa.me/5492236000055" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Comunicate con nosotros por WhatsApp
+                </a>
               </li>
             </ul>
           </div>

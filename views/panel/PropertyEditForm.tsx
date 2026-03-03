@@ -96,7 +96,7 @@ export default function PropertyEditForm({
   // ─── Ubicacion ──────────────────────────────────────────────────────
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(
     currentLocation
-      ? { id: currentLocation.id, name: currentLocation.name, depth: 0, display: currentLocation.parentName }
+      ? { id: currentLocation.id, name: currentLocation.name, depth: 0, display: currentLocation.parentName, type: "location" as const }
       : null
   );
   const [locationId, setLocationId] = useState<number | null>(property.location_id);

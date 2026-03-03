@@ -8,6 +8,7 @@ import { transformPropertyReadList } from "@/lib/transforms/property";
 export interface SearchFilters {
   location: string;
   locationId: string;
+  stateId: string;
   minPrice: string;
   maxPrice: string;
   minRooms: string;   // dormitorios min → suite_amount
@@ -22,6 +23,7 @@ export interface SearchFilters {
   propertyType: string; // "inmobiliaria" | "dueno" | ""
   propertyTypeNames: string[]; // ["Apartment", "House", ...]
   tagIds: number[];    // selected tag IDs from tokko_property_tag
+  maxAge: string;      // max property age (0 = a estrenar)
   sort: string;
 }
 
@@ -41,6 +43,7 @@ interface SearchFiltersContextValue {
 const defaultFilters: SearchFilters = {
   location: "",
   locationId: "",
+  stateId: "",
   minPrice: "",
   maxPrice: "",
   minRooms: "",
@@ -55,6 +58,7 @@ const defaultFilters: SearchFilters = {
   propertyType: "",
   propertyTypeNames: [],
   tagIds: [],
+  maxAge: "",
   sort: "recent",
 };
 
@@ -76,6 +80,7 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   const updates: Partial<SearchFilters> = {};
   const location = searchParams.get("location");
   const locationId = searchParams.get("locationId");
+  const stateId = searchParams.get("stateId");
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
   const minRooms = searchParams.get("minRooms");
@@ -89,10 +94,12 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   const surfaceType = searchParams.get("surfaceType");
   const propertyTypeNames = searchParams.get("propertyTypeNames");
   const tagIds = searchParams.get("tagIds");
+  const maxAge = searchParams.get("maxAge");
   const sort = searchParams.get("sort");
 
   if (location) updates.location = location;
   if (locationId) updates.locationId = locationId;
+  if (stateId) updates.stateId = stateId;
   if (minPrice) updates.minPrice = minPrice;
   if (maxPrice) updates.maxPrice = maxPrice;
   if (minRooms) updates.minRooms = minRooms;
@@ -106,6 +113,7 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   if (surfaceType) updates.surfaceType = surfaceType;
   if (propertyTypeNames) updates.propertyTypeNames = propertyTypeNames.split(",").filter(Boolean);
   if (tagIds) updates.tagIds = tagIds.split(",").map(Number).filter(Boolean);
+  if (maxAge) updates.maxAge = maxAge;
   if (sort) updates.sort = sort;
 
   return updates;
@@ -174,6 +182,7 @@ export function SearchFiltersProvider({
     const params = new URLSearchParams();
     if (f.location) params.set("location", f.location);
     if (f.locationId) params.set("locationId", f.locationId);
+    if (f.stateId) params.set("stateId", f.stateId);
     if (f.minPrice) params.set("minPrice", f.minPrice);
     if (f.maxPrice) params.set("maxPrice", f.maxPrice);
     if (f.minRooms) params.set("minRooms", f.minRooms);
@@ -188,6 +197,7 @@ export function SearchFiltersProvider({
     if (f.propertyType) params.set("propertyType", f.propertyType);
     if (f.propertyTypeNames.length > 0) params.set("propertyTypeNames", f.propertyTypeNames.join(","));
     if (f.tagIds.length > 0) params.set("tagIds", f.tagIds.join(","));
+    if (f.maxAge) params.set("maxAge", f.maxAge);
     if (f.sort && f.sort !== "recent") params.set("sort", f.sort);
     return params;
   }, []);

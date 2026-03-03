@@ -12,7 +12,7 @@ import { useMockUser } from "@/contexts/MockUserContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -229,7 +229,11 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
     const params = new URLSearchParams();
     if (headerSelectedLocation) {
       params.set("location", headerSelectedLocation.name);
-      params.set("locationId", String(headerSelectedLocation.id));
+      if (headerSelectedLocation.type === "state") {
+        params.set("stateId", String(headerSelectedLocation.id));
+      } else {
+        params.set("locationId", String(headerSelectedLocation.id));
+      }
     } else if (headerLocationQuery.trim()) {
       params.set("location", headerLocationQuery.trim());
     }
@@ -316,7 +320,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                   <input
                     ref={headerLocationInputRef}
                     type="text"
-                    placeholder="Provincia, barrio..."
+                    placeholder="Ciudad, barrio..."
                     value={headerLocationQuery}
                     onChange={(e) => handleHeaderLocationInputChange(e.target.value)}
                     onFocus={() => headerLocationQuery.length >= 2 && !headerSelectedLocation && setShowHeaderLocationDropdown(true)}
@@ -371,7 +375,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                     <div className="space-y-5">
                       {/* Dormitorios */}
                       <div>
-                        <label className="text-sm font-semibold text-foreground block mb-3">Dormitorios</label>
+                        <label className="font-display font-semibold text-sm uppercase tracking-wider text-foreground block mb-3">Dormitorios</label>
                         <div className="flex gap-3">
                           <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
                             <SelectTrigger className="flex-1 rounded-xl h-10">
@@ -398,7 +402,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       
                       {/* Ambientes */}
                       <div>
-                        <label className="text-sm font-semibold text-foreground block mb-3">Ambientes</label>
+                        <label className="font-display font-semibold text-sm uppercase tracking-wider text-foreground block mb-3">Ambientes</label>
                         <div className="flex gap-3">
                           <Select value={ambientesMin} onValueChange={setAmbientesMin}>
                             <SelectTrigger className="flex-1 rounded-xl h-10">
@@ -456,7 +460,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       {/* Valor total / Alquiler toggle */}
                       <div className="flex rounded-full border border-border p-1">
                         <button onClick={() => setPriceType("total")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceType === "total" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                          Valor total
+                          Precio total
                         </button>
                         <button onClick={() => setPriceType("alquiler")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceType === "alquiler" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                           Alquiler
@@ -633,6 +637,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                 </button>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-auto rounded-t-3xl px-6 pb-8 pt-6">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
                 <div className="flex flex-col gap-4">
                   {isAuthenticated ? (
                     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, ShieldCheck, Fingerprint, Building2, FileSignature } from "lucide-react";
+import { Globe, ShieldCheck, BadgeCheck, CalendarCheck, FileSignature } from "lucide-react";
 
 /**
  * Simple pill badges like inspo hero/3.png — icon + single text.
@@ -9,29 +9,29 @@ import { Globe, ShieldCheck, Fingerprint, Building2, FileSignature } from "lucid
  */
 const badges = [
   {
-    text: "100% Online",
+    text: "Proceso online",
     icon: Globe,
     position: "top-[-2%] left-[36%]",
     floatDuration: "3s",
     floatDelay: "0s",
   },
   {
-    text: "Sin aval",
+    text: "Garantía 50% off",
     icon: ShieldCheck,
     position: "top-[30%] right-[-4%]",
     floatDuration: "3.4s",
     floatDelay: "0.8s",
   },
   {
-    text: "Firma digital",
-    icon: FileSignature,
+    text: "Agenda tu visita",
+    icon: CalendarCheck,
     position: "bottom-[16%] left-[-4%]",
     floatDuration: "3.2s",
     floatDelay: "0.4s",
   },
   {
-    text: "Inquilino Verificado",
-    icon: Fingerprint,
+    text: "Propiedades verificadas",
+    icon: BadgeCheck,
     position: "bottom-[6%] right-[16%]",
     floatDuration: "3.6s",
     floatDelay: "1.2s",
@@ -42,7 +42,7 @@ const HeroBadges = () => {
   return (
     <>
       {/* Desktop: Floating pill badges */}
-      <div className="hidden lg:block">
+      <div className="hidden md:block">
         {badges.map((badge, i) => (
           <div
             key={badge.text}
@@ -67,7 +67,7 @@ const HeroBadges = () => {
       </div>
 
       {/* Mobile: Horizontal wrap row */}
-      <div className="lg:hidden flex gap-2 flex-wrap justify-center">
+      <div className="md:hidden flex gap-2 flex-wrap justify-center">
         {badges.map((badge) => (
           <div
             key={badge.text}

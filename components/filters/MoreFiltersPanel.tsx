@@ -1,4 +1,4 @@
-import { X, ArrowRightLeft } from "lucide-react";
+import { X, ArrowRightLeft, MapPin, Loader2 as Spinner } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,12 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchFilters, SearchFilters } from "@/contexts/SearchFiltersContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { TAG_SECTIONS } from "@/lib/constants/tags";
+import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 
 interface MoreFiltersPanelProps {
   open: boolean;
@@ -58,6 +60,36 @@ function SurfaceInput({
     </div>
   );
 }
+
+const FilterSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="py-4 border-b border-border">
+    <h4 className="font-display font-semibold text-sm uppercase tracking-wider mb-3">{title}</h4>
+    {children}
+  </div>
+);
+
+const NumberPill = ({
+  value,
+  label,
+  selected,
+  onSelect,
+}: {
+  value: string;
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) => (
+  <button
+    onClick={onSelect}
+    className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+      selected
+        ? "border-primary bg-primary/10 text-primary"
+        : "border-border hover:border-primary hover:bg-primary/5"
+    }`}
+  >
+    {label}
+  </button>
+);
 
 const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
   const { filters, setFilters, clearFilters, search } = useSearchFilters();
@@ -105,9 +137,45 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
   );
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(filters.tagIds);
 
+  // Location search state
+  const [locationSearch, setLocationSearch] = useState(filters.location);
+  const [pendingLocation, setPendingLocation] = useState<{ name: string; locationId: string; stateId: string }>({
+    name: filters.location,
+    locationId: filters.locationId,
+    stateId: filters.stateId,
+  });
+  const [locationSelected, setLocationSelected] = useState(!!filters.location);
+  const { results: locationResults, isLoading: locationLoading } = useLocationSearch(locationSearch, {
+    enabled: open && !locationSelected,
+  });
+
+  const handleLocationSelect = (loc: LocationResult) => {
+    setLocationSearch(loc.name);
+    if (loc.type === "state") {
+      setPendingLocation({ name: loc.name, locationId: "", stateId: String(loc.id) });
+    } else {
+      setPendingLocation({ name: loc.name, locationId: String(loc.id), stateId: "" });
+    }
+    setLocationSelected(true);
+  };
+
+  const handleLocationClear = () => {
+    setLocationSearch("");
+    setPendingLocation({ name: "", locationId: "", stateId: "" });
+    setLocationSelected(false);
+  };
+
+  const handleLocationInputChange = (value: string) => {
+    setLocationSearch(value);
+    setLocationSelected(false);
+  };
+
   // Sync local state when panel opens
   useEffect(() => {
     if (open) {
+      setLocationSearch(filters.location);
+      setPendingLocation({ name: filters.location, locationId: filters.locationId, stateId: filters.stateId });
+      setLocationSelected(!!filters.location);
       setMinPrice(filters.minPrice);
       setMaxPrice(filters.maxPrice);
       setSelectedTypes(filters.propertyTypeNames);
@@ -160,6 +228,9 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
       [surfMin, surfMax] = [surfMax, surfMin];
     }
     setFilters({
+      location: pendingLocation.name,
+      locationId: pendingLocation.locationId,
+      stateId: pendingLocation.stateId,
       minPrice: min,
       maxPrice: max,
       propertyTypeNames: selectedTypes,
@@ -178,6 +249,9 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
   };
 
   const handleClear = () => {
+    setLocationSearch("");
+    setPendingLocation({ name: "", locationId: "", stateId: "" });
+    setLocationSelected(false);
     setMinPrice("");
     setMaxPrice("");
     setCurrency("ARS");
@@ -209,36 +283,6 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     );
   };
 
-  const FilterSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="py-4 border-b border-border">
-      <h4 className="font-display font-semibold text-sm uppercase tracking-wider mb-3">{title}</h4>
-      {children}
-    </div>
-  );
-
-  const NumberPill = ({
-    value,
-    label,
-    selected,
-    onSelect,
-  }: {
-    value: string;
-    label: string;
-    selected: boolean;
-    onSelect: () => void;
-  }) => (
-    <button
-      onClick={onSelect}
-      className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
-        selected
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border hover:border-primary hover:bg-primary/5"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <>
       {/* Overlay */}
@@ -251,7 +295,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
       <div className="fixed left-0 top-0 bottom-0 w-full max-w-md bg-background z-50 shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="font-display text-lg font-bold">Más filtros</h3>
+          <h3 className="font-display text-lg font-bold">Filtros</h3>
           <button
             onClick={onClose}
             className="h-8 w-8 rounded-full hover:bg-secondary flex items-center justify-center transition-colors"
@@ -263,8 +307,65 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
         {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-4">
-            {/* Valor */}
-            <FilterSection title="Valor">
+            {/* Ubicación */}
+            <FilterSection title="Ubicación">
+              <div className="space-y-2">
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar ubicación..."
+                    value={locationSearch}
+                    onChange={(e) => handleLocationInputChange(e.target.value)}
+                    className="rounded-xl pl-9"
+                  />
+                </div>
+                {pendingLocation.name && locationSelected && (
+                  <button
+                    onClick={handleLocationClear}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Limpiar
+                  </button>
+                )}
+                <div className="max-h-44 overflow-y-auto">
+                  {locationLoading ? (
+                    <div className="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground">
+                      <Spinner className="h-4 w-4 animate-spin" />
+                      Buscando...
+                    </div>
+                  ) : locationResults.length > 0 ? (
+                    <div className="space-y-0.5">
+                      {locationResults.map((loc) => (
+                        <button
+                          key={loc.id}
+                          onClick={() => handleLocationSelect(loc)}
+                          className="w-full text-left px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors flex items-start gap-2"
+                        >
+                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium text-foreground block">{loc.name}</span>
+                            {loc.display && (
+                              <span className="text-xs text-muted-foreground block truncate">{loc.display}</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : locationSearch.length >= 2 && !locationSelected ? (
+                    <div className="px-2 py-3 text-sm text-muted-foreground">
+                      No se encontraron ubicaciones
+                    </div>
+                  ) : locationSearch.length > 0 && locationSearch.length < 2 ? (
+                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                      Escribí al menos 2 caracteres para buscar
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </FilterSection>
+
+            {/* Precio */}
+            <FilterSection title="Precio">
               <div className="space-y-3">
                 <div className="flex rounded-full border border-border p-1 bg-muted/30">
                   <button
@@ -275,7 +376,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                         : "text-muted-foreground"
                     }`}
                   >
-                    Valor total
+                    Precio total
                   </button>
                   <button
                     onClick={() => setPriceType("alquiler")}
@@ -333,8 +434,8 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
               </div>
             </FilterSection>
 
-            {/* Tipos de inmueble */}
-            <FilterSection title="Tipos de inmueble">
+            {/* Tipo de inmueble */}
+            <FilterSection title="Tipo de inmueble">
               <div className="flex flex-wrap gap-2">
                 {propertyTypes.map((type) => (
                   <label

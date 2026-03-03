@@ -29,10 +29,19 @@ const LocationFilter = () => {
   const handleSelect = (loc: LocationResult) => {
     setSelectedLocation(loc);
     setSearch(loc.name);
-    setFilters({
-      location: loc.name,
-      locationId: String(loc.id),
-    });
+    if (loc.type === "state") {
+      setFilters({
+        location: loc.name,
+        locationId: "",
+        stateId: String(loc.id),
+      });
+    } else {
+      setFilters({
+        location: loc.name,
+        locationId: String(loc.id),
+        stateId: "",
+      });
+    }
     setOpen(false);
   };
 
@@ -42,6 +51,7 @@ const LocationFilter = () => {
     setFilters({
       location: "",
       locationId: "",
+      stateId: "",
     });
   };
 
@@ -55,6 +65,7 @@ const LocationFilter = () => {
       setFilters({
         location: search,
         locationId: "",
+        stateId: "",
       });
       setOpen(false);
     }

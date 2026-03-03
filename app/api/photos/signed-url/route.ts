@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import {
   generateSignedUploadUrl,
   buildStoragePath,
@@ -10,18 +11,29 @@ import {
  * POST /api/photos/signed-url
  *
  * Generate a signed URL for direct client-to-GCS upload.
- * The client uploads directly to GCS using the returned URL (PUT request).
  *
- * Body: { propertyId: number, order: number, contentType: string }
+ * For new properties (wizard): pass { tempFolder: string, order, contentType }
+ *   → uploads to {tempFolder}/{order}-{uuid}.{ext}
+ *
+ * For existing properties (edit): pass { propertyId: number, order, contentType }
+ *   → uploads to {propertyId}/{order}-{uuid}.{ext}
+ *
  * Returns: { signedUrl, storagePath, publicUrl }
  */
 export async function POST(request: NextRequest) {
   try {
-    const { propertyId, order, contentType } = await request.json();
+    const { propertyId, tempFolder, order, contentType } = await request.json();
 
-    if (!propertyId || order == null || !contentType) {
+    if (order == null || !contentType) {
       return NextResponse.json(
-        { error: 'propertyId, order, and contentType are required' },
+        { error: 'order and contentType are required' },
+        { status: 400 }
+      );
+    }
+
+    if (propertyId == null && !tempFolder) {
+      return NextResponse.json(
+        { error: 'Either propertyId or tempFolder is required' },
         { status: 400 }
       );
     }
@@ -34,7 +46,21 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = contentType === 'image/jpeg' ? 'jpg' : contentType === 'image/png' ? 'png' : 'webp';
-    const storagePath = buildStoragePath(parseInt(propertyId, 10), parseInt(order, 10), ext);
+    const uuid = randomUUID().slice(0, 8);
+
+    let storagePath: string;
+    if (propertyId != null) {
+      // Editing existing property — upload directly into property folder
+      storagePath = buildStoragePath(parseInt(propertyId, 10), parseInt(order, 10), ext);
+    } else {
+      // New property wizard — upload into temp folder, moved to {propertyId}/ after creation
+      // Validate tempFolder format: only allow alphanumeric, hyphens, underscores, and slashes
+      if (!/^[a-zA-Z0-9_/-]+$/.test(tempFolder) || tempFolder.includes('..')) {
+        return NextResponse.json({ error: 'Invalid tempFolder' }, { status: 400 });
+      }
+      storagePath = `${tempFolder}/${order}-${uuid}.${ext}`;
+    }
+
     const signedUrl = await generateSignedUploadUrl(storagePath, contentType);
     const publicUrl = getPublicUrl(storagePath);
 

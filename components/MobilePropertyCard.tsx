@@ -174,13 +174,16 @@ const MobilePropertyCard = ({
 
         {/* Content Section */}
         <div className="p-4">
-          {/* Description */}
-          <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
-            {property.description}
+          {/* Address */}
+          <h3 className="font-display font-semibold text-foreground text-xs leading-tight line-clamp-2 min-h-[2lh]">
+            {property.address}
+          </h3>
+          <p className="text-muted-foreground text-xs mt-0.5 truncate">
+            {property.neighborhood}
           </p>
 
           {/* Price Row */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mt-2 mb-2">
             <div>
               {property.currency === "USD" ? (
                 <>
@@ -199,23 +202,21 @@ const MobilePropertyCard = ({
                   </span>
                 </>
               ) : (
-                <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="font-display font-bold text-xl text-foreground">
-                    ${property.price.toLocaleString("es-AR")}
-                  </span>
-                  <span className="text-sm text-muted-foreground uppercase">
-                    Total
-                  </span>
-                  {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
-                    <span className="text-sm text-muted-foreground">
-                      (${property.rentPrice.toLocaleString("es-AR")} Alq + ${property.expensas.toLocaleString("es-AR")} Exp)
+                <>
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <span className="font-display font-bold text-xl text-foreground">
+                      ${property.price.toLocaleString("es-AR")}
                     </span>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Sin expensas
+                    <span className="text-sm text-muted-foreground uppercase">
+                      Total
                     </span>
-                  )}
-                </div>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
+                      ? `($${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp)`
+                      : "Sin expensas"}
+                  </span>
+                </>
               )}
             </div>
 
@@ -226,7 +227,7 @@ const MobilePropertyCard = ({
           </div>
 
           {/* Details */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             {property.rooms !== undefined && <span className="font-bold">{property.rooms} dorm</span>}
             {property.bathrooms !== undefined && <>
                 <span>·</span>
@@ -241,11 +242,6 @@ const MobilePropertyCard = ({
                 <span className="font-bold">{property.surface} m²</span>
               </>}
           </div>
-
-          {/* Location */}
-          <p className="text-sm text-muted-foreground">
-            {property.address} · {property.neighborhood}
-          </p>
         </div>
       </div>
     </Link>;

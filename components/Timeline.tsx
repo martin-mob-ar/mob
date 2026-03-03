@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Fingerprint, Shield, FileText } from "lucide-react";
+import { Search, BadgeCheck, Globe, Home } from "lucide-react";
 import { useInView } from "@/hooks/useInView";
 
 const steps = [
@@ -8,25 +8,25 @@ const steps = [
     icon: Search,
     number: "01",
     title: "Buscá tu propiedad",
-    description: "Explorá opciones verificadas con filtros avanzados y fotos reales.",
+    description: "Explorá opciones de inmobiliarias e inquilinos verificados",
   },
   {
-    icon: Fingerprint,
+    icon: BadgeCheck,
     number: "02",
-    title: "Verificá tu identidad",
-    description: "Validación automática de identidad y solvencia en menos de 2 minutos.",
+    title: "Verificate en mob",
+    description: "Validate como inquilino calificado para todos los alquileres de nuestra plataforma",
   },
   {
-    icon: Shield,
+    icon: Globe,
     number: "03",
-    title: "Elegí tu garantía",
-    description: "Garantía digital mob. Sin garante, sin trámites presenciales.",
+    title: "Proceso online",
+    description: "Agendá tu visita, reservá y accedé a una garantía del 50% off",
   },
   {
-    icon: FileText,
+    icon: Home,
     number: "04",
-    title: "Firmá digitalmente",
-    description: "Contrato con validez legal, firmado desde cualquier dispositivo.",
+    title: "Mudate",
+    description: "Ya conseguiste tu alquiler, de manera simple.",
   },
 ];
 
@@ -92,12 +92,13 @@ const Timeline = () => {
 
         {/* Mobile: Vertical timeline */}
         <div className="md:hidden relative pl-14">
-          {/* Vertical dotted line */}
-          <div className="absolute left-[18px] top-2 bottom-2 border-l-2 border-dashed border-border/70" />
-
           <div className="space-y-10">
             {steps.map((step, i) => (
               <div key={i} className="relative">
+                {/* Connector line to next step */}
+                {i < steps.length - 1 && (
+                  <div className="absolute left-[-2.25rem] top-[2.5rem] h-full border-l-2 border-dashed border-border/70" />
+                )}
                 {/* Icon */}
                 <div className="absolute -left-14 top-0 w-10 h-10 rounded-xl bg-background border border-border shadow-sm flex items-center justify-center z-10">
                   <step.icon className="h-5 w-5 text-primary" strokeWidth={1.5} />

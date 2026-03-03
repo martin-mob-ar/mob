@@ -257,6 +257,7 @@ export default async function PropiedadDetailPage({
       propertyId={propertyId}
       ownerWhatsApp={ownerWhatsApp}
       ownerId={propertyData.user_id}
+      age={propertyData.age ?? null}
     />
   );
 }

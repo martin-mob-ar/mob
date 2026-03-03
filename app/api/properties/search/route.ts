@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
 
   const location = searchParams.get("location");
   const locationId = searchParams.get("locationId");
+  const stateId = searchParams.get("stateId");
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
   const minRooms = searchParams.get("minRooms");     // dormitorios → suite_amount
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
   const propertyType = searchParams.get("propertyType"); // "inmobiliaria" | "dueno"
   const propertyTypeNames = searchParams.get("propertyTypeNames"); // comma-separated: "Apartment,House"
   const tagIds = searchParams.get("tagIds"); // comma-separated tag IDs
+  const maxAge = searchParams.get("maxAge"); // max property age (0 = a estrenar)
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
@@ -29,8 +31,20 @@ export async function GET(request: NextRequest) {
     .from("properties_read")
     .select("*", { count: "exact" });
 
-  // Apply location filter - prefer locationId for precise matching
-  if (locationId) {
+  // Apply location filter - stateId for state-level, locationId for location-level
+  if (stateId) {
+    // State-level filter: look up state name and match against properties_read.state_name
+    const stId = parseInt(stateId);
+    const { data: state } = await supabaseAdmin
+      .from("tokko_state")
+      .select("name")
+      .eq("id", stId)
+      .single();
+
+    if (state) {
+      query = query.eq("state_name", state.name);
+    }
+  } else if (locationId) {
     const locId = parseInt(locationId);
     // Get the selected location's depth to decide if we need to include children
     const { data: loc } = await supabaseAdmin
@@ -107,6 +121,14 @@ export async function GET(request: NextRequest) {
     const names = propertyTypeNames.split(",").map((n) => n.trim()).filter(Boolean);
     if (names.length > 0) {
       query = query.in("property_type_name", names);
+    }
+  }
+
+  // Filter by age (antiguedad)
+  if (maxAge !== null) {
+    const ageVal = parseInt(maxAge);
+    if (!isNaN(ageVal)) {
+      query = query.not("age", "is", null).lte("age", ageVal);
     }
   }
 

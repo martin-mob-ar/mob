@@ -23,48 +23,86 @@ export async function GET(request: Request) {
   // Build Supabase OR filter: name matches ANY token
   const orFilter = tokens.map((t) => `name.ilike.%${t}%`).join(',');
 
-  // Query 1: Search locations matching any token
-  const { data: locations, error } = await supabaseAdmin
-    .from('tokko_location')
-    .select('id, name, depth, state_id, parent_location_id')
-    .or(orFilter)
-    .order('id')
-    .limit(limit + 40);
-
-  if (error) {
-    console.error('[locations/search]', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (!locations || locations.length === 0) {
-    return NextResponse.json({ data: [] });
-  }
-
-  // Collect depth-3 IDs to check which have multiple children (2+)
-  const depth3Ids = locations.filter((l) => l.depth === 3).map((l) => l.id);
-  let depth3WithMultipleChildren = new Set<number>();
-
-  if (depth3Ids.length > 0) {
-    const { data: childRows } = await supabaseAdmin
+  // Run three queries in parallel:
+  // 1. Direct match on the full query string (exact substring) — ensures "Mar del Plata" always appears
+  // 2. Token-based OR match (the original broad search)
+  // 3. State search (Argentina only)
+  const [directResult, tokenResult, statesResult] = await Promise.all([
+    supabaseAdmin
       .from('tokko_location')
-      .select('parent_location_id')
-      .in('parent_location_id', depth3Ids)
-      .limit(1000);
+      .select('id, name, depth, state_id, parent_location_id')
+      .ilike('name', `%${q}%`)
+      .order('depth')
+      .limit(10),
+    supabaseAdmin
+      .from('tokko_location')
+      .select('id, name, depth, state_id, parent_location_id')
+      .or(orFilter)
+      .order('id')
+      .limit(limit + 40),
+    supabaseAdmin
+      .from('tokko_state')
+      .select('id, name, country:tokko_country!country_id(name)')
+      .eq('country_id', 1)
+      .or(orFilter)
+      .limit(10),
+  ]);
 
-    if (childRows) {
-      // Count children per parent
-      const childrenCount = new Map<number, number>();
-      for (const row of childRows) {
-        const count = childrenCount.get(row.parent_location_id) || 0;
-        childrenCount.set(row.parent_location_id, count + 1);
-      }
-      // Only include parents with 2+ children
-      for (const [parentId, count] of childrenCount.entries()) {
-        if (count >= 2) {
-          depth3WithMultipleChildren.add(parentId);
-        }
-      }
+  if (directResult.error) {
+    console.error('[locations/search]', directResult.error);
+    return NextResponse.json({ error: directResult.error.message }, { status: 500 });
+  }
+  if (tokenResult.error) {
+    console.error('[locations/search]', tokenResult.error);
+    return NextResponse.json({ error: tokenResult.error.message }, { status: 500 });
+  }
+
+  // Merge direct matches first (prioritized), then token matches, deduplicating by id
+  const seenIds = new Set<number>();
+  const locations: typeof directResult.data = [];
+
+  for (const loc of (directResult.data || [])) {
+    if (!seenIds.has(loc.id)) {
+      seenIds.add(loc.id);
+      locations.push(loc);
     }
+  }
+  for (const loc of (tokenResult.data || [])) {
+    if (!seenIds.has(loc.id)) {
+      seenIds.add(loc.id);
+      locations.push(loc);
+    }
+  }
+
+  const matchedStates = statesResult.data || [];
+
+  // Normalized tokens for multi-word matching
+  const normalizedTokens = tokens.map(normalize);
+
+  // Build state results first (they appear at the top)
+  const results: {
+    id: number;
+    name: string;
+    depth: number;
+    display: string;
+    type: "location" | "state";
+  }[] = [];
+
+  for (const s of matchedStates) {
+    const fullContext = normalize(s.name);
+    if (!normalizedTokens.every((t) => fullContext.includes(t))) continue;
+    const country = s.country as unknown as { name: string } | null;
+    results.push({
+      id: s.id,
+      name: s.name,
+      depth: 0,
+      display: country?.name ?? 'Argentina',
+      type: 'state',
+    });
+  }
+
+  if (locations.length === 0 && results.length === 0) {
+    return NextResponse.json({ data: [] });
   }
 
   // Walk the full parent chain for all locations.
@@ -143,21 +181,8 @@ export async function GET(request: Request) {
     return chain;
   }
 
-  // Normalized tokens for multi-word matching
-  const normalizedTokens = tokens.map(normalize);
-
-  // Build results
-  const results: {
-    id: number;
-    name: string;
-    depth: number;
-    display: string;
-  }[] = [];
-
+  // Build location results
   for (const l of locations) {
-    // Exclude depth-3 locations that have 2+ children
-    if (l.depth === 3 && depth3WithMultipleChildren.has(l.id)) continue;
-
     const chain = getAncestorChain(l.parent_location_id, l.state_id);
 
     // Build full context for multi-token filtering
@@ -169,6 +194,7 @@ export async function GET(request: Request) {
       name: l.name,
       depth: l.depth,
       display: chain.join(', '),
+      type: 'location',
     });
 
     if (results.length >= limit) break;

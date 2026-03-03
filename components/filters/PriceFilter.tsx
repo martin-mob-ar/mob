@@ -107,7 +107,7 @@ const PriceFilter = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Valor total
+              Precio total
             </button>
             <button
               onClick={() => setPriceType("alquiler")}

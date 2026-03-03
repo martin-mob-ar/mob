@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -22,6 +24,8 @@ import {
   Bath,
   Maximize2,
   Car,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -103,6 +107,31 @@ const PropertyDetailView = ({
   tokko,
   tokkoId,
 }: PropertyDetailViewProps) => {
+  const router = useRouter();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/properties/${property.property_id}/delete`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setDeleteError(data.error || "Error al eliminar");
+        setIsDeleting(false);
+        return;
+      }
+      router.push("/gestion");
+    } catch {
+      setDeleteError("Error inesperado. Intentá de nuevo.");
+      setIsDeleting(false);
+    }
+  };
+
   const title = property.title || property.address || "Propiedad";
   const address = property.address || "";
   const location = [property.location_name, property.parent_location_name]
@@ -238,7 +267,7 @@ const PropertyDetailView = ({
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {tokko && tokkoId ? (
           <Button asChild variant="outline" className="rounded-full gap-2">
             <a
@@ -265,6 +294,52 @@ const PropertyDetailView = ({
               Ver publicación
             </Link>
           </Button>
+        )}
+
+        {/* Delete — pushed to the right, only shown for non-mock */}
+        {!mockMode && (
+          <div className="ml-auto flex items-center gap-2">
+            {deleteError && (
+              <span className="text-sm text-destructive">{deleteError}</span>
+            )}
+            {confirmDelete ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  ¿Eliminar esta propiedad?
+                </span>
+                <Button
+                  variant="destructive"
+                  className="rounded-full gap-2"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Confirmar
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => { setConfirmDelete(false); setDeleteError(null); }}
+                  disabled={isDeleting}
+                >
+                  Cancelar
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                className="rounded-full gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar propiedad
+              </Button>
+            )}
+          </div>
         )}
       </div>
 

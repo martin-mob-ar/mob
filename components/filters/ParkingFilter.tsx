@@ -46,7 +46,7 @@ const ParkingFilter = () => {
       </PopoverTrigger>
       <PopoverContent className="w-48 p-4 bg-background" align="start">
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
+          <p className="font-display font-semibold text-sm uppercase tracking-wider mb-3">
             Cocheras
           </p>
           <div className="flex flex-wrap gap-2">

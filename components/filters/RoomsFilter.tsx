@@ -170,7 +170,7 @@ const RoomsFilter = () => {
         <div className="space-y-5">
           {/* Dormitorios */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-3">
+            <p className="font-display font-semibold text-sm uppercase tracking-wider text-foreground mb-3">
               Dormitorios
             </p>
             <div className="flex gap-3">
@@ -203,7 +203,7 @@ const RoomsFilter = () => {
 
           {/* Ambientes */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-3">
+            <p className="font-display font-semibold text-sm uppercase tracking-wider text-foreground mb-3">
               Ambientes
             </p>
             <div className="flex gap-3">

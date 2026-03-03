@@ -22,7 +22,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getGeometryFromPlace } from "@/lib/google-maps/places";
-import { createClient } from "@/lib/supabase/client";
 import {
   Select,
   SelectContent,
@@ -64,7 +63,7 @@ const hours = Array.from({ length: 24 }, (_, i) => {
 });
 
 
-const SubirPropiedad = () => {
+const SubirPropiedad = ({ userId }: { userId: string }) => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -296,15 +295,6 @@ const SubirPropiedad = () => {
     setSubmitError(null);
 
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setSubmitError("Debes iniciar sesión para publicar una propiedad.");
-        setIsSubmitting(false);
-        return;
-      }
-
       const propertyTypeLabel = propertyTypes.find((t) => t.id === typeId)?.label || "";
       const locationName = selectedLocation?.name || "";
       const autoTitle = `${propertyTypeLabel} en ${locationName}`.trim();
@@ -316,7 +306,7 @@ const SubirPropiedad = () => {
       });
 
       const body = {
-        profile_id: user.id,
+        profile_id: userId,
         type_id: typeId,
         address: address || null,
         geo_lat: geoLat || null,

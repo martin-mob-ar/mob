@@ -114,6 +114,20 @@ export async function deletePhoto(storagePath: string): Promise<void> {
 }
 
 /**
+ * Move a photo from one storage path to another (copy + delete original).
+ * Used to relocate temp-folder photos into their final {propertyId}/ folder after creation.
+ */
+export async function movePhoto(
+  fromPath: string,
+  toPath: string
+): Promise<{ storagePath: string; publicUrl: string }> {
+  const bucket = getBucket();
+  await bucket.file(fromPath).copy(bucket.file(toPath));
+  await bucket.file(fromPath).delete({ ignoreNotFound: true });
+  return { storagePath: toPath, publicUrl: getPublicUrl(toPath) };
+}
+
+/**
  * Generate a signed URL for direct client upload.
  * The client can PUT the file directly to GCS using this URL.
  * Expires in 15 minutes.
@@ -130,9 +144,6 @@ export async function generateSignedUploadUrl(
     action: 'write',
     expires: Date.now() + 15 * 60 * 1000, // 15 minutes
     contentType,
-    extensionHeaders: {
-      'x-goog-content-length-range': '0,15728640', // max 15MB
-    },
   });
 
   return url;

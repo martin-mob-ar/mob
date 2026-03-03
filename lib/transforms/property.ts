@@ -20,6 +20,7 @@ export function transformPropertyRead(row: any): Property {
     surface: row.total_surface ? Number(row.total_surface) : undefined,
     bathrooms: row.bathroom_amount || undefined,
     parking: row.parking_lot_amount || undefined,
+    age: row.age != null ? row.age : null,
     verified: true, // Placeholder - always true for now
   };
 }
