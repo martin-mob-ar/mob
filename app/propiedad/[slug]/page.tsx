@@ -27,7 +27,7 @@ export async function generateMetadata({
   const propertyId = extractPropertyId(slugParam);
 
   if (!propertyId) {
-    return { title: "Propiedad no encontrada | mob" };
+    return { title: "Propiedad no encontrada | Mob" };
   }
 
   const supabase = await createClient();
@@ -40,7 +40,7 @@ export async function generateMetadata({
     .single();
 
   if (!data) {
-    return { title: "Propiedad no encontrada | mob" };
+    return { title: "Propiedad no encontrada | Mob" };
   }
 
   // Get Spanish type name
@@ -54,7 +54,7 @@ export async function generateMetadata({
     if (typeData?.name) typeNameEs = typeData.name;
   }
 
-  // Build title: "Departamento 2 ambientes en Centro, Mar Del Plata | mob"
+  // Build title: "Departamento 2 ambientes en Centro, Mar Del Plata | Mob"
   const titleParts: string[] = [typeNameEs];
   if (data.room_amount && data.room_amount > 0) {
     titleParts.push(
@@ -67,7 +67,7 @@ export async function generateMetadata({
       : `en ${data.location_name}`;
     titleParts.push(locationStr);
   }
-  const title = titleParts.join(" ") + " | mob";
+  const title = titleParts.join(" ") + " | Mob";
 
   // Build description
   const descParts: string[] = [];

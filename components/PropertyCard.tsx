@@ -261,7 +261,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                     USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
-                    Alquiler 
+                    Total
                   </span>
                 </div>
                 <span className="text-[10px] text-muted-foreground">
@@ -276,7 +276,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                   <span className="font-display font-bold text-sm text-foreground">
                     ${property.price.toLocaleString("es-AR")}
                   </span>
-                  <span className="text-[10px] text-muted-foreground uppercase">
+                  <span className="text-[10px] text-muted-foreground">
                     Total
                   </span>
                 </div>

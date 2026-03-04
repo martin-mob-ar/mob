@@ -115,7 +115,7 @@ const BentoGrid = () => {
             </div>
           </div>
 
-          {/* Card 5 - 100% Digital */}
+          {/* Card 5 - 100% Online */}
           <div
             className="bg-foreground text-background rounded-2xl p-6 flex flex-col justify-center"
             style={cardStyle(320)}
@@ -124,7 +124,7 @@ const BentoGrid = () => {
               <Zap className="h-3 w-3" />
               Experiencia completa
             </span>
-            <h3 className="font-display font-bold text-2xl">100%<br />Digital</h3>
+            <h3 className="font-display font-bold text-2xl">100%<br />Online</h3>
             <p className="text-sm text-background/60 mt-2">
               Desde la búsqueda hasta la firma del contrato, todo sin salir de la plataforma.
             </p>
@@ -226,13 +226,13 @@ const BentoGrid = () => {
             </p>
           </div>
 
-          {/* 100% Digital */}
+          {/* 100% Online */}
           <div className="bg-foreground text-background rounded-2xl p-5">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[11px] font-semibold mb-2">
               <Zap className="h-3 w-3" />
               Experiencia completa
             </span>
-            <h3 className="font-display font-bold text-xl">100% Digital</h3>
+            <h3 className="font-display font-bold text-xl">100% Online</h3>
             <p className="text-sm text-background/60 mt-1">
               Desde la búsqueda hasta la firma, todo en la plataforma.
             </p>

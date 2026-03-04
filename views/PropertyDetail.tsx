@@ -100,18 +100,9 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
     };
   }, [carouselApi]);
 
-  const amenities = propTags && propTags.length > 0
-    ? propTags
-    : [
-        "Balcón",
-        "Seguridad 24hs",
-        "Luminoso",
-        "Cocina integrada",
-        "Laundry",
-        "Apto mascotas",
-      ];
+  const amenities = propTags && propTags.length > 0 ? propTags : [];
 
-  const description = propDescription || `Increíble departamento ubicado en una de las mejores zonas de ${property.neighborhood}. Muy luminoso, con balcón al frente y terminaciones de categoría. Edificio moderno con seguridad y excelentes accesos. Ideal para quienes buscan comodidad y diseño en un solo lugar.`;
+  const description = propDescription || null;
 
   const publisherName = propPublisherName || null;
   const publisherLogo = propPublisherLogo || null;
@@ -596,23 +587,25 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
 
         {/* About Section */}
-        <div className="px-4 py-5 border-b border-border">
-          <h2 className="font-display text-lg font-bold text-foreground mb-3">
-            Sobre esta propiedad
-          </h2>
-          <p className={`text-sm text-muted-foreground leading-relaxed ${!showFullDescription ? "line-clamp-4" : ""}`}>
-            {description}
-          </p>
-          {description.length > 150 && (
-            <button 
-              onClick={() => setShowFullDescription(!showFullDescription)}
-              className="text-sm font-medium text-foreground mt-2 flex items-center gap-1"
-            >
-              {showFullDescription ? "Ver menos" : "Ver más"}
-              <ChevronRight className={`h-4 w-4 transition-transform ${showFullDescription ? "rotate-90" : ""}`} />
-            </button>
-          )}
-        </div>
+        {description && (
+          <div className="px-4 py-5 border-b border-border">
+            <h2 className="font-display text-lg font-bold text-foreground mb-3">
+              Sobre esta propiedad
+            </h2>
+            <p className={`text-sm text-muted-foreground leading-relaxed ${!showFullDescription ? "line-clamp-4" : ""}`}>
+              {description}
+            </p>
+            {description.length > 150 && (
+              <button
+                onClick={() => setShowFullDescription(!showFullDescription)}
+                className="text-sm font-medium text-foreground mt-2 flex items-center gap-1"
+              >
+                {showFullDescription ? "Ver menos" : "Ver más"}
+                <ChevronRight className={`h-4 w-4 transition-transform ${showFullDescription ? "rotate-90" : ""}`} />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Location Section */}
         <div className="px-4 py-5 border-b border-border">
@@ -633,19 +626,21 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
 
         {/* Amenities Section */}
-        <div className="px-4 py-5 border-b border-border">
-          <h2 className="font-display text-lg font-bold text-foreground mb-4">
-            Qué ofrece este lugar
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {amenities.map((amenity) => (
-              <div key={amenity} className="flex items-center gap-2.5">
-                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="text-sm text-foreground">{amenity}</span>
-              </div>
-            ))}
+        {amenities.length > 0 && (
+          <div className="px-4 py-5 border-b border-border">
+            <h2 className="font-display text-lg font-bold text-foreground mb-4">
+              Qué ofrece este lugar
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {amenities.map((amenity) => (
+                <div key={amenity} className="flex items-center gap-2.5">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm text-foreground">{amenity}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Trust MOB Section - Clean redesign */}
         <div className="px-4 py-6 border-b border-border bg-secondary/30">
@@ -809,17 +804,20 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               ))}
             </div>
 
-            <hr className="border-border" />
-
             {/* About */}
-            <div>
-              <h2 className="font-display text-lg font-bold text-foreground mb-3">
-                Sobre esta propiedad
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {description}
-              </p>
-            </div>
+            {description && (
+              <>
+                <hr className="border-border" />
+                <div>
+                  <h2 className="font-display text-lg font-bold text-foreground mb-3">
+                    Sobre esta propiedad
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+              </>
+            )}
 
             <hr className="border-border" />
 
@@ -837,22 +835,25 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               )}
             </div>
 
-            <hr className="border-border" />
-
             {/* Amenities */}
-            <div>
-              <h2 className="font-display text-lg font-bold text-foreground mb-3">
-                Qué ofrece este lugar
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
-                {amenities.map((amenity) => (
-                  <div key={amenity} className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-foreground">{amenity}</span>
+            {amenities.length > 0 && (
+              <>
+                <hr className="border-border" />
+                <div>
+                  <h2 className="font-display text-lg font-bold text-foreground mb-3">
+                    Qué ofrece este lugar
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {amenities.map((amenity) => (
+                      <div key={amenity} className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                        <span className="text-sm text-foreground">{amenity}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Right Column - Booking Card */}

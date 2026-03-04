@@ -10,11 +10,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSearchFilters } from "@/contexts/SearchFiltersContext";
 
-// Maps UI labels to property_type_name values in the DB
+// Maps to property_type_name values in the DB (Spanish names from tokko_property_type)
 const propertyTypes = [
-  { id: "Apartment", label: "Departamento" },
-  { id: "House", label: "Casa" },
-  { id: "Condo", label: "PH" },
+  { id: "Departamento", label: "Departamento" },
+  { id: "Casa", label: "Casa" },
+  { id: "PH", label: "PH" },
 ];
 
 const PropertyTypeFilter = () => {

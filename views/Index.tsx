@@ -27,9 +27,7 @@ const Index = ({ properties }: IndexProps) => {
       <HeroSection properties={enrichedProperties.slice(0, 4)} />
 
       {/* Properties Sections */}
-      <div className="-mt-6">
-        <PropertySection title="Propiedades para vos" properties={enrichedProperties} />
-      </div>
+      <PropertySection title="Propiedades para vos" properties={enrichedProperties} />
 
       <PropertySection title="Últimas propiedades" properties={[...enrichedProperties].reverse()} />
 

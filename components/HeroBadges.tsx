@@ -9,7 +9,7 @@ import { Globe, ShieldCheck, BadgeCheck, CalendarCheck, FileSignature } from "lu
  */
 const badges = [
   {
-    text: "Proceso online",
+    text: "Reserva online",
     icon: Globe,
     position: "top-[-2%] left-[36%]",
     floatDuration: "3s",

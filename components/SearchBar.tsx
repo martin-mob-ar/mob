@@ -89,6 +89,8 @@ const SearchBar = () => {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
+      // Ignore clicks inside Radix portals (Select dropdowns rendered outside the DOM tree)
+      if ((target as Element).closest?.("[data-radix-popper-content-wrapper]")) return;
       if (
         locationDropdownRef.current &&
         !locationDropdownRef.current.contains(target) &&
@@ -302,7 +304,7 @@ const SearchBar = () => {
   if (!isMobile) {
     return (
       <div className="w-full max-w-4xl mx-auto search-bar-mob">
-        <div className="flex items-center p-2 bg-card rounded-full border border-border shadow-md">
+        <div className="flex items-center p-1.5 bg-card rounded-[28px] border border-border shadow-md">
           <div className="flex-1 grid grid-cols-[1.1fr_0.8fr_1.3fr] divide-x divide-border">
             <div className="px-6 py-3 relative">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -386,7 +388,7 @@ const SearchBar = () => {
           <Button
             onClick={handleSearch}
             size="icon"
-            className="h-12 w-12 rounded-full flex-shrink-0"
+            className="h-12 w-12 rounded-[22px] flex-shrink-0"
           >
             <Search className="h-5 w-5" />
           </Button>

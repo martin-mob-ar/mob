@@ -275,7 +275,10 @@ async function syncOwner(profileId: string, owner: TokkoOwner): Promise<number> 
 }
 
 /**
- * Sync property type
+ * Sync property type — only insert if missing, never overwrite existing names.
+ * The Tokko property search API returns English names for the embedded `type`
+ * field regardless of the `lang` parameter, so we must not let those clobber
+ * the correct Spanish names already stored in the table.
  */
 async function syncPropertyType(type: { id: number; code: string; name: string }): Promise<void> {
   await supabaseAdmin
@@ -286,6 +289,7 @@ async function syncPropertyType(type: { id: number; code: string; name: string }
       name: type.name,
     }, {
       onConflict: 'id',
+      ignoreDuplicates: true,
     });
 }
 

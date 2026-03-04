@@ -177,11 +177,8 @@
     @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border bg-background text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground;
   }
 
-  /* Search bar */
-  .search-bar-mob {
-    @apply flex items-center bg-card md:rounded-full rounded-lg border-transparent md:border-border border;
-    box-shadow: var(--shadow-md);
-  }
+  /* Search bar — marker class for scroll-based header search visibility */
+  .search-bar-mob {}
 
   /* Property badge */
   .property-badge {

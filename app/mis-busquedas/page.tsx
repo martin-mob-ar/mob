@@ -5,7 +5,7 @@ import MisBusquedasView from "@/views/MisBusquedasView";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Mis búsquedas | mob",
+  title: "Mis búsquedas | Mob",
   description: "Tus propiedades guardadas y consultas enviadas",
 };
 

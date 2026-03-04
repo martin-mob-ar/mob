@@ -21,7 +21,7 @@ export interface SearchFilters {
   maxSurface: string;
   surfaceType: string; // "total" | "cubierta"
   propertyType: string; // "inmobiliaria" | "dueno" | ""
-  propertyTypeNames: string[]; // ["Apartment", "House", ...]
+  propertyTypeNames: string[]; // ["Departamento", "Casa", ...]
   tagIds: number[];    // selected tag IDs from tokko_property_tag
   maxAge: string;      // max property age (0 = a estrenar)
   sort: string;

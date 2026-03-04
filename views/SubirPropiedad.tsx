@@ -113,8 +113,9 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
   const [ipcEnabled, setIpcEnabled] = useState(true);
   const [ipcPeriodo, setIpcPeriodo] = useState<string>("trimestral");
 
-  // Step 7: Fotos
+  // Step 7: Fotos y descripción
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
+  const [descripcion, setDescripcion] = useState("");
 
   // Step 8: Logística
   const [fechaDisponible, setFechaDisponible] = useState("");
@@ -240,7 +241,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
       case 5:
         return !!precioMensual && (expensasIncluidas || !!expensas);
       case 6:
-        return true; // No validation for photos/videos
+        return uploadedPhotos.length > 0;
       case 7:
         return !!fechaDisponible && !!coordinacionLlaves && diasVisita.length > 0;
       default:
@@ -334,7 +335,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
         tagIds: selectedTagIds,
         photos: uploadedPhotos,
         publication_title: autoTitle,
-        description: null,
+        description: descripcion.trim() || null,
         available_date: fechaDisponible || null,
         key_coordination: coordinacionLlaves || null,
         visit_days: diasVisita,
@@ -832,13 +833,34 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
           </div>
         );
 
-      // Step 6: Fotos
+      // Step 6: Fotos y descripción
       case 6:
         return (
-          <PhotoUploader
-            photos={uploadedPhotos}
-            onChange={setUploadedPhotos}
-          />
+          <div className="max-w-xl mx-auto space-y-8">
+            <PhotoUploader
+              photos={uploadedPhotos}
+              onChange={setUploadedPhotos}
+            />
+            {showErrors && uploadedPhotos.length === 0 && (
+              <p className="text-sm text-red-500">Agregá al menos una foto de tu propiedad</p>
+            )}
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                Descripción (opcional)
+              </label>
+              <textarea
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="Contá lo mejor de tu propiedad: luminosidad, vistas, estado, cercanía a transporte..."
+                rows={5}
+                className="flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                {descripcion.length > 0 ? `${descripcion.length} caracteres` : "Una buena descripción ayuda a conseguir más consultas"}
+              </p>
+            </div>
+          </div>
         );
 
       // Step 7: Logística y disponibilidad
@@ -1042,8 +1064,8 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               </div>
             </SummarySection>
 
-            {/* Fotos */}
-            <SummarySection title="Fotos" onEdit={() => setCurrentStep(6)}>
+            {/* Fotos y descripción */}
+            <SummarySection title="Fotos y descripción" onEdit={() => setCurrentStep(6)}>
               {uploadedPhotos.length > 0 ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">{uploadedPhotos.length} {uploadedPhotos.length === 1 ? "foto" : "fotos"}</p>
@@ -1062,6 +1084,11 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">Sin fotos</p>
+              )}
+              {descripcion.trim() ? (
+                <p className="text-sm text-muted-foreground line-clamp-3 mt-2">{descripcion}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-2">Sin descripción</p>
               )}
             </SummarySection>
 

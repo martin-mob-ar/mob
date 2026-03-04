@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "mob - Alquileres 100% online",
+  title: "Mob - Alquileres 100% online",
   description: "Encontra tu proximo hogar de manera digital y costos menores",
   icons: {
     icon: "/assets/isotipo-mob-original.png",

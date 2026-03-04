@@ -18,7 +18,7 @@ const MobileSearchHeader = ({
         className="w-full bg-card border border-border rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow"
       >
         <div className="flex-1 min-w-0 text-left">
-          <p className="font-display font-semibold text-base text-foreground truncate">
+          <p className="font-semibold text-base text-foreground truncate">
             {location}
           </p>
           <p className="text-sm text-muted-foreground">

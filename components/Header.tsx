@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart } from "lucide-react";
+import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
@@ -46,6 +46,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
     isAuthenticated,
+    isLoading: authLoading,
     user,
     logout,
     openAuthModal
@@ -64,24 +65,28 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
     }
     const supabase = createClient();
     const publicUserId = user.publicUserId;
+    let cancelled = false;
     const checkRoles = async () => {
       const [propResult, tenantResult] = await Promise.all([
-        supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", publicUserId),
-        supabase.from("operaciones").select("id", { count: "exact", head: true }).eq("tenant_id", publicUserId),
+        supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", publicUserId).eq("status", 2),
+        supabase.from("operaciones").select("id", { count: "exact", head: true }).eq("tenant_id", publicUserId).in("status", ["available", "rented"]),
       ]);
+      if (cancelled) return;
       setUserRoles({
         hasProperties: (propResult.count ?? 0) > 0,
         hasTenantOps: (tenantResult.count ?? 0) > 0,
       });
     };
     checkRoles();
+    return () => { cancelled = true; };
   }, [isAuthenticated, user?.publicUserId]);
 
-  const getGestionLabel = () => {
-    if (userRoles.hasProperties && userRoles.hasTenantOps) return "Gestionar";
-    if (userRoles.hasProperties) return "Gestionar propiedades";
-    if (userRoles.hasTenantOps) return "Gestionar alquileres";
-    return "Gestión";
+  // Returns label + icon for gestión link, or null if neither/both roles
+  const getGestionInfo = (): { label: string; icon: typeof Building2 } | null => {
+    if (userRoles.hasProperties && userRoles.hasTenantOps) return null;
+    if (userRoles.hasProperties) return { label: "Mis propiedades", icon: Building2 };
+    if (userRoles.hasTenantOps) return { label: "Mis alquileres", icon: Home };
+    return null;
   };
 
   // Search bar visibility on scroll
@@ -534,7 +539,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
-            {isAuthenticated ? (
+            {authLoading ? null : isAuthenticated ? (
               <>
                 <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
                   Publicar mi propiedad
@@ -554,7 +559,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                     <DropdownMenuSeparator />
-                    {/* CTA de verificación si no está verificado */}
+                    {/* CTA de verificación si no está verificado — temporarily hidden
                     {!isVerified && (
                       <>
                         <div className="p-3">
@@ -574,6 +579,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         <DropdownMenuSeparator />
                       </>
                     )}
+                    */}
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href="/perfil">
                         <User className="mr-2 h-4 w-4" />
@@ -586,12 +592,14 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         Mis búsquedas
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/gestion">
-                        <Building2 className="mr-2 h-4 w-4" />
-                        {getGestionLabel()}
-                      </Link>
-                    </DropdownMenuItem>
+                    {getGestionInfo() && (
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/gestion">
+                          {(() => { const info = getGestionInfo()!; const Icon = info.icon; return <Icon className="mr-2 h-4 w-4" />; })()}
+                          {getGestionInfo()!.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout} className="cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
@@ -626,7 +634,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <button className="relative p-2" aria-label="Abrir menú">
-                  {isAuthenticated ? (
+                  {!authLoading && isAuthenticated ? (
                     <div className="relative">
                       <Menu className="h-6 w-6 text-foreground" />
                       <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" aria-hidden="true" />
@@ -639,7 +647,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
               <SheetContent side="bottom" className="h-auto rounded-t-3xl px-6 pb-8 pt-6">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <div className="flex flex-col gap-4">
-                  {isAuthenticated ? (
+                  {authLoading ? null : isAuthenticated ? (
                     <>
                       {/* User identity card */}
                       <div className="flex items-center gap-3 px-4 py-3 bg-secondary/30 rounded-xl">
@@ -660,6 +668,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                       </Button>
 
                       {/* CTA de verificación mobile */}
+                      {/* Verificarme badge — temporarily hidden
                       {!isVerified && (
                         <Link
                           href="/verificacion"
@@ -676,6 +685,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                           <ArrowRight className="h-4 w-4 text-primary shrink-0" />
                         </Link>
                       )}
+                      */}
 
                       <Button
                         variant="ghost"
@@ -699,14 +709,24 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                           Mis búsquedas
                         </Link>
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-full h-12 font-medium"
-                        asChild
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Link href="/gestion">Ir a {getGestionLabel()}</Link>
-                      </Button>
+                      {(() => {
+                        const info = getGestionInfo();
+                        if (!info) return null;
+                        const Icon = info.icon;
+                        return (
+                          <Button
+                            variant="ghost"
+                            className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
+                            asChild
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Link href="/gestion">
+                              <Icon className="h-4 w-4" />
+                              {info.label}
+                            </Link>
+                          </Button>
+                        );
+                      })()}
                       <Button
                         variant="ghost"
                         onClick={() => { logout(); setMobileMenuOpen(false); }}

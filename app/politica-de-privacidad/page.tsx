@@ -3,7 +3,7 @@ import Image from "next/image";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Política de privacidad - mob",
+  title: "Política de privacidad | Mob",
 };
 
 export default function PrivacidadPage() {

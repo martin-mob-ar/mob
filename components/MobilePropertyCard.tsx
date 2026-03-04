@@ -156,6 +156,14 @@ const MobilePropertyCard = ({
             </span>
           </div>
 
+          {/* Favorite button - top right of image */}
+          <button
+            onClick={handleFavoriteClick}
+            className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/50 backdrop-blur flex items-center justify-center hover:bg-background transition-colors z-10"
+          >
+            <Heart className={`h-4 w-4 transition-colors ${isFavorite ? "fill-primary text-primary" : "text-foreground/50"}`} />
+          </button>
+
           {/* Dots Indicator */}
           {totalSlides > 1 && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none">
               {Array.from({ length: totalSlides }, (_, index) => <div key={index} className={`h-1.5 rounded-full transition-all ${index === currentImageIndex ? "w-5 bg-background" : "w-1.5 bg-background/60"}`} />)}
@@ -173,73 +181,66 @@ const MobilePropertyCard = ({
         </div>
 
         {/* Content Section */}
-        <div className="p-4">
+        <div className="px-4 pt-3 pb-4">
           {/* Address */}
-          <h3 className="font-display font-semibold text-foreground text-xs leading-tight line-clamp-2 min-h-[2lh]">
+          <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-2">
             {property.address}
           </h3>
-          <p className="text-muted-foreground text-xs mt-0.5 truncate">
+          <p className="text-foreground/60 text-sm mt-0.5 truncate">
             {property.neighborhood}
           </p>
 
-          {/* Price Row */}
-          <div className="flex items-center justify-between mt-2 mb-2">
-            <div>
-              {property.currency === "USD" ? (
-                <>
-                  <div className="flex items-baseline gap-1.5 flex-wrap">
-                    <span className="font-display font-bold text-xl text-foreground">
-                      USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                    </span>
-                    <span className="text-sm text-muted-foreground uppercase">
-                      Alquiler
-                    </span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {property.expensas != null && property.expensas > 0
-                      ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                      : "Sin expensas"}
+          {/* Price */}
+          <div className="mt-2">
+            {property.currency === "USD" ? (
+              <>
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="font-bold text-2xl text-foreground">
+                    USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                   </span>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-1.5 flex-wrap">
-                    <span className="font-display font-bold text-xl text-foreground">
-                      ${property.price.toLocaleString("es-AR")}
-                    </span>
-                    <span className="text-sm text-muted-foreground uppercase">
-                      Total
-                    </span>
-                  </div>
                   <span className="text-sm text-muted-foreground">
-                    {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
-                      ? `($${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp)`
-                      : "Sin expensas"}
+                    TOTAL
                   </span>
-                </>
-              )}
-            </div>
-
-            {/* Favorite Button - Always visible */}
-            <button onClick={handleFavoriteClick} className="h-10 w-10 rounded-full bg-background/50 backdrop-blur flex items-center justify-center hover:bg-background transition-colors">
-              <Heart className={`h-5 w-5 transition-colors ${isFavorite ? "fill-primary text-primary" : "text-muted-foreground hover:text-primary"}`} />
-            </button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {property.expensas != null && property.expensas > 0
+                    ? `+ $${property.expensas.toLocaleString("es-AR")} exp`
+                    : "Sin expensas"}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="font-bold text-2xl text-foreground">
+                    ${property.price.toLocaleString("es-AR")}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    TOTAL
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {property.expensas != null && property.expensas > 0
+                    ? `+ $${property.expensas.toLocaleString("es-AR")} exp`
+                    : "Sin expensas"}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Details */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            {property.rooms !== undefined && <span className="font-bold">{property.rooms} dorm</span>}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2">
+            {property.rooms !== undefined && <span className="font-semibold">{property.rooms} dorm</span>}
             {property.bathrooms !== undefined && <>
                 <span>·</span>
-                <span className="font-bold">{property.bathrooms} baño</span>
+                <span className="font-semibold">{property.bathrooms} baño</span>
               </>}
             {property.parking !== undefined && property.parking > 0 && <>
                 <span>·</span>
-                <span className="font-bold">{property.parking} coch</span>
+                <span className="font-semibold">{property.parking} coch</span>
               </>}
             {property.surface !== undefined && <>
                 <span>·</span>
-                <span className="font-bold">{property.surface} m²</span>
+                <span className="font-semibold">{property.surface} m²</span>
               </>}
           </div>
         </div>

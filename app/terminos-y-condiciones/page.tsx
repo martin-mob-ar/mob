@@ -3,7 +3,7 @@ import Image from "next/image";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Términos y condiciones - mob",
+  title: "Términos y condiciones | Mob",
 };
 
 export default function TerminosPage() {
