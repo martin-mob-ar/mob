@@ -548,7 +548,7 @@ async function syncProperty(
       thumb: photo.thumb,
       description: photo.description || null,
       is_blueprint: photo.is_blueprint,
-      is_front_cover: photo.is_front_cover,
+      is_front_cover: photo.order === 0,
       order: photo.order,
       storage_path: null,
     }));

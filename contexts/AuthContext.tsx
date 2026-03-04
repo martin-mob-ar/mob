@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -56,7 +55,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const router = useRouter();
 
   const supabase = createClient();
 
@@ -71,26 +69,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Get initial session
+    // 1. getUser() handles the initial auth state (validates token server-side).
+    //    This is the single path that sets isLoading to false on mount.
     supabase.auth.getUser().then(async ({ data: { user: supabaseUser } }) => {
-      if (supabaseUser) {
-        const publicUser = await resolvePublicUser(supabaseUser.id);
-        setUser(mapSupabaseUser(supabaseUser, publicUser));
+      try {
+        if (supabaseUser) {
+          const publicUser = await resolvePublicUser(supabaseUser.id);
+          setUser(mapSupabaseUser(supabaseUser, publicUser));
+        }
+      } catch {
+        // resolvePublicUser failed — treat as unauthenticated
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
-    // Listen for auth changes
+    // 2. onAuthStateChange handles subsequent events (login, logout, token refresh).
+    //    Skip INITIAL_SESSION to avoid racing with getUser() above.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "INITIAL_SESSION") return;
       if (session?.user) {
-        const publicUser = await resolvePublicUser(session.user.id);
-        setUser(mapSupabaseUser(session.user, publicUser));
+        try {
+          const publicUser = await resolvePublicUser(session.user.id);
+          setUser(mapSupabaseUser(session.user, publicUser));
+        } catch {
+          // ignore
+        }
       } else {
         setUser(null);
       }
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -139,9 +148,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
-    router.push("/");
-    router.refresh();
+    // Full page reload clears all React state and the Next.js Router Cache.
+    // router.push + router.refresh is unreliable because cached RSC payloads
+    // may still contain authenticated data.
+    window.location.href = "/";
   };
 
   const refreshUser = async () => {

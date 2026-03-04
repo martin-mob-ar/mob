@@ -35,9 +35,12 @@ interface SearchFiltersContextValue {
   results: Property[];
   total: number;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
   page: number;
   setPage: (page: number) => void;
   search: () => void;
+  loadMore: () => void;
 }
 
 const defaultFilters: SearchFilters = {
@@ -138,7 +141,9 @@ export function SearchFiltersProvider({
   const [results, setResults] = useState<Property[]>(initialResults || []);
   const [total, setTotal] = useState(initialTotal || 0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
+  const hasMore = results.length < total;
 
   const setFilter = useCallback((key: keyof SearchFilters, value: string) => {
     setFiltersState((prev) => {
@@ -202,27 +207,52 @@ export function SearchFiltersProvider({
     return params;
   }, []);
 
-  const search = useCallback(async () => {
-    setIsLoading(true);
+  const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
     try {
       const params = buildFilterParams(filters);
       params.set("sort", filters.sort);
-      params.set("page", String(page));
+      params.set("page", String(pageNum));
       params.set("limit", "20");
 
       const res = await fetch(`/api/properties/search?${params.toString()}`);
       const json = await res.json();
 
       if (res.ok) {
-        setResults(transformPropertyReadList(json.data));
+        const newProperties = transformPropertyReadList(json.data);
+        if (append) {
+          setResults((prev) => [...prev, ...newProperties]);
+        } else {
+          setResults(newProperties);
+        }
         setTotal(json.total);
       }
     } catch (e) {
       console.error("Search failed:", e);
     } finally {
-      setIsLoading(false);
+      if (append) {
+        setIsLoadingMore(false);
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [filters, page, buildFilterParams]);
+  }, [filters, buildFilterParams]);
+
+  const search = useCallback(() => {
+    setPage(1);
+    fetchPage(1, false);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPage(nextPage, true);
+  }, [isLoadingMore, hasMore, page, fetchPage]);
 
   // Sync filters to URL (skip initial mount to avoid loop)
   useEffect(() => {
@@ -238,7 +268,7 @@ export function SearchFiltersProvider({
     router.replace(newUrl, { scroll: false });
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-search when filters or page change
+  // Auto-search when filters change (page 1 reset)
   // If URL has filters, always search on mount (don't skip with initialResults)
   const [hasSearched, setHasSearched] = useState(false);
   useEffect(() => {
@@ -247,8 +277,9 @@ export function SearchFiltersProvider({
       return;
     }
     setHasSearched(true);
-    search();
-  }, [filters, page]); // eslint-disable-line react-hooks/exhaustive-deps
+    setPage(1);
+    fetchPage(1, false);
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <SearchFiltersContext.Provider
@@ -260,9 +291,12 @@ export function SearchFiltersProvider({
         results,
         total,
         isLoading,
+        isLoadingMore,
+        hasMore,
         page,
         setPage,
         search,
+        loadMore,
       }}
     >
       {children}

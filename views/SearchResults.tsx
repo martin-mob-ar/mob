@@ -6,7 +6,7 @@ import { Property } from "@/components/PropertyCard";
 import MobilePropertyCard from "@/components/MobilePropertyCard";
 import MobileSearchHeader from "@/components/MobileSearchHeader";
 import MobileSearchBottomActions from "@/components/MobileSearchBottomActions";
-import { SlidersHorizontal, ChevronDown, ArrowUpDown, Check, Loader2 } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, ArrowUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import LocationFilter from "@/components/filters/LocationFilter";
@@ -34,6 +34,70 @@ const sortOptions = [
   { value: "price-high", label: "Precio: mayor a menor" },
 ];
 
+/* ───────── Skeleton card for initial loading ───────── */
+function PropertyCardSkeleton({ mobile = false }: { mobile?: boolean }) {
+  if (mobile) {
+    return (
+      <div className="rounded-xl overflow-hidden bg-card border border-border animate-pulse">
+        <div className="aspect-[16/10] bg-muted" />
+        <div className="p-4 space-y-3">
+          <div className="h-4 bg-muted rounded-md w-3/4" />
+          <div className="h-3 bg-muted rounded-md w-1/2" />
+          <div className="h-5 bg-muted rounded-md w-1/3" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl overflow-hidden bg-card border border-border animate-pulse">
+      <div className="aspect-[4/3] bg-muted" />
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-muted rounded-md w-3/4" />
+        <div className="h-3 bg-muted rounded-md w-1/2" />
+        <div className="flex gap-3 mt-2">
+          <div className="h-3 bg-muted rounded-md w-12" />
+          <div className="h-3 bg-muted rounded-md w-12" />
+          <div className="h-3 bg-muted rounded-md w-12" />
+        </div>
+        <div className="h-5 bg-muted rounded-md w-1/3 mt-2" />
+      </div>
+    </div>
+  );
+}
+
+function PropertyGridSkeleton({ count = 8, mobile = false }: { count?: number; mobile?: boolean }) {
+  if (mobile) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: count }).map((_, i) => (
+          <PropertyCardSkeleton key={i} mobile />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {Array.from({ length: count }).map((_, i) => (
+        <PropertyCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+/* ───────── Loading indicator for infinite scroll ───────── */
+function LoadingMoreIndicator() {
+  return (
+    <div className="flex items-center justify-center gap-3 py-8">
+      <div className="flex gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+        <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+        <span className="h-2 w-2 rounded-full bg-primary animate-bounce" />
+      </div>
+      <span className="text-sm text-muted-foreground">Cargando más propiedades</span>
+    </div>
+  );
+}
+
 interface SearchResultsProps {
   initialProperties?: Property[];
   initialTotal?: number;
@@ -53,10 +117,11 @@ const SearchResults = ({ initialProperties, initialTotal = 0 }: SearchResultsPro
 const SearchResultsInner = () => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showBottomActions, setShowBottomActions] = useState(true);
-  const { filters, setFilter, results, total, isLoading } = useSearchFilters();
+  const { filters, setFilter, results, total, isLoading, isLoadingMore, hasMore, loadMore } = useSearchFilters();
   const enrichedResults = usePropertyPhotos(results);
   const isMobile = useIsMobile();
   const footerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Hide bottom actions when footer is visible
   useEffect(() => {
@@ -75,6 +140,23 @@ const SearchResultsInner = () => {
 
     return () => observer.disconnect();
   }, [isMobile]);
+
+  // Infinite scroll: load more when sentinel becomes visible
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, isLoadingMore, loadMore]);
 
   const handleSortChange = (value: string) => {
     setFilter("sort", value);
@@ -143,16 +225,18 @@ const SearchResultsInner = () => {
         {/* Property Cards */}
         <div className="px-4 space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <PropertyGridSkeleton count={4} mobile />
           ) : enrichedResults.length > 0 ? (
-            enrichedResults.map((property, index) => (
-              <MobilePropertyCard
-                key={`${property.id}-${index}`}
-                property={property}
-              />
-            ))
+            <>
+              {enrichedResults.map((property, index) => (
+                <MobilePropertyCard
+                  key={`${property.id}-${index}`}
+                  property={property}
+                />
+              ))}
+              <div ref={loadMoreRef} className="py-1" />
+              {isLoadingMore && <LoadingMoreIndicator />}
+            </>
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No se encontraron propiedades</p>
@@ -247,19 +331,21 @@ const SearchResultsInner = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
+          <PropertyGridSkeleton count={8} />
         ) : enrichedResults.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {enrichedResults.map((property, index) => (
-              <PropertyCard
-                key={`${property.id}-${index}`}
-                property={property}
-                showDetails
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {enrichedResults.map((property, index) => (
+                <PropertyCard
+                  key={`${property.id}-${index}`}
+                  property={property}
+                  showDetails
+                />
+              ))}
+            </div>
+            <div ref={loadMoreRef} className="py-1" />
+            {isLoadingMore && <LoadingMoreIndicator />}
+          </>
         ) : (
           <div className="text-center py-16">
             <p className="text-lg text-muted-foreground">No se encontraron propiedades</p>
