@@ -11,6 +11,13 @@ export interface TokkoApiResponse<T> {
   objects: T[];
 }
 
+export interface TokkoCompany {
+  name: string;
+  key: string;
+  logo: string;
+  contact_info: string;
+}
+
 export interface TokkoProperty {
   id: number;
   address: string;
@@ -23,6 +30,7 @@ export interface TokkoProperty {
   bathroom_amount?: number;
   block_number?: string;
   branch: TokkoBranch;
+  company?: TokkoCompany;
   building?: string;
   cleaning_tax?: string;
   common_area?: string;
@@ -373,11 +381,97 @@ export class TokkoClient {
   }
 
   /**
-   * Fetch all branches from the /branch/ endpoint
+   * Fetch all branches from the /branch/ endpoint.
+   * Returns empty array on failure (network keys don't support this endpoint).
    */
   async getAllBranches(): Promise<TokkoBranch[]> {
-    const response = await this.fetch<TokkoBranch>('/branch/', { limit: 100 });
-    return response.objects;
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await this.fetch<TokkoBranch>('/branch/', { limit: 100 });
+        return response.objects;
+      } catch (error) {
+        if (attempt < MAX_RETRIES) {
+          console.warn(`[Tokko API] getAllBranches failed (attempt ${attempt}/${MAX_RETRIES}), retrying...`);
+          await new Promise(r => setTimeout(r, 3000 * attempt));
+          continue;
+        }
+        console.warn('[Tokko API] getAllBranches failed after retries:', error instanceof Error ? error.message : error);
+        return [];
+      }
+    }
+    return [];
+  }
+
+  /**
+   * Discover all companies AND collect matching properties in a single pass.
+   * Paginates through ALL properties via /property/, extracts unique companies,
+   * and filters properties by operation type + property type.
+   * Only works with network API keys (regular keys don't return company data).
+   */
+  async discoverNetwork(
+    filters: { operationTypes: number[]; propertyTypes: number[] },
+    onProgress?: (scanned: number, total: number, companiesFound: number) => void
+  ): Promise<{ companies: TokkoCompany[]; propertiesByCompany: Map<string, TokkoProperty[]> }> {
+    const companiesByName = new Map<string, TokkoCompany>();
+    const propertiesByCompany = new Map<string, TokkoProperty[]>();
+    const seenPropertyIds = new Set<number>();
+    let offset = 0;
+    const limit = 500;
+    let hasMore = true;
+    let page = 0;
+    let matchedCount = 0;
+
+    while (hasMore) {
+      page++;
+      console.log(`[Tokko API] Discovering network, page ${page} (offset: ${offset})`);
+      const response = await this.fetch<TokkoProperty>('/property/', { limit, offset });
+
+      for (const property of response.objects) {
+        // Deduplicate (unstable API pagination can repeat properties across pages)
+        if (seenPropertyIds.has(property.id)) continue;
+        seenPropertyIds.add(property.id);
+
+        // Extract company
+        if (property.company && !companiesByName.has(property.company.name)) {
+          companiesByName.set(property.company.name, property.company);
+          console.log(`[Tokko API] Discovered company: "${property.company.name}"`);
+        }
+
+        // Filter: matching property type + has a matching operation
+        const typeMatch = filters.propertyTypes.includes(property.type?.id);
+        const hasOps = Array.isArray(property.operations) && property.operations.length > 0;
+        const opMatch = hasOps && property.operations.some(op =>
+          filters.operationTypes.includes(op.operation_id)
+        );
+
+        if (typeMatch && opMatch && property.company) {
+          const companyName = property.company.name;
+          if (!propertiesByCompany.has(companyName)) {
+            propertiesByCompany.set(companyName, []);
+          }
+          propertiesByCompany.get(companyName)!.push(property);
+          matchedCount++;
+        }
+      }
+
+      const scanned = Math.min(offset + response.objects.length, response.meta.total_count);
+      onProgress?.(scanned, response.meta.total_count, companiesByName.size);
+
+      if (response.meta.next) {
+        offset += limit;
+      } else {
+        hasMore = false;
+      }
+
+      if (offset >= response.meta.total_count) {
+        hasMore = false;
+      }
+    }
+
+    const companies = Array.from(companiesByName.values());
+    console.log(`[Tokko API] Discovery complete: ${companies.length} companies, ${matchedCount} matching properties across ${offset} scanned`);
+    return { companies, propertiesByCompany };
   }
 
   /**

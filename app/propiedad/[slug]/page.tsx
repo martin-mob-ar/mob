@@ -209,9 +209,13 @@ export default async function PropiedadDetailPage({
     photos = photoData.map((p: any) => p.image).filter(Boolean);
   }
 
-  // Fetch publisher info from users table (works for both Tokko and non-Tokko properties)
+  // Publisher info: prefer company data from properties_read, fall back to user
   let ownerWhatsApp: string | null = null;
-  if (propertyData.user_id) {
+  publisherName = propertyData.company_name || null;
+  publisherLogo = propertyData.company_logo || null;
+
+  if (!publisherName && propertyData.user_id) {
+    // Fallback for properties without a company (e.g. manually created)
     const { data: userData } = await supabase
       .from("users")
       .select("name, logo, telefono")
@@ -220,25 +224,40 @@ export default async function PropiedadDetailPage({
 
     if (userData) {
       publisherName = userData.name || null;
-      publisherLogo = userData.logo || null;
+      publisherLogo = publisherLogo || userData.logo || null;
       ownerWhatsApp = userData.telefono || null;
     }
   }
 
-  // For Tokko properties, try to get the owner's cellphone
-  if (isTokko) {
-    const { data: ownerData } = await supabase
-      .from("tokko_property_owner")
-      .select("tokko_owner(cellphone)")
-      .eq("property_id", propertyId)
-      .limit(1)
+  // WhatsApp: company phone (inmobiliaria) → user phone. Never contact landlord directly.
+  if (!ownerWhatsApp && propertyData.user_id) {
+    const { data: propRow } = await supabase
+      .from("properties")
+      .select("company_id")
+      .eq("id", propertyId)
       .single();
 
-    if (ownerData?.tokko_owner) {
-      const owner = ownerData.tokko_owner as unknown as { cellphone: string | null };
-      if (owner.cellphone) {
-        ownerWhatsApp = owner.cellphone;
+    if (propRow?.company_id) {
+      const { data: companyData } = await supabase
+        .from("tokko_company")
+        .select("phone, phone_area, phone_country_code")
+        .eq("id", propRow.company_id)
+        .single();
+
+      if (companyData?.phone) {
+        const parts = [companyData.phone_country_code, companyData.phone_area, companyData.phone].filter(Boolean);
+        ownerWhatsApp = parts.join("");
       }
+    }
+
+    // Fallback: user's phone
+    if (!ownerWhatsApp) {
+      const { data: userData } = await supabase
+        .from("users")
+        .select("telefono")
+        .eq("id", propertyData.user_id)
+        .single();
+      ownerWhatsApp = userData?.telefono || null;
     }
   }
 

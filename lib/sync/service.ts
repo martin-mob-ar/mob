@@ -1,4 +1,4 @@
-import { TokkoClient, TokkoProperty, TokkoBranch, TokkoUser, TokkoOwner, TokkoLocation } from '@/lib/tokko/client';
+import { TokkoClient, TokkoProperty, TokkoBranch } from '@/lib/tokko/client';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import CryptoJS from 'crypto-js';
 import { encryptApiKey } from '@/lib/crypto';
@@ -7,13 +7,13 @@ import { encryptApiKey } from '@/lib/crypto';
 const RENT_OPERATION_ID = 2;
 /** Property type IDs to sync: Apartment=2, House=3, PH=13. */
 const SYNC_PROPERTY_TYPES = [2, 3, 13];
+/** Max concurrent company syncs for network accounts. */
+const NETWORK_SYNC_BATCH_SIZE = 5;
 
 export interface SyncResult {
   userId: string;
   propertiesSynced: number;
-  branchesSynced: number;
-  usersSynced: number;
-  ownersSynced: number;
+  companiesSynced: number;
   locationsSynced: number;
   errors: string[];
 }
@@ -30,32 +30,40 @@ function hashApiKey(apiKey: string): string {
  * Locations must be pre-seeded via locations-seed.sql; we do not create locations during sync.
  * Uses cache to avoid repeated queries.
  */
-async function getLocationIdById(locationId: number, cache: Map<number, number>): Promise<number> {
-  // Check cache first
+async function getLocationIdById(locationId: number, cache: Map<number, number>): Promise<number | null> {
   if (cache.has(locationId)) {
     return cache.get(locationId)!;
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('tokko_location')
-    .select('id')
-    .eq('id', locationId)
-    .maybeSingle();
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const { data, error } = await supabaseAdmin
+      .from('tokko_location')
+      .select('id')
+      .eq('id', locationId)
+      .maybeSingle();
 
-  if (error) {
-    console.error(`[Tokko Sync] Location lookup error for ${locationId}:`, error.message);
-    throw new Error(`Failed to lookup location ${locationId}: ${error.message}`);
+    if (error) {
+      // Retry on transient errors (502, 503, timeout, etc.)
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[Tokko Sync] Location lookup error for ${locationId} (attempt ${attempt}/${MAX_RETRIES}), retrying...`);
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      console.error(`[Tokko Sync] Location lookup failed for ${locationId} after ${MAX_RETRIES} attempts:`, error.message.slice(0, 200));
+      return null;
+    }
+
+    if (!data) {
+      // Location not in DB (likely non-Argentina) — skip silently
+      return null;
+    }
+
+    cache.set(locationId, data.id);
+    return data.id;
   }
 
-  if (!data) {
-    throw new Error(
-      `Location ${locationId} does not exist in database. Ensure locations are seeded (run supabase/locations-seed.sql).`
-    );
-  }
-
-  // Store in cache
-  cache.set(locationId, data.id);
-  return data.id;
+  return null;
 }
 
 /**
@@ -74,20 +82,45 @@ function findPrimaryBranch(branches: TokkoBranch[]): TokkoBranch | undefined {
 }
 
 /**
- * Find or create user
+ * Extract best contact fields from branches.
+ * Priority: primary branch → oldest branch with a phone.
+ * Each field falls back independently (e.g. email from primary, phone from another).
  */
-interface UserPhone {
-  telefono?: string;
-  telefono_area?: string;
-  telefono_country_code?: string;
-  telefono_extension?: string;
-}
+function extractBranchContactInfo(branches: TokkoBranch[]): {
+  email: string | null;
+  phone: string | null;
+  phone_area: string | null;
+  phone_country_code: string | null;
+  address: string | null;
+} {
+  const primary = findPrimaryBranch(branches);
+  const info = {
+    email: primary?.email || null,
+    phone: primary?.phone || null,
+    phone_area: primary?.phone_area || null,
+    phone_country_code: primary?.phone_country_code || null,
+    address: primary?.address || null,
+  };
 
-interface TokkoUserData {
-  name?: string;
-  phone?: UserPhone;
-  logo?: string;
-  tokkoEmail?: string;
+  // If primary branch has no phone, find the oldest branch that does
+  if (!info.phone && branches.length > 1) {
+    const branchWithPhone = branches
+      .filter(b => b.phone)
+      .sort((a, b) => {
+        if (a.created_date && b.created_date) {
+          return new Date(a.created_date).getTime() - new Date(b.created_date).getTime();
+        }
+        return 0;
+      })[0];
+
+    if (branchWithPhone) {
+      info.phone = branchWithPhone.phone || null;
+      info.phone_area = branchWithPhone.phone_area || null;
+      info.phone_country_code = branchWithPhone.phone_country_code || null;
+    }
+  }
+
+  return info;
 }
 
 /**
@@ -126,6 +159,20 @@ async function findUser(authId: string, authEmail: string, apiKeyHash: string): 
  * Update an existing user row with Tokko data (name, phone, logo, etc.)
  * and link the tokko_api_hash if not already set.
  */
+interface UserPhone {
+  telefono?: string;
+  telefono_area?: string;
+  telefono_country_code?: string;
+  telefono_extension?: string;
+}
+
+interface TokkoUserData {
+  name?: string;
+  phone?: UserPhone;
+  logo?: string;
+  tokkoEmail?: string;
+}
+
 async function updateUserWithTokkoData(
   userId: string,
   authId: string,
@@ -160,115 +207,44 @@ async function updateUserWithTokkoData(
 }
 
 /**
- * Sync reference data (property types, tags, operation types)
+ * Upsert a tokko_company row. Returns the company's serial ID.
  */
-async function syncReferenceData() {
-  // These are typically stable and can be synced once
-  // For now, we'll handle them as properties come in
-  // You could also pre-populate these from Tokko endpoints
-}
-
-/**
- * Sync branch
- */
-async function syncBranch(profileId: string, branch: TokkoBranch): Promise<number> {
-  const { data, error } = await supabaseAdmin
-    .from('tokko_branch')
-    .upsert({
-      id: branch.id,
-      user_id: profileId,
-      name: branch.name,
-      display_name: branch.display_name,
-      address: branch.address,
-      email: branch.email,
-      phone: branch.phone,
-      phone_area: branch.phone_area,
-      phone_country_code: branch.phone_country_code,
-      alternative_phone: branch.alternative_phone,
-      alternative_phone_area: branch.alternative_phone_area,
-      alternative_phone_country_code: branch.alternative_phone_country_code,
-      alternative_phone_extension: branch.alternative_phone_extension,
-      phone_extension: branch.phone_extension,
-      geo_lat: branch.geo_lat,
-      geo_long: branch.geo_long,
-      branch_type: branch.branch_type,
-      contact_time: branch.contact_time,
-      created_date: branch.created_date,
-      logo: branch.logo,
-      pdf_footer_text: branch.pdf_footer_text,
-      use_pdf_footer: branch.use_pdf_footer || false,
-      is_default: branch.is_default || false,
-      gm_location_type: branch.gm_location_type,
-      updated_at: branch.updated_at || null,
-    }, {
-      onConflict: 'id,user_id',
-    })
-    .select('id')
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to sync branch ${branch.id}: ${error.message}`);
+async function upsertCompany(
+  userId: string,
+  company: {
+    name: string;
+    logo?: string | null;
+    contact_info?: string | null;
+    tokko_key_enc?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    phone_area?: string | null;
+    phone_country_code?: string | null;
+    address?: string | null;
   }
-
-  return data.id;
-}
-
-/**
- * Sync user
- */
-async function syncUser(profileId: string, user: TokkoUser): Promise<number> {
+): Promise<number> {
   const { data, error } = await supabaseAdmin
-    .from('tokko_user')
+    .from('tokko_company')
     .upsert({
-      id: user.id,
-      user_id: profileId,
-      name: user.name,
-      email: user.email,
-      cellphone: user.cellphone,
-      phone: user.phone,
-      picture: user.picture,
-      position: user.position,
-      updated_at: user.updated_at || null,
+      user_id: userId,
+      name: company.name,
+      logo: company.logo || null,
+      contact_info: company.contact_info || null,
+      tokko_key_enc: company.tokko_key_enc || null,
+      email: company.email || null,
+      phone: company.phone || null,
+      phone_area: company.phone_area || null,
+      phone_country_code: company.phone_country_code || null,
+      address: company.address || null,
+      updated_at: new Date().toISOString(),
     }, {
-      onConflict: 'id,user_id',
+      onConflict: 'name,user_id',
     })
     .select('id')
     .single();
 
   if (error) {
-    throw new Error(`Failed to sync user ${user.id}: ${error.message}`);
-  }
-
-  return data.id;
-}
-
-/**
- * Sync owner
- */
-async function syncOwner(profileId: string, owner: TokkoOwner): Promise<number> {
-  const { data, error } = await supabaseAdmin
-    .from('tokko_owner')
-    .upsert({
-      id: owner.id,
-      user_id: profileId,
-      name: owner.name,
-      email: owner.email,
-      work_email: owner.work_email,
-      other_email: owner.other_email,
-      phone: owner.phone,
-      cellphone: owner.cellphone,
-      document_number: owner.document_number,
-      birthdate: owner.birthdate || null,
-      created_at: owner.created_at,
-      updated_at: owner.updated_at,
-    }, {
-      onConflict: 'id,user_id',
-    })
-    .select('id')
-    .single();
-
-  if (error) {
-    throw new Error(`Failed to sync owner ${owner.id}: ${error.message}`);
+    throw new Error(`Failed to upsert company "${company.name}": ${error.message}`);
   }
 
   return data.id;
@@ -276,9 +252,6 @@ async function syncOwner(profileId: string, owner: TokkoOwner): Promise<number> 
 
 /**
  * Sync property type — only insert if missing, never overwrite existing names.
- * The Tokko property search API returns English names for the embedded `type`
- * field regardless of the `lang` parameter, so we must not let those clobber
- * the correct Spanish names already stored in the table.
  */
 async function syncPropertyType(type: { id: number; code: string; name: string }): Promise<void> {
   await supabaseAdmin
@@ -322,6 +295,7 @@ async function syncOperationType(id: number, name: string): Promise<void> {
     });
 }
 
+
 /**
  * Parse a text field to numeric, returning null if not a valid number
  */
@@ -332,30 +306,37 @@ function parseNumericText(value: string | undefined | null): number | null {
 }
 
 /**
- * Sync property with all related data (optimized version)
+ * Sync property with all related data.
+ * Now uses company_id instead of branch_id.
  */
 async function syncProperty(
   profileId: string,
   property: TokkoProperty,
-  branchMap: Map<number, number>,
-  userMap: Map<number, number>,
-  ownerMap: Map<number, number>,
+  companyId: number,
   locationCache: Map<number, number>
-): Promise<void> {
+): Promise<boolean> {
   // Sync property type
   if (property.type) {
     await syncPropertyType(property.type);
   }
 
-  // Sync tags (collect unique tags for batch processing)
+  // Sync tags
   const tagPromises = (property.tags || []).map(tag => syncPropertyTag(tag));
   await Promise.all(tagPromises);
 
-  // Resolve location from pre-seeded reference data (no creation)
+  // Resolve location from pre-seeded reference data
   let locationId: number | null = null;
   let parentDivisionLocationId: number | null = null;
 
   if (property.location) {
+    locationId = await getLocationIdById(property.location.id, locationCache);
+
+    // Skip properties with unknown locations (e.g. outside Argentina)
+    if (locationId === null) {
+      console.warn(`[Tokko Sync] Skipping property ${property.id}: location ${property.location.id} not in database (likely non-Argentina)`);
+      return false;
+    }
+
     if (property.location.parent_division) {
       const parentDivMatch = property.location.parent_division.match(/\/location\/(\d+)\//);
       if (parentDivMatch) {
@@ -363,19 +344,16 @@ async function syncProperty(
         parentDivisionLocationId = await getLocationIdById(parentDivId, locationCache);
       }
     }
-
-    locationId = await getLocationIdById(property.location.id, locationCache);
   }
 
-  // Sync property into properties table (tokko_id = Tokko id, tokko = true)
+  // Sync property — now with company_id instead of branch_id/producer_id
   const { data: syncedProperty, error: propError } = await supabaseAdmin
     .from('properties')
     .upsert({
       tokko_id: property.id,
       tokko: true,
       user_id: profileId,
-      branch_id: branchMap.get(property.branch.id) || null,
-      producer_id: userMap.get(property.producer.id) || null,
+      company_id: companyId,
       location_id: locationId,
       parent_division_location_id: parentDivisionLocationId,
       type_id: property.type?.id || null,
@@ -462,47 +440,20 @@ async function syncProperty(
 
   const propertyId = syncedProperty?.id as number;
 
-  // Sync property owners (parallel processing)
-  if (property.internal_data?.property_owners) {
-    const owners = property.internal_data.property_owners;
-
-    // Sync all owners in parallel
-    const ownerPromises = owners.map(async (owner) => {
-      const ownerId = await syncOwner(profileId, owner);
-      ownerMap.set(owner.id, ownerId);
-      return { property_id: propertyId, owner_id: owner.id };
-    });
-
-    const ownerLinks = await Promise.all(ownerPromises);
-
-    // Bulk insert property-owner links
-    if (ownerLinks.length > 0) {
-      await supabaseAdmin
-        .from('tokko_property_owner')
-        .upsert(ownerLinks, {
-          onConflict: 'property_id,owner_id',
-        });
-    }
-  }
-
-  // Sync operations: keep operation types as reference, store pricing in operaciones
-  // Delete existing available operaciones for this property (don't touch rented/finished)
+  // Sync operations
   await supabaseAdmin
     .from('operaciones')
     .delete()
     .eq('property_id', propertyId)
     .eq('status', 'available');
 
-  // Prepare operations for batch insert
   const operationsToInsert: any[] = [];
 
   if (property.operations && property.operations.length > 0) {
-    // Sync operation types as reference data (all types, not just rent)
     await Promise.all(
       property.operations.map(op => syncOperationType(op.operation_id, op.operation_type))
     );
 
-    // Only store Rent operations
     const rentOperations = property.operations.filter(op => op.operation_id === RENT_OPERATION_ID);
 
     for (const operation of rentOperations) {
@@ -534,7 +485,6 @@ async function syncProperty(
       });
     }
   } else {
-    // If no operations from Tokko, create a blank operacion with just financial fields
     operationsToInsert.push({
       property_id: propertyId,
       status: 'available',
@@ -548,7 +498,6 @@ async function syncProperty(
     });
   }
 
-  // Bulk insert operations
   if (operationsToInsert.length > 0) {
     const { error } = await supabaseAdmin.from('operaciones').insert(operationsToInsert);
     if (error) {
@@ -572,7 +521,6 @@ async function syncProperty(
 
   // Sync photos (bulk insert)
   if (property.photos && property.photos.length > 0) {
-    // Clean up GCS files for existing photos before deletion
     const { data: existingPhotos } = await supabaseAdmin
       .from('tokko_property_photo')
       .select('storage_path')
@@ -588,13 +536,11 @@ async function syncProperty(
       }
     }
 
-    // Delete existing photo records from DB
     await supabaseAdmin
       .from('tokko_property_photo')
       .delete()
       .eq('property_id', propertyId);
 
-    // Prepare photos for bulk insert (storage_path = null, will be migrated in background)
     const photosToInsert = property.photos.map(photo => ({
       property_id: propertyId,
       image: photo.image,
@@ -607,9 +553,76 @@ async function syncProperty(
       storage_path: null,
     }));
 
-    // Bulk insert photos
     await supabaseAdmin.from('tokko_property_photo').insert(photosToInsert);
   }
+
+  return true;
+}
+
+/**
+ * Sync properties for a single company. Used by both network and regular account flows.
+ * If `prefetchedProperties` is provided, uses those directly instead of calling Tokko API.
+ */
+async function syncCompanyProperties(
+  userId: string,
+  companyId: number,
+  companyKey: string,
+  companyName: string,
+  options?: { maxProperties?: number; prefetchedProperties?: TokkoProperty[] },
+): Promise<{ propertiesSynced: number; errors: string[] }> {
+  const errors: string[] = [];
+
+  let properties: TokkoProperty[];
+  if (options?.prefetchedProperties) {
+    // Re-validate prefetched properties: Tokko API can return inconsistent operations
+    // across requests, so a property that had operations during discovery may now have none.
+    properties = options.prefetchedProperties.filter(p => {
+      const hasRentOp = p.operations?.some(op => op.operation_id === RENT_OPERATION_ID);
+      if (!hasRentOp) {
+        console.warn(`[Tokko Sync] Dropping property ${p.id} from "${companyName}": no rent operation found (ops: ${p.operations?.length ?? 0})`);
+      }
+      return hasRentOp;
+    });
+    console.log(`[Tokko Sync] Company "${companyName}": ${properties.length} pre-fetched properties (${options.prefetchedProperties.length - properties.length} dropped for missing operations)`);
+  } else {
+    const client = new TokkoClient(companyKey);
+    console.log(`[Tokko Sync] Syncing properties for company "${companyName}"${options?.maxProperties ? ` (limit: ${options.maxProperties})` : ''}...`);
+    properties = await client.searchProperties(options?.maxProperties, {
+      operation_types: [RENT_OPERATION_ID],
+      property_types: SYNC_PROPERTY_TYPES,
+    });
+    console.log(`[Tokko Sync] Company "${companyName}": ${properties.length} rent properties found`);
+  }
+
+  if (properties.length === 0) {
+    return { propertiesSynced: 0, errors };
+  }
+
+  const locationCache = new Map<number, number>();
+  let propertiesSynced = 0;
+  const BATCH_SIZE = 20;
+
+  for (let i = 0; i < properties.length; i += BATCH_SIZE) {
+    const batch = properties.slice(i, i + BATCH_SIZE);
+    const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(properties.length / BATCH_SIZE);
+
+    await Promise.all(
+      batch.map(async (property) => {
+        try {
+          const synced = await syncProperty(userId, property, companyId, locationCache);
+          if (synced) propertiesSynced++;
+        } catch (error) {
+          errors.push(`Property ${property.id} (${companyName}): ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.warn(`[Tokko Sync]   ✗ Property ${property.id} failed:`, error);
+        }
+      })
+    );
+
+    console.log(`[Tokko Sync] Company "${companyName}" batch ${batchNumber}/${totalBatches} complete (${propertiesSynced}/${properties.length})`);
+  }
+
+  return { propertiesSynced, errors };
 }
 
 /**
@@ -657,11 +670,224 @@ async function updateSyncStatus(
 }
 
 /**
- * Main sync function
- * @param apiKey - Tokko API key
- * @param propertyLimit - Max number of properties to sync (default 5, clamped 1–500)
+ * Detect if an API key belongs to a network account by peeking at the first property.
+ * Network accounts return a `company` object in property responses.
  */
-export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, authId: string, authEmail: string): Promise<SyncResult> {
+async function isNetworkKey(apiKey: string): Promise<boolean> {
+  const client = new TokkoClient(apiKey);
+  try {
+    const response = await client.getAllProperties(1);
+    if (response.length === 0) return false;
+    return !!response[0].company;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sync a network account: discover companies, then sync each company individually.
+ */
+async function syncNetworkAccount(
+  apiKey: string,
+  authId: string,
+  authEmail: string
+): Promise<SyncResult> {
+  const errors: string[] = [];
+  const apiKeyHash = hashApiKey(apiKey);
+  let apiKeyEnc: string | undefined;
+  try {
+    apiKeyEnc = encryptApiKey(apiKey);
+  } catch {
+    console.warn('[Tokko Sync] Could not encrypt API key (API_KEY_SECRET may not be set)');
+  }
+
+  console.log('[Tokko Sync] Starting NETWORK account sync');
+
+  try {
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Conectando con Tokko (red inmobiliaria)...');
+
+    // Find user
+    const userId = await findUser(authId, authEmail, apiKeyHash);
+
+    // Update user with network key hash and encrypted key (but no name/logo — that's per-company)
+    await supabaseAdmin
+      .from('users')
+      .update({
+        tokko_api_hash: apiKeyHash,
+        tokko_api_key_enc: apiKeyEnc || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    console.log('[Tokko Sync] User ID:', userId);
+
+    // Phase 1: Discover companies AND collect matching properties in one pass
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Descubriendo inmobiliarias en la red...');
+    const networkClient = new TokkoClient(apiKey);
+    const { companies, propertiesByCompany } = await networkClient.discoverNetwork(
+      { operationTypes: [RENT_OPERATION_ID], propertyTypes: SYNC_PROPERTY_TYPES },
+      (scanned, total, found) => {
+        updateSyncStatus(apiKeyHash, 'syncing', `Descubriendo propiedades ${scanned.toLocaleString('es-AR')} de ${total.toLocaleString('es-AR')} (${found} inmobiliarias encontradas)...`);
+      }
+    );
+
+    const totalMatchingProperties = Array.from(propertiesByCompany.values()).reduce((sum, props) => sum + props.length, 0);
+    console.log(`[Tokko Sync] Discovered ${companies.length} companies, ${totalMatchingProperties} matching properties`);
+
+    if (companies.length === 0) {
+      await updateSyncStatus(apiKeyHash, 'error', 'No se encontraron inmobiliarias en esta red');
+      throw new Error('No companies found in network');
+    }
+
+    await updateSyncStatus(apiKeyHash, 'syncing', `Encontradas ${companies.length} inmobiliarias (${totalMatchingProperties} propiedades). Sincronizando...`);
+
+    // Upsert all companies
+    const companyMap = new Map<string, { id: number; key: string }>();
+    for (const company of companies) {
+      let companyKeyEnc: string | null = null;
+      try {
+        companyKeyEnc = encryptApiKey(company.key);
+      } catch {
+        console.warn(`[Tokko Sync] Could not encrypt key for company "${company.name}"`);
+      }
+
+      const companyId = await upsertCompany(userId, {
+        name: company.name,
+        logo: company.logo,
+        contact_info: company.contact_info,
+        tokko_key_enc: companyKeyEnc,
+      });
+
+      companyMap.set(company.name, { id: companyId, key: company.key });
+      console.log(`[Tokko Sync] Company upserted: "${company.name}" (id: ${companyId})`);
+    }
+
+    // Disable listing triggers during bulk sync to avoid per-row rebuilds
+    console.log('[Tokko Sync] Disabling listing triggers for bulk sync...');
+    await supabaseAdmin.rpc('disable_listing_triggers');
+
+    // Phase 2: Sync properties (already fetched) + fetch branch contact info per company
+    let totalPropertiesSynced = 0;
+    const companyEntries = Array.from(companyMap.entries());
+
+    try {
+      for (let i = 0; i < companyEntries.length; i += NETWORK_SYNC_BATCH_SIZE) {
+        const batch = companyEntries.slice(i, i + NETWORK_SYNC_BATCH_SIZE);
+        const batchNum = Math.floor(i / NETWORK_SYNC_BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(companyEntries.length / NETWORK_SYNC_BATCH_SIZE);
+        console.log(`[Tokko Sync] Company batch ${batchNum}/${totalBatches} (${batch.length} companies)`);
+
+        const results = await Promise.all(
+          batch.map(async ([companyName, { id: companyId, key: companyKey }]) => {
+            try {
+              // Fetch branches with company key to get contact info
+              const companyClient = new TokkoClient(companyKey);
+              const branches = await companyClient.getAllBranches();
+              const warnings: string[] = [];
+
+              if (branches.length === 0) {
+                warnings.push(`Company "${companyName}": Could not fetch branch data (no contact info available)`);
+              }
+
+              const contactInfo = extractBranchContactInfo(branches);
+
+              await supabaseAdmin
+                .from('tokko_company')
+                .update({
+                  email: contactInfo.email,
+                  phone: contactInfo.phone,
+                  phone_area: contactInfo.phone_area,
+                  phone_country_code: contactInfo.phone_country_code,
+                  address: contactInfo.address,
+                })
+                .eq('id', companyId);
+
+              // Sync pre-fetched properties for this company
+              const companyProperties = propertiesByCompany.get(companyName) || [];
+              const result = await syncCompanyProperties(userId, companyId, companyKey, companyName, { prefetchedProperties: companyProperties });
+              result.errors.push(...warnings);
+              return result;
+            } catch (error) {
+              const errMsg = `Company "${companyName}": ${error instanceof Error ? error.message : 'Unknown error'}`;
+              console.error(`[Tokko Sync] Company sync failed:`, errMsg);
+              return { propertiesSynced: 0, errors: [errMsg] };
+            }
+          })
+        );
+
+        for (const result of results) {
+          totalPropertiesSynced += result.propertiesSynced;
+          errors.push(...result.errors);
+        }
+
+        await updateSyncStatus(
+          apiKeyHash,
+          'syncing',
+          `Sincronizando inmobiliarias ${Math.min(i + NETWORK_SYNC_BATCH_SIZE, companyEntries.length)}/${companyEntries.length} (${totalPropertiesSynced} propiedades)...`
+        );
+      }
+    } finally {
+      // Always re-enable triggers, even if sync fails
+      console.log('[Tokko Sync] Re-enabling listing triggers...');
+      await supabaseAdmin.rpc('enable_listing_triggers');
+    }
+
+    // Rebuild listings only for this user (not the entire table)
+    console.log('[Tokko Sync] Rebuilding property listings for user...');
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Reconstruyendo listados...');
+    await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
+
+    console.log('[Tokko Sync] Network sync finished:', {
+      companiesSynced: companyMap.size,
+      propertiesSynced: totalPropertiesSynced,
+      errors: errors.length,
+    });
+
+    await updateSyncStatus(apiKeyHash, 'done', null, totalPropertiesSynced);
+
+    // Trigger background photo migration
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      fetch(`${appUrl}/api/photos/migrate?userId=${userId}`, {
+        method: 'POST',
+      }).catch(() => {});
+    } catch {}
+
+    return {
+      userId,
+      propertiesSynced: totalPropertiesSynced,
+      companiesSynced: companyMap.size,
+      locationsSynced: 0,
+      errors,
+    };
+  } catch (error) {
+    // Ensure triggers are re-enabled even on unexpected errors
+    try { await supabaseAdmin.rpc('enable_listing_triggers'); } catch {}
+    await updateSyncStatus(apiKeyHash, 'error', error instanceof Error ? error.message : 'Error desconocido');
+    throw new Error(`Network sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Main sync function.
+ * Detects network vs regular account and dispatches accordingly.
+ */
+export async function syncTokkoData(
+  apiKey: string,
+  propertyLimit: number = 5,
+  authId: string,
+  authEmail: string
+): Promise<SyncResult> {
+  // Detect if this is a network key
+  const network = await isNetworkKey(apiKey);
+
+  if (network) {
+    console.log('[Tokko Sync] Detected NETWORK account — delegating to network sync');
+    return syncNetworkAccount(apiKey, authId, authEmail);
+  }
+
+  // Regular single-inmobiliaria sync
+  console.log('[Tokko Sync] Detected REGULAR account');
   const errors: string[] = [];
   const apiKeyHash = hashApiKey(apiKey);
   let apiKeyEnc: string | undefined;
@@ -673,32 +899,27 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
   const client = new TokkoClient(apiKey);
   const limit = Math.min(500, Math.max(1, Math.floor(propertyLimit)));
 
-  console.log('[Tokko Sync] Starting sync (user will be created or updated by API key hash)');
   try {
-    // Mark sync as started
     await updateSyncStatus(apiKeyHash, 'syncing', 'Conectando con Tokko...');
 
-    // Fetch all branches from the /branch/ endpoint
-    console.log('[Tokko Sync] Fetching all branches from Tokko API...');
+    // Fetch branches to find primary branch and create company
+    console.log('[Tokko Sync] Fetching branches...');
     const allBranches = await client.getAllBranches();
     console.log(`[Tokko Sync] Fetched ${allBranches.length} branches`);
 
-    // Determine user identity from the primary (default/oldest) branch
     const primaryBranch = findPrimaryBranch(allBranches);
+    const contactInfo = extractBranchContactInfo(allBranches);
     const userName = primaryBranch?.display_name || primaryBranch?.name || undefined;
     const userPhone: UserPhone = {
-      telefono: primaryBranch?.phone || undefined,
-      telefono_area: primaryBranch?.phone_area || undefined,
-      telefono_country_code: primaryBranch?.phone_country_code || undefined,
+      telefono: contactInfo.phone || undefined,
+      telefono_area: contactInfo.phone_area || undefined,
+      telefono_country_code: contactInfo.phone_country_code || undefined,
       telefono_extension: primaryBranch?.phone_extension || undefined,
     };
     const userLogo = primaryBranch?.logo || undefined;
-    const tokkoEmail = primaryBranch?.email || undefined;
-    console.log('[Tokko Sync] Primary branch:', primaryBranch?.name || '(none)',
-      '| is_default:', primaryBranch?.is_default, '| Name:', userName || '(none)');
+    const tokkoEmail = contactInfo.email || undefined;
 
-    // Find existing user (created by DB trigger on auth signup) and link Tokko data
-    console.log('[Tokko Sync] Finding user...');
+    // Find user and update with Tokko data
     const userId = await findUser(authId, authEmail, apiKeyHash);
     await updateUserWithTokkoData(userId, authId, apiKeyHash, {
       name: userName,
@@ -708,153 +929,78 @@ export async function syncTokkoData(apiKey: string, propertyLimit: number = 5, a
     }, apiKeyEnc);
     console.log('[Tokko Sync] User ID:', userId);
 
-    console.log(`[Tokko Sync] Searching up to ${limit} rent properties (Apartment/House/PH) from Tokko API...`);
-    const properties = await client.searchProperties(limit, {
-      operation_types: [RENT_OPERATION_ID],
-      property_types: SYNC_PROPERTY_TYPES,
-    });
-    console.log(`[Tokko Sync] Fetched ${properties.length} properties`);
-    await updateSyncStatus(apiKeyHash, 'syncing', `Obtenidas ${properties.length} propiedades de Tokko...`);
+    // Create company from primary branch
+    let companyKeyEnc: string | null = null;
+    try {
+      companyKeyEnc = encryptApiKey(apiKey);
+    } catch {}
 
-    if (properties.length === 0) {
+    const companyName = primaryBranch?.display_name || primaryBranch?.name || 'Mi Inmobiliaria';
+    const companyId = await upsertCompany(userId, {
+      name: companyName,
+      logo: primaryBranch?.logo || null,
+      tokko_key_enc: companyKeyEnc,
+      email: contactInfo.email,
+      phone: contactInfo.phone,
+      phone_area: contactInfo.phone_area,
+      phone_country_code: contactInfo.phone_country_code,
+      address: contactInfo.address,
+    });
+    console.log(`[Tokko Sync] Company created: "${companyName}" (id: ${companyId})`);
+
+    // Sync properties
+    console.log(`[Tokko Sync] Searching up to ${limit} rent properties (Apartment/House/PH)...`);
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Buscando propiedades...');
+
+    // Disable listing triggers during bulk sync
+    console.log('[Tokko Sync] Disabling listing triggers for bulk sync...');
+    await supabaseAdmin.rpc('disable_listing_triggers');
+
+    let result: { propertiesSynced: number; errors: string[] };
+    try {
+      result = await syncCompanyProperties(userId, companyId, apiKey, companyName, { maxProperties: limit });
+    } finally {
+      console.log('[Tokko Sync] Re-enabling listing triggers...');
+      await supabaseAdmin.rpc('enable_listing_triggers');
+    }
+
+    errors.push(...result.errors);
+
+    if (result.propertiesSynced === 0) {
       await updateSyncStatus(apiKeyHash, 'error', 'No se encontraron propiedades para esta API key');
       throw new Error('No properties found for this API key');
     }
 
-    // Fetch all users (producers) from the /user/ endpoint
-    console.log('[Tokko Sync] Fetching all users from Tokko API...');
-    const allUsers = await client.getAllUsers();
-    console.log(`[Tokko Sync] Fetched ${allUsers.length} users`);
+    // Rebuild listings only for this user
+    console.log('[Tokko Sync] Rebuilding property listings for user...');
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Reconstruyendo listados...');
+    await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
 
-    // Collect owners from properties
-    const owners = new Map<number, TokkoOwner>();
-    for (const property of properties) {
-      if (property.internal_data?.property_owners) {
-        const propOwners = property.internal_data.property_owners;
-        for (const owner of propOwners) {
-          owners.set(owner.id, owner);
-        }
-      }
-    }
-    console.log('[Tokko Sync] Collected:', { branches: allBranches.length, users: allUsers.length, owners: owners.size });
-
-    // Sync branches (from API endpoint), users, and owners in parallel
-    console.log('[Tokko Sync] Syncing branches, users, and owners in parallel...');
-    const branchMap = new Map<number, number>();
-    const userMap = new Map<number, number>();
-    const ownerMap = new Map<number, number>();
-
-    await Promise.all([
-      // Sync all branches from the /branch/ endpoint
-      Promise.all(
-        allBranches.map(async (branch) => {
-          try {
-            const branchId = await syncBranch(userId, branch);
-            branchMap.set(branch.id, branchId);
-            console.log(`[Tokko Sync]   Branch synced: ${branch.name} (id: ${branch.id})`);
-          } catch (error) {
-            errors.push(`Branch ${branch.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            console.warn(`[Tokko Sync]   Branch failed ${branch.id}:`, error);
-          }
-        })
-      ),
-      // Sync all users from /user/ endpoint in parallel
-      Promise.all(
-        allUsers.map(async (user) => {
-          try {
-            const syncedTokkoUserId = await syncUser(userId, user);
-            userMap.set(user.id, syncedTokkoUserId);
-            console.log(`[Tokko Sync]   User synced: ${user.name} (id: ${user.id})`);
-          } catch (error) {
-            errors.push(`User ${user.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            console.warn(`[Tokko Sync]   User failed ${user.id}:`, error);
-          }
-        })
-      ),
-      // Sync all owners in parallel
-      Promise.all(
-        Array.from(owners.values()).map(async (owner) => {
-          try {
-            const ownerId = await syncOwner(userId, owner);
-            ownerMap.set(owner.id, ownerId);
-            console.log(`[Tokko Sync]   Owner synced: ${owner.name} (id: ${owner.id})`);
-          } catch (error) {
-            errors.push(`Owner ${owner.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            console.warn(`[Tokko Sync]   Owner failed ${owner.id}:`, error);
-          }
-        })
-      ),
-    ]);
-
-    console.log('[Tokko Sync] Branches, users, and owners synced');
-
-    // Sync properties in parallel batches (locations are looked up from pre-seeded reference data only)
-    const locationCache = new Map<number, number>();
-    let propertiesSynced = 0;
-    const BATCH_SIZE = 20; // Process 20 properties at a time
-    console.log(`[Tokko Sync] Syncing properties in batches of ${BATCH_SIZE} (locations must exist in DB)...`);
-
-    // Process properties in batches
-    for (let i = 0; i < properties.length; i += BATCH_SIZE) {
-      const batch = properties.slice(i, i + BATCH_SIZE);
-      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(properties.length / BATCH_SIZE);
-
-      console.log(`[Tokko Sync] Processing batch ${batchNumber}/${totalBatches} (${batch.length} properties)...`);
-
-      await Promise.all(
-        batch.map(async (property) => {
-          try {
-            await syncProperty(userId, property, branchMap, userMap, ownerMap, locationCache);
-            propertiesSynced++;
-            console.log(`[Tokko Sync]   ✓ Property ${property.id} - ${property.publication_title || property.address || 'Untitled'}`);
-          } catch (error) {
-            errors.push(`Property ${property.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            console.warn(`[Tokko Sync]   ✗ Property ${property.id} failed:`, error);
-          }
-        })
-      );
-
-      console.log(`[Tokko Sync] Batch ${batchNumber}/${totalBatches} complete (${propertiesSynced}/${properties.length} total)`);
-      await updateSyncStatus(apiKeyHash, 'syncing', `Sincronizando ${propertiesSynced}/${properties.length} propiedades...`);
-    }
-
-    console.log('[Tokko Sync] Sync finished:', {
-      propertiesSynced,
-      branchesSynced: branchMap.size,
-      usersSynced: userMap.size,
-      ownersSynced: ownerMap.size,
+    console.log('[Tokko Sync] Regular sync finished:', {
+      propertiesSynced: result.propertiesSynced,
       errors: errors.length,
     });
 
-    // Mark sync as complete
-    await updateSyncStatus(apiKeyHash, 'done', null, propertiesSynced);
+    await updateSyncStatus(apiKeyHash, 'done', null, result.propertiesSynced);
 
-    // Trigger background photo migration (non-blocking)
-    // This downloads Tokko photos and re-uploads them to GCS
+    // Trigger background photo migration
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('supabase.co', '') || '';
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       fetch(`${appUrl}/api/photos/migrate?userId=${userId}`, {
         method: 'POST',
-      }).catch(() => {
-        // Silently ignore — migration will be retried later
-      });
-    } catch {
-      // Silently ignore
-    }
+      }).catch(() => {});
+    } catch {}
 
     return {
       userId,
-      propertiesSynced,
-      branchesSynced: branchMap.size,
-      usersSynced: userMap.size,
-      ownersSynced: ownerMap.size,
-      locationsSynced: 0, // Locations are reference data; no creation during sync
+      propertiesSynced: result.propertiesSynced,
+      companiesSynced: 1,
+      locationsSynced: 0,
       errors,
     };
   } catch (error) {
-    // Mark sync as failed
+    // Ensure triggers are re-enabled even on unexpected errors
+    try { await supabaseAdmin.rpc('enable_listing_triggers'); } catch {}
     await updateSyncStatus(apiKeyHash, 'error', error instanceof Error ? error.message : 'Error desconocido');
     throw new Error(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }

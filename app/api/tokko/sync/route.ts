@@ -44,9 +44,7 @@ export async function POST(request: NextRequest) {
     console.log('[Tokko Sync API] Sync completed:', {
       userId: result.userId,
       propertiesSynced: result.propertiesSynced,
-      branchesSynced: result.branchesSynced,
-      usersSynced: result.usersSynced,
-      ownersSynced: result.ownersSynced,
+      companiesSynced: result.companiesSynced,
       locationsSynced: result.locationsSynced,
       errorCount: result.errors.length,
     });

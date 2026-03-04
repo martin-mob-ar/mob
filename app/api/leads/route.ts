@@ -20,10 +20,10 @@ export async function POST(request: Request) {
 
     const { propertyId, type, name, email, phone, country_code, message, source, submitterUserId } = parsed.data;
 
-    // Fetch property details
+    // Fetch property details (include company_id for webcontact key lookup)
     const { data: property, error: propError } = await supabaseAdmin
       .from('properties')
-      .select('id, tokko, tokko_id, user_id, address')
+      .select('id, tokko, tokko_id, user_id, address, company_id')
       .eq('id', propertyId)
       .single();
 
@@ -73,11 +73,28 @@ export async function POST(request: Request) {
         (async () => {
           let status: 'sent' | 'failed' | 'skipped' = 'skipped';
           try {
-            if (!owner?.tokko_api_key_enc) {
-              console.warn('[Leads] No encrypted Tokko API key for user, skipping webcontact');
+            // Look up company key first (correct inmobiliaria for network accounts),
+            // fall back to user's key for backward compatibility
+            let encryptedKey: string | null = null;
+
+            if (property.company_id) {
+              const { data: company } = await supabaseAdmin
+                .from('tokko_company')
+                .select('tokko_key_enc')
+                .eq('id', property.company_id)
+                .single();
+              encryptedKey = company?.tokko_key_enc || null;
+            }
+
+            if (!encryptedKey) {
+              encryptedKey = owner?.tokko_api_key_enc || null;
+            }
+
+            if (!encryptedKey) {
+              console.warn('[Leads] No encrypted Tokko API key found (company or user), skipping webcontact');
               status = 'skipped';
             } else {
-              const rawApiKey = decryptApiKey(owner.tokko_api_key_enc);
+              const rawApiKey = decryptApiKey(encryptedKey);
               const result = await createTokkoWebContact(rawApiKey, property.tokko_id!, {
                 name,
                 email,
