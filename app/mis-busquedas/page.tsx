@@ -63,13 +63,15 @@ export default async function MisBusquedasPage() {
     room_amount: number | null;
     suite_amount: number | null;
     bathroom_amount: number | null;
+    contact_phone: string | null;
+    tokko: boolean | null;
   }> = {};
 
   if (allPropertyIds.length > 0) {
     const { data: properties } = await supabaseAdmin
       .from("properties_read")
       .select(
-        "property_id, slug, address, location_name, price, secondary_price, expenses, currency, cover_photo_url, room_amount, suite_amount, bathroom_amount"
+        "property_id, slug, address, location_name, price, secondary_price, expenses, currency, cover_photo_url, room_amount, suite_amount, bathroom_amount, contact_phone, tokko"
       )
       .in("property_id", allPropertyIds);
 

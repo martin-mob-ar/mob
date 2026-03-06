@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, MessageCircle, Search, ChevronRight, ArrowLeft, Bed, Bath } from "lucide-react";
+import { Heart, MessageCircle, Search, ChevronRight, ArrowLeft, Bed, Bath, Phone } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AnimateHeight } from "@/components/ui/animate-height";
@@ -22,6 +22,8 @@ type PropertySnippet = {
   room_amount: number | null;
   suite_amount: number | null;
   bathroom_amount: number | null;
+  contact_phone: string | null;
+  tokko: boolean | null;
 };
 
 type FavoritoItem = {
@@ -164,31 +166,54 @@ function FavoritoCard({ item }: { item: FavoritoItem }) {
 
 function ConsultaCard({ item }: { item: ConsultaItem }) {
   const href = getPropertyUrl(item.property.slug, item.propertyId);
+  const contactPhone = item.property.tokko ? item.property.contact_phone : null;
 
   return (
-    <div className="flex items-center gap-3 bg-background rounded-2xl p-3 shadow-sm border border-border/50">
-      <PropertyCard property={item.property} href={href} />
-      <div className="flex flex-col items-end gap-1.5 shrink-0 ml-1">
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-            item.type === "visita"
-              ? "bg-primary/10 text-primary"
-              : "bg-primary text-primary-foreground"
-          }`}
-        >
-          {item.type === "visita" ? "Visita" : "Reserva"}
-        </span>
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-          {formatRelativeDate(item.sentAt)}
-        </span>
-        <Link
-          href={href}
-          aria-label="Ver propiedad"
-          className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
+    <div className="bg-background rounded-2xl p-3 shadow-sm border border-border/50 space-y-2">
+      <div className="flex items-center gap-3">
+        <PropertyCard property={item.property} href={href} />
+        <div className="flex flex-col items-end gap-1.5 shrink-0 ml-1">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+              item.type === "visita"
+                ? "bg-primary/10 text-primary"
+                : "bg-primary text-primary-foreground"
+            }`}
+          >
+            {item.type === "visita" ? "Visita" : "Reserva"}
+          </span>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+            {formatRelativeDate(item.sentAt)}
+          </span>
+          <Link
+            href={href}
+            aria-label="Ver propiedad"
+            className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
+      {contactPhone && (
+        <div className="flex gap-2 pt-1">
+          <a
+            href={`https://wa.me/${contactPhone}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            WhatsApp
+          </a>
+          <a
+            href={`tel:${contactPhone}`}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-xl border border-border text-foreground text-xs font-medium hover:bg-secondary transition-colors"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            Llamar
+          </a>
+        </div>
+      )}
     </div>
   );
 }

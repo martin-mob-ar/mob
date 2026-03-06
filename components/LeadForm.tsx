@@ -76,6 +76,8 @@ interface LeadFormProps {
   propertyId: number;
   propertyAddress: string;
   onClose: () => void;
+  /** The inmobiliaria's contact phone — shown after submission for WhatsApp/call. Unrelated to the submitter's phone field. */
+  inmobiliariaPhone?: string;
 }
 
 export default function LeadForm({
@@ -83,6 +85,7 @@ export default function LeadForm({
   propertyId,
   propertyAddress,
   onClose,
+  inmobiliariaPhone,
 }: LeadFormProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,13 +93,10 @@ export default function LeadForm({
 
   const defaults = useMemo(() => {
     if (user) {
-      const phone = user.phoneArea && user.phone
-        ? `${user.phoneArea}${user.phone}`
-        : user.phone || "";
       return {
         name: user.name || "",
         email: user.email || "",
-        phone,
+        phone: user.phone || "",
         country_code: user.phoneCountryCode || "+54",
       };
     }
@@ -118,11 +118,8 @@ export default function LeadForm({
     if (user) {
       if (user.name && !form.getValues("name")) form.setValue("name", user.name);
       if (user.email && !form.getValues("email")) form.setValue("email", user.email);
-      if ((user.phoneArea || user.phone) && !form.getValues("phone")) {
-        const phone = user.phoneArea && user.phone
-          ? `${user.phoneArea}${user.phone}`
-          : user.phone;
-        form.setValue("phone", phone);
+      if (user.phone && !form.getValues("phone")) {
+        form.setValue("phone", user.phone);
       }
       if (user.phoneCountryCode) form.setValue("country_code", user.phoneCountryCode);
     }
@@ -196,6 +193,28 @@ export default function LeadForm({
             Te contactaremos a la brevedad.
           </p>
         </div>
+        {inmobiliariaPhone && (
+          <div className="space-y-2 pt-1">
+            <a
+              href={`https://wa.me/${inmobiliariaPhone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <Button className="w-full rounded-xl h-10 font-semibold text-sm">
+                Hablar por WhatsApp
+              </Button>
+            </a>
+            <a href={`tel:${inmobiliariaPhone}`} className="block">
+              <Button
+                variant="outline"
+                className="w-full rounded-xl h-10 font-medium text-sm"
+              >
+                Llamar por teléfono
+              </Button>
+            </a>
+          </div>
+        )}
         <Button
           variant="ghost"
           size="sm"

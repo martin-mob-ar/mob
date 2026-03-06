@@ -9,6 +9,12 @@ import {
 } from "lucide-react";
 import type { OwnerProperty, OperacionStatus } from "@/lib/transforms/property";
 
+const planConfig: Record<string, { label: string; className: string }> = {
+  basico: { label: "Básico", className: "bg-muted text-muted-foreground border border-border" },
+  acompanado: { label: "Acompañado", className: "bg-primary/10 text-primary border border-primary/20" },
+  experiencia: { label: "Experiencia mob", className: "bg-amber-500/10 text-amber-600 border border-amber-500/20" },
+};
+
 const statusConfig: Record<
   OperacionStatus,
   { label: string; className: string; dotColor: string }
@@ -123,7 +129,7 @@ const OwnerSection = ({ properties, mockMode }: OwnerSectionProps) => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {/* Status indicator overlay */}
-                <div className="absolute bottom-3 left-3">
+                <div className="absolute bottom-3 left-3 flex items-center gap-2">
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm ${config.className}`}
                   >
@@ -132,6 +138,13 @@ const OwnerSection = ({ properties, mockMode }: OwnerSectionProps) => {
                     />
                     {config.label}
                   </span>
+                  {property.plan && planConfig[property.plan] && (
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${planConfig[property.plan].className}`}
+                    >
+                      {planConfig[property.plan].label}
+                    </span>
+                  )}
                 </div>
               </div>
 

@@ -189,6 +189,7 @@ export type Database = {
           videos: Json | null
           web_price: boolean | null
           zonification: string | null
+          contact_phone: string | null
         }
         Insert: {
           address?: string | null
@@ -271,6 +272,7 @@ export type Database = {
           videos?: Json | null
           web_price?: boolean | null
           zonification?: string | null
+          contact_phone?: string | null
         }
         Update: {
           address?: string | null
@@ -353,6 +355,7 @@ export type Database = {
           videos?: Json | null
           web_price?: boolean | null
           zonification?: string | null
+          contact_phone?: string | null
         }
         Relationships: [
           {

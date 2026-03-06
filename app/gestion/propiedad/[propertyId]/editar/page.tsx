@@ -40,7 +40,6 @@ export default async function EditPropertyPage({ params }: Props) {
   const [
     { data: operacion },
     { data: photos },
-    { data: videos },
     { data: tagLinks },
     { data: propertyTypes },
     { data: tags },
@@ -54,12 +53,7 @@ export default async function EditPropertyPage({ params }: Props) {
       .maybeSingle(),
     supabaseAdmin
       .from("tokko_property_photo")
-      .select("id, image, original, thumb, order, is_front_cover")
-      .eq("property_id", numericId)
-      .order("order"),
-    supabaseAdmin
-      .from("tokko_property_video")
-      .select("id, url, order")
+      .select("id, image, original, thumb, order, is_front_cover, storage_path")
       .eq("property_id", numericId)
       .order("order"),
     supabaseAdmin
@@ -116,7 +110,6 @@ export default async function EditPropertyPage({ params }: Props) {
       property={property}
       operacion={operacion}
       photos={photos || []}
-      videos={videos || []}
       tagIds={(tagLinks || []).map((t: any) => t.tag_id)}
       propertyTypes={propertyTypes || []}
       tags={tags || []}

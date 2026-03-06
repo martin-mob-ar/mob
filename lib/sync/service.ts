@@ -48,15 +48,13 @@ function findPrimaryBranch(branches: TokkoBranch[]): TokkoBranch | undefined {
 function extractBranchContactInfo(branches: TokkoBranch[]): {
   email: string | null;
   phone: string | null;
-  phone_area: string | null;
   phone_country_code: string | null;
   address: string | null;
 } {
   const primary = findPrimaryBranch(branches);
   const info = {
     email: primary?.email || null,
-    phone: primary?.phone || null,
-    phone_area: primary?.phone_area || null,
+    phone: (primary?.phone_area || '') + (primary?.phone || '') || null,
     phone_country_code: primary?.phone_country_code || null,
     address: primary?.address || null,
   };
@@ -73,8 +71,7 @@ function extractBranchContactInfo(branches: TokkoBranch[]): {
       })[0];
 
     if (branchWithPhone) {
-      info.phone = branchWithPhone.phone || null;
-      info.phone_area = branchWithPhone.phone_area || null;
+      info.phone = (branchWithPhone.phone_area || '') + (branchWithPhone.phone || '') || null;
       info.phone_country_code = branchWithPhone.phone_country_code || null;
     }
   }
@@ -120,7 +117,6 @@ async function findUser(authId: string, authEmail: string, apiKeyHash: string): 
  */
 interface UserPhone {
   telefono?: string;
-  telefono_area?: string;
   telefono_country_code?: string;
   telefono_extension?: string;
 }
@@ -146,7 +142,6 @@ async function updateUserWithTokkoData(
   if (apiKeyEnc) updates.tokko_api_key_enc = apiKeyEnc;
   if (data.name) updates.name = data.name;
   if (data.phone?.telefono) updates.telefono = data.phone.telefono;
-  if (data.phone?.telefono_area) updates.telefono_area = data.phone.telefono_area;
   if (data.phone?.telefono_country_code) updates.telefono_country_code = data.phone.telefono_country_code;
   if (data.phone?.telefono_extension) updates.telefono_extension = data.phone.telefono_extension;
   if (data.logo !== undefined) updates.logo = data.logo || null;
@@ -177,7 +172,6 @@ async function upsertCompany(
     tokko_key_enc?: string | null;
     email?: string | null;
     phone?: string | null;
-    phone_area?: string | null;
     phone_country_code?: string | null;
     address?: string | null;
   }
@@ -192,7 +186,6 @@ async function upsertCompany(
       tokko_key_enc: company.tokko_key_enc || null,
       email: company.email || null,
       phone: company.phone || null,
-      phone_area: company.phone_area || null,
       phone_country_code: company.phone_country_code || null,
       address: company.address || null,
       updated_at: new Date().toISOString(),
@@ -364,6 +357,7 @@ async function updateSyncStatus(
       ...(propertiesCount !== undefined ? { sync_properties_count: propertiesCount } : {}),
       ...(status === 'syncing' ? { sync_started_at: new Date().toISOString() } : {}),
       ...(status === 'done' || status === 'error' ? { sync_started_at: null } : {}),
+      ...(status === 'done' ? { tokko_last_sync_at: new Date().toISOString() } : {}),
     })
     .eq('tokko_api_hash', apiKeyHash);
 }
@@ -489,7 +483,6 @@ async function syncNetworkAccount(
           .update({
             email: result.contactInfo.email,
             phone: result.contactInfo.phone,
-            phone_area: result.contactInfo.phone_area,
             phone_country_code: result.contactInfo.phone_country_code,
             address: result.contactInfo.address,
           })
@@ -616,7 +609,6 @@ export async function syncTokkoData(
     const userName = primaryBranch?.display_name || primaryBranch?.name || undefined;
     const userPhone: UserPhone = {
       telefono: contactInfo.phone || undefined,
-      telefono_area: contactInfo.phone_area || undefined,
       telefono_country_code: contactInfo.phone_country_code || undefined,
       telefono_extension: primaryBranch?.phone_extension || undefined,
     };
@@ -646,7 +638,6 @@ export async function syncTokkoData(
       tokko_key_enc: companyKeyEnc,
       email: contactInfo.email,
       phone: contactInfo.phone,
-      phone_area: contactInfo.phone_area,
       phone_country_code: contactInfo.phone_country_code,
       address: contactInfo.address,
     });

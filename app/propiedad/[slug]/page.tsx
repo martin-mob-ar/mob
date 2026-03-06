@@ -210,7 +210,6 @@ export default async function PropiedadDetailPage({
   }
 
   // Publisher info: prefer company data from properties_read, fall back to user
-  let ownerWhatsApp: string | null = null;
   publisherName = propertyData.company_name || null;
   publisherLogo = propertyData.company_logo || null;
 
@@ -218,48 +217,18 @@ export default async function PropiedadDetailPage({
     // Fallback for properties without a company (e.g. manually created)
     const { data: userData } = await supabase
       .from("users")
-      .select("name, logo, telefono")
+      .select("name, logo")
       .eq("id", propertyData.user_id)
       .single();
 
     if (userData) {
       publisherName = userData.name || null;
       publisherLogo = publisherLogo || userData.logo || null;
-      ownerWhatsApp = userData.telefono || null;
     }
   }
 
-  // WhatsApp: company phone (inmobiliaria) → user phone. Never contact landlord directly.
-  if (!ownerWhatsApp && propertyData.user_id) {
-    const { data: propRow } = await supabase
-      .from("properties")
-      .select("company_id")
-      .eq("id", propertyId)
-      .single();
-
-    if (propRow?.company_id) {
-      const { data: companyData } = await supabase
-        .from("tokko_company")
-        .select("phone, phone_area, phone_country_code")
-        .eq("id", propRow.company_id)
-        .single();
-
-      if (companyData?.phone) {
-        const parts = [companyData.phone_country_code, companyData.phone_area, companyData.phone].filter(Boolean);
-        ownerWhatsApp = parts.join("");
-      }
-    }
-
-    // Fallback: user's phone
-    if (!ownerWhatsApp) {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("telefono")
-        .eq("id", propertyData.user_id)
-        .single();
-      ownerWhatsApp = userData?.telefono || null;
-    }
-  }
+  // Contact phone: stored directly on the property (producer.cellphone → producer.phone → branch phone)
+  const contactPhone: string | null = propertyData.contact_phone ?? null;
 
   return (
     <PropertyDetail
@@ -274,7 +243,7 @@ export default async function PropiedadDetailPage({
       geoLat={geoLat}
       geoLong={geoLong}
       propertyId={propertyId}
-      ownerWhatsApp={ownerWhatsApp}
+      contactPhone={contactPhone}
       ownerId={propertyData.user_id}
       age={propertyData.age ?? null}
     />

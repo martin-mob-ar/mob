@@ -3,6 +3,170 @@ import type {
   OwnerProperty,
   OperationHistoryEntry,
 } from "@/lib/transforms/property";
+import type { LeadStage } from "@/contexts/MockUserContext";
+
+// ─── Mock consultas (leads) per property ────────────────────────────
+
+export interface MockConsulta {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message?: string;
+  date: string;
+  lastContact?: string;
+  leadStage: LeadStage;
+  occupation?: string;
+  paymentCapacity?: string;
+  age?: number;
+  highCloseProbability?: boolean;
+  pendingResponse?: boolean;
+  daysWithoutResponse?: number;
+}
+
+export const mockConsultasByProperty: Record<string, MockConsulta[]> = {
+  "5001": [], // Alquilada — no consultas
+  "5002": [
+    {
+      id: "c-1",
+      name: "Lucía Fernández",
+      age: 32,
+      occupation: "Diseñadora UX",
+      leadStage: "calificado",
+      paymentCapacity: "$800 - $1,200 USD",
+      date: "18/01/2026",
+      lastContact: "Hace 1 día",
+      highCloseProbability: true,
+      phone: "+54 11 5555-1234",
+      email: "lucia.fernandez@email.com",
+      message: "Hola, vi la publicación y me interesa mucho el departamento. ¿Podría coordinar una visita?",
+    },
+    {
+      id: "c-2",
+      name: "Martín Rodríguez",
+      age: 28,
+      occupation: "Desarrollador",
+      leadStage: "en_seguimiento",
+      paymentCapacity: "$700 - $1,000 USD",
+      date: "15/01/2026",
+      lastContact: "Hace 3 días",
+      pendingResponse: true,
+      daysWithoutResponse: 3,
+      phone: "+54 11 5555-2345",
+      email: "martin.r@email.com",
+    },
+    {
+      id: "c-3",
+      name: "Carolina Méndez",
+      age: 35,
+      occupation: "Contadora",
+      leadStage: "verificado",
+      paymentCapacity: "$900 - $1,300 USD",
+      date: "12/01/2026",
+      lastContact: "Hace 5 días",
+      phone: "+54 11 5555-3456",
+      email: "carolina.m@email.com",
+      message: "Estoy buscando un lugar tranquilo para vivir sola. ¿Las expensas incluyen algún servicio?",
+    },
+  ],
+  "5003": [
+    {
+      id: "c-4",
+      name: "Diego Torres",
+      age: 24,
+      occupation: "Estudiante",
+      leadStage: "sin_verificar",
+      paymentCapacity: "$600 - $800 USD",
+      date: "20/01/2026",
+      lastContact: "Hace 2 días",
+      phone: "+54 11 5555-4567",
+      email: "diego.t@email.com",
+    },
+    {
+      id: "c-5",
+      name: "Sofía Ramos",
+      age: 29,
+      occupation: "Abogada",
+      leadStage: "calificado",
+      paymentCapacity: "$1,000 - $1,500 USD",
+      date: "19/01/2026",
+      highCloseProbability: true,
+      phone: "+54 11 5555-5678",
+      email: "sofia.ramos@email.com",
+      message: "Me encanta la ubicación. ¿Está disponible desde marzo?",
+    },
+  ],
+  "5004": [],
+  "5005": [
+    {
+      id: "c-6",
+      name: "Pablo Gutiérrez",
+      age: 31,
+      occupation: "Arquitecto",
+      leadStage: "verificado",
+      paymentCapacity: "$300 - $500 USD",
+      date: "17/01/2026",
+      pendingResponse: true,
+      daysWithoutResponse: 4,
+      phone: "+54 11 5555-6789",
+      email: "pablo.g@email.com",
+    },
+    {
+      id: "c-7",
+      name: "Ana Ruiz",
+      age: 27,
+      occupation: "Marketing",
+      leadStage: "no_avanza",
+      paymentCapacity: "$250 - $400 USD",
+      date: "21/01/2026",
+      phone: "+54 11 5555-7890",
+      email: "ana.ruiz@email.com",
+      message: "¿El departamento acepta mascotas?",
+    },
+    {
+      id: "c-8",
+      name: "Fernando Pérez",
+      age: 33,
+      occupation: "Médico",
+      leadStage: "en_seguimiento",
+      paymentCapacity: "$400 - $600 USD",
+      date: "22/01/2026",
+      phone: "+54 11 5555-8901",
+      email: "fernando.p@email.com",
+      highCloseProbability: true,
+    },
+  ],
+  "5006": [
+    {
+      id: "c-9",
+      name: "Valentina Cruz",
+      age: 26,
+      occupation: "Profesora",
+      leadStage: "en_seguimiento",
+      paymentCapacity: "$500 - $750 USD",
+      date: "23/01/2026",
+      phone: "+54 11 5555-9012",
+      email: "valentina.c@email.com",
+    },
+  ],
+  "5007": [],
+  "5008": [],
+  "5009": [
+    {
+      id: "c-10",
+      name: "Ramiro Sosa",
+      age: 22,
+      occupation: "Estudiante",
+      leadStage: "sin_verificar",
+      paymentCapacity: "$250 - $400 USD",
+      date: "24/01/2026",
+      phone: "+54 11 5555-0123",
+      email: "ramiro.s@email.com",
+      message: "Me interesa el lugar para usar como estudio. ¿Cuándo podría visitar?",
+    },
+  ],
+  "5010": [],
+};
 
 // ─── Shared images ──────────────────────────────────────────────────
 
@@ -134,6 +298,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 2,
     tenantName: "María García",
     operacionId: 8001,
+    plan: null,
   },
   {
     id: "5002",
@@ -150,6 +315,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 1,
     tenantName: "Carlos López",
     operacionId: 8002,
+    plan: null,
   },
   {
     id: "5003",
@@ -166,6 +332,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 1,
     tenantName: "Ana Rodríguez",
     operacionId: 8003,
+    plan: null,
   },
   {
     id: "5004",
@@ -182,6 +349,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 3,
     tenantName: "Roberto Fernández",
     operacionId: 8004,
+    plan: null,
   },
   {
     id: "5005",
@@ -198,6 +366,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 1,
     tenantName: null,
     operacionId: null,
+    plan: "experiencia",
   },
   {
     id: "5006",
@@ -214,6 +383,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 1,
     tenantName: null,
     operacionId: null,
+    plan: "acompanado",
   },
   {
     id: "5007",
@@ -230,6 +400,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 2,
     tenantName: null,
     operacionId: 8005,
+    plan: null,
   },
   {
     id: "5008",
@@ -246,6 +417,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 1,
     tenantName: "Gastro Bar SRL",
     operacionId: 8006,
+    plan: null,
   },
   {
     id: "5009",
@@ -262,6 +434,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 1,
     tenantName: null,
     operacionId: 8007,
+    plan: "basico",
   },
   {
     id: "5010",
@@ -278,6 +451,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     bathrooms: 3,
     tenantName: "Sofía Martínez",
     operacionId: 8008,
+    plan: null,
   },
 ];
 

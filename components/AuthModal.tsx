@@ -5,32 +5,16 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTokkoSync } from "@/hooks/useTokkoSync";
 import { Building2 } from "lucide-react";
+import AccountTypeSelector from "@/components/profile/AccountTypeSelector";
 
-const COUNTRY_CODES = [
-  { value: "+54", label: "🇦🇷 +54" },
-  { value: "+55", label: "🇧🇷 +55" },
-  { value: "+56", label: "🇨🇱 +56" },
-  { value: "+57", label: "🇨🇴 +57" },
-  { value: "+598", label: "🇺🇾 +598" },
-  { value: "+52", label: "🇲🇽 +52" },
-  { value: "+1", label: "🇺🇸 +1" },
-  { value: "+34", label: "🇪🇸 +34" },
-];
 
-type AuthStep = "email" | "register" | "register-inmobiliaria" | "complete-profile";
+type AuthStep = "email" | "register" | "register-inmobiliaria" | "select-account-type";
 
 const AuthModal = () => {
-  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading, refreshUser } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -63,26 +47,12 @@ const AuthModal = () => {
   const [password, setPassword] = useState("");
   const [tokkoApiKey, setTokkoApiKey] = useState("");
   const [loading, setLoading] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phoneCountryCode, setPhoneCountryCode] = useState("+54");
-  const [phoneArea, setPhoneArea] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dni, setDni] = useState("");
-  const [profileError, setProfileError] = useState<string | null>(null);
 
   const resetForm = () => {
     setStep("email");
     setEmail("");
     setPassword("");
     setTokkoApiKey("");
-    setFirstName("");
-    setLastName("");
-    setPhoneCountryCode("+54");
-    setPhoneArea("");
-    setPhone("");
-    setDni("");
-    setProfileError(null);
     clearError();
   };
 
@@ -126,7 +96,7 @@ const AuthModal = () => {
     setLoading(true);
     try {
       await register(email, password, false);
-      setStep("complete-profile");
+      setStep("select-account-type");
     } catch {
       // Error is set in AuthContext
     } finally {
@@ -134,54 +104,28 @@ const AuthModal = () => {
     }
   };
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSelectAccountType = async (accountTypeId: number) => {
     setLoading(true);
-    setProfileError(null);
     try {
-      const res = await fetch("/api/users/profile", {
+      await fetch("/api/users/account-type", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `${firstName.trimEnd()} ${lastName.trim()}`.trim(),
-          telefono: phone,
-          telefono_area: phoneArea,
-          telefono_country_code: phoneCountryCode,
-          dni: dni,
-        }),
+        body: JSON.stringify({ account_type: accountTypeId }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        setProfileError(data.error || "Error al guardar");
-        return;
-      }
-      await refreshUser();
-      const redirectTo = searchParams.get("redirect");
-      if (redirectTo) {
-        closeAuthModal();
-        resetForm();
-        router.push(redirectTo);
-        router.refresh();
-      } else {
-        handleClose();
-      }
-    } catch {
-      setProfileError("Error al guardar el perfil");
+      closeAuthModal();
+      resetForm();
+      router.push("/perfil");
+      router.refresh();
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSkipProfile = () => {
-    const redirectTo = searchParams.get("redirect");
-    if (redirectTo) {
-      closeAuthModal();
-      resetForm();
-      router.push(redirectTo);
-      router.refresh();
-    } else {
-      handleClose();
-    }
+  const handleSkipAccountType = () => {
+    closeAuthModal();
+    resetForm();
+    router.push("/perfil");
+    router.refresh();
   };
 
   const handleInmobiliariaSubmit = async (e: React.FormEvent) => {
@@ -192,6 +136,12 @@ const AuthModal = () => {
       // Get the auth user ID to link with the public users row during sync
       const supabase = (await import("@/lib/supabase/client")).createClient();
       const { data: { user: authUser } } = await supabase.auth.getUser();
+      // Auto-set account_type to inmobiliaria
+      await fetch("/api/users/account-type", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account_type: 3 }),
+      });
       handleClose();
       // Fire background sync + start polling toast, passing auth info
       startSync(tokkoApiKey, authUser?.id, authUser?.email || email);
@@ -202,9 +152,15 @@ const AuthModal = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    console.log("Google login");
+  const handleGoogleLogin = async () => {
+    const supabase = (await import("@/lib/supabase/client")).createClient();
+    const redirectTo = searchParams.get("redirect");
+    const callbackUrl = `${window.location.origin}/api/auth/callback${redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : ""}`;
+
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: callbackUrl },
+    });
   };
 
   return (
@@ -448,102 +404,28 @@ const AuthModal = () => {
           </div>
         )}
 
-        {step === "complete-profile" && (
+        {step === "select-account-type" && (
           <div className="space-y-5">
             {/* Header */}
             <div className="text-center">
               <h2 className="font-display text-xl font-semibold text-foreground">
-                Completá tu perfil
+                ¿Cuál es tu tipo de cuenta?
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Estos datos nos ayudan a brindarte un mejor servicio
+                Esto nos ayuda a personalizar tu experiencia
               </p>
             </div>
 
-            {/* Error display */}
-            {profileError && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
-                {profileError}
-              </div>
-            )}
-
-            {/* Profile Form */}
-            <form onSubmit={handleProfileSubmit} className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Nombre"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="h-11 rounded-lg flex-1"
-                />
-                <Input
-                  type="text"
-                  placeholder="Apellido"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="h-11 rounded-lg flex-1"
-                />
-              </div>
-
-              {/* Structured phone */}
-              <div className="flex items-center h-11 rounded-lg border border-input bg-transparent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1">
-                <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
-                  <SelectTrigger className="h-full shrink-0 text-sm border-0 shadow-none ring-0 focus:ring-0 focus:ring-offset-0 rounded-r-none px-3 w-auto gap-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRY_CODES.map((code) => (
-                      <SelectItem key={code.value} value={code.value}>
-                        {code.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="w-px h-5 bg-border shrink-0" />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="911"
-                  value={phoneArea}
-                  onChange={(e) => setPhoneArea(e.target.value.replace(/\D/g, ""))}
-                  className="w-10 h-full bg-transparent pl-2 text-sm outline-none placeholder:text-muted-foreground text-center"
-                />
-                <span className="text-muted-foreground select-none">-</span>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="1234-5678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/[^\d-]/g, ""))}
-                  className="flex-1 h-full bg-transparent pl-1 pr-3 text-sm outline-none placeholder:text-muted-foreground"
-                />
-              </div>
-
-              {/* DNI */}
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="DNI (sin puntos)"
-                value={dni}
-                onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
-                className="h-11 rounded-lg"
-              />
-
-              <Button
-                type="submit"
-                className="w-full h-11 rounded-lg font-semibold"
-                disabled={loading}
-              >
-                {loading ? "Guardando..." : "Enviar"}
-              </Button>
-            </form>
+            <AccountTypeSelector
+              onSelect={handleSelectAccountType}
+              loading={loading}
+            />
 
             {/* Skip link */}
             <div className="text-center">
               <button
                 type="button"
-                onClick={handleSkipProfile}
+                onClick={handleSkipAccountType}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Completar más tarde

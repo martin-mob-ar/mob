@@ -6,9 +6,10 @@ import { Property } from "@/components/PropertyCard";
 import MobilePropertyCard from "@/components/MobilePropertyCard";
 import MobileSearchHeader from "@/components/MobileSearchHeader";
 import MobileSearchBottomActions from "@/components/MobileSearchBottomActions";
-import { SlidersHorizontal, ChevronDown, ArrowUpDown, Check } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, ArrowUpDown, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useRef } from "react";
 import LocationFilter from "@/components/filters/LocationFilter";
 import PriceFilter from "@/components/filters/PriceFilter";
 import PropertyTypeFilter from "@/components/filters/PropertyTypeFilter";
@@ -20,6 +21,14 @@ import Footer from "@/components/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SearchFiltersProvider, useSearchFilters } from "@/contexts/SearchFiltersContext";
 import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
+import { useSearchParams } from "next/navigation";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,16 +93,100 @@ function PropertyGridSkeleton({ count = 8, mobile = false }: { count?: number; m
   );
 }
 
-/* ───────── Loading indicator for infinite scroll ───────── */
-function LoadingMoreIndicator() {
+/* ───────── Pagination component ───────── */
+function SearchPagination() {
+  const { page, totalPages } = useSearchFilters();
+  const searchParams = useSearchParams();
+
+  if (totalPages <= 1) return null;
+
+  const getPageUrl = (n: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (n <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(n));
+    }
+    const qs = params.toString();
+    return qs ? `/buscar?${qs}` : "/buscar";
+  };
+
+  // Build visible page numbers with ellipsis
+  const buildPages = (): (number | "...")[] => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | "...")[] = [];
+    if (page <= 4) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push("...");
+      pages.push(totalPages);
+    } else if (page >= totalPages - 3) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      pages.push("...");
+      pages.push(page - 1);
+      pages.push(page);
+      pages.push(page + 1);
+      pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  const pages = buildPages();
+
   return (
-    <div className="flex items-center justify-center gap-3 py-8">
-      <div className="flex gap-1.5">
-        <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-        <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-        <span className="h-2 w-2 rounded-full bg-primary animate-bounce" />
-      </div>
-      <span className="text-sm text-muted-foreground">Cargando más propiedades</span>
+    <div className="py-8">
+      <Pagination>
+        <PaginationContent>
+          {/* Anterior */}
+          <PaginationItem>
+            <PaginationLink
+              href={page > 1 ? getPageUrl(page - 1) : undefined}
+              size="default"
+              className={`gap-1 pl-2.5 ${page === 1 ? "pointer-events-none opacity-50" : ""}`}
+              aria-label="Ir a página anterior"
+              aria-disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Anterior</span>
+            </PaginationLink>
+          </PaginationItem>
+
+          {/* Page numbers */}
+          {pages.map((p, i) =>
+            p === "..." ? (
+              <PaginationItem key={`ellipsis-${i}`}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={p}>
+                <PaginationLink href={getPageUrl(p)} isActive={p === page}>
+                  {p}
+                </PaginationLink>
+              </PaginationItem>
+            )
+          )}
+
+          {/* Siguiente */}
+          <PaginationItem>
+            <PaginationLink
+              href={page < totalPages ? getPageUrl(page + 1) : undefined}
+              size="default"
+              className={`gap-1 pr-2.5 ${page === totalPages ? "pointer-events-none opacity-50" : ""}`}
+              aria-label="Ir a página siguiente"
+              aria-disabled={page === totalPages}
+            >
+              <span>Siguiente</span>
+              <ChevronRight className="h-4 w-4" />
+            </PaginationLink>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 }
@@ -117,11 +210,10 @@ const SearchResults = ({ initialProperties, initialTotal = 0 }: SearchResultsPro
 const SearchResultsInner = () => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showBottomActions, setShowBottomActions] = useState(true);
-  const { filters, setFilter, results, total, isLoading, isLoadingMore, hasMore, loadMore } = useSearchFilters();
+  const { filters, setFilter, results, total, isLoading } = useSearchFilters();
   const enrichedResults = usePropertyPhotos(results);
   const isMobile = useIsMobile();
   const footerRef = useRef<HTMLDivElement>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Hide bottom actions when footer is visible
   useEffect(() => {
@@ -141,23 +233,6 @@ const SearchResultsInner = () => {
     return () => observer.disconnect();
   }, [isMobile]);
 
-  // Infinite scroll: load more when sentinel becomes visible
-  useEffect(() => {
-    if (!loadMoreRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !isLoading && !isLoadingMore) {
-          loadMore();
-        }
-      },
-      { rootMargin: "200px" }
-    );
-
-    observer.observe(loadMoreRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, isLoading, isLoadingMore, loadMore]);
-
   const handleSortChange = (value: string) => {
     setFilter("sort", value);
   };
@@ -175,7 +250,7 @@ const SearchResultsInner = () => {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <Header />
+        <Header hideSearch />
 
         <MobileSearchHeader
           location={filters.location || "Buenos Aires"}
@@ -234,8 +309,6 @@ const SearchResultsInner = () => {
                   property={property}
                 />
               ))}
-              <div ref={loadMoreRef} className="py-1" />
-              {isLoadingMore && <LoadingMoreIndicator />}
             </>
           ) : (
             <div className="text-center py-12">
@@ -243,6 +316,12 @@ const SearchResultsInner = () => {
             </div>
           )}
         </div>
+
+        {!isLoading && enrichedResults.length > 0 && (
+          <div className="px-4">
+            <SearchPagination />
+          </div>
+        )}
 
         <div ref={footerRef}>
           <Footer />
@@ -264,7 +343,7 @@ const SearchResultsInner = () => {
   // Desktop Layout
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header hideSearch />
 
       {/* Filters Bar */}
       <div className="border-b border-border sticky top-16 bg-background z-40">
@@ -343,8 +422,7 @@ const SearchResultsInner = () => {
                 />
               ))}
             </div>
-            <div ref={loadMoreRef} className="py-1" />
-            {isLoadingMore && <LoadingMoreIndicator />}
+            <SearchPagination />
           </>
         ) : (
           <div className="text-center py-16">

@@ -27,6 +27,7 @@ export interface Property {
   parking?: number;
   age?: number | null;
   verified?: boolean;
+  propertyType?: string;
 }
 
 interface PropertyCardProps {
@@ -108,7 +109,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   };
 
   return (
-    <Link href={getPropertyUrl(property)} className="group block h-full">
+    <Link href={getPropertyUrl(property)} target="_blank" rel="noopener noreferrer" className="group block h-full">
       <div className="card-mob-hover overflow-hidden h-full flex flex-col">
         <div 
           className="relative aspect-[4/3] overflow-hidden"
@@ -152,7 +153,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                   alt={`${property.address} - ${index + 1}`}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover"
                   draggable={false}
                 />
               </div>
@@ -246,7 +247,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
         </div>
         
         <div className="p-3 flex-1 flex flex-col min-w-0">
-          <h3 className="font-display font-semibold text-foreground text-xs leading-tight line-clamp-2 min-h-[2lh]">
+          <h3 className="font-display font-semibold text-foreground text-xs leading-tight truncate">
             {property.address}
           </h3>
           <p className="text-muted-foreground text-xs mt-0.5 truncate">

@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       profile_id,
+      draftId,
       type_id,
       price,
       currency,
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       visit_hours,
       duration_months,
       ipc_adjustment,
+      selectedPlan,
     } = body;
 
     if (!profile_id) {
@@ -55,59 +57,119 @@ export async function POST(request: Request) {
     const resolvedUserId = await getOrCreateUserFromAuth(profile_id);
     console.log('[properties/create] Resolved user_id:', resolvedUserId);
 
-    console.log('[properties/create] Inserting property...');
-    const { data: property, error: propError } = await supabaseAdmin
-      .from('properties')
-      .insert({
-        tokko_id: null,
-        tokko: false,
-        user_id: resolvedUserId,
-        type_id: type_id ?? null,
-        address: address ?? null,
-        address_complement: address_complement ?? null,
-        geo_lat: geo_lat ?? null,
-        geo_long: geo_long ?? null,
-        location_id: location_id ?? null,
-        gm_location_type: gm_location_type ?? null,
-        room_amount: room_amount ?? null,
-        bathroom_amount: bathroom_amount ?? null,
-        toilet_amount: toilet_amount ?? null,
-        suite_amount: suite_amount ?? null,
-        parking_lot_amount: parking_lot_amount ?? null,
-        total_surface: total_surface ?? null,
-        roofed_surface: roofed_surface ?? null,
-        semiroofed_surface: semiroofed_surface ?? null,
-        unroofed_surface: unroofed_surface ?? null,
-        age: age ?? null,
-        floors_amount: floors_amount ?? null,
-        disposition: disposition ?? null,
-        floor: floor ?? null,
-        apartment_door: apartment_door ?? null,
-        available_date: available_date ?? null,
-        key_coordination: key_coordination ?? null,
-        visit_days: visit_days ?? null,
-        visit_hours: visit_hours ?? null,
-        description: description ?? null,
-        rich_description: rich_description ?? null,
-        publication_title: publication_title ?? null,
-        reference_code: reference_code ?? null,
-        status: 2,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
+    let propertyId: number;
 
-    if (propError) {
-      console.error('[properties/create] Property insert error:', propError);
-      return NextResponse.json(
-        { error: propError.message || 'Error al crear la propiedad' },
-        { status: 500 }
-      );
+    if (draftId) {
+      // Publishing a draft: update existing property to published status
+      console.log('[properties/create] Publishing draft property:', draftId);
+      const { data: updatedProp, error: updateError } = await supabaseAdmin
+        .from('properties')
+        .update({
+          status: 2,
+          draft_step: null,
+          type_id: type_id ?? null,
+          address: address ?? null,
+          address_complement: address_complement ?? null,
+          geo_lat: geo_lat ?? null,
+          geo_long: geo_long ?? null,
+          location_id: location_id ?? null,
+          gm_location_type: gm_location_type ?? null,
+          room_amount: room_amount ?? null,
+          bathroom_amount: bathroom_amount ?? null,
+          toilet_amount: toilet_amount ?? null,
+          suite_amount: suite_amount ?? null,
+          parking_lot_amount: parking_lot_amount ?? null,
+          total_surface: total_surface ?? null,
+          roofed_surface: roofed_surface ?? null,
+          semiroofed_surface: semiroofed_surface ?? null,
+          unroofed_surface: unroofed_surface ?? null,
+          age: age ?? null,
+          floors_amount: floors_amount ?? null,
+          disposition: disposition ?? null,
+          floor: floor ?? null,
+          apartment_door: apartment_door ?? null,
+          available_date: available_date ?? null,
+          key_coordination: key_coordination ?? null,
+          visit_days: visit_days ?? null,
+          visit_hours: visit_hours ?? null,
+          description: description ?? null,
+          rich_description: rich_description ?? null,
+          publication_title: publication_title ?? null,
+          reference_code: reference_code ?? null,
+          extra_attributes: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', draftId)
+        .eq('user_id', resolvedUserId)
+        .select('id')
+        .single();
+
+      if (updateError || !updatedProp) {
+        console.error('[properties/create] Draft publish error:', updateError);
+        return NextResponse.json(
+          { error: updateError?.message || 'Error al publicar la propiedad' },
+          { status: 500 }
+        );
+      }
+
+      propertyId = updatedProp.id;
+      console.log('[properties/create] Draft published as property:', propertyId);
+    } else {
+      // New property: insert fresh
+      console.log('[properties/create] Inserting property...');
+      const { data: property, error: propError } = await supabaseAdmin
+        .from('properties')
+        .insert({
+          tokko_id: null,
+          tokko: false,
+          user_id: resolvedUserId,
+          type_id: type_id ?? null,
+          address: address ?? null,
+          address_complement: address_complement ?? null,
+          geo_lat: geo_lat ?? null,
+          geo_long: geo_long ?? null,
+          location_id: location_id ?? null,
+          gm_location_type: gm_location_type ?? null,
+          room_amount: room_amount ?? null,
+          bathroom_amount: bathroom_amount ?? null,
+          toilet_amount: toilet_amount ?? null,
+          suite_amount: suite_amount ?? null,
+          parking_lot_amount: parking_lot_amount ?? null,
+          total_surface: total_surface ?? null,
+          roofed_surface: roofed_surface ?? null,
+          semiroofed_surface: semiroofed_surface ?? null,
+          unroofed_surface: unroofed_surface ?? null,
+          age: age ?? null,
+          floors_amount: floors_amount ?? null,
+          disposition: disposition ?? null,
+          floor: floor ?? null,
+          apartment_door: apartment_door ?? null,
+          available_date: available_date ?? null,
+          key_coordination: key_coordination ?? null,
+          visit_days: visit_days ?? null,
+          visit_hours: visit_hours ?? null,
+          description: description ?? null,
+          rich_description: rich_description ?? null,
+          publication_title: publication_title ?? null,
+          reference_code: reference_code ?? null,
+          status: 2,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (propError) {
+        console.error('[properties/create] Property insert error:', propError);
+        return NextResponse.json(
+          { error: propError.message || 'Error al crear la propiedad' },
+          { status: 500 }
+        );
+      }
+
+      propertyId = property.id;
+      console.log('[properties/create] Property created:', propertyId);
     }
-
-    const propertyId = property.id;
-    console.log('[properties/create] Property created:', propertyId);
 
     // Create operacion with pricing
     if (price != null || currency) {
@@ -121,10 +183,42 @@ export async function POST(request: Request) {
         expenses: expenses != null ? Math.round(Number(expenses)) : null,
         duration_months: duration_months ?? null,
         ipc_adjustment: ipc_adjustment ?? null,
+        min_start_date: available_date ?? null,
+        planMobElegido: selectedPlan ?? null,
       });
       if (opError) {
         console.error('[properties/create] Operacion insert error:', opError);
       }
+    }
+
+    // For draft publishes, photos and tags are already in DB — skip re-insert
+    if (draftId) {
+      // Move any remaining temp photos to propertyId folder
+      const { data: existingPhotos } = await supabaseAdmin
+        .from('tokko_property_photo')
+        .select('id, storage_path, image, original, thumb')
+        .eq('property_id', propertyId);
+
+      if (existingPhotos && existingPhotos.length > 0) {
+        for (const photo of existingPhotos) {
+          if (photo.storage_path?.startsWith('tmp/')) {
+            const filename = photo.storage_path.split('/').slice(2).join('/');
+            const toPath = `${propertyId}/${filename}`;
+            try {
+              const moved = await movePhoto(photo.storage_path, toPath);
+              await supabaseAdmin
+                .from('tokko_property_photo')
+                .update({ storage_path: moved.storagePath, image: moved.publicUrl, original: moved.publicUrl, thumb: moved.publicUrl })
+                .eq('id', photo.id);
+            } catch (moveErr) {
+              console.error('[properties/create] Failed to move temp photo:', photo.storage_path, moveErr);
+            }
+          }
+        }
+      }
+
+      console.log('[properties/create] Done (draft publish). Property ID:', propertyId);
+      return NextResponse.json({ id: propertyId });
     }
 
     // Insert photos — supports both structured (from PhotoUploader) and legacy URL format

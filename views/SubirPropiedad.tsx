@@ -4,15 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLoadScript } from "@react-google-maps/api";
 import {
-  ArrowLeft,
-  Home,
-  Clock,
-  Plus,
-  Minus,
-  Upload,
   Calendar,
   Loader2,
   Pencil,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,10 +30,11 @@ import { LocationResult } from "@/hooks/useLocationSearch";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { TAG_SECTIONS, ALL_TAGS } from "@/lib/constants/tags";
 import PhotoUploader, { UploadedPhoto } from "@/components/PhotoUploader";
+import PlanSelector, { PlanType } from "@/components/pricing/PlanSelector";
 
 const mobLogo = "/assets/mob-logo-new.png";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 9;
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places"];
 const DEFAULT_CENTER = { lat: -34.6037, lng: -58.3816 };
 
@@ -55,6 +52,8 @@ const weekDays = [
   { id: "miercoles", label: "Miércoles" },
   { id: "jueves", label: "Jueves" },
   { id: "viernes", label: "Viernes" },
+  { id: "sabado", label: "Sábado" },
+  { id: "domingo", label: "Domingo" },
 ];
 
 const hours = Array.from({ length: 24 }, (_, i) => {
@@ -62,18 +61,28 @@ const hours = Array.from({ length: 24 }, (_, i) => {
   return `${hour}:00`;
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DraftData = Record<string, any> | null;
 
-const SubirPropiedad = ({ userId }: { userId: string }) => {
+interface SubirPropiedadProps {
+  userId: string;
+  draftData?: DraftData;
+}
+
+const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
+  // Draft tracking
+  const [draftPropertyId, setDraftPropertyId] = useState<number | null>(null);
+
   // Step 2: Tipo de propiedad
   const [typeId, setTypeId] = useState<number | null>(null);
 
-  // Step 3: Ubicación
+  // Step 2: Ubicación
   const [locationId, setLocationId] = useState<number | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -84,23 +93,23 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
   const [piso, setPiso] = useState("");
   const [depto, setDepto] = useState("");
 
-  // Step 4: Map
+  // Step 3: Map
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
 
-  // Step 5: Detalles
-  const [ambientes, setAmbientes] = useState(2);
-  const [dormitorios, setDormitorios] = useState(1);
-  const [banos, setBanos] = useState(1);
+  // Step 4: Detalles
+  const [ambientes, setAmbientes] = useState(0);
+  const [dormitorios, setDormitorios] = useState(0);
+  const [banos, setBanos] = useState(0);
   const [toilettes, setToilettes] = useState(0);
   const [cocheras, setCocheras] = useState(0);
   const [antiguedad, setAntiguedad] = useState("");
   const [superficieCubierta, setSuperficieCubierta] = useState("");
   const [superficieTotal, setSuperficieTotal] = useState("");
-  const [disposicion, setDisposicion] = useState("Frente");
+  const [disposicion, setDisposicion] = useState("");
 
-  // Step 6: Precio y características
+  // Step 5: Precio y características
   const [precioMensual, setPrecioMensual] = useState("");
   const [moneda, setMoneda] = useState<"ARS" | "USD">("ARS");
   const [expensas, setExpensas] = useState("");
@@ -113,13 +122,12 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
   const [ipcEnabled, setIpcEnabled] = useState(true);
   const [ipcPeriodo, setIpcPeriodo] = useState<string>("trimestral");
 
-  // Step 7: Fotos y descripción
+  // Step 6: Fotos y descripción
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const [descripcion, setDescripcion] = useState("");
 
-  // Step 8: Logística
+  // Step 7: Logística
   const [fechaDisponible, setFechaDisponible] = useState("");
-  const [coordinacionLlaves, setCoordinacionLlaves] = useState("");
   const [diasVisita, setDiasVisita] = useState<string[]>(["lunes", "miercoles", "jueves"]);
   const [horariosVisita, setHorariosVisita] = useState<Record<string, { start: string; end: string }>>({
     lunes: { start: "09:00", end: "18:00" },
@@ -127,7 +135,12 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
     miercoles: { start: "09:00", end: "18:00" },
     jueves: { start: "09:00", end: "18:00" },
     viernes: { start: "09:00", end: "18:00" },
+    sabado: { start: "10:00", end: "14:00" },
+    domingo: { start: "10:00", end: "14:00" },
   });
+
+  // Step 8: Plan
+  const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
 
   // Google Maps
   const { isLoaded } = useLoadScript({
@@ -136,6 +149,66 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
   });
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
+
+  // Restore draft data on mount
+  useEffect(() => {
+    if (!draftData) return;
+    setDraftPropertyId(draftData.id);
+    setCurrentStep(draftData.draft_step ?? 2);
+    if (draftData.type_id) setTypeId(draftData.type_id);
+    if (draftData.address) {
+      setAddress(draftData.address);
+      setPlaceSelected(true);
+    }
+    if (draftData.geo_lat) setGeoLat(String(draftData.geo_lat));
+    if (draftData.geo_long) setGeoLong(String(draftData.geo_long));
+    if (draftData.location_id) setLocationId(draftData.location_id);
+    if (draftData.floor) setPiso(String(draftData.floor));
+    if (draftData.apartment_door) setDepto(String(draftData.apartment_door));
+    if (draftData.room_amount != null) setAmbientes(draftData.room_amount);
+    if (draftData.bathroom_amount != null) setBanos(draftData.bathroom_amount);
+    if (draftData.toilet_amount != null) setToilettes(draftData.toilet_amount);
+    if (draftData.suite_amount != null) setDormitorios(draftData.suite_amount);
+    if (draftData.parking_lot_amount != null) setCocheras(draftData.parking_lot_amount);
+    if (draftData.roofed_surface) setSuperficieCubierta(String(draftData.roofed_surface));
+    if (draftData.total_surface) setSuperficieTotal(String(draftData.total_surface));
+    if (draftData.age != null) setAntiguedad(String(draftData.age));
+    if (draftData.disposition) setDisposicion(draftData.disposition);
+    if (draftData.available_date) setFechaDisponible(draftData.available_date);
+    if (draftData.visit_days) setDiasVisita(draftData.visit_days);
+    if (draftData.description) setDescripcion(draftData.description);
+
+    // Restore extra_attributes.draft
+    const extra = draftData.extra_attributes?.draft ?? {};
+    if (extra.amoblado != null) setAmoblado(extra.amoblado);
+    if (extra.precioMensual) setPrecioMensual(extra.precioMensual);
+    if (extra.moneda) setMoneda(extra.moneda);
+    if (extra.expensas) setExpensas(extra.expensas);
+    if (extra.expensasIncluidas != null) setExpensasIncluidas(extra.expensasIncluidas);
+    if (extra.duracionContrato != null) setDuracionContrato(extra.duracionContrato);
+    if (extra.customDuracion) setCustomDuracion(extra.customDuracion);
+    if (extra.ipcEnabled != null) setIpcEnabled(extra.ipcEnabled);
+    if (extra.ipcPeriodo) setIpcPeriodo(extra.ipcPeriodo);
+    if (extra.selectedPlan) setSelectedPlan(extra.selectedPlan);
+
+    // Restore photos
+    if (draftData.tokko_property_photo?.length) {
+      setUploadedPhotos(
+        draftData.tokko_property_photo.map((p: { image: string; storage_path: string; order: number; is_front_cover: boolean }) => ({
+          publicUrl: p.image,
+          storagePath: p.storage_path,
+          order: p.order,
+          isCover: p.is_front_cover,
+        }))
+      );
+    }
+
+    // Restore tags
+    if (draftData.tokko_property_property_tag?.length) {
+      setSelectedTagIds(draftData.tokko_property_property_tag.map((t: { tag_id: number }) => t.tag_id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset validation errors when step changes
   useEffect(() => {
@@ -148,7 +221,6 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
   }, [moneda]);
 
   // Initialize/update map on Step 3 (map confirmation)
-  // Map div is always in DOM (hidden when not step 3) to prevent Google Maps orphaned elements
   useEffect(() => {
     if (currentStep !== 3 || !isLoaded || !mapRef.current || typeof google === "undefined") return;
 
@@ -175,18 +247,10 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
         const marker = new google.maps.Marker({
           map: mapInstanceRef.current,
           position: { lat, lng },
-          draggable: true,
+          draggable: false,
           title: address || "Ubicación",
         });
         markerRef.current = marker;
-
-        marker.addListener("dragend", () => {
-          const pos = marker.getPosition();
-          if (pos) {
-            setGeoLat(String(pos.lat()));
-            setGeoLong(String(pos.lng()));
-          }
-        });
       }
     }
   }, [currentStep, isLoaded, geoLat, geoLong, address]);
@@ -215,7 +279,6 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
     const geo = getGeometryFromPlace(place);
     if (!geo) return;
 
-    // Extract just street name + number from address_components
     const components = place.address_components || [];
     const route = components.find((c) => c.types.includes("route"))?.long_name || "";
     const streetNumber = components.find((c) => c.types.includes("street_number"))?.long_name || "";
@@ -227,6 +290,13 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
     setPlaceSelected(true);
     setShowErrors(false);
   }, []);
+
+  const getTomorrowDateString = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().split("T")[0];
+  };
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -240,20 +310,101 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
         return !!antiguedad && !!superficieCubierta && !!superficieTotal;
       case 5:
         return !!precioMensual && (expensasIncluidas || !!expensas);
-      case 6:
-        return uploadedPhotos.length > 0;
-      case 7:
-        return !!fechaDisponible && !!coordinacionLlaves && diasVisita.length > 0;
+      case 6: {
+        if (uploadedPhotos.length < 5) return false;
+        const urls = uploadedPhotos.map((p) => p.publicUrl);
+        return new Set(urls).size === urls.length;
+      }
+      case 7: {
+        if (!fechaDisponible || diasVisita.length === 0) return false;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        return new Date(fechaDisponible) >= tomorrow;
+      }
+      case 8:
+        return !!selectedPlan;
       default:
         return true;
     }
   };
 
-  const handleNext = () => {
+  // Build visit hours array for API
+  const buildVisitHoursArr = () =>
+    diasVisita.map((dia) => {
+      const h = horariosVisita[dia];
+      return `${dia} ${h?.start || "09:00"}-${h?.end || "18:00"}`;
+    });
+
+  const saveDraft = useCallback(async (nextStep: number) => {
+    try {
+      const res = await fetch("/api/properties/save-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile_id: userId,
+          draftId: draftPropertyId,
+          draft_step: nextStep,
+          type_id: typeId,
+          address: address || null,
+          geo_lat: geoLat || null,
+          geo_long: geoLong || null,
+          location_id: locationId,
+          floor: piso || null,
+          apartment_door: depto || null,
+          room_amount: ambientes,
+          bathroom_amount: banos,
+          toilet_amount: toilettes,
+          suite_amount: dormitorios,
+          parking_lot_amount: cocheras,
+          roofed_surface: superficieCubierta || null,
+          total_surface: superficieTotal || null,
+          age: antiguedad ? parseInt(antiguedad) : null,
+          disposition: disposicion || null,
+          available_date: fechaDisponible || null,
+          visit_days: diasVisita,
+          visit_hours: buildVisitHoursArr(),
+          description: descripcion.trim() || null,
+          tagIds: selectedTagIds,
+          photos: uploadedPhotos,
+          draftExtra: {
+            amoblado,
+            precioMensual,
+            moneda,
+            expensas,
+            expensasIncluidas,
+            duracionContrato,
+            customDuracion,
+            ipcEnabled,
+            ipcPeriodo,
+            selectedPlan,
+          },
+        }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        if (!draftPropertyId) setDraftPropertyId(id);
+      }
+    } catch {
+      // Non-blocking — draft save failure should not interrupt user flow
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    userId, draftPropertyId, typeId, address, geoLat, geoLong, locationId,
+    piso, depto, ambientes, banos, toilettes, dormitorios, cocheras,
+    superficieCubierta, superficieTotal, antiguedad, disposicion,
+    fechaDisponible, diasVisita, horariosVisita, descripcion, selectedTagIds,
+    uploadedPhotos, amoblado, precioMensual, moneda, expensas, expensasIncluidas,
+    duracionContrato, customDuracion, ipcEnabled, ipcPeriodo, selectedPlan,
+  ]);
+
+  const handleNext = async () => {
     if (currentStep < TOTAL_STEPS) {
       if (validateStep(currentStep)) {
         setShowErrors(false);
-        setCurrentStep(currentStep + 1);
+        const nextStep = currentStep + 1;
+        if (currentStep >= 2) await saveDraft(nextStep);
+        setCurrentStep(nextStep);
       } else {
         setShowErrors(true);
       }
@@ -266,8 +417,9 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
     }
   };
 
-  const handleCancel = () => {
-    router.back();
+  const handleSaveAndExit = async () => {
+    if (currentStep >= 2) await saveDraft(currentStep);
+    router.push("/gestion");
   };
 
   const toggleTagId = (tagId: number) => {
@@ -300,14 +452,11 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
       const locationName = selectedLocation?.name || "";
       const autoTitle = `${propertyTypeLabel} en ${locationName}`.trim();
 
-      // Build visit hours as strings: "lunes 09:00-18:00"
-      const visitHoursArr = diasVisita.map((dia) => {
-        const h = horariosVisita[dia];
-        return `${dia} ${h?.start || "09:00"}-${h?.end || "18:00"}`;
-      });
+      const visitHoursArr = buildVisitHoursArr();
 
       const body = {
         profile_id: userId,
+        draftId: draftPropertyId,
         type_id: typeId,
         address: address || null,
         geo_lat: geoLat || null,
@@ -320,9 +469,10 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
         parking_lot_amount: cocheras,
         roofed_surface: superficieCubierta ? String(superficieCubierta) : null,
         total_surface: superficieTotal ? String(superficieTotal) : null,
-        unroofed_surface: (superficieTotal && superficieCubierta)
-          ? String(Math.max(0, (Number(superficieTotal) || 0) - (Number(superficieCubierta) || 0)))
-          : null,
+        unroofed_surface:
+          superficieTotal && superficieCubierta
+            ? String(Math.max(0, Number(superficieTotal) - Number(superficieCubierta)))
+            : null,
         age: antiguedad ? parseInt(antiguedad) : null,
         disposition: disposicion || null,
         floor: piso || null,
@@ -337,9 +487,9 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
         publication_title: autoTitle,
         description: descripcion.trim() || null,
         available_date: fechaDisponible || null,
-        key_coordination: coordinacionLlaves || null,
         visit_days: diasVisita,
         visit_hours: visitHoursArr,
+        selectedPlan,
       };
 
       const res = await fetch("/api/properties/create", {
@@ -356,7 +506,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
         return;
       }
 
-      router.push("/gestion");
+      router.push(`/propiedad/${result.id}`);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error inesperado.");
     } finally {
@@ -397,28 +547,51 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
 
   const renderStep = () => {
     switch (currentStep) {
-      // Step 1: Welcome
+      // Step 1: Intro (Airbnb-style)
       case 1:
         return (
-          <div className="flex flex-col items-center text-center max-w-lg mx-auto">
-            <div className="w-full max-w-md aspect-[4/3] rounded-3xl bg-accent/50 flex items-center justify-center mb-8">
-              <Home className="h-16 w-16 text-primary/60" />
+          <div className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="font-display text-4xl md:text-5xl font-bold leading-tight mb-6">
+                Publicar tu propiedad es fácil
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                Te guiamos paso a paso para que tu inmueble luzca increíble y llegue a los mejores inquilinos verificados.
+              </p>
             </div>
-            <h1 className="font-display text-3xl font-bold mb-4">
-              Vamos a dar de alta tu propiedad
-            </h1>
-            <p className="text-muted-foreground text-lg mb-6">
-              Te guiaremos en un proceso simple para que tu inmueble luzca
-              increíble y atraiga a los mejores inquilinos verificados.
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              Toma unos 5 minutos
+            <div className="space-y-8">
+              {[
+                {
+                  num: "1",
+                  title: "Contanos acerca de tu propiedad",
+                  desc: "Compartí la ubicación, tipo y características principales.",
+                },
+                {
+                  num: "2",
+                  title: "Hacé que se destaque",
+                  desc: "Subí fotos y elegí el plan que mejor se adapte a vos.",
+                },
+                {
+                  num: "3",
+                  title: "Terminá todo y publicá tu anuncio",
+                  desc: "Revisá los detalles y publicá en minutos.",
+                },
+              ].map((item) => (
+                <div key={item.num} className="flex items-start gap-5">
+                  <div className="w-10 h-10 rounded-full border-2 border-foreground flex items-center justify-center shrink-0 font-display font-bold text-lg">
+                    {item.num}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base">{item.title}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         );
 
-      // Step 2: Tipo de propiedad + Ubicación
+      // Step 2: Barrio + Calle + Tipo
       case 2:
         return (
           <div className="max-w-xl mx-auto space-y-8">
@@ -450,34 +623,30 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
             <AnimateHeight show={!!typeId}>
               <div className="space-y-6 pt-8">
                 <h2 className="font-display text-2xl font-bold">
-                  ¿Dónde está ubicada?
+                  ¿En qué barrio está?
                 </h2>
 
-                {/* Barrio search */}
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                    Barrio / Localidad
-                  </label>
                   <LocationSearchInput
                     selectedLocation={selectedLocation}
                     onSelect={handleLocationSelect}
                     onClear={handleLocationClear}
+                    placeholder="Ejemplo: Palermo, Recoleta, Belgrano…"
                   />
                   {showErrors && !selectedLocation && (
                     <p className="text-sm text-red-500 mt-1">Seleccioná un barrio o localidad</p>
                   )}
                 </div>
 
-                {/* Google Address Autocomplete — only after barrio selected */}
                 <AnimateHeight show={!!selectedLocation}>
-                  <div className="pt-1">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                      Dirección
-                    </label>
+                  <div className="pt-1 space-y-2">
+                    <h2 className="font-display text-2xl font-bold">
+                      ¿En qué calle está?
+                    </h2>
                     <input
                       type="text"
                       defaultValue={address}
-                      placeholder="Escribe y seleccioná una dirección..."
+                      placeholder="Honduras 5734"
                       className={cn(
                         "flex h-14 w-full rounded-xl border bg-background px-4 py-1 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         !placeSelected && address ? "border-red-500" : "border-border"
@@ -488,8 +657,8 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                       }}
                       ref={(el) => {
                         if (!el || !isLoaded || typeof google === "undefined") return;
-                        if ((el as any)._autocompleteAttached) return;
-                        (el as any)._autocompleteAttached = true;
+                        if ((el as HTMLInputElement & { _autocompleteAttached?: boolean })._autocompleteAttached) return;
+                        (el as HTMLInputElement & { _autocompleteAttached?: boolean })._autocompleteAttached = true;
                         const autocomplete = new google.maps.places.Autocomplete(el, {
                           types: ["address"],
                           componentRestrictions: { country: "ar" },
@@ -500,17 +669,16 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                       }}
                     />
                     {!placeSelected && address && (
-                      <p className="text-sm text-red-500 mt-2">
+                      <p className="text-sm text-red-500">
                         Seleccioná una dirección de las sugerencias de Google Maps
                       </p>
                     )}
                     {showErrors && !address && (
-                      <p className="text-sm text-red-500 mt-2">Ingresá una dirección</p>
+                      <p className="text-sm text-red-500">Ingresá una dirección</p>
                     )}
                   </div>
                 </AnimateHeight>
 
-                {/* Piso / Depto — only for Departamento (2) or PH (13), after address selected */}
                 <AnimateHeight show={!!selectedLocation && placeSelected && (typeId === 2 || typeId === 13)}>
                   <div className="grid grid-cols-2 gap-4 pt-1">
                     <div>
@@ -522,9 +690,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                         value={piso}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (val === "" || /^\d+$/.test(val)) {
-                            setPiso(val);
-                          }
+                          if (val === "" || /^\d+$/.test(val)) setPiso(val);
                         }}
                         placeholder="Ej: 4"
                         className={cn(
@@ -541,9 +707,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                         value={depto}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (val === "" || /^[A-Za-z]+$/.test(val)) {
-                            setDepto(val.toUpperCase());
-                          }
+                          if (val === "" || /^[A-Za-z]+$/.test(val)) setDepto(val.toUpperCase());
                         }}
                         placeholder="Ej: B"
                         className={cn(
@@ -578,18 +742,6 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                  Antigüedad (años)
-                </label>
-                <Input
-                  value={antiguedad}
-                  onChange={(e) => setAntiguedad(e.target.value)}
-                  placeholder="0"
-                  type="number"
-                  className={cn("h-14 rounded-xl text-base", showErrors && !antiguedad && "border-red-500")}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
                   Sup. cubierta (m²)
                 </label>
                 <Input
@@ -612,19 +764,31 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                   className={cn("h-14 rounded-xl text-base", showErrors && !superficieTotal && "border-red-500")}
                 />
               </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                  Antigüedad (años)
+                </label>
+                <Input
+                  value={antiguedad}
+                  onChange={(e) => setAntiguedad(e.target.value)}
+                  placeholder="0"
+                  type="number"
+                  className={cn("h-14 rounded-xl text-base", showErrors && !antiguedad && "border-red-500")}
+                />
+              </div>
             </div>
 
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
                 Disposición
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {disposiciones.map((disp) => (
                   <button
                     key={disp}
                     onClick={() => setDisposicion(disp)}
                     className={cn(
-                      "py-4 px-6 rounded-2xl border-2 text-sm font-semibold transition-all",
+                      "py-4 px-4 rounded-2xl border-2 text-sm font-semibold transition-all",
                       disposicion === disp
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -665,9 +829,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                     onClick={() => setMoneda("ARS")}
                     className={cn(
                       "px-3 py-2 rounded-lg text-sm font-semibold transition-all",
-                      moneda === "ARS"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
+                      moneda === "ARS" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     ARS
@@ -676,9 +838,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                     onClick={() => setMoneda("USD")}
                     className={cn(
                       "px-3 py-2 rounded-lg text-sm font-semibold transition-all",
-                      moneda === "USD"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
+                      moneda === "USD" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     USD
@@ -807,29 +967,35 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               </AnimateHeight>
             </div>
 
-            {TAG_SECTIONS.map((section) => (
-              <div key={section.title}>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                  {section.title}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {section.tags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      onClick={() => toggleTagId(tag.id)}
-                      className={cn(
-                        "px-4 py-2.5 rounded-full border text-sm font-medium transition-all",
-                        selectedTagIds.includes(tag.id)
-                          ? "border-primary bg-accent text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/50"
-                      )}
-                    >
-                      {tag.label}
-                    </button>
-                  ))}
+            {TAG_SECTIONS.map((section) => {
+              const title =
+                section.title === "Amenities del edificio" && typeId === 3
+                  ? "Amenities"
+                  : section.title;
+              return (
+                <div key={section.title}>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                    {title}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {section.tags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTagId(tag.id)}
+                        className={cn(
+                          "px-4 py-2.5 rounded-full border text-sm font-medium transition-all",
+                          selectedTagIds.includes(tag.id)
+                            ? "border-primary bg-accent text-primary"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        )}
+                      >
+                        {tag.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
 
@@ -840,9 +1006,16 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
             <PhotoUploader
               photos={uploadedPhotos}
               onChange={setUploadedPhotos}
+              propertyId={draftPropertyId ?? undefined}
             />
-            {showErrors && uploadedPhotos.length === 0 && (
-              <p className="text-sm text-red-500">Agregá al menos una foto de tu propiedad</p>
+            {showErrors && uploadedPhotos.length < 5 && (
+              <p className="text-sm text-red-500">Necesitás al menos 5 fotos</p>
+            )}
+            {showErrors && uploadedPhotos.length >= 5 && (() => {
+              const urls = uploadedPhotos.map((p) => p.publicUrl);
+              return new Set(urls).size !== urls.length;
+            })() && (
+              <p className="text-sm text-red-500">Hay fotos duplicadas</p>
             )}
 
             <div>
@@ -873,11 +1046,12 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
 
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                Disponible a partir de
+                ¿Cuándo está disponible?
               </label>
               <div className="relative">
                 <Input
                   type="date"
+                  min={getTomorrowDateString()}
                   max="9999-12-31"
                   value={fechaDisponible}
                   onChange={(e) => setFechaDisponible(e.target.value)}
@@ -885,41 +1059,14 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                 />
                 <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
               </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                Coordinación de llaves
-              </label>
-              <div className="grid grid-cols-1 gap-2">
-                {[
-                  "Las manejo yo",
-                  "Entrega el portero",
-                  "Quiero que las maneje mob",
-                ].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setCoordinacionLlaves(coordinacionLlaves === option ? "" : option)}
-                    className={cn(
-                      "py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all text-left",
-                      coordinacionLlaves === option
-                        ? "border-primary bg-accent text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50"
-                    )}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-              {showErrors && !coordinacionLlaves && (
-                <p className="text-sm text-red-500">Seleccioná una opción</p>
+              {showErrors && fechaDisponible && new Date(fechaDisponible) < new Date(getTomorrowDateString()) && (
+                <p className="text-sm text-red-500 mt-1">La fecha debe ser a partir de mañana</p>
               )}
             </div>
 
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                Disponibilidad de visitas
+                ¿Cuándo se puede visitar?
               </label>
               <div className="space-y-2">
                 {weekDays.map((day) => (
@@ -978,14 +1125,31 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                 ))}
               </div>
               {showErrors && diasVisita.length === 0 && (
-                <p className="text-sm text-red-500">Seleccioná al menos un día de visita</p>
+                <p className="text-sm text-red-500 mt-1">Seleccioná al menos un día de visita</p>
               )}
             </div>
           </div>
         );
 
-      // Step 8: Resumen
+      // Step 8: Elegí tu plan
       case 8:
+        return (
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div>
+              <h1 className="font-display text-3xl font-bold">Elegí tu plan</h1>
+              <p className="text-muted-foreground mt-2">
+                Seleccioná el nivel de acompañamiento que mejor se adapte a tus necesidades.
+              </p>
+            </div>
+            {showErrors && !selectedPlan && (
+              <p className="text-sm text-red-500">Seleccioná un plan para continuar</p>
+            )}
+            <PlanSelector selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
+          </div>
+        );
+
+      // Step 9: Resumen
+      case 9:
         return (
           <div className="max-w-xl mx-auto space-y-6">
             <h1 className="font-display text-3xl font-bold">
@@ -995,7 +1159,6 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               Verificá que toda la información sea correcta antes de publicar.
             </p>
 
-            {/* Tipo de propiedad + Ubicación */}
             <SummarySection title="Tipo de propiedad y ubicación" onEdit={() => setCurrentStep(2)}>
               <p className="font-medium">{getPropertyTypeLabel()}</p>
               {selectedLocation && (
@@ -1010,8 +1173,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               {piso && <p className="text-sm text-muted-foreground">Piso {piso}{depto ? `, Depto ${depto}` : ""}</p>}
             </SummarySection>
 
-            {/* Detalles */}
-            <SummarySection title="Detalles del espacio" onEdit={() => setCurrentStep(4)}>
+            <SummarySection title="Detalles de la propiedad" onEdit={() => setCurrentStep(4)}>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <span>{ambientes} ambientes</span>
                 <span>{dormitorios} dormitorios</span>
@@ -1021,11 +1183,10 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                 {antiguedad && <span>{antiguedad} años</span>}
                 {superficieCubierta && <span>{superficieCubierta} m² cubierta</span>}
                 {superficieTotal && <span>{superficieTotal} m² total</span>}
-                <span>{disposicion}</span>
+                {disposicion && <span>{disposicion}</span>}
               </div>
             </SummarySection>
 
-            {/* Precio */}
             <SummarySection title="Precio y características" onEdit={() => setCurrentStep(5)}>
               <div className="space-y-1 text-sm">
                 {precioMensual && (
@@ -1040,9 +1201,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
                       ? `Expensas: $ ${Number(expensas).toLocaleString("es-AR")} ARS`
                       : "Sin expensas informadas"}
                 </p>
-                <p className="text-muted-foreground">
-                  Contrato: {duracionContrato} meses
-                </p>
+                <p className="text-muted-foreground">Contrato: {duracionContrato} meses</p>
                 {ipcEnabled && (
                   <p className="text-muted-foreground capitalize">
                     Actualización IPC: {ipcPeriodo}
@@ -1064,7 +1223,6 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               </div>
             </SummarySection>
 
-            {/* Fotos y descripción */}
             <SummarySection title="Fotos y descripción" onEdit={() => setCurrentStep(6)}>
               {uploadedPhotos.length > 0 ? (
                 <div className="space-y-2">
@@ -1092,19 +1250,25 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               )}
             </SummarySection>
 
-            {/* Logística */}
             <SummarySection title="Logística y disponibilidad" onEdit={() => setCurrentStep(7)}>
               <div className="space-y-1 text-sm">
                 {fechaDisponible && (
                   <p>Disponible desde: {new Date(fechaDisponible + "T12:00:00").toLocaleDateString("es-AR")}</p>
                 )}
-                {coordinacionLlaves && <p>Llaves: {coordinacionLlaves}</p>}
                 {diasVisita.length > 0 && (
                   <p className="text-muted-foreground">
                     Visitas: {diasVisita.map((d) => weekDays.find((w) => w.id === d)?.label).join(", ")}
                   </p>
                 )}
               </div>
+            </SummarySection>
+
+            <SummarySection title="Plan elegido" onEdit={() => setCurrentStep(8)}>
+              {selectedPlan ? (
+                <p className="font-medium capitalize">{selectedPlan === "acompanado" ? "Acompañado" : selectedPlan === "experiencia" ? "Experiencia mob" : "Básico"}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">No seleccionado</p>
+              )}
             </SummarySection>
 
             {submitError && (
@@ -1126,14 +1290,31 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
       <header className="shrink-0 border-b border-border">
         <div className="container flex items-center h-16">
           <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-4 p-2 -ml-2 hover:bg-secondary rounded-full transition-colors"
+            onClick={handleBack}
+            disabled={currentStep === 1}
+            className={cn(
+              "p-2 -ml-2 rounded-full transition-colors",
+              currentStep === 1
+                ? "text-muted-foreground/30 cursor-not-allowed"
+                : "text-muted-foreground hover:bg-secondary"
+            )}
+            aria-label="Atrás"
           >
-            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
           <button onClick={() => router.push("/")} className="ml-2">
             <img src={mobLogo} alt="MOB" className="h-6" />
           </button>
+          <div className="ml-auto">
+            <button
+              onClick={handleSaveAndExit}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Guardar y salir
+            </button>
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -1142,7 +1323,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
 
       {/* Content — scrollable area between sticky header and footer */}
       <main className="flex-1 overflow-y-auto">
-        <div className="container py-12">
+        <div className="container py-12 min-h-[700px]">
           {renderStep()}
           {/* Map — always in DOM to prevent Google Maps orphaned elements.
               Hidden when not on step 3; visible only on map confirmation step. */}
@@ -1151,9 +1332,6 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
               <h1 className="font-display text-3xl font-bold mb-2">
                 Confirmá la ubicación exacta
               </h1>
-              <p className="text-muted-foreground">
-                Podés arrastrar el marcador para ajustar la ubicación.
-              </p>
             </div>
             <div
               ref={mapRef}
@@ -1172,19 +1350,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
 
       {/* Footer — always pinned to bottom */}
       <footer className="shrink-0 border-t border-border">
-        <div className="container flex items-center justify-between h-20">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className={cn(
-              "text-sm font-semibold uppercase tracking-wider",
-              currentStep === 1
-                ? "text-muted-foreground/50 cursor-not-allowed"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Atrás
-          </button>
+        <div className="container flex items-center justify-end h-20">
           {currentStep === TOTAL_STEPS ? (
             <Button
               onClick={handleSubmit}
@@ -1202,7 +1368,7 @@ const SubirPropiedad = ({ userId }: { userId: string }) => {
             </Button>
           ) : (
             <Button onClick={handleNext} className="rounded-full px-10 h-12">
-              Siguiente
+              {currentStep === 1 ? "Comenzar" : "Siguiente"}
             </Button>
           )}
         </div>

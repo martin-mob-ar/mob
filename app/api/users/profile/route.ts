@@ -13,13 +13,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, telefono, telefono_area, telefono_country_code, dni } = body;
+    const { name, telefono, telefono_country_code, dni } = body;
 
     // Update public.users row
     const updateData: Record<string, string | null> = {};
     if (name !== undefined) updateData.name = name || null;
     if (telefono !== undefined) updateData.telefono = telefono || null;
-    if (telefono_area !== undefined) updateData.telefono_area = telefono_area || null;
     if (telefono_country_code !== undefined) updateData.telefono_country_code = telefono_country_code || null;
     if (dni !== undefined) updateData.dni = dni || null;
 
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
       .from('users')
       .update(updateData)
       .eq('auth_id', authUser.id)
-      .select('id, name, telefono, telefono_area, telefono_country_code, dni, email')
+      .select('id, name, telefono, telefono_country_code, dni, email')
       .single();
 
     if (updateError) {
@@ -63,7 +62,7 @@ export async function GET() {
 
     const { data: profile, error } = await supabaseAdmin
       .from('users')
-      .select('id, name, email, telefono, telefono_area, telefono_country_code, dni')
+      .select('id, name, email, telefono, telefono_country_code, dni')
       .eq('auth_id', authUser.id)
       .single();
 

@@ -47,18 +47,11 @@ export const TAG_SECTIONS: TagSection[] = [
     title: "Ambientes especiales",
     tags: [
       { id: 20, label: "Lavadero" },
-      { id: 87, label: "Cocina americana" },
+      { id: 15, label: "Dependencia" },
+      { id: 163, label: "Escritorio" },
       { id: 23, label: "Patio" },
       { id: 10, label: "Balcón" },
-    ],
-  },
-  {
-    title: "Accesibilidad",
-    tags: [
-      { id: 1890, label: "Piso táctil" },
-      { id: 1876, label: "Rampas de acceso" },
-      { id: 2341, label: "Estacionamiento accesible" },
-      { id: 19, label: "Jardín" },
+      { id: 25, label: "Terraza" },
     ],
   },
 ];

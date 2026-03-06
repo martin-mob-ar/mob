@@ -37,12 +37,12 @@ interface PropertyDetailProps {
   geoLat?: number | null;
   geoLong?: number | null;
   propertyId?: number;
-  ownerWhatsApp?: string | null;
+  contactPhone?: string | null;
   ownerId?: string | null;
   age?: number | null;
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, ownerWhatsApp, ownerId, age: propAge }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user, isAuthenticated, openAuthModal } = useAuth();
@@ -359,7 +359,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         {/* Title - Desktop */}
         <div className="mb-4">
           <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">
-            {property.address}
+            {property.propertyType ? `${property.propertyType} en ${property.address}` : property.address}
           </h1>
           <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
             <MapPin className="h-3.5 w-3.5" />
@@ -419,7 +419,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         {/* Property Info Block */}
         <div className="px-4 py-5 border-b border-border">
           <h1 className="font-display text-xl font-bold text-foreground mb-1">
-            {property.address}
+            {property.propertyType ? `${property.propertyType} en ${property.address}` : property.address}
           </h1>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
@@ -556,6 +556,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     propertyId={propPropertyId}
                     propertyAddress={property?.address || ""}
                     onClose={() => setLeadFormType(null)}
+                    inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
                   />
                 )}
               </AnimateHeight>
@@ -997,6 +998,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                         propertyId={propPropertyId}
                         propertyAddress={property?.address || ""}
                         onClose={() => setLeadFormType(null)}
+                        inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
                       />
                     )}
                   </AnimateHeight>

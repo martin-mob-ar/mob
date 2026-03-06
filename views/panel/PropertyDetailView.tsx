@@ -26,6 +26,11 @@ import {
   Car,
   Trash2,
   Loader2,
+  FlaskConical,
+  Phone,
+  Mail,
+  CalendarDays,
+  Star,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -35,6 +40,14 @@ import type {
   OperationHistoryEntry,
   OperacionStatus,
 } from "@/lib/transforms/property";
+import {
+  getMockPropertyDetail,
+  mockConsultasByProperty,
+  type MockConsulta,
+} from "@/lib/mock/gestion-mock-data";
+import type { LeadStage } from "@/contexts/MockUserContext";
+
+// ─── Config ──────────────────────────────────────────────────────────
 
 const statusConfig: Record<
   OperacionStatus,
@@ -62,6 +75,19 @@ const statusConfig: Record<
   },
 };
 
+const leadStageConfig: Record<
+  LeadStage,
+  { label: string; className: string }
+> = {
+  sin_verificar: { label: "Sin verificar", className: "bg-muted text-muted-foreground" },
+  verificado: { label: "Verificado", className: "bg-primary/10 text-primary" },
+  en_seguimiento: { label: "En seguimiento", className: "bg-amber-500/10 text-amber-600" },
+  calificado: { label: "Calificado", className: "bg-green-500/10 text-green-600" },
+  no_avanza: { label: "No avanza", className: "bg-destructive/10 text-destructive" },
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────
+
 function computeContractProgress(
   startDate: string | null,
   endDate: string | null
@@ -88,6 +114,93 @@ function formatFullDate(dateStr: string | null): string {
   });
 }
 
+// ─── Consulta Card ────────────────────────────────────────────────────
+
+function ConsultaCard({ consulta }: { consulta: MockConsulta }) {
+  const stageConf = leadStageConfig[consulta.leadStage];
+  return (
+    <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+            <span className="text-sm font-semibold text-muted-foreground">
+              {consulta.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm">{consulta.name}</p>
+              {consulta.highCloseProbability && (
+                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+              )}
+            </div>
+            {consulta.occupation && (
+              <p className="text-xs text-muted-foreground">{consulta.occupation}</p>
+            )}
+          </div>
+        </div>
+        <span
+          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${stageConf.className}`}
+        >
+          {stageConf.label}
+        </span>
+      </div>
+
+      {consulta.message && (
+        <p className="text-sm text-muted-foreground italic border-l-2 border-border pl-3">
+          "{consulta.message}"
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+        {consulta.paymentCapacity && (
+          <span className="flex items-center gap-1">
+            <DollarSign className="h-3 w-3" />
+            {consulta.paymentCapacity}
+          </span>
+        )}
+        {consulta.age && (
+          <span className="flex items-center gap-1">
+            <User className="h-3 w-3" />
+            {consulta.age} años
+          </span>
+        )}
+        <span className="flex items-center gap-1">
+          <CalendarDays className="h-3 w-3" />
+          {consulta.date}
+        </span>
+        {consulta.pendingResponse && consulta.daysWithoutResponse && (
+          <span className="flex items-center gap-1 text-amber-600">
+            <Clock className="h-3 w-3" />
+            {consulta.daysWithoutResponse}d sin respuesta
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        {consulta.phone && (
+          <a
+            href={`tel:${consulta.phone}`}
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors"
+          >
+            <Phone className="h-3 w-3" />
+            {consulta.phone}
+          </a>
+        )}
+        <a
+          href={`mailto:${consulta.email}`}
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors"
+        >
+          <Mail className="h-3 w-3" />
+          {consulta.email}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ─── Types ────────────────────────────────────────────────────────────
+
 interface PropertyDetailViewProps {
   property: any;
   operations: OperationHistoryEntry[];
@@ -98,25 +211,44 @@ interface PropertyDetailViewProps {
   tokkoId?: number | null;
 }
 
+// ─── Main Component ───────────────────────────────────────────────────
+
 const PropertyDetailView = ({
-  property,
-  operations,
-  currentTenant,
-  currentOperation,
+  property: realProperty,
+  operations: realOperations,
+  currentTenant: realCurrentTenant,
+  currentOperation: realCurrentOperation,
   mockMode,
-  tokko,
-  tokkoId,
+  tokko: realTokko,
+  tokkoId: realTokkoId,
 }: PropertyDetailViewProps) => {
   const router = useRouter();
+  const [useMock, setUseMock] = useState(mockMode ?? false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // ─── Mock data resolution ───────────────────────────────────────
+  const mockData = getMockPropertyDetail("5005"); // default demo property
+  const property = useMock ? (mockData?.property ?? realProperty) : realProperty;
+  const operations = useMock ? (mockData?.operations ?? realOperations) : realOperations;
+  const currentTenant = useMock ? (mockData?.currentTenant ?? null) : realCurrentTenant;
+  const currentOperation = useMock ? (mockData?.currentOperation ?? null) : realCurrentOperation;
+  const tokko = useMock ? (mockData?.tokko ?? false) : (realTokko ?? false);
+  const tokkoId = useMock ? (mockData?.tokkoId ?? null) : (realTokkoId ?? null);
+
+  // Mock consultas keyed by property ID string
+  const propertyIdStr = String(property.property_id);
+  const consultas: MockConsulta[] = useMock
+    ? (mockConsultasByProperty[propertyIdStr] ?? mockConsultasByProperty["5005"] ?? [])
+    : [];
+
+  // ─── Derived values ─────────────────────────────────────────────
   const handleDelete = async () => {
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const res = await fetch(`/api/properties/${property.property_id}/delete`, {
+      const res = await fetch(`/api/properties/${realProperty.property_id}/delete`, {
         method: "POST",
       });
       if (!res.ok) {
@@ -125,7 +257,7 @@ const PropertyDetailView = ({
         setIsDeleting(false);
         return;
       }
-      router.push("/gestion");
+      router.push("/perfil");
     } catch {
       setDeleteError("Error inesperado. Intentá de nuevo.");
       setIsDeleting(false);
@@ -152,13 +284,33 @@ const PropertyDetailView = ({
     : null;
 
   const slug = property.slug;
-  const propertyId = String(property.property_id);
+  const propertyId = String(realProperty.property_id);
+
+  // History = operations that are not the current one
+  const historicalOps = operations.filter((op) => !op.isCurrent);
+  const hasHistory = historicalOps.length > 0;
+
+  // ─── Data toggle ─────────────────────────────────────────────────
+  const dataToggle = (
+    <button
+      onClick={() => setUseMock((v) => !v)}
+      className="fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg border transition-colors cursor-pointer bg-card border-border text-muted-foreground hover:text-foreground"
+    >
+      <FlaskConical className="h-3.5 w-3.5" />
+      {useMock ? "Mock data" : "Real data"}
+      <span
+        className={`h-2 w-2 rounded-full ${useMock ? "bg-amber-500" : "bg-green-500"}`}
+      />
+    </button>
+  );
 
   return (
     <div className="space-y-6">
+      {dataToggle}
+
       {/* Back link */}
       <Link
-        href="/gestion"
+        href="/perfil"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -297,7 +449,7 @@ const PropertyDetailView = ({
         )}
 
         {/* Delete — pushed to the right, only shown for non-mock */}
-        {!mockMode && (
+        {!useMock && (
           <div className="ml-auto flex items-center gap-2">
             {deleteError && (
               <span className="text-sm text-destructive">{deleteError}</span>
@@ -343,20 +495,27 @@ const PropertyDetailView = ({
         )}
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="historial" className="space-y-6">
+      {/* Tabs: consultas / visitas / contrato */}
+      <Tabs defaultValue="consultas" className="space-y-6">
         <TabsList className="bg-card border border-border p-1 rounded-xl flex-wrap h-auto gap-1">
           <TabsTrigger
-            value="historial"
+            value="consultas"
             className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            <History className="h-4 w-4" />
-            Historial
-            {operations.length > 0 && (
+            <MessageCircle className="h-4 w-4" />
+            Consultas
+            {consultas.length > 0 && (
               <span className="ml-1 h-5 min-w-5 px-1 rounded-full bg-primary/20 text-primary data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground text-xs font-bold flex items-center justify-center">
-                {operations.length}
+                {consultas.length}
               </span>
             )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="visitas"
+            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Visitas
           </TabsTrigger>
           <TabsTrigger
             value="contrato"
@@ -365,29 +524,62 @@ const PropertyDetailView = ({
             <FileText className="h-4 w-4" />
             Contrato
           </TabsTrigger>
-          <TabsTrigger
-            value="info"
-            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            <Info className="h-4 w-4" />
-            Información
-          </TabsTrigger>
         </TabsList>
 
-        {/* Historial Tab */}
-        <TabsContent value="historial" className="space-y-6">
+        {/* ── Consultas Tab ──────────────────────────────────────────── */}
+        <TabsContent value="consultas" className="space-y-4">
           <div>
-            <h3 className="font-display font-semibold">
-              Historial de operaciones
-            </h3>
+            <h3 className="font-display font-semibold">Consultas recibidas</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Todas las operaciones registradas para esta propiedad
+              Personas interesadas en esta propiedad
             </p>
           </div>
-          <OperationTimeline operations={operations} />
+
+          {consultas.length > 0 ? (
+            <div className="space-y-3">
+              {consultas.map((consulta) => (
+                <ConsultaCard key={consulta.id} consulta={consulta} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
+                <MessageCircle className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-display font-semibold text-lg">
+                Sin consultas todavía
+              </h3>
+              <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                {useMock
+                  ? "Esta propiedad no tiene consultas en los datos de demo."
+                  : "Cuando alguien se interese en tu propiedad, las consultas aparecerán aquí."}
+              </p>
+            </div>
+          )}
         </TabsContent>
 
-        {/* Contract Tab */}
+        {/* ── Visitas Tab ────────────────────────────────────────────── */}
+        <TabsContent value="visitas" className="space-y-4">
+          <div>
+            <h3 className="font-display font-semibold">Visitas coordinadas</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gestión de disponibilidad y coordinación de visitas
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl border border-border p-12 text-center">
+            <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
+              <CalendarDays className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-display font-semibold text-lg">
+              Próximamente
+            </h3>
+            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+              Podrás coordinar y hacer seguimiento de todas las visitas desde acá.
+            </p>
+          </div>
+        </TabsContent>
+
+        {/* ── Contrato Tab ───────────────────────────────────────────── */}
         <TabsContent value="contrato" className="space-y-6">
           {currentOperation && currentOperation.start_date ? (
             <>
@@ -492,81 +684,20 @@ const PropertyDetailView = ({
               </p>
             </div>
           )}
-        </TabsContent>
 
-        {/* Info Tab */}
-        <TabsContent value="info" className="space-y-6">
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <h3 className="font-display font-semibold mb-6">
-              Información de la propiedad
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Nombre
-                  </p>
-                  <p className="font-medium mt-1">{title}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Dirección
-                  </p>
-                  <p className="font-medium mt-1">{address || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Ubicación
-                  </p>
-                  <p className="font-medium mt-1">{location || "—"}</p>
-                </div>
-                {property.property_type_name && (
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                      Tipo de propiedad
-                    </p>
-                    <p className="font-medium mt-1">
-                      {property.property_type_name}
-                    </p>
-                  </div>
-                )}
+          {/* Historical operations — only shown if there are past contracts */}
+          {hasHistory && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-display font-semibold">Historial de contratos</h3>
+                <span className="h-5 min-w-5 px-1 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
+                  {historicalOps.length}
+                </span>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Precio
-                  </p>
-                  <p className="font-medium mt-1">
-                    ${price.toLocaleString("es-AR")} {currency}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Estado
-                  </p>
-                  <p className="font-medium mt-1">{config.label}</p>
-                </div>
-                {property.room_amount && (
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                      Ambientes
-                    </p>
-                    <p className="font-medium mt-1">{property.room_amount}</p>
-                  </div>
-                )}
-                {property.total_surface && (
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                      Superficie total
-                    </p>
-                    <p className="font-medium mt-1">
-                      {Number(property.total_surface)}m²
-                    </p>
-                  </div>
-                )}
-              </div>
+              <OperationTimeline operations={historicalOps} />
             </div>
-          </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

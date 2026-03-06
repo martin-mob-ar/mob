@@ -22,6 +22,7 @@ export function transformPropertyRead(row: any): Property {
     parking: row.parking_lot_amount || undefined,
     age: row.age != null ? row.age : null,
     verified: true, // Placeholder - always true for now
+    propertyType: row.property_type_name || undefined,
   };
 }
 
@@ -115,6 +116,7 @@ export interface OwnerProperty {
   bathrooms: number | null;
   tenantName: string | null;
   operacionId: number | null;
+  plan: string | null;
 }
 
 export interface OperationHistoryEntry {
@@ -174,7 +176,8 @@ export function transformToTenantRental(
  */
 export function transformToOwnerProperty(
   row: any,
-  tenantName?: string | null
+  tenantName?: string | null,
+  plan?: string | null
 ): OwnerProperty {
   const price = row.price ? Number(row.price) : null;
   const currency = row.currency || "ARS";
@@ -198,6 +201,7 @@ export function transformToOwnerProperty(
     expenses: row.expenses ? Number(row.expenses) : null,
     tenantName: tenantName || null,
     operacionId: row.operacion_id || null,
+    plan: plan || null,
   };
 }
 

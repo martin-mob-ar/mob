@@ -85,7 +85,7 @@ const MobilePropertyCard = ({
     scrollToImage(newIndex);
   };
 
-  return <Link href={getPropertyUrl(property)} className="block">
+  return <Link href={getPropertyUrl(property)} target="_blank" rel="noopener noreferrer" className="block">
       <div className="bg-card rounded-xl overflow-hidden shadow-sm border border-border">
         {/* Image Section - Horizontal scroll gallery */}
         <div className="relative aspect-[4/3] overflow-hidden group">
@@ -183,7 +183,7 @@ const MobilePropertyCard = ({
         {/* Content Section */}
         <div className="px-4 pt-3 pb-4">
           {/* Address */}
-          <h3 className="font-semibold text-foreground text-base leading-snug line-clamp-2">
+          <h3 className="font-semibold text-foreground text-base leading-snug truncate">
             {property.address}
           </h3>
           <p className="text-foreground/60 text-sm mt-0.5 truncate">

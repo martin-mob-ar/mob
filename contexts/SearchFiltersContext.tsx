@@ -24,8 +24,12 @@ export interface SearchFilters {
   propertyTypeNames: string[]; // ["Departamento", "Casa", ...]
   tagIds: number[];    // selected tag IDs from tokko_property_tag
   maxAge: string;      // max property age (0 = a estrenar)
+  availabilityFilter: "" | "immediate" | "next-month" | "custom";
+  availabilityDate: string;
   sort: string;
 }
+
+const ITEMS_PER_PAGE = 20;
 
 interface SearchFiltersContextValue {
   filters: SearchFilters;
@@ -35,12 +39,10 @@ interface SearchFiltersContextValue {
   results: Property[];
   total: number;
   isLoading: boolean;
-  isLoadingMore: boolean;
-  hasMore: boolean;
   page: number;
-  setPage: (page: number) => void;
+  totalPages: number;
+  goToPage: (n: number) => void;
   search: () => void;
-  loadMore: () => void;
 }
 
 const defaultFilters: SearchFilters = {
@@ -62,6 +64,8 @@ const defaultFilters: SearchFilters = {
   propertyTypeNames: [],
   tagIds: [],
   maxAge: "",
+  availabilityFilter: "",
+  availabilityDate: "",
   sort: "recent",
 };
 
@@ -117,6 +121,10 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   if (propertyTypeNames) updates.propertyTypeNames = propertyTypeNames.split(",").filter(Boolean);
   if (tagIds) updates.tagIds = tagIds.split(",").map(Number).filter(Boolean);
   if (maxAge) updates.maxAge = maxAge;
+  const availabilityFilter = searchParams.get("availabilityFilter");
+  const availabilityDate = searchParams.get("availabilityDate");
+  if (availabilityFilter) updates.availabilityFilter = availabilityFilter as "" | "immediate" | "next-month" | "custom";
+  if (availabilityDate) updates.availabilityDate = availabilityDate;
   if (sort) updates.sort = sort;
 
   return updates;
@@ -132,6 +140,7 @@ export function SearchFiltersProvider({
   const pathname = usePathname();
   const urlUpdates = getInitialFiltersFromParams(searchParams);
   const hasUrlFilters = Object.keys(urlUpdates).length > 0;
+  const pageFromUrl = parseInt(searchParams.get("page") || "1") || 1;
   const isInitialMount = useRef(true);
 
   const [filters, setFiltersState] = useState<SearchFilters>({
@@ -141,16 +150,16 @@ export function SearchFiltersProvider({
   const [results, setResults] = useState<Property[]>(initialResults || []);
   const [total, setTotal] = useState(initialTotal || 0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const hasMore = results.length < total;
+  const [page, setPage] = useState(pageFromUrl);
+  const [totalPages, setTotalPages] = useState(
+    initialTotal ? Math.ceil(initialTotal / ITEMS_PER_PAGE) : 0
+  );
 
   const setFilter = useCallback((key: keyof SearchFilters, value: string) => {
     setFiltersState((prev) => {
       if (prev[key] === value) return prev;
       return { ...prev, [key]: value };
     });
-    setPage(1);
   }, []);
 
   const setFilters = useCallback((updates: Partial<SearchFilters>) => {
@@ -165,7 +174,6 @@ export function SearchFiltersProvider({
       if (!hasChange) return prev;
       return { ...prev, ...updates };
     });
-    setPage(1);
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -179,10 +187,9 @@ export function SearchFiltersProvider({
       if (!hasChange) return prev;
       return defaultFilters;
     });
-    setPage(1);
   }, []);
 
-  // Build URL params from filter state (shared by search + URL sync)
+  // Build URL params from filter state
   const buildFilterParams = useCallback((f: SearchFilters) => {
     const params = new URLSearchParams();
     if (f.location) params.set("location", f.location);
@@ -203,58 +210,52 @@ export function SearchFiltersProvider({
     if (f.propertyTypeNames.length > 0) params.set("propertyTypeNames", f.propertyTypeNames.join(","));
     if (f.tagIds.length > 0) params.set("tagIds", f.tagIds.join(","));
     if (f.maxAge) params.set("maxAge", f.maxAge);
+    if (f.availabilityFilter) params.set("availabilityFilter", f.availabilityFilter);
+    if (f.availabilityDate) params.set("availabilityDate", f.availabilityDate);
     if (f.sort && f.sort !== "recent") params.set("sort", f.sort);
     return params;
   }, []);
 
-  const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
-    if (append) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
+  const fetchPage = useCallback(async (pageNum: number) => {
+    setIsLoading(true);
     try {
       const params = buildFilterParams(filters);
       params.set("sort", filters.sort);
       params.set("page", String(pageNum));
-      params.set("limit", "20");
+      params.set("limit", String(ITEMS_PER_PAGE));
 
       const res = await fetch(`/api/properties/search?${params.toString()}`);
       const json = await res.json();
 
       if (res.ok) {
         const newProperties = transformPropertyReadList(json.data);
-        if (append) {
-          setResults((prev) => [...prev, ...newProperties]);
-        } else {
-          setResults(newProperties);
-        }
+        setResults(newProperties);
         setTotal(json.total);
+        setTotalPages(Math.ceil(json.total / ITEMS_PER_PAGE));
       }
     } catch (e) {
       console.error("Search failed:", e);
     } finally {
-      if (append) {
-        setIsLoadingMore(false);
-      } else {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   }, [filters, buildFilterParams]);
 
+  const goToPage = useCallback((n: number) => {
+    setPage(n);
+    const params = buildFilterParams(filters);
+    if (n > 1) params.set("page", String(n));
+    const qs = params.toString();
+    const newUrl = qs ? `/buscar?${qs}` : "/buscar";
+    router.push(newUrl, { scroll: true });
+    fetchPage(n);
+  }, [filters, buildFilterParams, router, fetchPage]);
+
   const search = useCallback(() => {
     setPage(1);
-    fetchPage(1, false);
+    fetchPage(1);
   }, [fetchPage]);
 
-  const loadMore = useCallback(() => {
-    if (isLoadingMore || !hasMore) return;
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchPage(nextPage, true);
-  }, [isLoadingMore, hasMore, page, fetchPage]);
-
-  // Sync filters to URL (skip initial mount to avoid loop)
+  // Sync filters to URL (skip initial mount to avoid loop); filter changes always reset page to 1
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -263,23 +264,35 @@ export function SearchFiltersProvider({
     if (pathname !== "/buscar") return;
 
     const params = buildFilterParams(filters);
+    // page param omitted → page 1
     const qs = params.toString();
     const newUrl = qs ? `/buscar?${qs}` : "/buscar";
     router.replace(newUrl, { scroll: false });
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-search when filters change (page 1 reset)
-  // If URL has filters, always search on mount (don't skip with initialResults)
+  // Auto-search when filters change
+  // On first mount: if URL has filters or a specific page, use those; otherwise use server initial results
   const [hasSearched, setHasSearched] = useState(false);
   useEffect(() => {
-    if (!hasSearched && !hasUrlFilters && initialResults && initialResults.length > 0) {
+    if (!hasSearched && !hasUrlFilters && pageFromUrl === 1 && initialResults && initialResults.length > 0) {
       setHasSearched(true);
       return;
     }
     setHasSearched(true);
-    setPage(1);
-    fetchPage(1, false);
+    const targetPage = !hasSearched ? pageFromUrl : 1;
+    setPage(targetPage);
+    fetchPage(targetPage);
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Respond to URL page changes (browser back/forward)
+  const urlPage = parseInt(searchParams.get("page") || "1") || 1;
+  useEffect(() => {
+    if (!hasSearched) return;
+    if (urlPage !== page) {
+      setPage(urlPage);
+      fetchPage(urlPage);
+    }
+  }, [urlPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <SearchFiltersContext.Provider
@@ -291,12 +304,10 @@ export function SearchFiltersProvider({
         results,
         total,
         isLoading,
-        isLoadingMore,
-        hasMore,
         page,
-        setPage,
+        totalPages,
+        goToPage,
         search,
-        loadMore,
       }}
     >
       {children}

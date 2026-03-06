@@ -5,23 +5,35 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Upload, Users, Cog, TrendingUp, ShieldCheck, Eye, Target, Zap, Scale, Building, FileCheck, Calendar, CreditCard, Headphones, BarChart3, ArrowRight, CheckCircle, ChevronRight, MessageSquare, Monitor, BadgeCheck } from "lucide-react";
+import { Users, Cog, TrendingUp, ShieldCheck, Eye, Target, Zap, Scale, Building, FileCheck, Calendar, CreditCard, BarChart3, ArrowRight, CheckCircle, ChevronRight, Monitor, BadgeCheck } from "lucide-react";
 const MobBrand = () => <span className="font-ubuntu font-bold text-primary">mob</span>;
+const HoggaxBrand = () => (
+  <a
+    href="https://hoggax.com.ar"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center gap-1.5 font-bold text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
+  >
+    Hoggax
+  </a>
+);
 const LandingInmobiliarias = () => {
   const router = useRouter();
-  const whatsappUrl = 'https://wa.me/5492236000055';
-  const heroFeatures = ["Gestión integral desde mob.", "Recibí solo pedidos de visitas verificados y pre-calificados por Hoggax.", "Ahorrá tiempo y dinero."];
+  const heroFeatures = ["Recibí pedidos de visita de usuarios verificados", "y con garantia de alquiler aprobada (por Hoggax)"];
   const mobDoesCards = [{
     icon: Monitor,
     title: "Promociona tus alquileres",
-    description: "Promocionamos todos tus alquileres sin costo para tu inmobiliaria. Somos la primer y única plataforma enfocada 100% en alquileres tradicionales."
+    badge: "Publicá gratis",
+    description: "Promocionamos todos tus alquileres. Somos la primer y única plataforma enfocada 100% en alquileres."
   }, {
     icon: ShieldCheck,
     title: "Consigue Interesados verificados",
-    description: "Solo recibiras interesados que hayan sido verificados y pre-calificados por Hoggax. Ahorra tiempo filtrando interesados. Los que recibas tienen todo lo necesario para avanzar."
+    badge: null,
+    description: "Solo recibiras interesados que hayan sido verificados y con garantía aprobada por Hoggax. Ahorra tiempo filtrando interesados. Los que recibas tienen todo lo necesario para avanzar."
   }, {
     icon: Building,
-    title: "Gestiona contratos 100% online",
+    title: "Contratos 100% online",
+    badge: null,
     description: "Verificamos toda la información del inquilino, armamos el contrato, te lo mostramos para que puedas concretarlo y avanzar con la firma electrónica."
   }];
   const hoggaxBenefits = ["Documentos de identidad", "Antecedentes penales", "Situación financiera", "Capacidad de pago"];
@@ -31,51 +43,39 @@ const LandingInmobiliarias = () => {
     value: "70%",
     label: "Menos carga operativa"
   }, {
-    value: "2x",
+    value: "8x",
     label: "Más cierres efectivos"
   }, {
-    value: "+4.000",
+    value: "+2.000",
     label: "Inquilinos verificados por mes"
   }, {
-    value: "+1.200",
-    label: "Contratos digitales firmados"
-  }, {
-    value: "+8.000",
-    label: "Visitas gestionadas por mob"
+    value: "+10.000",
+    label: "Contratos firmados"
   }];
   const benefits = [{
-    icon: Target,
-    title: "Menos tareas, más foco en cerrar",
-    description: "Liberá a tu equipo del trabajo operativo y concentrá la energía en lo que genera ingresos."
-  }, {
     icon: Cog,
     title: "Proceso operativo a cargo de mob",
-    description: "Publicaciones, visitas, seguimiento y coordinación: mob lo ejecuta por vos."
+    description: "Publicaciones, seguimiento y coordinación: mob lo ejecuta por vos."
   }, {
     icon: ShieldCheck,
-    title: "Inquilinos filtrados antes de llegar",
+    title: "Inquilinos aprobados antes de visitar",
     description: "Solo recibís postulantes verificados con Hoggax. Sin pérdida de tiempo."
   }, {
     icon: Scale,
-    title: "Menos fricción legal y administrativa",
-    description: "Contratos digitales, gestión de pagos y documentación centralizada."
+    title: "Gestión legal y administrativa simple",
+    description: "Contratos digitales y documentación centralizada."
   }, {
     icon: Eye,
     title: "Supervisión online, sin perder control",
     description: "Panel en tiempo real con el estado de cada propiedad y operación."
   }, {
     icon: Zap,
-    title: "Infraestructura lista para escalar",
+    title: "Más alquileres, menos operación",
     description: "Crecé tu cartera sin sumar complejidad operativa."
-  }];
-  const testimonials = [{
-    quote: "Antes gestionábamos todo. Hoy supervisamos y cerramos. mob hace el resto.",
-    name: "María García",
-    company: "Inmobiliaria García & Asociados"
   }, {
-    quote: "Con mob dejamos de correr detrás de cada visita. Ahora el proceso fluye solo.",
-    name: "Carlos Rodríguez",
-    company: "CR Propiedades"
+    icon: Building,
+    title: "Integración con Tokko",
+    description: "Conectate con Tokko Broker en minutos y comenzá a recibir leads calificados automáticamente."
   }];
   const faqs = [{
     question: "¿mob reemplaza a la inmobiliaria?",
@@ -89,9 +89,6 @@ const LandingInmobiliarias = () => {
   }, {
     question: "¿Cómo se integran las propiedades?",
     answer: "Podés cargar propiedades manualmente desde el panel o integrar automáticamente con sistemas como Tokko."
-  }, {
-    question: "¿Qué pasa después del alquiler?",
-    answer: "mob sigue operando: gestión de pagos, tickets de mantenimiento, renovaciones y todo lo necesario hasta que termine el contrato."
   }];
   return <div className="min-h-screen bg-background">
       <Header hideSearch />
@@ -119,9 +116,6 @@ const LandingInmobiliarias = () => {
               <div className="flex flex-wrap gap-4">
                 <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={() => router.push('/onboarding/inmobiliaria')}>
                   Sumá tu inmobiliaria
-                </Button>
-                <Button size="lg" variant="outline" className="rounded-full px-8 py-6 text-base" onClick={() => window.open(whatsappUrl, '_blank')}>
-                  Hablar con un asesor
                 </Button>
               </div>
             </div>
@@ -158,14 +152,21 @@ const LandingInmobiliarias = () => {
                 <div className="icon-container mb-6">
                   <card.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-display text-xl font-bold mb-4">{card.title}</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="font-display text-xl font-bold">{card.title}</h3>
+                  {card.badge && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                      {card.badge}
+                    </span>
+                  )}
+                </div>
                 <p className="text-muted-foreground leading-relaxed">{card.description}</p>
               </div>)}
           </div>
 
           <div className="text-center mt-10">
             <p className="text-lg text-muted-foreground">
-              Tu inmobiliaria no corre detrás del proceso: <span className="font-semibold text-foreground">lo supervisa.</span>
+              <span className="font-semibold text-foreground">Ahorrá tiempo en la comercialización de tus alquileres</span>
             </p>
           </div>
         </div>
@@ -183,7 +184,16 @@ const LandingInmobiliarias = () => {
             </div>
 
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
-              Inquilinos verificados, ahorra tiempo y más seguridad.
+              Con el respaldo de{" "}
+              <a
+                href="https://hoggax.com.ar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline underline-offset-4 transition-colors"
+              >
+                Hoggax
+              </a>
+              , tu alquiler está seguro
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -284,7 +294,7 @@ const LandingInmobiliarias = () => {
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-12">
-              Ejecutar no es lo mismo que decidir
+              Acelerá la operación. Conservá el control. Ganá foco.
             </h2>
 
             {/* SIN MOB */}
@@ -307,7 +317,6 @@ const LandingInmobiliarias = () => {
                   <span className="bg-muted px-4 py-2 rounded-full text-sm">Administra</span>
                 </div>
               </div>
-              <p className="text-muted-foreground mt-4">Todo pasa por el mismo equipo.</p>
             </div>
 
             {/* CON MOB */}
@@ -340,13 +349,6 @@ const LandingInmobiliarias = () => {
                 </div>
               </div>
             </div>
-
-            {/* Bottom CTA */}
-            <div className="bg-foreground rounded-2xl p-6 text-center">
-              <p className="text-background text-lg font-medium">
-                Delegá la operación. Conservá el control. <span className="text-primary font-semibold">Ganá foco.</span>
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -360,7 +362,7 @@ const LandingInmobiliarias = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {metrics.map(metric => <div key={metric.label} className="text-center p-6 rounded-2xl bg-card border border-border/50 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                 <div className="font-display text-3xl md:text-4xl font-bold text-primary mb-2">
                   {metric.value}
@@ -389,109 +391,17 @@ const LandingInmobiliarias = () => {
                 <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
               </div>)}
           </div>
-        </div>
-      </section>
 
-      {/* Pricing Section */}
-      <section className="py-20 md:py-28 bg-secondary/30 relative overflow-hidden">
-        {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-        
-        <div className="container relative z-10">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-foreground">
-              Un solo modelo. Todo el alquiler resuelto.
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              <MobBrand /> se encarga de la operación completa. Tu inmobiliaria supervisa y decide.
-            </p>
-          </div>
-
-          {/* Single Pricing Card */}
-          <div className="max-w-lg mx-auto">
-            <div className="relative group">
-              {/* Card glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative bg-card border border-border rounded-2xl p-8 md:p-10 shadow-lg transition-all duration-300 group-hover:border-primary/30 group-hover:shadow-xl">
-                {/* Header */}
-                <div className="mb-8 pb-6 border-b border-border">
-                  <h3 className="font-display text-2xl font-bold text-foreground mb-2">
-                    <MobBrand /> para Inmobiliarias
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Infraestructura operativa para digitalizar y escalar alquileres.
-                  </p>
-                </div>
-
-                {/* Features list */}
-                <div className="space-y-4 mb-8">
-                  {["Publicación y gestión de propiedades", "Coordinación de visitas", "Inquilinos verificados con Hoggax", "Contratos digitales", "Gestión post-alquiler", "Panel de control online", "Integración con Tokko Broker"].map(feature => <div key={feature} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                      <span className="text-foreground">{feature}</span>
-                    </div>)}
-                </div>
-
-                {/* Pricing info */}
-                <div className="mb-8 p-4 bg-primary/5 rounded-xl border border-primary/20">
-                  <p className="text-lg font-semibold text-foreground mb-1">
-                    Modelo por operación cerrada
-                  </p>
-                  <p className="text-muted-foreground text-sm mb-3">
-                    Sin costos fijos. Pagás cuando cerrás.
-                  </p>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Costo de plataforma: 20% del primer mes de contrato
-                  </p>
-                </div>
-
-                {/* CTAs */}
-                <div className="space-y-3">
-                  <Button size="lg" className="w-full rounded-full py-6 text-base font-semibold" onClick={() => router.push('/onboarding/inmobiliaria')}>
-                    Sumar mi inmobiliaria a <span className="font-bold ml-1">mob</span>
-                  </Button>
-                  <div className="text-center">
-                    <span className="text-muted-foreground">o </span>
-                    <button onClick={() => window.open(whatsappUrl, '_blank')} className="text-primary hover:underline font-medium">
-                      Hablar con un asesor
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* Benefits CTA */}
+          <div className="mt-12 text-center">
+            <div className="max-w-xl mx-auto bg-primary/5 rounded-2xl border border-primary/10 p-8">
+              <h3 className="font-display text-2xl font-bold mb-2">Empezá a publicar hoy gratis</h3>
+              <p className="text-muted-foreground mb-6">En 5 min conectate y comenzá a recibir leads calificados</p>
+              <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={() => router.push('/onboarding/inmobiliaria')}>
+                Sumá tu inmobiliaria gratis
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 md:py-20 bg-secondary/30">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold">
-              Qué dicen las inmobiliarias
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {testimonials.map(testimonial => <div key={testimonial.name} className="bg-card rounded-2xl p-8 shadow-sm border border-border/50">
-                <MessageSquare className="h-8 w-8 text-primary/30 mb-4" />
-                <blockquote className="text-lg mb-6 text-foreground leading-relaxed">
-                  "{testimonial.quote}"
-                </blockquote>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="font-bold text-primary">
-                      {testimonial.name.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.company}</p>
-                  </div>
-                </div>
-              </div>)}
           </div>
         </div>
       </section>
@@ -529,17 +439,17 @@ const LandingInmobiliarias = () => {
       <section className="py-16 md:py-20 bg-primary">
         <div className="container text-center">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-            Delegá la operación.
+            Acelerá la operación.
             <br />
             Conservá el control.
           </h2>
-          
+
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
-            <span className="font-bold">mob</span> ejecuta el proceso. Tu inmobiliaria decide y cierra.
+            <span className="font-bold">mob</span> acelera el proceso, para que cierres más rápido
           </p>
 
-          <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-base font-semibold" onClick={() => window.open(whatsappUrl, '_blank')}>
-            Sumar mi inmobiliaria a <span className="font-bold ml-1">mob</span>
+          <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-base font-semibold" onClick={() => router.push('/onboarding/inmobiliaria')}>
+            Sumar mi inmobiliaria gratis
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>

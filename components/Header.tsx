@@ -451,85 +451,6 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                   </PopoverContent>
                 </Popover>
                 
-                <Popover open={priceOpen} onOpenChange={setPriceOpen}>
-                  <PopoverTrigger asChild>
-                    <button className="flex items-center gap-1 px-3 h-10 text-sm text-muted-foreground hover:text-foreground border-r border-border">
-                      <span className={minPrice || maxPrice ? "text-foreground" : ""}>
-                        {getPriceLabel()}
-                      </span>
-                      <ChevronDown className={`h-3 w-3 transition-transform ${priceOpen ? "rotate-180" : ""}`} />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[340px] p-4 bg-background z-50" align="center">
-                    <div className="space-y-4">
-                      {/* Valor total / Alquiler toggle */}
-                      <div className="flex rounded-full border border-border p-1">
-                        <button onClick={() => setPriceType("total")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceType === "total" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                          Precio total
-                        </button>
-                        <button onClick={() => setPriceType("alquiler")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceType === "alquiler" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                          Alquiler
-                        </button>
-                      </div>
-
-                      {/* Pesos / Dólares toggle */}
-                      <div className="flex rounded-full border border-border p-1">
-                        <button onClick={() => handlePriceCurrencySwitch("ARS")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceCurrency === "ARS" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                          Pesos
-                        </button>
-                        <button onClick={() => handlePriceCurrencySwitch("USD")} className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${priceCurrency === "USD" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                          Dólares
-                        </button>
-                      </div>
-
-                      {/* Exchange rate badge */}
-                      {usdRate && (
-                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground bg-muted/30 rounded-lg py-1.5 px-2">
-                          <ArrowRightLeft className="h-3 w-3" />
-                          <span>1 USD = ${usdRate.toLocaleString("es-AR")} ARS</span>
-                        </div>
-                      )}
-
-                      {/* Min / Max inputs */}
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label className="text-xs text-muted-foreground mb-1 block">Mínimo</label>
-                          <CurrencyInput
-                            value={minPrice}
-                            onChange={setMinPrice}
-                            currency={priceCurrency}
-                            placeholder={priceCurrency === "USD" ? "USD 0" : "$ 0"}
-                            className="rounded-xl h-10 text-sm"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="text-xs text-muted-foreground mb-1 block">Máximo</label>
-                          <CurrencyInput
-                            value={maxPrice}
-                            onChange={setMaxPrice}
-                            currency={priceCurrency}
-                            placeholder={priceCurrency === "USD" ? "USD 5.000" : "$ 1.000.000"}
-                            className="rounded-xl h-10 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-border">
-                        <button
-                          onClick={() => { setMinPrice(""); setMaxPrice(""); setPriceCurrency("ARS"); setPriceType("total"); }}
-                          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          Limpiar
-                        </button>
-                        <Button onClick={() => setPriceOpen(false)} className="rounded-xl px-6">
-                          Aplicar
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                
                 <button onClick={handleHeaderSearch} aria-label="Buscar propiedades" className="h-8 w-8 m-1 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   <Search className="h-4 w-4 text-primary-foreground" aria-hidden="true" />
                 </button>
@@ -592,14 +513,6 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         Mis búsquedas
                       </Link>
                     </DropdownMenuItem>
-                    {getGestionInfo() && (
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href="/gestion">
-                          {(() => { const info = getGestionInfo()!; const Icon = info.icon; return <Icon className="mr-2 h-4 w-4" />; })()}
-                          {getGestionInfo()!.label}
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout} className="cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
@@ -615,7 +528,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                   onClick={() => setShowPublishModal(true)}
                   className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Quiero publicar
+                  Publicar gratis
                 </Button>
                 <Button
                   variant="outline"
@@ -709,24 +622,6 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                           Mis búsquedas
                         </Link>
                       </Button>
-                      {(() => {
-                        const info = getGestionInfo();
-                        if (!info) return null;
-                        const Icon = info.icon;
-                        return (
-                          <Button
-                            variant="ghost"
-                            className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
-                            asChild
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <Link href="/gestion">
-                              <Icon className="h-4 w-4" />
-                              {info.label}
-                            </Link>
-                          </Button>
-                        );
-                      })()}
                       <Button
                         variant="ghost"
                         onClick={() => { logout(); setMobileMenuOpen(false); }}
@@ -753,7 +648,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
                         onClick={handlePublishClick}
                         className="w-full rounded-full h-12 font-medium"
                       >
-                        Quiero publicar
+                        Publicar gratis
                       </Button>
                     </>
                   )}

@@ -81,6 +81,7 @@ export async function PUT(
       disposition,
       floor,
       apartment_door,
+      photos: photosInput,
       photoUrls,
       videoUrls,
       tagIds,
@@ -177,26 +178,51 @@ export async function PUT(
     }
 
     // 3. Replace photos (delete all, then re-insert)
+    // Supports structured photos (from PhotoUploader) or legacy URL strings
     await supabaseAdmin
       .from("tokko_property_photo")
       .delete()
       .eq("property_id", numericId);
 
-    const photos = Array.isArray(photoUrls)
+    const structuredPhotos = Array.isArray(photosInput) ? photosInput : [];
+    const legacyPhotos = Array.isArray(photoUrls)
       ? photoUrls.filter((u: string) => u && u.trim())
       : [];
-    for (let i = 0; i < photos.length; i++) {
-      const url = photos[i].trim();
-      await supabaseAdmin.from("tokko_property_photo").insert({
-        property_id: numericId,
-        image: url,
-        original: url,
-        thumb: url,
-        description: null,
-        is_blueprint: false,
-        is_front_cover: i === 0,
-        order: i,
-      });
+
+    if (structuredPhotos.length > 0) {
+      const photoRows = structuredPhotos.map(
+        (photo: { publicUrl: string; storagePath: string; isCover: boolean; order: number }, i: number) => ({
+          property_id: numericId,
+          image: photo.publicUrl,
+          original: photo.publicUrl,
+          thumb: photo.publicUrl,
+          storage_path: photo.storagePath,
+          description: null,
+          is_blueprint: false,
+          is_front_cover: photo.isCover ?? i === 0,
+          order: photo.order ?? i,
+        })
+      );
+      const { error: photoError } = await supabaseAdmin
+        .from("tokko_property_photo")
+        .insert(photoRows);
+      if (photoError) {
+        console.error("[properties/update] Photos insert error:", photoError);
+      }
+    } else if (legacyPhotos.length > 0) {
+      for (let i = 0; i < legacyPhotos.length; i++) {
+        const url = legacyPhotos[i].trim();
+        await supabaseAdmin.from("tokko_property_photo").insert({
+          property_id: numericId,
+          image: url,
+          original: url,
+          thumb: url,
+          description: null,
+          is_blueprint: false,
+          is_front_cover: i === 0,
+          order: i,
+        });
+      }
     }
 
     // 4. Replace videos (delete all, then re-insert)

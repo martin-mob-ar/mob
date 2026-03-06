@@ -305,7 +305,7 @@ const SearchBar = () => {
     return (
       <div className="w-full max-w-4xl mx-auto search-bar-mob">
         <div className="flex items-center p-1.5 bg-card rounded-[28px] border border-border shadow-md">
-          <div className="flex-1 grid grid-cols-[1.1fr_0.8fr_1.3fr] divide-x divide-border">
+          <div className="flex-1 grid grid-cols-[1fr_1fr] divide-x divide-border">
             <div className="px-6 py-3 relative">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Ubicación
@@ -340,48 +340,6 @@ const SearchBar = () => {
                   {roomsInnerContent}
                 </PopoverContent>
               </Popover>
-            </div>
-
-            <div className="px-6 py-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Precio total
-                </label>
-                <div className="flex rounded-full border border-border p-0.5 bg-muted/30">
-                  <button
-                    type="button"
-                    onClick={() => setCurrency("ARS")}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
-                      currency === "ARS"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    ARS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrency("USD")}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
-                      currency === "USD"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    USD
-                  </button>
-                </div>
-              </div>
-              <div className="mt-1">
-                <CurrencyInput
-                  value={price}
-                  onChange={setPrice}
-                  currency={currency}
-                  placeholder={currency === "USD" ? "USD 100.000" : "$ 800.000"}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                />
-              </div>
             </div>
           </div>
 
@@ -419,10 +377,10 @@ const SearchBar = () => {
           {locationDropdown}
         </div>
 
-        {/* Row 2: Dormitorios + Price side by side */}
+        {/* Row 2: Dormitorios */}
         <div className="flex items-center border-t border-border relative">
           {/* Dormitorios */}
-          <div className="flex-1 border-r border-border">
+          <div className="flex-1">
             <button
               ref={roomsTriggerRef}
               type="button"
@@ -432,42 +390,6 @@ const SearchBar = () => {
               <span className="text-sm text-foreground truncate">{getRoomsLabel()}</span>
               <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${roomsOpen ? "rotate-180" : ""}`} />
             </button>
-          </div>
-
-          {/* Price */}
-          <div className="flex-1 flex items-center justify-between px-4 py-2.5 gap-2">
-            <CurrencyInput
-              value={price}
-              onChange={setPrice}
-              currency={currency}
-              placeholder={currency === "USD" ? "USD 100.000" : "$ 800.000"}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="border-0 h-auto p-0 rounded-none shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-sm min-w-0 flex-1"
-            />
-            <div className="flex rounded-full border border-border p-0.5 bg-muted/30 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setCurrency("ARS")}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
-                  currency === "ARS"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                ARS
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrency("USD")}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
-                  currency === "USD"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                USD
-              </button>
-            </div>
           </div>
 
           {/* Dormitorios dropdown — same pattern as location dropdown */}

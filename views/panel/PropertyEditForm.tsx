@@ -35,6 +35,7 @@ import { TAG_SECTIONS, ALL_TAGS } from "@/lib/constants/tags";
 import { getGeometryFromPlace } from "@/lib/google-maps/places";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import PhotoUploader, { UploadedPhoto } from "@/components/PhotoUploader";
 
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places"];
 
@@ -50,8 +51,7 @@ interface PropertyEditFormProps {
   propertyId: number;
   property: any;
   operacion: any | null;
-  photos: { id: number; image: string; original: string; thumb: string; order: number; is_front_cover: boolean }[];
-  videos: { id: number; url: string; order: number }[];
+  photos: { id: number; image: string; original: string; thumb: string; order: number; is_front_cover: boolean; storage_path: string | null }[];
   tagIds: number[];
   propertyTypes: { id: number; name: string }[];
   tags: { id: number; name: string; type: number }[];
@@ -64,7 +64,6 @@ export default function PropertyEditForm({
   property,
   operacion,
   photos,
-  videos,
   tagIds: initialTagIds,
   currentLocation,
   googleMapsApiKey,
@@ -131,12 +130,17 @@ export default function PropertyEditForm({
   const [disposicion, setDisposicion] = useState(property.disposition || "");
 
   // ─── Multimedia ─────────────────────────────────────────────────────
-  const [photoUrls, setPhotoUrls] = useState<string[]>(
-    photos.length > 0 ? photos.map((p) => p.image || p.original) : [""]
+  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>(
+    photos
+      .filter((p) => p.storage_path)
+      .map((p) => ({
+        storagePath: p.storage_path!,
+        publicUrl: p.image || p.original,
+        order: p.order,
+        isCover: p.is_front_cover,
+      }))
   );
-  const [videoUrls, setVideoUrls] = useState<string[]>(
-    videos.length > 0 ? videos.map((v) => v.url) : [""]
-  );
+  const [descripcion, setDescripcion] = useState(property.description || "");
 
   // ─── Extras ─────────────────────────────────────────────────────────
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(initialTagIds);
@@ -282,10 +286,9 @@ export default function PropertyEditForm({
         disposition: disposicion || null,
         floor: piso || null,
         apartment_door: depto || null,
-        photoUrls: photoUrls.filter((u) => u.trim()),
-        videoUrls: videoUrls.filter((u) => u.trim()),
+        photos: uploadedPhotos,
         tagIds: selectedTagIds,
-        description: null,
+        description: descripcion.trim() || null,
         rich_description: null,
         publication_title: null,
         reference_code: null,
@@ -328,23 +331,23 @@ export default function PropertyEditForm({
     value: number;
     onChange: (val: number) => void;
   }) => (
-    <div className="flex items-center justify-between p-3 rounded-xl border border-border">
-      <span className="text-sm font-medium">{label}</span>
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between p-4 rounded-2xl border border-border">
+      <span className="font-medium">{label}</span>
+      <div className="flex items-center gap-4">
         <button
           type="button"
           onClick={() => onChange(Math.max(0, value - 1))}
-          className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+          className="h-10 w-10 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
         >
-          <Minus className="h-3 w-3 text-muted-foreground" />
+          <Minus className="h-4 w-4 text-muted-foreground" />
         </button>
-        <span className="w-6 text-center font-bold">{value}</span>
+        <span className="w-8 text-center font-bold text-xl">{value}</span>
         <button
           type="button"
           onClick={() => onChange(value + 1)}
-          className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+          className="h-10 w-10 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
         >
-          <Plus className="h-3 w-3 text-muted-foreground" />
+          <Plus className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
     </div>
@@ -764,93 +767,27 @@ export default function PropertyEditForm({
         <SectionHeader title="Multimedia" sectionKey="multimedia" />
         <CollapsibleContent className="pt-6 space-y-6">
           {/* Photos */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-              Fotos (URLs) — máx. 20
-            </label>
-            <div className="space-y-2">
-              {photoUrls.map((url, i) => (
-                <div key={i} className="flex gap-2">
-                  <Input
-                    value={url}
-                    onChange={(e) => {
-                      const updated = [...photoUrls];
-                      updated[i] = e.target.value;
-                      setPhotoUrls(updated);
-                    }}
-                    placeholder={i === 0 ? "URL de la foto principal (portada)" : "URL de la foto"}
-                    className="h-11 rounded-xl text-sm"
-                  />
-                  {photoUrls.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0 h-11 w-11 rounded-xl"
-                      onClick={() => setPhotoUrls(photoUrls.filter((_, j) => j !== i))}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              {photoUrls.length < 20 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-xl gap-2 text-sm"
-                  onClick={() => setPhotoUrls([...photoUrls, ""])}
-                >
-                  <Plus className="h-4 w-4" />
-                  Agregar foto
-                </Button>
-              )}
-            </div>
-          </div>
+          <PhotoUploader
+            propertyId={propertyId}
+            photos={uploadedPhotos}
+            onChange={setUploadedPhotos}
+          />
 
-          {/* Videos */}
+          {/* Description */}
           <div>
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-              Videos (URLs) — máx. 10
+              Descripción (opcional)
             </label>
-            <div className="space-y-2">
-              {videoUrls.map((url, i) => (
-                <div key={i} className="flex gap-2">
-                  <Input
-                    value={url}
-                    onChange={(e) => {
-                      const updated = [...videoUrls];
-                      updated[i] = e.target.value;
-                      setVideoUrls(updated);
-                    }}
-                    placeholder="URL del video"
-                    className="h-11 rounded-xl text-sm"
-                  />
-                  {videoUrls.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0 h-11 w-11 rounded-xl"
-                      onClick={() => setVideoUrls(videoUrls.filter((_, j) => j !== i))}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-              {videoUrls.length < 10 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-xl gap-2 text-sm"
-                  onClick={() => setVideoUrls([...videoUrls, ""])}
-                >
-                  <Plus className="h-4 w-4" />
-                  Agregar video
-                </Button>
-              )}
-            </div>
+            <textarea
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Contá lo mejor de tu propiedad: luminosidad, vistas, estado, cercanía a transporte..."
+              rows={5}
+              className="flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              {descripcion.length > 0 ? `${descripcion.length} caracteres` : "Una buena descripción ayuda a conseguir más consultas"}
+            </p>
           </div>
         </CollapsibleContent>
       </Collapsible>

@@ -1,4 +1,4 @@
-import { X, ArrowRightLeft, MapPin, Loader2 as Spinner } from "lucide-react";
+import { X, ArrowRightLeft, MapPin, Loader2 as Spinner, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +17,7 @@ import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { TAG_SECTIONS } from "@/lib/constants/tags";
 import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
+import { AnimateHeight } from "@/components/ui/animate-height";
 
 interface MoreFiltersPanelProps {
   open: boolean;
@@ -136,6 +137,8 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     (filters.surfaceType as "cubierta" | "total") || "total"
   );
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(filters.tagIds);
+  const [availabilityFilter, setAvailabilityFilter] = useState<"" | "immediate" | "next-month" | "custom">(filters.availabilityFilter);
+  const [availabilityDate, setAvailabilityDate] = useState(filters.availabilityDate);
 
   // Location search state
   const [locationSearch, setLocationSearch] = useState(filters.location);
@@ -189,6 +192,8 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
       setMaxSurface(filters.maxSurface);
       setSurfaceType((filters.surfaceType as "cubierta" | "total") || "total");
       setSelectedTagIds(filters.tagIds);
+      setAvailabilityFilter(filters.availabilityFilter);
+      setAvailabilityDate(filters.availabilityDate);
     }
   }, [open, filters]);
 
@@ -244,6 +249,8 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
       maxSurface: surfMax,
       surfaceType,
       tagIds: selectedTagIds,
+      availabilityFilter,
+      availabilityDate: availabilityFilter === "custom" ? availabilityDate : "",
     });
     onClose();
   };
@@ -266,6 +273,8 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     setMaxSurface("");
     setSurfaceType("total");
     setSelectedTagIds([]);
+    setAvailabilityFilter("");
+    setAvailabilityDate("");
     clearFilters();
     router.replace("/buscar");
     onClose();
@@ -588,6 +597,44 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                     placeholder="0"
                   />
                 </div>
+              </div>
+            </FilterSection>
+
+            {/* Disponibilidad */}
+            <FilterSection title="Disponibilidad">
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: "immediate", label: "Disponible ahora" },
+                    { value: "next-month", label: "Próximo mes" },
+                    { value: "custom", label: "Elegir fecha" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setAvailabilityFilter(availabilityFilter === opt.value ? "" : opt.value)}
+                      className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                        availabilityFilter === opt.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary hover:bg-primary/5"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <AnimateHeight show={availabilityFilter === "custom"}>
+                  <div className="relative pt-1">
+                    <input
+                      type="date"
+                      min={new Date().toISOString().split("T")[0]}
+                      max="9999-12-31"
+                      value={availabilityDate}
+                      onChange={(e) => setAvailabilityDate(e.target.value)}
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 pr-10 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+                </AnimateHeight>
               </div>
             </FilterSection>
 

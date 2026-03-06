@@ -140,6 +140,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Filter by availability date
+  const availabilityFilter = searchParams.get("availabilityFilter");
+  const availabilityDate = searchParams.get("availabilityDate");
+  const today = new Date().toISOString().split("T")[0];
+
+  if (availabilityFilter === "immediate") {
+    query = query.or(`min_start_date.is.null,min_start_date.lte.${today}`);
+  } else if (availabilityFilter === "next-month") {
+    // Include properties available within the next 2 months (or null/past)
+    const d = new Date();
+    const cutoff = new Date(d.getFullYear(), d.getMonth() + 2, 1).toISOString().split("T")[0];
+    query = query.or(`min_start_date.is.null,min_start_date.lt.${cutoff}`);
+  } else if (availabilityFilter === "custom" && availabilityDate) {
+    query = query.or(`min_start_date.is.null,min_start_date.lte.${availabilityDate}`);
+  }
+
   // Apply sort
   switch (sort) {
     case "price-low":
