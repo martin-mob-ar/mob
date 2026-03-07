@@ -14,6 +14,8 @@ interface LeadEmailData {
   phone?: string;
   message: string;
   type: 'visita' | 'reserva';
+  propertyPlan?: string;
+  inquilinoVerified?: boolean;
 }
 
 interface PropertyInfo {
@@ -30,46 +32,69 @@ export async function sendLeadEmail(
   lead: LeadEmailData,
   property: PropertyInfo
 ): Promise<{ success: boolean; error?: string }> {
-  const typeLabel = lead.type === 'visita' ? 'Agendar Visita' : 'Reservar';
+  const typeLabel = lead.type === 'visita' ? 'Agendar visita' : 'Quiero reservar';
   const propertyUrl = `https://mob.com.ar/propiedad/${property.propertyId}`;
+
+  const isBasico = !lead.propertyPlan || lead.propertyPlan === 'basico';
+
+  // Verification status block at the bottom of the email
+  const verificationBlock = isBasico
+    ? `
+      <div style="margin: 24px 0 0 0; padding: 14px 16px; background: #fff8e1; border-left: 4px solid #f59e0b; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
+          <strong>Atención:</strong> para ver si este lead está verificado/calificado, tenés que contar con el plan Acompañado o Experiencia Mob. Contactanos para mejorar tu plan.
+        </p>
+      </div>`
+    : lead.inquilinoVerified
+    ? `
+      <div style="margin: 24px 0 0 0; padding: 14px 16px; background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">
+        <p style="margin: 0 0 4px 0; color: #15803d; font-size: 13px; font-weight: bold;">✅ Inquilino Verificado por Mob</p>
+        <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.5;">
+          ¡Hola! Soy inquilino verificado y calificado para alquilar, quiero agendar una visita para la propiedad en ${property.address} que vi en mob.ar
+        </p>
+      </div>`
+    : `
+      <div style="margin: 24px 0 0 0; padding: 14px 16px; background: #f9fafb; border-left: 4px solid #9ca3af; border-radius: 4px;">
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          Este inquilino aún no completó su verificación de perfil.
+        </p>
+      </div>`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Nueva consulta: ${typeLabel}</h2>
-      <p style="color: #666;">Se recibió una consulta desde <strong>mob.com.ar</strong></p>
+      <h2 style="color: #333; margin-bottom: 4px;">Nueva consulta: ${typeLabel}</h2>
+      <p style="color: #666; margin-top: 0;">Se recibió una nueva consulta desde <strong>mob.ar</strong></p>
 
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
         <tr>
-          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold; width: 120px;">Nombre</td>
+          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold; width: 120px; background: #fafafa;">Nombre</td>
           <td style="padding: 8px 12px; border: 1px solid #eee;">${lead.name}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold;">Email</td>
+          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold; background: #fafafa;">Email</td>
           <td style="padding: 8px 12px; border: 1px solid #eee;">${lead.email}</td>
         </tr>
-        ${lead.phone ? `
         <tr>
-          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold;">Teléfono</td>
+          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold; background: #fafafa;">Teléfono</td>
           <td style="padding: 8px 12px; border: 1px solid #eee;">
-            <a href="https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}" style="color: #25D366; text-decoration: none;">${lead.phone}</a>
+            ${lead.phone
+              ? `<a href="https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}" style="color: #25D366; text-decoration: none;">${lead.phone}</a>`
+              : '<span style="color: #9ca3af;">No informado</span>'}
           </td>
-        </tr>` : ''}
+        </tr>
         <tr>
-          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold;">Tipo</td>
+          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold; background: #fafafa;">Tipo</td>
           <td style="padding: 8px 12px; border: 1px solid #eee;">${typeLabel}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold;">Propiedad</td>
+          <td style="padding: 8px 12px; border: 1px solid #eee; font-weight: bold; background: #fafafa;">Propiedad</td>
           <td style="padding: 8px 12px; border: 1px solid #eee;">
-            <a href="${propertyUrl}">${property.address}</a>
+            <a href="${propertyUrl}" style="color: #2563eb;">${property.address}</a>
           </td>
         </tr>
       </table>
 
-      <div style="background: #f8f8f8; padding: 16px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 0 0 4px 0; font-weight: bold; color: #333;">Mensaje:</p>
-        <p style="margin: 0; color: #555;">${lead.message}</p>
-      </div>
+      ${verificationBlock}
     </div>
   `;
 
@@ -80,7 +105,7 @@ export async function sendLeadEmail(
       from: `mob <${fromEmail}>`,
       to,
       ...(cc ? { cc } : {}),
-      subject: `Nueva consulta: ${typeLabel} - ${property.address}`,
+      subject: `Nueva consulta: ${typeLabel}`,
       html,
     });
 

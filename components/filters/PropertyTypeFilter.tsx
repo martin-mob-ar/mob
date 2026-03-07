@@ -50,7 +50,7 @@ const PropertyTypeFilter = () => {
           {propertyTypes.map((type) => (
             <label
               key={type.id}
-              className="flex items-center gap-3 cursor-pointer hover:bg-secondary/50 p-2 rounded-lg transition-colors"
+              className="flex items-center gap-3 cursor-pointer hover:bg-secondary/50 p-2 rounded-xl transition-colors"
             >
               <Checkbox
                 checked={selected.includes(type.id)}

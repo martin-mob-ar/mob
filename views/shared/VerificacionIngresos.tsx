@@ -99,7 +99,7 @@ const VerificacionIngresos = () => {
             <div className="space-y-4">
               <div className="bg-card rounded-xl border border-border p-6 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="h-5 w-5 text-primary" />
                   </div>
                   <div>
@@ -109,15 +109,15 @@ const VerificacionIngresos = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <Building className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm">Evaluamos tu perfil financiero</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <Shield className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm">Accedés a la garantía Hoggax</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <BadgeCheck className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm">Quedás calificado para alquilar</span>
                   </div>
@@ -143,7 +143,7 @@ const VerificacionIngresos = () => {
               </div>
 
               {/* Hoggax benefit hint */}
-              <div className="flex items-center justify-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
+              <div className="flex items-center justify-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
                 <Percent className="h-4 w-4 text-primary" />
                 <span className="text-sm text-primary font-medium">50% OFF en garantía Hoggax</span>
               </div>

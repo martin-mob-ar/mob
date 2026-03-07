@@ -1,12 +1,12 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { getPropertyUrl } from "@/lib/utils/property-url";
+import { formatAddress } from "@/lib/utils";
 
 export interface Property {
   id: string;
@@ -41,42 +41,12 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   const totalSlides = images.length;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
-  const { isAuthenticated, openAuthModal } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const touchStartX = useRef<number | null>(null);
-  const wheelAccumulator = useRef(0);
-  const navigatingRef = useRef(false);
-  const currentIndexRef = useRef(currentImageIndex);
-  currentIndexRef.current = currentImageIndex;
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const handleWheel = (e: WheelEvent) => {
-      if (navigatingRef.current) { e.preventDefault(); return; }
-      if (currentIndexRef.current === totalSlides - 1 && e.deltaX > 0) {
-        e.preventDefault();
-        wheelAccumulator.current += e.deltaX;
-        if (wheelAccumulator.current > 100) {
-          navigatingRef.current = true;
-          window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
-          setTimeout(() => { navigatingRef.current = false; wheelAccumulator.current = 0; }, 1000);
-        }
-      } else if (e.deltaX < 0) {
-        wheelAccumulator.current = 0;
-      }
-    };
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [totalSlides, property]);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) {
-      openAuthModal();
-      return;
-    }
     toggleFavorite(Number(property.id));
   };
 
@@ -132,18 +102,6 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
               if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < totalSlides) {
                 setCurrentImageIndex(newIndex);
               }
-            }}
-            onTouchStart={e => {
-              touchStartX.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={e => {
-              if (touchStartX.current !== null && currentImageIndex === totalSlides - 1) {
-                const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-                if (deltaX < -50) {
-                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
-                }
-              }
-              touchStartX.current = null;
             }}
           >
             {images.map((img, index) => (
@@ -232,9 +190,13 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
           </div>
           
           {/* Favorite button - Always visible */}
-          <button 
+          <button
             onClick={handleFavoriteClick}
-            className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/50 backdrop-blur flex items-center justify-center hover:bg-background transition-colors group/fav"
+            className={`absolute top-3 right-3 h-8 w-8 rounded-full backdrop-blur flex items-center justify-center transition-colors group/fav ${
+              isFavorite(Number(property.id))
+                ? "bg-background"
+                : "bg-background/50 hover:bg-background"
+            }`}
           >
             <Heart
               className={`h-4 w-4 transition-colors ${
@@ -248,7 +210,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
         
         <div className="p-3 flex-1 flex flex-col min-w-0">
           <h3 className="font-display font-semibold text-foreground text-xs leading-tight truncate">
-            {property.address}
+            {formatAddress(property.address)}
           </h3>
           <p className="text-muted-foreground text-xs mt-0.5 truncate">
             {property.neighborhood}

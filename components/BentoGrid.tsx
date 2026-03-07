@@ -33,7 +33,7 @@ const BentoGrid = () => {
         <div ref={ref} className="hidden md:grid grid-cols-3 gap-4 auto-rows-[180px]">
           {/* Card 1 - Encontrá tu hogar (large, spans 2 rows) */}
           <div
-            className="row-span-2 bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/15 rounded-2xl p-6 flex flex-col justify-between"
+            className="row-span-2 bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/15 rounded-xl p-6 flex flex-col justify-between"
             style={cardStyle(0)}
           >
             <div>
@@ -75,7 +75,7 @@ const BentoGrid = () => {
 
           {/* Card 2 - Verificación en 2 minutos */}
           <div
-            className="bg-card border border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center"
+            className="bg-card border border-border rounded-xl p-6 flex flex-col justify-center items-center text-center"
             style={cardStyle(80)}
           >
             <Fingerprint className="h-8 w-8 text-emerald-500 mb-2" />
@@ -87,7 +87,7 @@ const BentoGrid = () => {
 
           {/* Card 3 - Alquilá con tu celular */}
           <div
-            className="bg-card border border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center"
+            className="bg-card border border-border rounded-xl p-6 flex flex-col justify-center items-center text-center"
             style={cardStyle(160)}
           >
             <Smartphone className="h-8 w-8 text-primary mb-2" />
@@ -98,7 +98,7 @@ const BentoGrid = () => {
 
           {/* Card 4 - Garantía digital */}
           <div
-            className="col-span-2 bg-primary rounded-2xl p-6 flex items-center gap-6 text-primary-foreground"
+            className="col-span-2 bg-primary rounded-xl p-6 flex items-center gap-6 text-primary-foreground"
             style={cardStyle(240)}
           >
             <div className="shrink-0 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
@@ -117,7 +117,7 @@ const BentoGrid = () => {
 
           {/* Card 5 - 100% Online */}
           <div
-            className="bg-foreground text-background rounded-2xl p-6 flex flex-col justify-center"
+            className="bg-foreground text-background rounded-xl p-6 flex flex-col justify-center"
             style={cardStyle(320)}
           >
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[11px] font-semibold mb-3 self-start">
@@ -132,7 +132,7 @@ const BentoGrid = () => {
 
           {/* Card 6 - Inmobiliarias verificadas */}
           <div
-            className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5"
+            className="bg-card border border-border rounded-xl p-6 flex items-center gap-5"
             style={cardStyle(400)}
           >
             <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -148,7 +148,7 @@ const BentoGrid = () => {
 
           {/* Card 7 - Inquilinos verificados */}
           <div
-            className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5"
+            className="bg-card border border-border rounded-xl p-6 flex items-center gap-5"
             style={cardStyle(480)}
           >
             <div className="shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -166,7 +166,7 @@ const BentoGrid = () => {
         {/* Mobile: Single column stack */}
         <div className="md:hidden space-y-3">
           {/* Encontrá tu hogar */}
-          <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/15 rounded-2xl p-5">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/15 rounded-xl p-5">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3">
               <Users className="h-3 w-3" />
               Para inquilinos
@@ -204,19 +204,19 @@ const BentoGrid = () => {
 
           {/* Stats row */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-card border border-border rounded-2xl p-4 text-center">
+            <div className="bg-card border border-border rounded-xl p-4 text-center">
               <Fingerprint className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
               <span className="font-display font-bold text-base text-foreground">2 min</span>
               <p className="text-xs text-muted-foreground mt-0.5">Verificación</p>
             </div>
-            <div className="bg-card border border-border rounded-2xl p-4 text-center flex flex-col items-center justify-center">
+            <div className="bg-card border border-border rounded-xl p-4 text-center flex flex-col items-center justify-center">
               <Smartphone className="h-6 w-6 text-primary mx-auto mb-1" />
               <span className="font-display font-bold text-sm text-foreground">Desde tu celular</span>
             </div>
           </div>
 
           {/* Garantía digital */}
-          <div className="bg-primary rounded-2xl p-5 text-primary-foreground">
+          <div className="bg-primary rounded-xl p-5 text-primary-foreground">
             <span className="inline-flex px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold mb-2">
               Garantía mob
             </span>
@@ -227,7 +227,7 @@ const BentoGrid = () => {
           </div>
 
           {/* 100% Online */}
-          <div className="bg-foreground text-background rounded-2xl p-5">
+          <div className="bg-foreground text-background rounded-xl p-5">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[11px] font-semibold mb-2">
               <Zap className="h-3 w-3" />
               Experiencia completa
@@ -240,11 +240,11 @@ const BentoGrid = () => {
 
           {/* Bottom row */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <Building2 className="h-6 w-6 text-primary mb-2" />
               <h3 className="font-display font-bold text-sm text-foreground">Inmobiliarias verificadas</h3>
             </div>
-            <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <Shield className="h-6 w-6 text-primary mb-2" />
               <h3 className="font-display font-bold text-sm text-foreground">Inquilinos verificados</h3>
             </div>

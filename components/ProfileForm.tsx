@@ -88,14 +88,14 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Error */}
       {error && (
-        <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">
+        <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl">
           {error}
         </div>
       )}
 
       {/* Success */}
       {saved && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm p-3 rounded-lg flex items-center gap-2">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm p-3 rounded-xl flex items-center gap-2">
           <Check className="h-4 w-4" />
           Perfil actualizado correctamente
         </div>
@@ -108,7 +108,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
           type="email"
           value={profile.email}
           disabled
-          className="h-11 rounded-lg bg-muted"
+          className="h-11 rounded-xl bg-muted"
         />
       </div>
 
@@ -120,7 +120,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
           placeholder="Tu nombre completo"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="h-11 rounded-lg"
+          className="h-11 rounded-xl"
         />
       </div>
 
@@ -134,7 +134,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
             placeholder="Sin puntos, ej: 30123456"
             value={dni}
             onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
-            className="h-11 rounded-lg"
+            className="h-11 rounded-xl"
           />
         </div>
       )}
@@ -144,7 +144,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
         <label className="text-sm font-medium text-foreground">Teléfono</label>
         <div className="flex gap-2">
           <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
-            <SelectTrigger className="h-11 rounded-lg w-[100px] text-sm">
+            <SelectTrigger className="h-11 rounded-xl w-[100px] text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -161,7 +161,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
             placeholder="1112345678"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="h-11 rounded-lg flex-1"
+            className="h-11 rounded-xl flex-1"
           />
         </div>
         <p className="text-xs text-muted-foreground">Ej: +54 1112345678</p>
@@ -169,7 +169,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
 
       <Button
         type="submit"
-        className="h-11 rounded-lg font-semibold"
+        className="h-11 rounded-xl font-semibold"
         disabled={loading}
       >
         {loading ? "Guardando..." : "Guardar cambios"}

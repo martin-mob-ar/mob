@@ -82,7 +82,7 @@ const VisitaSeleccionarHorario = () => {
 
           {/* Property Summary */}
           <div className="bg-card rounded-xl border border-border p-4 flex gap-4">
-            <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0">
+            <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
               <img 
                 src={property.image || properties[0]?.image} 
                 alt={property.title}
@@ -115,7 +115,7 @@ const VisitaSeleccionarHorario = () => {
                 onSelect={setSelectedDate}
                 disabled={disablePastDates}
                 locale={es}
-                className={cn("rounded-md border-0 pointer-events-auto")}
+                className={cn("rounded-xl border-0 pointer-events-auto")}
               />
             </div>
           </div>
@@ -133,7 +133,7 @@ const VisitaSeleccionarHorario = () => {
                     key={time}
                     onClick={() => setSelectedTime(time)}
                     className={cn(
-                      "p-3 rounded-lg text-sm font-medium transition-colors",
+                      "p-3 rounded-xl text-sm font-medium transition-colors",
                       selectedTime === time
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted hover:bg-muted/80 text-foreground"

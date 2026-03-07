@@ -80,7 +80,7 @@ const PropiedadesView = ({ properties: propsProp }: PropiedadesViewProps) => {
         {/* Upload property card */}
         <Link
           href="/subir-propiedad"
-          className="bg-card rounded-2xl border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center justify-center p-8 min-h-[320px] group"
+          className="bg-card rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer flex flex-col items-center justify-center p-8 min-h-[320px] group"
         >
           <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:bg-accent transition-colors">
             <Plus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -97,7 +97,7 @@ const PropiedadesView = ({ properties: propsProp }: PropiedadesViewProps) => {
         {properties.map((property) => (
           <div
             key={property.id}
-            className="bg-card rounded-2xl border border-border overflow-hidden group"
+            className="bg-card rounded-xl border border-border overflow-hidden group"
           >
             {/* Image */}
             <div className="relative aspect-[4/3] overflow-hidden">
@@ -107,7 +107,7 @@ const PropiedadesView = ({ properties: propsProp }: PropiedadesViewProps) => {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
               <span
-                className={`absolute top-3 left-3 px-3 py-1 rounded-md text-xs font-semibold uppercase tracking-wide ${
+                className={`absolute top-3 left-3 px-3 py-1 rounded-xl text-xs font-semibold uppercase tracking-wide ${
                   statusConfig[property.status].className
                 }`}
               >

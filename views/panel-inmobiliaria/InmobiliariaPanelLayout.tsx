@@ -92,7 +92,7 @@ const InmobiliariaPanelLayout = ({ children }: { children: React.ReactNode }) =>
           </div>
           <button
             onClick={logout}
-            className="flex items-center gap-2 px-3 py-2 mt-3 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-colors w-full"
+            className="flex items-center gap-2 px-3 py-2 mt-3 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-xl transition-colors w-full"
           >
             <LogOut className="h-4 w-4" />
             Cerrar sesión

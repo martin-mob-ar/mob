@@ -11,10 +11,10 @@ const navLinks = [{
   path: "/subir-propiedad",
   label: "Publicar propiedad"
 }];
-const Footer = () => {
-  return <footer className="border-t border-border bg-secondary/30 py-12 mt-12">
+const Footer = ({ className }: { className?: string }) => {
+  return <footer className={`border-t border-border bg-secondary/30 py-12 mt-12 ${className ?? ""}`}>
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
           {/* Logo and description */}
           <div className="md:col-span-2">
             <Image src={mobLogo} alt="MOB" width={112} height={28} className="h-7 w-auto mb-4" />
@@ -33,6 +33,33 @@ const Footer = () => {
             </ul>
           </div>
           
+          {/* Recursos */}
+          <div>
+            <h4 className="font-display font-semibold text-foreground mb-4">Recursos</h4>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/blog" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculadora-ipc" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Calculadora IPC
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculadora-creditos-hipotecarios" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Calculadora créditos hipotecarios
+                </Link>
+              </li>
+              <li>
+                <a href="https://tally.so/r/5Bk4y6" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Sumar mi inmobiliaria
+                </a>
+              </li>
+            </ul>
+          </div>
+
           {/* Legal */}
           <div>
             <h4 className="font-display font-semibold text-foreground mb-4">Legal</h4>

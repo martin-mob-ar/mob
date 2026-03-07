@@ -5,11 +5,9 @@ import PropertyCard from "@/components/PropertyCard";
 import { Property } from "@/components/PropertyCard";
 import MobilePropertyCard from "@/components/MobilePropertyCard";
 import MobileSearchHeader from "@/components/MobileSearchHeader";
-import MobileSearchBottomActions from "@/components/MobileSearchBottomActions";
 import { SlidersHorizontal, ChevronDown, ArrowUpDown, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { useRef } from "react";
+import { useState } from "react";
 import LocationFilter from "@/components/filters/LocationFilter";
 import PriceFilter from "@/components/filters/PriceFilter";
 import PropertyTypeFilter from "@/components/filters/PropertyTypeFilter";
@@ -18,6 +16,7 @@ import ParkingFilter from "@/components/filters/ParkingFilter";
 import SurfaceFilter from "@/components/filters/SurfaceFilter";
 import MoreFiltersPanel from "@/components/filters/MoreFiltersPanel";
 import Footer from "@/components/Footer";
+import PopularSearches from "@/components/PopularSearches";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SearchFiltersProvider, useSearchFilters } from "@/contexts/SearchFiltersContext";
 import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
@@ -25,7 +24,6 @@ import { useSearchParams } from "next/navigation";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
 } from "@/components/ui/pagination";
@@ -50,9 +48,9 @@ function PropertyCardSkeleton({ mobile = false }: { mobile?: boolean }) {
       <div className="rounded-xl overflow-hidden bg-card border border-border animate-pulse">
         <div className="aspect-[16/10] bg-muted" />
         <div className="p-4 space-y-3">
-          <div className="h-4 bg-muted rounded-md w-3/4" />
-          <div className="h-3 bg-muted rounded-md w-1/2" />
-          <div className="h-5 bg-muted rounded-md w-1/3" />
+          <div className="h-4 bg-muted rounded-xl w-3/4" />
+          <div className="h-3 bg-muted rounded-xl w-1/2" />
+          <div className="h-5 bg-muted rounded-xl w-1/3" />
         </div>
       </div>
     );
@@ -61,14 +59,14 @@ function PropertyCardSkeleton({ mobile = false }: { mobile?: boolean }) {
     <div className="rounded-xl overflow-hidden bg-card border border-border animate-pulse">
       <div className="aspect-[4/3] bg-muted" />
       <div className="p-4 space-y-3">
-        <div className="h-4 bg-muted rounded-md w-3/4" />
-        <div className="h-3 bg-muted rounded-md w-1/2" />
+        <div className="h-4 bg-muted rounded-xl w-3/4" />
+        <div className="h-3 bg-muted rounded-xl w-1/2" />
         <div className="flex gap-3 mt-2">
-          <div className="h-3 bg-muted rounded-md w-12" />
-          <div className="h-3 bg-muted rounded-md w-12" />
-          <div className="h-3 bg-muted rounded-md w-12" />
+          <div className="h-3 bg-muted rounded-xl w-12" />
+          <div className="h-3 bg-muted rounded-xl w-12" />
+          <div className="h-3 bg-muted rounded-xl w-12" />
         </div>
-        <div className="h-5 bg-muted rounded-md w-1/3 mt-2" />
+        <div className="h-5 bg-muted rounded-xl w-1/3 mt-2" />
       </div>
     </div>
   );
@@ -111,30 +109,13 @@ function SearchPagination() {
     return qs ? `/buscar?${qs}` : "/buscar";
   };
 
-  // Build visible page numbers with ellipsis
-  const buildPages = (): (number | "...")[] => {
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-    const pages: (number | "...")[] = [];
-    if (page <= 4) {
-      for (let i = 1; i <= 5; i++) pages.push(i);
-      pages.push("...");
-      pages.push(totalPages);
-    } else if (page >= totalPages - 3) {
-      pages.push(1);
-      pages.push("...");
-      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      pages.push("...");
-      pages.push(page - 1);
-      pages.push(page);
-      pages.push(page + 1);
-      pages.push("...");
-      pages.push(totalPages);
-    }
-    return pages;
+  // Sliding window of up to 5 pages centered on current
+  const buildPages = (): number[] => {
+    const windowSize = Math.min(5, totalPages);
+    let start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, start + windowSize - 1);
+    start = Math.max(1, end - windowSize + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
   const pages = buildPages();
@@ -147,41 +128,31 @@ function SearchPagination() {
           <PaginationItem>
             <PaginationLink
               href={page > 1 ? getPageUrl(page - 1) : undefined}
-              size="default"
-              className={`gap-1 pl-2.5 ${page === 1 ? "pointer-events-none opacity-50" : ""}`}
+              className={page === 1 ? "pointer-events-none opacity-50" : ""}
               aria-label="Ir a página anterior"
               aria-disabled={page === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              <span>Anterior</span>
             </PaginationLink>
           </PaginationItem>
 
           {/* Page numbers */}
-          {pages.map((p, i) =>
-            p === "..." ? (
-              <PaginationItem key={`ellipsis-${i}`}>
-                <PaginationEllipsis />
-              </PaginationItem>
-            ) : (
-              <PaginationItem key={p}>
-                <PaginationLink href={getPageUrl(p)} isActive={p === page}>
-                  {p}
-                </PaginationLink>
-              </PaginationItem>
-            )
-          )}
+          {pages.map((p) => (
+            <PaginationItem key={p}>
+              <PaginationLink href={getPageUrl(p)} isActive={p === page}>
+                {p}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
 
           {/* Siguiente */}
           <PaginationItem>
             <PaginationLink
               href={page < totalPages ? getPageUrl(page + 1) : undefined}
-              size="default"
-              className={`gap-1 pr-2.5 ${page === totalPages ? "pointer-events-none opacity-50" : ""}`}
+              className={page === totalPages ? "pointer-events-none opacity-50" : ""}
               aria-label="Ir a página siguiente"
               aria-disabled={page === totalPages}
             >
-              <span>Siguiente</span>
               <ChevronRight className="h-4 w-4" />
             </PaginationLink>
           </PaginationItem>
@@ -209,29 +180,9 @@ const SearchResults = ({ initialProperties, initialTotal = 0 }: SearchResultsPro
 
 const SearchResultsInner = () => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
-  const [showBottomActions, setShowBottomActions] = useState(true);
   const { filters, setFilter, results, total, isLoading } = useSearchFilters();
   const enrichedResults = usePropertyPhotos(results);
   const isMobile = useIsMobile();
-  const footerRef = useRef<HTMLDivElement>(null);
-
-  // Hide bottom actions when footer is visible
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowBottomActions(!entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (footerRef.current) {
-      observer.observe(footerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [isMobile]);
 
   const handleSortChange = (value: string) => {
     setFilter("sort", value);
@@ -249,8 +200,8 @@ const SearchResultsInner = () => {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <Header hideSearch />
+      <div className="min-h-screen bg-background">
+        <Header hideSearch sticky={false} />
 
         <MobileSearchHeader
           location={filters.location || "Buenos Aires"}
@@ -276,12 +227,12 @@ const SearchResultsInner = () => {
                 <ArrowUpDown className="h-5 w-5 text-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg rounded-lg p-1">
+            <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg rounded-xl p-1">
               {sortOptions.map((option) => (
                 <DropdownMenuItem
                   key={option.value}
                   onClick={() => handleSortChange(option.value)}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-md cursor-pointer ${
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer ${
                     filters.sort === option.value
                       ? "bg-muted font-medium text-foreground"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -323,14 +274,9 @@ const SearchResultsInner = () => {
           </div>
         )}
 
-        <div ref={footerRef}>
-          <Footer />
-        </div>
+        <PopularSearches title="Más alquileres" />
 
-        <MobileSearchBottomActions
-          visible={showBottomActions}
-          onAlertClick={() => console.log("Create alert")}
-        />
+        <Footer className="mt-0" />
 
         <MoreFiltersPanel
           open={showMoreFilters}
@@ -343,10 +289,10 @@ const SearchResultsInner = () => {
   // Desktop Layout
   return (
     <div className="min-h-screen bg-background">
-      <Header hideSearch />
+      <Header hideSearch sticky={false} />
 
       {/* Filters Bar */}
-      <div className="border-b border-border sticky top-16 bg-background z-40">
+      <div className="border-b border-border sticky top-0 bg-background z-40">
         <div className="container py-4">
           <div className="flex flex-wrap items-center gap-3">
             <LocationFilter />
@@ -432,12 +378,14 @@ const SearchResultsInner = () => {
         )}
       </main>
 
+      <PopularSearches title="Más alquileres" />
+
       <MoreFiltersPanel
         open={showMoreFilters}
         onClose={() => setShowMoreFilters(false)}
       />
 
-      <Footer />
+      <Footer className="mt-0" />
     </div>
   );
 };

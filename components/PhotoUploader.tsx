@@ -108,7 +108,7 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
 
   if (isDragOverlay) {
     return (
-      <div className="relative rounded-2xl overflow-hidden border-2 border-primary shadow-2xl scale-105 rotate-2">
+      <div className="relative rounded-xl overflow-hidden border-2 border-primary shadow-2xl scale-105 rotate-2">
         <div className="aspect-[4/3] relative">
           <Image src={photo.publicUrl} alt={`Foto ${index + 1}`} fill sizes="200px" className="object-cover" />
         </div>
@@ -121,7 +121,7 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative group rounded-2xl overflow-hidden border-2 transition-all",
+        "relative group rounded-xl overflow-hidden border-2 transition-all",
         photo.isCover ? "border-primary ring-2 ring-primary/20" : "border-border",
         isDragging ? "opacity-30 scale-95" : "opacity-100"
       )}
@@ -167,7 +167,7 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
       </button>
 
       {/* Order number — always visible */}
-      <div className="absolute bottom-2 right-2 h-6 min-w-6 px-1.5 rounded-md bg-black/50 backdrop-blur-sm flex items-center justify-center">
+      <div className="absolute bottom-2 right-2 h-6 min-w-6 px-1.5 rounded-xl bg-black/50 backdrop-blur-sm flex items-center justify-center">
         <span className="text-white text-[11px] font-bold">{index + 1}</span>
       </div>
 
@@ -179,7 +179,7 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
               e.stopPropagation();
               onSetCover(index);
             }}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[11px] font-medium hover:bg-primary transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2 py-1 rounded-xl bg-black/50 backdrop-blur-sm text-white text-[11px] font-medium hover:bg-primary transition-colors cursor-pointer"
           >
             <Star className="h-3 w-3" />
             Portada
@@ -414,7 +414,7 @@ export default function PhotoUploader({
           {errors.map((error, i) => (
             <div
               key={i}
-              className="flex items-start gap-2.5 p-3 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm animate-in fade-in slide-in-from-top-1 duration-200"
+              className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-sm animate-in fade-in slide-in-from-top-1 duration-200"
             >
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
@@ -433,7 +433,7 @@ export default function PhotoUploader({
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          "w-full rounded-3xl border-2 border-dashed transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-2",
+          "w-full rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-2",
           hasPhotos ? "py-8" : "aspect-[3/2] py-8",
           dragOver
             ? "border-primary bg-primary/5 scale-[1.01]"
@@ -442,7 +442,7 @@ export default function PhotoUploader({
       >
         <div
           className={cn(
-            "rounded-2xl bg-secondary flex items-center justify-center transition-all",
+            "rounded-xl bg-secondary flex items-center justify-center transition-all",
             hasPhotos ? "h-11 w-11" : "h-14 w-14"
           )}
         >
@@ -509,7 +509,7 @@ export default function PhotoUploader({
                 {uploading.map((item) => (
                   <div
                     key={item.id}
-                    className="relative rounded-2xl overflow-hidden border-2 border-border animate-in fade-in zoom-in-95 duration-300"
+                    className="relative rounded-xl overflow-hidden border-2 border-border animate-in fade-in zoom-in-95 duration-300"
                   >
                     <div className="aspect-[4/3] relative">
                       <img

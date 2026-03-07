@@ -29,7 +29,7 @@ const PublishModal = ({ open, onOpenChange }: PublishModalProps) => {
         <div className="space-y-4">
           <button
             onClick={() => handleSelect("inmobiliaria")}
-            className="w-full p-6 rounded-2xl border border-border hover:border-primary/30 hover:bg-accent transition-all flex items-center gap-4 group"
+            className="w-full p-6 rounded-xl border border-border hover:border-primary/30 hover:bg-accent transition-all flex items-center gap-4 group"
           >
             <div className="icon-container">
               <Building2 className="h-6 w-6 text-primary" />
@@ -41,7 +41,7 @@ const PublishModal = ({ open, onOpenChange }: PublishModalProps) => {
 
           <button
             onClick={() => handleSelect("propietario")}
-            className="w-full p-6 rounded-2xl border border-border hover:border-primary/30 hover:bg-accent transition-all flex items-center gap-4 group"
+            className="w-full p-6 rounded-xl border border-border hover:border-primary/30 hover:bg-accent transition-all flex items-center gap-4 group"
           >
             <div className="icon-container">
               <User className="h-6 w-6 text-primary" />

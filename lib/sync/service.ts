@@ -19,6 +19,29 @@ export interface SyncResult {
 }
 
 /**
+ * Fire-and-forget photo migration with self-chaining.
+ * Calls the migrate endpoint and re-calls if photos remain (up to maxCalls).
+ */
+function triggerPhotoMigration(userId: string, maxCalls = 10) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const url = `${appUrl}/api/photos/migrate?userId=${userId}`;
+
+  async function run(remaining: number) {
+    if (remaining <= 0) return;
+    try {
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.remaining > 0) {
+        run(remaining - 1);
+      }
+    } catch {}
+  }
+
+  run(maxCalls).catch(() => {});
+}
+
+/**
  * Hash API key for identification (SHA-256)
  */
 function hashApiKey(apiKey: string): string {
@@ -542,13 +565,8 @@ async function syncNetworkAccount(
 
     await updateSyncStatus(apiKeyHash, 'done', null, totalPropertiesSynced);
 
-    // Trigger background photo migration
-    try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      fetch(`${appUrl}/api/photos/migrate?userId=${userId}`, {
-        method: 'POST',
-      }).catch(() => {});
-    } catch {}
+    // Trigger background photo migration (self-chaining up to 3 calls)
+    triggerPhotoMigration(userId);
 
     return {
       userId,
@@ -678,13 +696,8 @@ export async function syncTokkoData(
 
     await updateSyncStatus(apiKeyHash, 'done', null, result.propertiesSynced);
 
-    // Trigger background photo migration
-    try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      fetch(`${appUrl}/api/photos/migrate?userId=${userId}`, {
-        method: 'POST',
-      }).catch(() => {});
-    } catch {}
+    // Trigger background photo migration (self-chaining up to 3 calls)
+    triggerPhotoMigration(userId);
 
     return {
       userId,

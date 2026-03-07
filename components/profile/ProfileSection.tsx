@@ -190,7 +190,7 @@ export default function ProfileSection({
     return (
       <div className="max-w-md">
         {/* Icon + title */}
-        <div className="h-14 w-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-5">
+        <div className="h-14 w-14 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
           <Building2 className="h-7 w-7 text-blue-500" />
         </div>
         <h1 className="font-display text-2xl font-bold text-foreground">
@@ -201,7 +201,7 @@ export default function ProfileSection({
         </p>
 
         {(setupError || syncStatus === "error") && (
-          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg flex items-center gap-2 mb-4">
+          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl flex items-center gap-2 mb-4">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             {setupError || "Error en la sincronización. Intentá nuevamente."}
           </div>
@@ -511,7 +511,7 @@ export default function ProfileSection({
                   type="text"
                   value={`${tokkoKeyPreview}••••••••••••••••`}
                   disabled
-                  className="h-11 rounded-lg bg-muted font-mono text-sm"
+                  className="h-11 rounded-xl bg-muted font-mono text-sm"
                 />
               </div>
 
@@ -528,7 +528,7 @@ export default function ProfileSection({
 
               <Button
                 variant="outline"
-                className="h-10 rounded-lg font-medium gap-2"
+                className="h-10 rounded-xl font-medium gap-2"
                 disabled
               >
                 <RefreshCw className="h-4 w-4" />

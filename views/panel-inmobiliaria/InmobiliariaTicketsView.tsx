@@ -86,7 +86,7 @@ const InmobiliariaTicketsView = () => {
           return (
             <div
               key={ticket.id}
-              className={`bg-card rounded-2xl border border-border border-l-4 ${priorityConfig[ticket.priority]} p-6`}
+              className={`bg-card rounded-xl border border-border border-l-4 ${priorityConfig[ticket.priority]} p-6`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

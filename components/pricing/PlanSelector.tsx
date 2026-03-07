@@ -93,7 +93,7 @@ const MobilePlanCard = ({
   return (
     <div
       className={cn(
-        "rounded-2xl p-6 transition-all cursor-pointer",
+        "rounded-xl p-6 transition-all cursor-pointer",
         isSelected
           ? "bg-primary/[0.06] border-2 border-primary shadow-lg shadow-primary/10"
           : isRecommended
@@ -310,27 +310,29 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
         </div>
 
         {/* Desktop plan select buttons */}
-        <div className="grid grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-[1fr_1fr_1fr_1fr] mt-6">
+          <div />
           {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
-            <Button
-              key={plan}
-              variant={selectedPlan === plan ? "default" : plan === "experiencia" ? "default" : "outline"}
-              size="lg"
-              className={cn(
-                "rounded-full",
-                selectedPlan === plan && "ring-2 ring-offset-2 ring-primary",
-                plan === "experiencia" && selectedPlan !== plan && "shadow-md shadow-primary/20"
-              )}
-              onClick={() => onSelectPlan(plan)}
-            >
-              {selectedPlan === plan
-                ? "✓ Seleccionado"
-                : plan === "basico"
-                ? "Elegir básico"
-                : plan === "acompanado"
-                ? "Elegir acompañado"
-                : "Quiero gestión completa"}
-            </Button>
+            <div key={plan} className="px-2 flex justify-center">
+              <Button
+                variant={selectedPlan === plan ? "default" : plan === "experiencia" ? "default" : "outline"}
+                size="lg"
+                className={cn(
+                  "rounded-full w-full",
+                  selectedPlan === plan && "ring-2 ring-offset-2 ring-primary",
+                  plan === "experiencia" && selectedPlan !== plan && "shadow-md shadow-primary/20"
+                )}
+                onClick={() => onSelectPlan(plan)}
+              >
+                {selectedPlan === plan
+                  ? "✓ Seleccionado"
+                  : plan === "basico"
+                  ? "Elegir básico"
+                  : plan === "acompanado"
+                  ? "Elegir acompañado"
+                  : "Quiero gestión completa"}
+              </Button>
+            </div>
           ))}
         </div>
 

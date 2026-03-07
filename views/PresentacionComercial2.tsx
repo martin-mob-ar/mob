@@ -26,7 +26,7 @@ const SlideCard = ({ children, className = "", variant = "default" }: {
   };
   
   return (
-    <div className={`rounded-2xl ${variants[variant]} ${className}`}>
+    <div className={`rounded-xl ${variants[variant]} ${className}`}>
       {children}
     </div>
   );
@@ -304,7 +304,7 @@ const SlideHoggax = () => {
           <div className="space-y-4">
             {verifications.map((item, i) => (
               <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-background/60">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <item.icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
                 </div>
                 <span className="text-foreground text-sm md:text-base font-medium">{item.label}</span>
@@ -653,7 +653,7 @@ const PresentacionComercial2 = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <SlideCard className="w-full max-w-sm p-8" variant="default">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 bg-accent rounded-xl flex items-center justify-center mx-auto mb-4">
               <Lock className="w-6 h-6 text-primary" />
             </div>
             <h1 className="text-xl font-bold text-foreground mb-2 font-display">Presentación comercial</h1>

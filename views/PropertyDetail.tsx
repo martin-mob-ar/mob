@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PopularSearches from "@/components/PopularSearches";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Property } from "@/components/PropertyCard";
 import Image from "next/image";
@@ -40,20 +41,25 @@ interface PropertyDetailProps {
   contactPhone?: string | null;
   ownerId?: string | null;
   age?: number | null;
+  propertyPlan?: "basico" | "acompanado" | "experiencia";
+  isInmobiliaria?: boolean;
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge }: PropertyDetailProps) => {
+function formatDescription(text: string): string {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/([^\n])•/g, '$1\n•')
+    .trim();
+}
+
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
-  const { user, isAuthenticated, openAuthModal } = useAuth();
+  const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const isOwnProperty = !!ownerId && !!user?.publicUserId && ownerId === user.publicUserId;
 
   const handleFavoriteClick = () => {
-    if (!isAuthenticated) {
-      openAuthModal();
-      return;
-    }
     if (propPropertyId) toggleFavorite(propPropertyId);
   };
   const [leadFormType, setLeadFormType] = useState<"visita" | "reserva" | null>(null);
@@ -63,6 +69,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showBottomBar, setShowBottomBar] = useState(false);
   const mainCtaRef = useRef<HTMLDivElement>(null);
+  const thumbnailStripRef = useRef<HTMLDivElement>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showGallery, setShowGallery] = useState(false);
@@ -107,6 +114,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const publisherName = propPublisherName || null;
   const publisherLogo = propPublisherLogo || null;
   const locationSuffix = propLocationFull || `${property.neighborhood}`;
+  const showVerifiedOwnerBadge = !isInmobiliaria && propertyPlan !== "basico";
 
   // Detect scroll to show/hide bottom bar
   useEffect(() => {
@@ -142,6 +150,30 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showGallery]);
 
+  // Lock body scroll when gallery is open
+  useEffect(() => {
+    if (showGallery) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [showGallery]);
+
+  // Auto-scroll thumbnail strip to keep active thumbnail centered
+  useEffect(() => {
+    const strip = thumbnailStripRef.current;
+    if (!strip) return;
+    const activeThumb = strip.children[galleryIndex] as HTMLElement | undefined;
+    if (!activeThumb) return;
+    const stripLeft = strip.scrollLeft;
+    const stripWidth = strip.clientWidth;
+    const thumbLeft = activeThumb.offsetLeft;
+    const thumbWidth = activeThumb.offsetWidth;
+    const targetScroll = thumbLeft - stripWidth / 2 + thumbWidth / 2;
+    strip.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  }, [galleryIndex]);
+
   return (
     <GoogleMapsProvider>
     <div className="min-h-screen bg-background">
@@ -157,19 +189,19 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6">
               <button 
                 onClick={() => setShowGallery(false)}
-                className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors bg-background/80 backdrop-blur-sm px-3 py-2 rounded-lg"
+                className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl"
               >
                 <ChevronLeft className="h-5 w-5" />
                 <span className="text-sm font-medium">Volver</span>
               </button>
               
-              <div className="text-muted-foreground text-sm font-medium bg-background/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+              <div className="text-muted-foreground text-sm font-medium bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl">
                 {galleryIndex + 1} / {galleryImages.length}
               </div>
 
               <button 
                 onClick={() => setShowGallery(false)}
-                className="h-10 w-10 flex items-center justify-center bg-background/80 backdrop-blur-sm hover:bg-secondary rounded-lg transition-colors"
+                className="h-10 w-10 flex items-center justify-center bg-background/80 backdrop-blur-sm hover:bg-secondary rounded-xl transition-colors"
               >
                 <span className="text-foreground text-xl leading-none">&times;</span>
               </button>
@@ -207,7 +239,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 width={1200}
                 height={900}
                 sizes="90vw"
-                className="max-w-full max-h-[60vh] object-contain select-none rounded-lg"
+                className="max-w-full max-h-[60vh] object-contain select-none rounded-xl"
                 draggable={false}
               />
             </div>
@@ -222,18 +254,32 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           </div>
 
           {/* Thumbnail strip */}
-          <div className="flex justify-center gap-2 px-4 py-4 border-t border-border">
-            {galleryImages.map((img, index) => (
-              <button
-                key={index}
-                onClick={(e) => { e.stopPropagation(); setGalleryIndex(index); }}
-                className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all relative ${
-                  index === galleryIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-80'
-                }`}
-              >
-                <Image src={img} alt={`Miniatura ${index + 1}`} fill sizes="64px" className="object-cover" />
-              </button>
-            ))}
+          <div className="flex items-center gap-2 border-t border-border px-2 py-4">
+            <button
+              onClick={(e) => { e.stopPropagation(); thumbnailStripRef.current?.scrollBy({ left: -200, behavior: 'smooth' }); }}
+              className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4 text-foreground" />
+            </button>
+            <div ref={thumbnailStripRef} className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-1">
+              {galleryImages.map((img, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => { e.stopPropagation(); setGalleryIndex(index); }}
+                  className={`flex-shrink-0 w-16 h-12 rounded-xl overflow-hidden border-2 transition-all relative ${
+                    index === galleryIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-80'
+                  }`}
+                >
+                  <Image src={img} alt={`Miniatura ${index + 1}`} fill sizes="64px" className="object-cover" />
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); thumbnailStripRef.current?.scrollBy({ left: 200, behavior: 'smooth' }); }}
+              className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors"
+            >
+              <ChevronRight className="h-4 w-4 text-foreground" />
+            </button>
           </div>
         </div>
       )}
@@ -243,14 +289,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       {/* Desktop Sub-header */}
       <div className="hidden md:block border-b border-border">
         <div className="max-w-6xl mx-auto px-6 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver
-            </button>
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-4">
               <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <Share2 className="h-4 w-4" />
@@ -331,7 +370,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           {/* Verified Badge - Bottom left */}
           {property.verified && (
             <div className="absolute bottom-4 left-4 z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-background/95 text-primary shadow-sm">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
                 <CheckCircle className="h-3.5 w-3.5" />
                 Verificada
               </span>
@@ -380,7 +419,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             {/* Verified Badge - Desktop */}
             {property.verified && (
               <div className="absolute bottom-3 left-3 z-10">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-background/95 text-primary shadow-sm">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
                   <CheckCircle className="h-3.5 w-3.5" />
                   Verificada
                 </span>
@@ -403,7 +442,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               {index === 3 && galleryImages.length > 5 && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setGalleryIndex(0); setShowGallery(true); }}
-                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-background rounded-lg border border-border text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-background rounded-xl border border-border text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
                 >
                   <Grid3X3 className="h-3.5 w-3.5" />
                   Mostrar todas las fotos
@@ -557,6 +596,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     propertyAddress={property?.address || ""}
                     onClose={() => setLeadFormType(null)}
                     inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
+                    propertyPlan={propertyPlan}
+                    isInmobiliaria={isInmobiliaria}
                   />
                 )}
               </AnimateHeight>
@@ -576,7 +617,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 key={index} 
                 className="flex items-center gap-1.5"
               >
-                <div className="h-6 w-6 rounded-md border border-border flex items-center justify-center">
+                <div className="h-6 w-6 rounded-xl border border-border flex items-center justify-center">
                   <stat.icon className="h-3 w-3 text-muted-foreground" strokeWidth={1.5} />
                 </div>
                 <span className="text-xs font-semibold text-foreground">
@@ -593,8 +634,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <h2 className="font-display text-lg font-bold text-foreground mb-3">
               Sobre esta propiedad
             </h2>
-            <p className={`text-sm text-muted-foreground leading-relaxed ${!showFullDescription ? "line-clamp-4" : ""}`}>
-              {description}
+            <p className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap ${!showFullDescription ? "line-clamp-4" : ""}`}>
+              {formatDescription(description)}
             </p>
             {description.length > 150 && (
               <button
@@ -718,6 +759,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     <Shield className="h-3.5 w-3.5" />
                     Inmobiliaria verificada
                   </p>
+                ) : showVerifiedOwnerBadge ? (
+                  <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Dueño verificado por Mob
+                  </p>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-0.5">Dueño directo</p>
                 )}
@@ -813,8 +859,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <h2 className="font-display text-lg font-bold text-foreground mb-3">
                     Sobre esta propiedad
                   </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {description}
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {formatDescription(description)}
                   </p>
                 </div>
               </>
@@ -999,6 +1045,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                         propertyAddress={property?.address || ""}
                         onClose={() => setLeadFormType(null)}
                         inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
+                        propertyPlan={propertyPlan}
+                        isInmobiliaria={isInmobiliaria}
                       />
                     )}
                   </AnimateHeight>
@@ -1058,6 +1106,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                           <Shield className="h-3 w-3" />
                           Inmobiliaria verificada
                         </p>
+                      ) : showVerifiedOwnerBadge ? (
+                        <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                          <BadgeCheck className="h-3 w-3" />
+                          Dueño verificado por Mob
+                        </p>
                       ) : (
                         <p className="text-[10px] text-muted-foreground">Dueño directo</p>
                       )}
@@ -1076,8 +1129,10 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
       </main>
       
+      <PopularSearches title="Más alquileres" />
+
       <div className="hidden md:block">
-        <Footer />
+        <Footer className="mt-0" />
       </div>
 
       {/* Mobile Footer - Compact */}

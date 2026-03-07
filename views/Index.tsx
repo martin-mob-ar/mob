@@ -6,6 +6,7 @@ import PropertySection from "@/components/PropertySection";
 import Timeline from "@/components/Timeline";
 import BentoGrid from "@/components/BentoGrid";
 import WhyMob from "@/components/WhyMob";
+import DualCTA from "@/components/DualCTA";
 import ExploreRentals from "@/components/ExploreRentals";
 import Footer from "@/components/Footer";
 import { properties as mockProperties } from "@/data/properties";
@@ -27,7 +28,7 @@ const Index = ({ properties }: IndexProps) => {
       <HeroSection properties={enrichedProperties.slice(0, 4)} />
 
       {/* Properties Sections */}
-      <PropertySection title="Propiedades para vos" properties={enrichedProperties} />
+      <PropertySection title="Propiedades destacadas" properties={enrichedProperties} />
 
       <PropertySection title="Últimas propiedades" properties={[...enrichedProperties].reverse()} />
 
@@ -39,6 +40,9 @@ const Index = ({ properties }: IndexProps) => {
 
       {/* Propuesta MOB */}
       <WhyMob />
+
+      {/* Dual CTA - Propietarios & Inmobiliarias */}
+      <DualCTA />
 
       {/* Explore Rentals Section */}
       <ExploreRentals />

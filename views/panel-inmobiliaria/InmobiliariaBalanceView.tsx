@@ -53,7 +53,7 @@ const InmobiliariaBalanceView = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card rounded-2xl border border-border p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <DollarSign className="h-6 w-6 text-primary" />
@@ -70,7 +70,7 @@ const InmobiliariaBalanceView = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
               <ArrowUpRight className="h-6 w-6 text-green-600" />
@@ -90,7 +90,7 @@ const InmobiliariaBalanceView = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
               <ArrowDownRight className="h-6 w-6 text-red-600" />
@@ -109,7 +109,7 @@ const InmobiliariaBalanceView = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <h2 className="font-display font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-6">
           Movimientos recientes
         </h2>

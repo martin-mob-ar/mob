@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ChevronDown, MapPin, Loader2 } from "lucide-react";
+import { Search, ChevronDown, MapPin, Loader2, BedDouble } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
@@ -195,7 +195,7 @@ const SearchBar = () => {
   const locationDropdown = showLocationDropdown ? (
     <div
       ref={locationDropdownRef}
-      className="absolute left-0 min-w-full w-96 max-w-[calc(100vw-2rem)] top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
+      className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
     >
       {locationLoading ? (
         <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
@@ -304,7 +304,7 @@ const SearchBar = () => {
   if (!isMobile) {
     return (
       <div className="w-full max-w-4xl mx-auto search-bar-mob">
-        <div className="flex items-center p-1.5 bg-card rounded-[28px] border border-border shadow-md">
+        <div className="flex items-center p-1.5 bg-card rounded-full border border-border shadow-md">
           <div className="flex-1 grid grid-cols-[1fr_1fr] divide-x divide-border">
             <div className="px-6 py-3 relative">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -346,7 +346,7 @@ const SearchBar = () => {
           <Button
             onClick={handleSearch}
             size="icon"
-            className="h-12 w-12 rounded-[22px] flex-shrink-0"
+            className="h-12 w-12 rounded-full flex-shrink-0 mr-1"
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -358,7 +358,7 @@ const SearchBar = () => {
   // Mobile Layout — 3-row compact search card
   return (
     <div className="w-full">
-      <div className="bg-background border border-border rounded-2xl shadow-sm overflow-visible relative">
+      <div className="bg-background border border-border rounded-xl shadow-sm overflow-visible relative">
         {/* Row 1: Location */}
         <div className="px-4 py-3 relative">
           <div className="flex items-center gap-2.5">
@@ -387,7 +387,10 @@ const SearchBar = () => {
               onClick={() => { setRoomsOpen(!roomsOpen); setShowLocationDropdown(false); }}
               className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer"
             >
-              <span className="text-sm text-foreground truncate">{getRoomsLabel()}</span>
+              <span className="flex items-center gap-2">
+                <BedDouble className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-sm text-foreground truncate">{getRoomsLabel()}</span>
+              </span>
               <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${roomsOpen ? "rotate-180" : ""}`} />
             </button>
           </div>
@@ -396,7 +399,7 @@ const SearchBar = () => {
           {roomsOpen && (
             <div
               ref={roomsDropdownRef}
-              className="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-xl shadow-lg z-50 p-4 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
+              className="absolute left-0 right-0 bottom-full mb-1 bg-background border border-border rounded-xl shadow-lg z-50 p-4 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
             >
               {roomsInnerContent}
             </div>

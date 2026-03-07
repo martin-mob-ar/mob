@@ -75,7 +75,7 @@ const InmobiliariaContratosView = () => {
         {contracts.map((contract) => (
           <div
             key={contract.id}
-            className="bg-card rounded-2xl border border-border p-6"
+            className="bg-card rounded-xl border border-border p-6"
           >
             <div className="flex items-start gap-6">
               {/* Avatars - Propietario e Inquilino */}

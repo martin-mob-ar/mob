@@ -71,7 +71,7 @@ const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
           return (
             <div
               key={draft.id}
-              className="bg-card rounded-2xl border border-border/60 p-5 space-y-4"
+              className="bg-card rounded-xl border border-border/60 p-5 space-y-4"
             >
               <div className="space-y-1">
                 <p className="font-medium text-sm leading-snug">{title}</p>
@@ -160,7 +160,7 @@ const GestionView = ({
 
         <DraftPropertiesSection drafts={draftProperties} />
 
-        <div className="bg-card rounded-2xl border border-border p-12 text-center max-w-lg mx-auto">
+        <div className="bg-card rounded-xl border border-border p-12 text-center max-w-lg mx-auto">
           <div className="h-16 w-16 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
             <Home className="h-8 w-8 text-primary" />
           </div>
@@ -240,7 +240,7 @@ const GestionView = ({
         <TabsList className="bg-card border border-border p-1 rounded-xl h-auto gap-1">
           <TabsTrigger
             value="alquileres"
-            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <Home className="h-4 w-4" />
             Mis alquileres
@@ -252,7 +252,7 @@ const GestionView = ({
           </TabsTrigger>
           <TabsTrigger
             value="propiedades"
-            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <Building2 className="h-4 w-4" />
             Mis propiedades

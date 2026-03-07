@@ -89,7 +89,7 @@ const ResumenView = ({ properties: propsProp }: ResumenViewProps) => {
 
         {/* Monthly income card - subtle, not protagonist */}
         <div className="flex items-center gap-4 px-5 py-3 bg-card rounded-xl border border-border">
-          <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
             <DollarSign className="h-5 w-5 text-success" />
           </div>
           <div>
@@ -104,7 +104,7 @@ const ResumenView = ({ properties: propsProp }: ResumenViewProps) => {
         {/* Upload property card - always first */}
         <Link
           href="/subir-propiedad"
-          className="bg-card rounded-2xl border-2 border-dashed border-border hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center p-8 min-h-[340px] group hover:shadow-lg"
+          className="bg-card rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center p-8 min-h-[340px] group hover:shadow-lg"
         >
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
             <Plus className="h-8 w-8 text-primary" />
@@ -122,7 +122,7 @@ const ResumenView = ({ properties: propsProp }: ResumenViewProps) => {
           <Link
             key={property.id}
             href={`/gestion/propiedad/${property.id}`}
-            className="bg-card rounded-2xl border border-border overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all relative"
+            className="bg-card rounded-xl border border-border overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all relative"
           >
             {/* Badges container */}
             <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">

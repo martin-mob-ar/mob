@@ -23,7 +23,7 @@ const MobileHeroCard = () => {
         style={{ animationDuration: "3.6s", animationDelay: "0.4s" }}
       >
         <div
-          className="bg-card rounded-2xl border border-border/50 shadow-lg overflow-hidden"
+          className="bg-card rounded-xl border border-border/50 shadow-lg overflow-hidden"
           style={{ transform: "rotate(-3deg) scale(0.98)" }}
         >
           <div className="relative aspect-[4/3]">

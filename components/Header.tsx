@@ -39,9 +39,10 @@ const ambientesOptions = [
 
 interface HeaderProps {
   hideSearch?: boolean;
+  sticky?: boolean;
 }
 
-const Header = ({ hideSearch = false }: HeaderProps) => {
+const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
@@ -310,7 +311,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
   };
 
   return <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border/40 bg-background`}>
         <div className="container relative flex h-16 md:h-20 items-center gap-4">
           <Link href="/" className="flex items-center shrink-0">
             <Image alt="mob" width={112} height={44} className="h-7 md:h-11 w-auto" src={mobLogo} />

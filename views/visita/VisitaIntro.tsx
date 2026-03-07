@@ -75,7 +75,7 @@ const VisitaIntro = () => {
             {benefits.map((benefit, index) => (
               <div 
                 key={index}
-                className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border"
+                className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border"
               >
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <benefit.icon className="h-4 w-4 text-primary" />

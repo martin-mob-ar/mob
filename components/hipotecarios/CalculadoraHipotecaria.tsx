@@ -447,17 +447,17 @@ export default function CalculadoraHipotecaria() {
         {/* ── Info badges ── */}
         {banco && (
           <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-muted/50">
               Financiación: hasta {(banco.financiacion * 100).toFixed(0)}%
             </span>
             {banco.relacion_cuota_ingreso_max && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-muted/50">
                 <Info className="h-3 w-3" />
                 Cuota–ingreso máx: {(banco.relacion_cuota_ingreso_max * 100).toFixed(0)}%
               </span>
             )}
             {montoMaxBancoARS && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-muted/50">
                 Monto máx: {formatARS(montoMaxBancoARS)}
               </span>
             )}

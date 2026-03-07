@@ -331,7 +331,7 @@ export default function PropertyEditForm({
     value: number;
     onChange: (val: number) => void;
   }) => (
-    <div className="flex items-center justify-between p-4 rounded-2xl border border-border">
+    <div className="flex items-center justify-between p-4 rounded-xl border border-border">
       <span className="font-medium">{label}</span>
       <div className="flex items-center gap-4">
         <button
@@ -390,7 +390,7 @@ export default function PropertyEditForm({
       <h1 className="font-display text-2xl font-bold">Editar propiedad</h1>
 
       {/* ═══ Section: Precio y contrato ═══ */}
-      <Collapsible open={openSections.precio} className="bg-card rounded-2xl border border-border p-6">
+      <Collapsible open={openSections.precio} className="bg-card rounded-xl border border-border p-6">
         <SectionHeader title="Precio y contrato" sectionKey="precio" />
         <CollapsibleContent className="pt-6 space-y-6">
           {/* Price + Currency */}
@@ -412,7 +412,7 @@ export default function PropertyEditForm({
                   type="button"
                   onClick={() => setCurrency("ARS")}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all",
+                    "px-3 py-1.5 rounded-xl text-sm font-semibold transition-all",
                     currency === "ARS"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground"
@@ -424,7 +424,7 @@ export default function PropertyEditForm({
                   type="button"
                   onClick={() => setCurrency("USD")}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all",
+                    "px-3 py-1.5 rounded-xl text-sm font-semibold transition-all",
                     currency === "USD"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground"
@@ -538,7 +538,7 @@ export default function PropertyEditForm({
       </Collapsible>
 
       {/* ═══ Section: Tipo y ubicación ═══ */}
-      <Collapsible open={openSections.tipoUbicacion} className="bg-card rounded-2xl border border-border p-6">
+      <Collapsible open={openSections.tipoUbicacion} className="bg-card rounded-xl border border-border p-6">
         <SectionHeader title="Tipo y ubicación" sectionKey="tipoUbicacion" />
         <CollapsibleContent className="pt-6 space-y-6">
           {/* Property type */}
@@ -683,7 +683,7 @@ export default function PropertyEditForm({
       </Collapsible>
 
       {/* ═══ Section: Caracteristicas ═══ */}
-      <Collapsible open={openSections.caracteristicas} className="bg-card rounded-2xl border border-border p-6">
+      <Collapsible open={openSections.caracteristicas} className="bg-card rounded-xl border border-border p-6">
         <SectionHeader title="Características" sectionKey="caracteristicas" />
         <CollapsibleContent className="pt-6 space-y-4">
           <div className="space-y-2">
@@ -763,7 +763,7 @@ export default function PropertyEditForm({
       </Collapsible>
 
       {/* ═══ Section: Multimedia ═══ */}
-      <Collapsible open={openSections.multimedia} className="bg-card rounded-2xl border border-border p-6">
+      <Collapsible open={openSections.multimedia} className="bg-card rounded-xl border border-border p-6">
         <SectionHeader title="Multimedia" sectionKey="multimedia" />
         <CollapsibleContent className="pt-6 space-y-6">
           {/* Photos */}
@@ -793,7 +793,7 @@ export default function PropertyEditForm({
       </Collapsible>
 
       {/* ═══ Section: Extras ═══ */}
-      <Collapsible open={openSections.extras} className="bg-card rounded-2xl border border-border p-6">
+      <Collapsible open={openSections.extras} className="bg-card rounded-xl border border-border p-6">
         <SectionHeader title="Extras" sectionKey="extras" />
         <CollapsibleContent className="pt-6 space-y-6">
           {/* Tags */}

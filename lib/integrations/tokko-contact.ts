@@ -6,6 +6,7 @@ interface TokkoWebContactPayload {
   cellphone?: string;
   text: string;
   properties: number[];
+  tags?: string[];
 }
 
 interface TokkoWebContactResult {
@@ -18,17 +19,24 @@ interface TokkoWebContactResult {
  * @param apiKey - Raw Tokko API key (decrypted)
  * @param tokkoPropertyId - The Tokko property ID to associate the contact with
  * @param lead - Lead contact data
+ * @param inquilinoVerified - Whether the submitter is a verified tenant
  */
 export async function createTokkoWebContact(
   apiKey: string,
   tokkoPropertyId: number,
-  lead: { name: string; email: string; phone?: string; message: string }
+  lead: { name: string; email: string; phone?: string; message: string },
+  inquilinoVerified: boolean = false
 ): Promise<TokkoWebContactResult> {
+  const verificationTag = inquilinoVerified
+    ? 'Inquilino verificado por MOB'
+    : 'Inquilino no verificado por MOB';
+
   const payload: TokkoWebContactPayload = {
     name: lead.name,
     email: lead.email,
-    text: lead.message,
+    text: `${lead.message.replace(/\.$/, '')} que vi en mob.ar`,
     properties: [tokkoPropertyId],
+    tags: ['mob.ar', verificationTag],
   };
 
   if (lead.phone) {

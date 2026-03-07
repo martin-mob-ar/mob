@@ -87,7 +87,7 @@ const TenantSection = ({ rentals, mockMode }: TenantSectionProps) => {
 
   if (rentals.length === 0) {
     return (
-      <div className="bg-card rounded-2xl border border-border p-12 text-center">
+      <div className="bg-card rounded-xl border border-border p-12 text-center">
         <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
           <Home className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -124,7 +124,7 @@ const TenantSection = ({ rentals, mockMode }: TenantSectionProps) => {
               <Link
                 key={rental.operacionId}
                 href={`/gestion/alquiler/${rental.operacionId}${mockMode ? "?mock=true" : ""}`}
-                className="block bg-card rounded-2xl border border-border overflow-hidden hover:border-green-500/30 hover:shadow-lg transition-all group"
+                className="block bg-card rounded-xl border border-border overflow-hidden hover:border-green-500/30 hover:shadow-lg transition-all group"
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Photo */}

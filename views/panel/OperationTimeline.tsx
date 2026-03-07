@@ -46,7 +46,7 @@ interface OperationTimelineProps {
 const OperationTimeline = ({ operations }: OperationTimelineProps) => {
   if (operations.length === 0) {
     return (
-      <div className="bg-card rounded-2xl border border-border p-12 text-center">
+      <div className="bg-card rounded-xl border border-border p-12 text-center">
         <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
           <Calendar className="h-8 w-8 text-muted-foreground" />
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ArrowRightLeft } from "lucide-react";
+import { ChevronDown, ArrowRightLeft, DollarSign } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -16,7 +16,7 @@ const PriceFilter = () => {
   const [open, setOpen] = useState(false);
   const { filters, setFilters } = useSearchFilters();
   const { rate: usdRate } = useExchangeRate();
-  const [priceType, setPriceType] = useState<"total" | "alquiler">("total");
+  const [priceType, setPriceType] = useState<"total" | "alquiler">(filters.priceType || "total");
   const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
   const [minPrice, setMinPrice] = useState(filters.minPrice);
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice);
@@ -64,8 +64,8 @@ const PriceFilter = () => {
     if (min && max && parseInt(min) > parseInt(max)) {
       [min, max] = [max, min];
     }
-    if (min !== filters.minPrice || max !== filters.maxPrice) {
-      setFilters({ minPrice: min, maxPrice: max });
+    if (min !== filters.minPrice || max !== filters.maxPrice || priceType !== filters.priceType) {
+      setFilters({ minPrice: min, maxPrice: max, priceType });
     }
     setOpen(false);
   };
@@ -91,6 +91,7 @@ const PriceFilter = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border hover:border-primary/30 transition-colors bg-background">
+          <DollarSign className="h-4 w-4" />
           <span className="text-sm font-medium">{getDisplayText()}</span>
           <ChevronDown className="h-4 w-4" />
         </button>
@@ -147,7 +148,7 @@ const PriceFilter = () => {
 
           {/* Exchange rate badge */}
           {currency === "USD" && usdRate && (
-            <div className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+            <div className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-muted/50 text-xs text-muted-foreground">
               <ArrowRightLeft className="h-3 w-3" />
               <span>1 USD = <span className="font-semibold text-foreground">${usdRate.toLocaleString("es-AR")}</span> ARS</span>
             </div>

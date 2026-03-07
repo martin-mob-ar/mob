@@ -136,7 +136,7 @@ const InmobiliariaPropiedadesView = ({ properties: propsProp }: InmobiliariaProp
           <Link
             key={property.id}
             href={`/gestion-inmobiliaria/propiedad/${property.id}`}
-            className="bg-card rounded-2xl border border-border overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all"
+            className="bg-card rounded-xl border border-border overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all"
           >
             {/* Image */}
             <div className="relative aspect-[4/3] overflow-hidden">
@@ -146,13 +146,13 @@ const InmobiliariaPropiedadesView = ({ properties: propsProp }: InmobiliariaProp
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
               <span
-                className={`absolute top-3 left-3 px-3 py-1 rounded-md text-xs font-semibold uppercase tracking-wide ${
+                className={`absolute top-3 left-3 px-3 py-1 rounded-xl text-xs font-semibold uppercase tracking-wide ${
                   statusConfig[property.status].className
                 }`}
               >
                 {statusConfig[property.status].label}
               </span>
-              <span className="absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-mono bg-background/80 backdrop-blur-sm text-foreground">
+              <span className="absolute top-3 right-3 px-2 py-1 rounded-xl text-xs font-mono bg-background/80 backdrop-blur-sm text-foreground">
                 {property.tokkoId}
               </span>
               

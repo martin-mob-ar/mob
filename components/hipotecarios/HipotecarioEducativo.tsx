@@ -339,7 +339,7 @@ function Block({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border/20 bg-card/40 p-6 sm:p-8">
+    <div className="rounded-xl border border-border/20 bg-card/40 p-6 sm:p-8">
       <div className="flex items-center gap-3 mb-5">
         {icon}
         <h3 className="font-display text-lg sm:text-xl font-semibold text-foreground">
@@ -375,7 +375,7 @@ function CompareCard({
     color === "primary" ? "text-primary" : "text-amber-400";
 
   return (
-    <div className={`rounded-2xl border ${borderColor} bg-card/40 p-6`}>
+    <div className={`rounded-xl border ${borderColor} bg-card/40 p-6`}>
       <h4 className={`font-display font-bold ${textColor} mb-4`}>{title}</h4>
       <ul className="space-y-3 text-sm text-muted-foreground">
         {items.map((item, i) => (
@@ -447,7 +447,7 @@ function TipBlock({
   tips: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-border/20 bg-card/40 p-5">
+    <div className="rounded-xl border border-border/20 bg-card/40 p-5">
       <div className="flex items-center gap-2 mb-4 text-primary">
         {icon}
         <h4 className="font-display font-semibold text-foreground text-sm">

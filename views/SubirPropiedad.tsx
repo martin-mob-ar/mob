@@ -523,7 +523,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
     value: number;
     onChange: (val: number) => void;
   }) => (
-    <div className="flex items-center justify-between p-4 rounded-2xl border border-border">
+    <div className="flex items-center justify-between p-4 rounded-xl border border-border">
       <span className="font-medium">{label}</span>
       <div className="flex items-center gap-4">
         <button
@@ -605,7 +605,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                     key={type.id}
                     onClick={() => { setTypeId(type.id); setShowErrors(false); }}
                     className={cn(
-                      "py-3 sm:py-4 px-2 sm:px-6 rounded-2xl border-2 text-xs sm:text-sm font-semibold transition-all",
+                      "py-3 sm:py-4 px-2 sm:px-6 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all",
                       typeId === type.id
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -788,7 +788,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                     key={disp}
                     onClick={() => setDisposicion(disp)}
                     className={cn(
-                      "py-4 px-4 rounded-2xl border-2 text-sm font-semibold transition-all",
+                      "py-4 px-4 rounded-xl border-2 text-sm font-semibold transition-all",
                       disposicion === disp
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -828,7 +828,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   <button
                     onClick={() => setMoneda("ARS")}
                     className={cn(
-                      "px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                      "px-3 py-2 rounded-xl text-sm font-semibold transition-all",
                       moneda === "ARS" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -837,7 +837,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   <button
                     onClick={() => setMoneda("USD")}
                     className={cn(
-                      "px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                      "px-3 py-2 rounded-xl text-sm font-semibold transition-all",
                       moneda === "USD" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -848,7 +848,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 rounded-2xl border border-border">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border">
                 <span className="font-medium">¿Expensas incluidas?</span>
                 <Switch
                   checked={expensasIncluidas}
@@ -874,7 +874,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                 </div>
               </AnimateHeight>
 
-              <div className="flex items-center justify-between p-4 rounded-2xl border border-border">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border">
                 <span className="font-medium">¿Está amoblado?</span>
                 <Switch checked={amoblado} onCheckedChange={setAmoblado} />
               </div>
@@ -898,7 +898,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                       setShowDuracionHint(false);
                     }}
                     className={cn(
-                      "py-4 px-4 rounded-2xl border-2 text-sm font-semibold transition-all",
+                      "py-4 px-4 rounded-xl border-2 text-sm font-semibold transition-all",
                       duracionContrato === opt.months && !customDuracion
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -929,7 +929,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                     }
                   }}
                   className={cn(
-                    "h-full rounded-2xl border-2 text-sm text-center font-semibold transition-all",
+                    "h-full rounded-xl border-2 text-sm text-center font-semibold transition-all",
                     customDuracion
                       ? "border-primary bg-accent text-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
@@ -942,7 +942,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
             </div>
 
             <div>
-              <div className="flex items-center justify-between p-4 rounded-2xl border border-border">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border">
                 <span className="font-medium">Actualización por IPC (inflación)</span>
                 <Switch checked={ipcEnabled} onCheckedChange={setIpcEnabled} />
               </div>
@@ -954,7 +954,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                       key={periodo}
                       onClick={() => setIpcPeriodo(periodo)}
                       className={cn(
-                        "py-3 px-3 rounded-2xl border-2 text-sm font-semibold transition-all capitalize",
+                        "py-3 px-3 rounded-xl border-2 text-sm font-semibold transition-all capitalize",
                         ipcPeriodo === periodo
                           ? "border-primary bg-accent text-primary"
                           : "border-border text-muted-foreground hover:border-primary/50"
@@ -1092,7 +1092,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                         onValueChange={(value) => updateHorario(day.id, "start", value)}
                         disabled={!diasVisita.includes(day.id)}
                       >
-                        <SelectTrigger className="w-24 h-9 rounded-lg text-sm">
+                        <SelectTrigger className="w-24 h-9 rounded-xl text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background max-h-48">
@@ -1109,7 +1109,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                         onValueChange={(value) => updateHorario(day.id, "end", value)}
                         disabled={!diasVisita.includes(day.id)}
                       >
-                        <SelectTrigger className="w-24 h-9 rounded-lg text-sm">
+                        <SelectTrigger className="w-24 h-9 rounded-xl text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background max-h-48">
@@ -1229,12 +1229,12 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   <p className="text-sm text-muted-foreground">{uploadedPhotos.length} {uploadedPhotos.length === 1 ? "foto" : "fotos"}</p>
                   <div className="flex gap-2 overflow-x-auto">
                     {uploadedPhotos.slice(0, 5).map((photo, i) => (
-                      <div key={photo.storagePath} className={cn("relative shrink-0 w-16 h-12 rounded-lg overflow-hidden border", photo.isCover ? "border-primary" : "border-border")}>
+                      <div key={photo.storagePath} className={cn("relative shrink-0 w-16 h-12 rounded-xl overflow-hidden border", photo.isCover ? "border-primary" : "border-border")}>
                         <img src={photo.publicUrl} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
                       </div>
                     ))}
                     {uploadedPhotos.length > 5 && (
-                      <div className="shrink-0 w-16 h-12 rounded-lg bg-secondary flex items-center justify-center">
+                      <div className="shrink-0 w-16 h-12 rounded-xl bg-secondary flex items-center justify-center">
                         <span className="text-xs font-medium text-muted-foreground">+{uploadedPhotos.length - 5}</span>
                       </div>
                     )}
@@ -1335,7 +1335,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
             </div>
             <div
               ref={mapRef}
-              className="w-full aspect-square max-w-lg mx-auto rounded-3xl overflow-hidden border border-border"
+              className="w-full aspect-square max-w-lg mx-auto rounded-xl overflow-hidden border border-border"
               style={{ minHeight: "400px" }}
             >
               {!isLoaded && (
@@ -1388,7 +1388,7 @@ function SummarySection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-4 rounded-2xl border border-border space-y-2">
+    <div className="p-4 rounded-xl border border-border space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           {title}

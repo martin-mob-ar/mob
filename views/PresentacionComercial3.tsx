@@ -168,27 +168,27 @@ const PresentacionComercial3 = () => {
         Los problemas de<br />manejar alquileres
       </h2>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5 max-w-5xl w-full">
-        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
+        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
           <MessageSquare className="h-5 w-5 lg:h-7 lg:w-7 text-primary mx-auto mb-2 lg:mb-3" />
           <p className="font-semibold text-primary text-sm lg:text-lg">Consultas sin filtrar</p>
         </div>
-        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
+        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
           <CalendarX className="h-5 w-5 lg:h-7 lg:w-7 text-primary mx-auto mb-2 lg:mb-3" />
           <p className="font-semibold text-primary text-sm lg:text-lg">Visitas improductivas</p>
         </div>
-        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
+        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
           <ClipboardList className="h-5 w-5 lg:h-7 lg:w-7 text-primary mx-auto mb-2 lg:mb-3" />
           <p className="font-semibold text-primary text-sm lg:text-lg">Procedimientos manuales</p>
         </div>
-        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
+        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
           <UserX className="h-5 w-5 lg:h-7 lg:w-7 text-primary mx-auto mb-2 lg:mb-3" />
           <p className="font-semibold text-primary text-sm lg:text-lg">Interesados sin respaldo</p>
         </div>
-        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
+        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
           <Clock className="h-5 w-5 lg:h-7 lg:w-7 text-primary mx-auto mb-2 lg:mb-3" />
           <p className="font-semibold text-primary text-sm lg:text-lg">Procesos lentos</p>
         </div>
-        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
+        <div className="bg-white border-2 border-primary/30 rounded-xl lg:rounded-xl p-4 lg:p-6 text-center shadow-lg shadow-primary/10">
           <Network className="h-5 w-5 lg:h-7 lg:w-7 text-primary mx-auto mb-2 lg:mb-3" />
           <p className="font-semibold text-primary text-sm lg:text-lg">Administración dispersa</p>
         </div>
@@ -217,7 +217,7 @@ const PresentacionComercial3 = () => {
         <div className="flex flex-col lg:flex-row items-center justify-center gap-2 lg:gap-3 text-sm lg:text-lg">
           {['Publicar', 'Responder', 'Filtrar', 'Coordinar', 'Verificar', 'Contratar', 'Administrar'].map((step, i, arr) => (
             <div key={step} className="flex items-center gap-2 lg:gap-3">
-              <span className="bg-background border border-border px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg font-medium text-foreground text-xs lg:text-base whitespace-nowrap w-full lg:w-auto text-center min-w-[140px] lg:min-w-0">{step}</span>
+              <span className="bg-background border border-border px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl font-medium text-foreground text-xs lg:text-base whitespace-nowrap w-full lg:w-auto text-center min-w-[140px] lg:min-w-0">{step}</span>
               {i < arr.length - 1 && <ArrowRight className="h-4 w-4 lg:h-5 lg:w-5 text-muted-foreground flex-shrink-0 hidden lg:block" />}
             </div>
           ))}
@@ -244,7 +244,7 @@ const PresentacionComercial3 = () => {
 
     // Slide 6 - Insight
     <div key="insight" className="h-full flex flex-col items-center justify-center text-center px-4 lg:px-12">
-      <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl lg:rounded-3xl p-8 lg:p-16 max-w-3xl">
+      <div className="bg-primary/5 border-2 border-primary/30 rounded-xl lg:rounded-xl p-8 lg:p-16 max-w-3xl">
         <h2 className="text-2xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-4 lg:mb-6">
           Separar operación de decisión
         </h2>
@@ -263,19 +263,19 @@ const PresentacionComercial3 = () => {
         <span className="font-ubuntu">mob</span> es infraestructura operativa<br />para alquileres
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 max-w-4xl w-full">
-        <div className="bg-primary/5 border border-primary/30 rounded-xl lg:rounded-2xl p-5 lg:p-8">
+        <div className="bg-primary/5 border border-primary/30 rounded-xl lg:rounded-xl p-5 lg:p-8">
           <p className="text-xs lg:text-sm font-semibold text-primary mb-3 lg:mb-4 uppercase tracking-wider"><span className="font-ubuntu">mob</span> ejecuta</p>
           <div className="flex flex-wrap gap-2 lg:gap-3">
             {['Publicación', 'Interesados', 'Verificación', 'Agenda de visitas', 'Gestión de reservas', 'Contratos', 'Administración'].map((item) => (
-              <span key={item} className="bg-background border border-primary/20 px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg font-medium text-xs lg:text-base">{item}</span>
+              <span key={item} className="bg-background border border-primary/20 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl font-medium text-xs lg:text-base">{item}</span>
             ))}
           </div>
         </div>
-        <div className="bg-muted/40 border border-border rounded-xl lg:rounded-2xl p-5 lg:p-8">
+        <div className="bg-muted/40 border border-border rounded-xl lg:rounded-xl p-5 lg:p-8">
           <p className="text-xs lg:text-sm font-semibold text-foreground mb-3 lg:mb-4 uppercase tracking-wider">Inmobiliaria</p>
           <div className="flex flex-wrap gap-2 lg:gap-3">
             {['Visitas', 'Supervisión', 'Relación con el cliente'].map((item) => (
-              <span key={item} className="bg-background border px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg font-medium text-xs lg:text-base">{item}</span>
+              <span key={item} className="bg-background border px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl font-medium text-xs lg:text-base">{item}</span>
             ))}
           </div>
         </div>
@@ -289,7 +289,7 @@ const PresentacionComercial3 = () => {
       </h2>
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 max-w-5xl w-full">
         {/* Left card - What Hoggax verifies */}
-        <div className="bg-background border border-border rounded-xl lg:rounded-2xl p-5 lg:p-8 flex-1">
+        <div className="bg-background border border-border rounded-xl lg:rounded-xl p-5 lg:p-8 flex-1">
           <h3 className="text-xs lg:text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 lg:mb-6">Qué verifica Hoggax</h3>
           <ul className="space-y-3 lg:space-y-4">
             {['Identidad', 'Antecedentes', 'Situación financiera', 'Capacidad de pago'].map((item) => (
@@ -308,7 +308,7 @@ const PresentacionComercial3 = () => {
             'Decisiones más rápidas',
             'Mejor experiencia propietarios'
           ].map((text) => (
-            <div key={text} className="bg-background border border-border rounded-lg lg:rounded-xl p-4 lg:p-6 flex items-center justify-center">
+            <div key={text} className="bg-background border border-border rounded-xl lg:rounded-xl p-4 lg:p-6 flex items-center justify-center">
               <p className="text-xs lg:text-base font-medium text-foreground text-center">{text}</p>
             </div>
           ))}
@@ -325,7 +325,7 @@ const PresentacionComercial3 = () => {
         Con Hoggax, te ayudamos en esto
       </p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 max-w-4xl w-full">
-        <div className="bg-muted/40 border border-border rounded-xl lg:rounded-2xl p-5 lg:p-8">
+        <div className="bg-muted/40 border border-border rounded-xl lg:rounded-xl p-5 lg:p-8">
           <div className="flex items-center gap-2 lg:gap-3 mb-4 lg:mb-6">
             <span className="h-6 w-6 lg:h-8 lg:w-8 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs lg:text-sm font-semibold text-foreground">1</span>
             <h3 className="text-lg lg:text-xl font-bold text-foreground">Hoy</h3>
@@ -339,7 +339,7 @@ const PresentacionComercial3 = () => {
             ))}
           </ul>
         </div>
-        <div className="bg-primary/5 border-2 border-primary/30 rounded-xl lg:rounded-2xl p-5 lg:p-8">
+        <div className="bg-primary/5 border-2 border-primary/30 rounded-xl lg:rounded-xl p-5 lg:p-8">
           <div className="flex items-center gap-2 lg:gap-3 mb-4 lg:mb-6">
             <span className="h-6 w-6 lg:h-8 lg:w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs lg:text-sm font-semibold text-primary">2</span>
             <h3 className="text-lg lg:text-xl font-bold text-foreground">Con <span className="font-ubuntu">mob</span></h3>
@@ -361,7 +361,7 @@ const PresentacionComercial3 = () => {
       <h2 className="text-xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-8 lg:mb-12 text-center">
         Todo el proceso bajo control<br />sin estar encima
       </h2>
-      <div className="bg-muted/40 border border-border rounded-xl lg:rounded-2xl divide-y divide-border max-w-xl w-full mb-6 lg:mb-8">
+      <div className="bg-muted/40 border border-border rounded-xl lg:rounded-xl divide-y divide-border max-w-xl w-full mb-6 lg:mb-8">
         {[
           { icon: Home, title: 'Estado de cada propiedad', desc: 'De publicada a contrato, en tiempo real' },
           { icon: UserCheck, title: 'Interesados verificados', desc: 'Solo perfiles listos para alquilar' },
@@ -420,13 +420,13 @@ const PresentacionComercial3 = () => {
           { icon: Building2, text: 'Integración Tokko' },
           { icon: CheckCircle2, text: 'Pago por operación' }
         ].map(({ icon: Icon, text }) => (
-          <div key={text} className="bg-muted/40 border border-border rounded-lg lg:rounded-xl p-4 lg:p-5 text-center">
+          <div key={text} className="bg-muted/40 border border-border rounded-xl lg:rounded-xl p-4 lg:p-5 text-center">
             <Icon className="h-5 w-5 lg:h-6 lg:w-6 text-primary mx-auto mb-2 lg:mb-3" />
             <p className="text-xs lg:text-sm font-medium text-foreground">{text}</p>
           </div>
         ))}
       </div>
-      <div className="bg-primary text-primary-foreground rounded-xl lg:rounded-2xl py-5 px-8 lg:py-6 lg:px-12 text-center">
+      <div className="bg-primary text-primary-foreground rounded-xl lg:rounded-xl py-5 px-8 lg:py-6 lg:px-12 text-center">
         <p className="text-xs lg:text-sm uppercase tracking-wider mb-1 opacity-80">Costo de plataforma</p>
         <p className="text-3xl lg:text-4xl font-bold">20%</p>
         <p className="text-sm lg:text-base mt-1">del primer mes de contrato</p>

@@ -142,7 +142,7 @@ function FavoritoCard({ item }: { item: FavoritoItem }) {
   if (!favorited) return null; // Removed via optimistic update
 
   return (
-    <div className="flex items-center gap-3 bg-background rounded-2xl p-3 shadow-sm border border-border/50">
+    <div className="flex items-center gap-3 bg-background rounded-xl p-3 shadow-sm border border-border/50">
       <PropertyCard property={item.property} href={href} />
       <div className="flex items-center gap-2 shrink-0 ml-1">
         <button
@@ -169,7 +169,7 @@ function ConsultaCard({ item }: { item: ConsultaItem }) {
   const contactPhone = item.property.tokko ? item.property.contact_phone : null;
 
   return (
-    <div className="bg-background rounded-2xl p-3 shadow-sm border border-border/50 space-y-2">
+    <div className="bg-background rounded-xl p-3 shadow-sm border border-border/50 space-y-2">
       <div className="flex items-center gap-3">
         <PropertyCard property={item.property} href={href} />
         <div className="flex flex-col items-end gap-1.5 shrink-0 ml-1">
@@ -267,7 +267,7 @@ export default function MisBusquedasView({ userName, favoritos, consultas }: Mis
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-background rounded-2xl p-1.5 border border-border/50 shadow-sm">
+        <div className="flex gap-2 mb-6 bg-background rounded-xl p-1.5 border border-border/50 shadow-sm">
           <button
             onClick={() => setTab("favoritos")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${

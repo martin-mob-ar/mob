@@ -65,7 +65,7 @@ const TicketsView = () => {
       <h1 className="font-display text-2xl font-semibold">Tickets</h1>
 
       {/* Filter tabs */}
-      <div className="bg-card rounded-2xl border border-border p-4">
+      <div className="bg-card rounded-xl border border-border p-4">
         <div className="flex gap-3">
           <button
             onClick={() => setActiveFilter("todos")}
@@ -118,7 +118,7 @@ const TicketsView = () => {
         {filteredTickets.map((ticket) => (
           <div
             key={ticket.id}
-            className="bg-card rounded-2xl border border-border p-6"
+            className="bg-card rounded-xl border border-border p-6"
           >
             <div className="flex items-start justify-between gap-6">
               <div className="flex-1">

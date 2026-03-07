@@ -12,7 +12,7 @@ export default function HipotecarioCard({ oferta }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-5 sm:p-6 transition-all hover:border-primary/30 hover:bg-card/80">
+    <div className="rounded-xl border border-border/30 bg-card/60 backdrop-blur-sm p-5 sm:p-6 transition-all hover:border-primary/30 hover:bg-card/80">
       {/* Header */}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-start justify-between gap-2">

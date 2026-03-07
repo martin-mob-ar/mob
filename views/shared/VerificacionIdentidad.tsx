@@ -91,7 +91,7 @@ const VerificacionIdentidad = () => {
             <div className="space-y-4">
               <div className="bg-card rounded-xl border border-border p-6 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Shield className="h-5 w-5 text-primary" />
                   </div>
                   <div>
@@ -101,11 +101,11 @@ const VerificacionIdentidad = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <Camera className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm">Foto del DNI (frente y dorso)</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     <User className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm">Selfie para validar identidad</span>
                   </div>

@@ -209,7 +209,7 @@ const OwnerLeadCard = ({ lead }: OwnerLeadCardProps) => {
             {/* Details */}
             <div className="space-y-3 pt-2">
               {lead.occupation && (
-                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Briefcase className="h-4 w-4" />
                     Ocupación
@@ -218,7 +218,7 @@ const OwnerLeadCard = ({ lead }: OwnerLeadCardProps) => {
                 </div>
               )}
               {lead.estimatedIncome && (
-                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
                     Ingreso estimado
@@ -226,7 +226,7 @@ const OwnerLeadCard = ({ lead }: OwnerLeadCardProps) => {
                   <span className="font-medium">{lead.estimatedIncome}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
                 <span className="text-muted-foreground flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Fecha de interés

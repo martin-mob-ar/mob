@@ -168,14 +168,14 @@ export default function SimulacionContrato() {
       )}
 
       {result && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-800">
           <Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />
           <span>Datos basados en el <strong>IPC oficial del INDEC</strong>.</span>
         </div>
       )}
 
       {missingMonths.length > 0 && result && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-sm">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
           <span>Faltan datos para: {missingMonths.join(", ")}. Los resultados pueden ser incompletos.</span>
         </div>

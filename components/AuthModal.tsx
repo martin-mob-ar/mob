@@ -13,6 +13,28 @@ import AccountTypeSelector from "@/components/profile/AccountTypeSelector";
 
 type AuthStep = "email" | "register" | "register-inmobiliaria" | "select-account-type";
 
+const GUEST_STORAGE_KEY = "mob_guest_contact";
+
+async function applyGuestContactToProfile() {
+  try {
+    const raw = localStorage.getItem(GUEST_STORAGE_KEY);
+    if (!raw) return;
+    const guest = JSON.parse(raw);
+    if (!guest?.name && !guest?.phone) return;
+    await fetch("/api/users/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: guest.name || undefined,
+        telefono: guest.phone || undefined,
+        telefono_country_code: guest.country_code || undefined,
+      }),
+    });
+  } catch {
+    // non-critical — ignore
+  }
+}
+
 const AuthModal = () => {
   const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading } = useAuth();
   const searchParams = useSearchParams();
@@ -96,6 +118,7 @@ const AuthModal = () => {
     setLoading(true);
     try {
       await register(email, password, false);
+      await applyGuestContactToProfile();
       setStep("select-account-type");
     } catch {
       // Error is set in AuthContext
@@ -178,7 +201,7 @@ const AuthModal = () => {
 
             {/* Error display */}
             {authError && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
                 {authError}
               </div>
             )}
@@ -191,7 +214,7 @@ const AuthModal = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
               <Input
                 type="password"
@@ -199,11 +222,11 @@ const AuthModal = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
               <Button
                 type="submit"
-                className="w-full h-11 rounded-lg font-semibold"
+                className="w-full h-11 rounded-xl font-semibold"
                 disabled={loading}
               >
                 {loading ? "Entrando..." : "Entrar"}
@@ -234,7 +257,7 @@ const AuthModal = () => {
               {/* Google */}
               <Button
                 variant="outline"
-                className="w-full h-11 rounded-lg font-medium justify-center gap-3"
+                className="w-full h-11 rounded-xl font-medium justify-center gap-3"
                 onClick={handleGoogleLogin}
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -272,7 +295,7 @@ const AuthModal = () => {
 
             {/* Error display */}
             {authError && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
                 {authError}
               </div>
             )}
@@ -285,7 +308,7 @@ const AuthModal = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
               <Input
                 type="password"
@@ -293,12 +316,12 @@ const AuthModal = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
 
               <Button
                 type="submit"
-                className="w-full h-11 rounded-lg font-semibold"
+                className="w-full h-11 rounded-xl font-semibold"
                 disabled={loading}
               >
                 {loading ? "Creando cuenta..." : "Crear cuenta"}
@@ -327,7 +350,7 @@ const AuthModal = () => {
             {/* Inmobiliaria CTA */}
             <Button
               variant="outline"
-              className="w-full h-11 rounded-lg font-medium justify-center gap-3"
+              className="w-full h-11 rounded-xl font-medium justify-center gap-3"
               onClick={() => { setStep("register-inmobiliaria"); clearError(); }}
             >
               <Building2 className="h-5 w-5" />
@@ -350,7 +373,7 @@ const AuthModal = () => {
 
             {/* Error display */}
             {authError && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
                 {authError}
               </div>
             )}
@@ -363,7 +386,7 @@ const AuthModal = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
               <Input
                 type="password"
@@ -371,7 +394,7 @@ const AuthModal = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
               <Input
                 type="text"
@@ -379,12 +402,12 @@ const AuthModal = () => {
                 value={tokkoApiKey}
                 onChange={(e) => setTokkoApiKey(e.target.value)}
                 required
-                className="h-11 rounded-lg font-mono text-sm"
+                className="h-11 rounded-xl font-mono text-sm"
               />
 
               <Button
                 type="submit"
-                className="w-full h-11 rounded-lg font-semibold"
+                className="w-full h-11 rounded-xl font-semibold"
                 disabled={loading}
               >
                 {loading ? "Creando cuenta..." : "Crear cuenta y sincronizar"}

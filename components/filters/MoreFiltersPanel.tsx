@@ -64,7 +64,7 @@ function SurfaceInput({
 
 const FilterSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="py-4 border-b border-border">
-    <h4 className="font-display font-semibold text-sm uppercase tracking-wider mb-3">{title}</h4>
+    <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-widest mb-3">{title}</h4>
     {children}
   </div>
 );
@@ -348,7 +348,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                         <button
                           key={loc.id}
                           onClick={() => handleLocationSelect(loc)}
-                          className="w-full text-left px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors flex items-start gap-2"
+                          className="w-full text-left px-3 py-2 rounded-xl hover:bg-secondary/50 transition-colors flex items-start gap-2"
                         >
                           <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                           <div className="min-w-0">
@@ -421,7 +421,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                   </button>
                 </div>
                 {currency === "USD" && usdRate && (
-                  <div className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-muted/50 text-xs text-muted-foreground">
                     <ArrowRightLeft className="h-3 w-3" />
                     <span>1 USD = <span className="font-semibold text-foreground">${usdRate.toLocaleString("es-AR")}</span> ARS</span>
                   </div>

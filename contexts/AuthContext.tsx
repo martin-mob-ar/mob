@@ -11,6 +11,7 @@ interface User {
   phoneCountryCode: string;
   isOwner: boolean;
   publicUserId: string | null;
+  isVerified: boolean;
 }
 
 interface AuthContextType {
@@ -32,7 +33,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapSupabaseUser(
   supabaseUser: SupabaseUser,
-  publicUser?: { id: string; name: string | null; telefono: string | null; telefono_country_code: string | null } | null
+  publicUser?: { id: string; name: string | null; telefono: string | null; telefono_country_code: string | null; last_verification_date: string | null } | null
 ): User {
   return {
     email: supabaseUser.email || "",
@@ -45,6 +46,7 @@ function mapSupabaseUser(
     phoneCountryCode: publicUser?.telefono_country_code || "+54",
     isOwner: supabaseUser.user_metadata?.isOwner ?? false,
     publicUserId: publicUser?.id ?? null,
+    isVerified: !!publicUser?.last_verification_date,
   };
 }
 
@@ -57,10 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const supabase = createClient();
 
   // Resolve auth user → public users row (id + name)
-  const resolvePublicUser = async (authId: string): Promise<{ id: string; name: string | null; telefono: string | null; telefono_country_code: string | null } | null> => {
+  const resolvePublicUser = async (authId: string): Promise<{ id: string; name: string | null; telefono: string | null; telefono_country_code: string | null; last_verification_date: string | null } | null> => {
     const { data } = await supabase
       .from("users")
-      .select("id, name, telefono, telefono_country_code")
+      .select("id, name, telefono, telefono_country_code, last_verification_date")
       .eq("auth_id", authId)
       .maybeSingle();
     return data ?? null;

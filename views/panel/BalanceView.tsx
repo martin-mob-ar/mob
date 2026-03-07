@@ -55,9 +55,9 @@ const BalanceView = () => {
       <h1 className="font-display text-2xl font-semibold">Balance</h1>
 
       {/* Balance card */}
-      <div className="bg-primary rounded-3xl p-8 text-primary-foreground relative overflow-hidden">
+      <div className="bg-primary rounded-xl p-8 text-primary-foreground relative overflow-hidden">
         {/* Decorative gradient */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/10 to-transparent rounded-3xl" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/10 to-transparent rounded-xl" />
         
         <div className="relative flex items-center justify-between">
           <div>
@@ -93,7 +93,7 @@ const BalanceView = () => {
       </div>
 
       {/* Movements table */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="mb-6">
           <h2 className="font-display font-semibold uppercase tracking-wider text-sm">
             Movimientos

@@ -113,7 +113,7 @@ const TenantRentalDetailView = ({
       </Link>
 
       {/* Property Header Card */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="flex flex-col md:flex-row">
           {/* Photo */}
           <div className="md:w-80 aspect-video md:aspect-auto relative overflow-hidden">
@@ -200,7 +200,7 @@ const TenantRentalDetailView = ({
 
       {/* Contract Section */}
       {progress && (
-        <div className="bg-card rounded-2xl border border-border p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
             <Calendar className="h-5 w-5 text-muted-foreground" />
             Contrato
@@ -233,7 +233,7 @@ const TenantRentalDetailView = ({
       )}
 
       {/* Rental Details */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <h3 className="font-display font-semibold mb-4">
           Detalle del alquiler
         </h3>

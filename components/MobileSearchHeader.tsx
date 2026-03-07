@@ -12,10 +12,10 @@ const MobileSearchHeader = ({
   onFiltersClick,
 }: MobileSearchHeaderProps) => {
   return (
-    <div className="px-4 py-3">
+    <div className="px-4 py-3 sticky top-0 bg-background z-40">
       <button
         onClick={onFiltersClick}
-        className="w-full bg-card border border-border rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow"
+        className="w-full bg-card border border-border rounded-xl px-4 py-3 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow"
       >
         <div className="flex-1 min-w-0 text-left">
           <p className="font-semibold text-base text-foreground truncate">

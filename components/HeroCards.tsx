@@ -93,7 +93,7 @@ const HeroCards = ({ properties }: HeroCardsProps) => {
               }}
             >
               <div
-                className="bg-card rounded-2xl border border-border/50 shadow-lg overflow-hidden transition-transform duration-300 hover:scale-[1.03]"
+                className="bg-card rounded-xl border border-border/50 shadow-lg overflow-hidden transition-transform duration-300 hover:scale-[1.03]"
                 style={{
                   transform: `rotate(${layout.rotate}deg) scale(${layout.scale})`,
                 }}

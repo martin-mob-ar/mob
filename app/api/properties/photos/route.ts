@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("tokko_property_photo")
-    .select("property_id, thumb, order")
+    .select("property_id, image, order")
     .in("property_id", cappedIds)
     .eq("is_front_cover", false)
     .eq("is_blueprint", false)
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const key = String(row.property_id);
     if (!grouped[key]) grouped[key] = [];
     if (grouped[key].length < 4) {
-      grouped[key].push(row.thumb);
+      grouped[key].push(row.image);
     }
   }
 

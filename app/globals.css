@@ -164,7 +164,7 @@
 
   /* MOB Card styles */
   .card-mob {
-    @apply bg-card rounded-2xl border border-border/50;
+    @apply bg-card rounded-xl border border-border/50;
     box-shadow: var(--shadow-card);
   }
 
@@ -195,18 +195,18 @@
 
   /* Icon container */
   .icon-container {
-    @apply w-14 h-14 rounded-2xl flex items-center justify-center;
+    @apply w-14 h-14 rounded-xl flex items-center justify-center;
     background: hsl(var(--accent));
   }
 
   /* Feature card */
   .feature-card {
-    @apply p-8 rounded-2xl border border-border/50 bg-card transition-all duration-300 hover:border-primary/20 hover:shadow-lg;
+    @apply p-8 rounded-xl border border-border/50 bg-card transition-all duration-300 hover:border-primary/20 hover:shadow-lg;
   }
 
   /* Stat card */
   .stat-card {
-    @apply p-6 rounded-2xl border border-border/50 bg-card;
+    @apply p-6 rounded-xl border border-border/50 bg-card;
   }
 }
 

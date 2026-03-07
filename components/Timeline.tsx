@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Search, ShieldCheck, Globe, Home } from "lucide-react";
 import { useInView } from "@/hooks/useInView";
 
@@ -59,6 +59,15 @@ const Timeline = () => {
   const gridRef = useRef<HTMLDivElement>(null);
   const [activeProgress, setActiveProgress] = useState(0);
   const [activeCard, setActiveCard] = useState<number | null>(null);
+  const [isLg, setIsLg] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsLg(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsLg(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // Fired on the full pt-24/pb-28 container so hovering anywhere in the section
   // (above, on, or below the staggered cards) activates the right column.
@@ -96,7 +105,7 @@ const Timeline = () => {
         {/* onMouseMove here so the full pt-24/pb-28 area (stagger space + cards) is reactive */}
         <div
           ref={ref}
-          className="relative pt-24 pb-28"
+          className="relative pt-8 pb-8 lg:pt-24 lg:pb-28"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
@@ -141,7 +150,7 @@ const Timeline = () => {
           >
             {steps.map((step, i) => {
               const Icon = step.icon;
-              const targetY = step.pos === "top" ? TOP_Y : BOT_Y;
+              const targetY = isLg ? (step.pos === "top" ? TOP_Y : BOT_Y) : 0;
               const isActive = activeCard === i;
 
               return (
@@ -162,7 +171,7 @@ const Timeline = () => {
                     }}
                   >
                     <div
-                      className="bg-white border border-gray-100 p-7 rounded-[28px] w-full flex flex-col transition-shadow duration-300"
+                      className="bg-white border border-gray-100 p-7 rounded-xl w-full flex flex-col transition-shadow duration-300"
                       style={{
                         boxShadow: isActive
                           ? "0 16px 48px rgba(81,112,255,0.14)"

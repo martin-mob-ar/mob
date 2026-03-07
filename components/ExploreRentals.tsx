@@ -2,6 +2,7 @@
 import { MapPin, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import PopularSearches from "@/components/PopularSearches";
 
 interface Zone {
   id: string;
@@ -125,14 +126,6 @@ const categories: Record<string, Category> = {
   },
 };
 
-const popularSearches = [
-  { label: "alquiler barato", href: "/buscar?maxPrice=700000" },
-  { label: "alquiler en belgrano", href: "/buscar?location=Belgrano&locationId=24682" },
-  { label: "dueño directo", href: "/buscar?propertyType=dueno" },
-  { label: "alquiler en palermo", href: "/buscar?location=Palermo&locationId=24728" },
-  { label: "alquiler en CABA", href: `/buscar?location=${encodeURIComponent("Capital Federal")}&stateId=146` },
-];
-
 const ZoneButton = ({
   zone,
   isSelected,
@@ -183,7 +176,7 @@ const ExploreRentals = () => {
   return (
     <section className="py-[18px]">
       <div className="container">
-        <div className="bg-background rounded-2xl border border-border shadow-sm p-6 md:p-8 text-center">
+        <div className="bg-background rounded-xl border border-border shadow-sm p-6 md:p-8 text-center">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-center gap-3 mb-2">
@@ -262,32 +255,7 @@ const ExploreRentals = () => {
           </Link>
 
           {/* Popular Searches Footer */}
-          <div className="pt-6 border-t border-border">
-            <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-sm">
-              <span className="text-muted-foreground font-medium">Búsquedas populares:</span>
-              {popularSearches.map((search, index) => (
-                <span key={search.label} className="flex items-center">
-                  <Link
-                    href={search.href}
-                    className="text-foreground hover:text-primary hover:underline transition-colors"
-                  >
-                    {search.label}
-                  </Link>
-                  {index < popularSearches.length - 1 && (
-                    <span className="text-muted-foreground mx-1">·</span>
-                  )}
-                </span>
-              ))}
-              <span className="text-muted-foreground mx-1">·</span>
-              <Link
-                href="/buscar"
-                className="text-primary font-medium hover:underline flex items-center gap-0.5"
-              >
-                ver más
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
+          <PopularSearches title="Búsquedas populares" />
         </div>
       </div>
     </section>

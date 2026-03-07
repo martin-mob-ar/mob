@@ -45,7 +45,7 @@ const ContratosView = () => {
         {contracts.map((contract) => (
           <div
             key={contract.id}
-            className="bg-card rounded-2xl border border-border p-6"
+            className="bg-card rounded-xl border border-border p-6"
           >
             <div className="flex items-center gap-6">
               {/* Avatar */}

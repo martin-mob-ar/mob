@@ -318,7 +318,7 @@ const PropertyDetailView = ({
       </Link>
 
       {/* Property Header */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="flex flex-col md:flex-row">
           {/* Image */}
           <div className="md:w-80 aspect-video md:aspect-auto overflow-hidden">
@@ -500,7 +500,7 @@ const PropertyDetailView = ({
         <TabsList className="bg-card border border-border p-1 rounded-xl flex-wrap h-auto gap-1">
           <TabsTrigger
             value="consultas"
-            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <MessageCircle className="h-4 w-4" />
             Consultas
@@ -512,14 +512,14 @@ const PropertyDetailView = ({
           </TabsTrigger>
           <TabsTrigger
             value="visitas"
-            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <CalendarDays className="h-4 w-4" />
             Visitas
           </TabsTrigger>
           <TabsTrigger
             value="contrato"
-            className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <FileText className="h-4 w-4" />
             Contrato
@@ -542,7 +542,7 @@ const PropertyDetailView = ({
               ))}
             </div>
           ) : (
-            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+            <div className="bg-card rounded-xl border border-border p-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
                 <MessageCircle className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -566,7 +566,7 @@ const PropertyDetailView = ({
               Gestión de disponibilidad y coordinación de visitas
             </p>
           </div>
-          <div className="bg-card rounded-2xl border border-border p-12 text-center">
+          <div className="bg-card rounded-xl border border-border p-12 text-center">
             <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
               <CalendarDays className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -584,7 +584,7 @@ const PropertyDetailView = ({
           {currentOperation && currentOperation.start_date ? (
             <>
               {/* Contract Progress */}
-              <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-6">
                 <h3 className="font-display font-semibold mb-4">
                   Estado del contrato
                 </h3>
@@ -618,7 +618,7 @@ const PropertyDetailView = ({
               </div>
 
               {/* Rental details */}
-              <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-6">
                 <h3 className="font-display font-semibold mb-4">
                   Detalle de la operación
                 </h3>
@@ -671,7 +671,7 @@ const PropertyDetailView = ({
               </div>
             </>
           ) : (
-            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+            <div className="bg-card rounded-xl border border-border p-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
                 <FileText className="h-8 w-8 text-muted-foreground" />
               </div>

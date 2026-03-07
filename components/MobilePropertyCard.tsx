@@ -2,11 +2,12 @@
 import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import { Property } from "@/components/PropertyCard";
 import { getPropertyUrl } from "@/lib/utils/property-url";
+import { formatAddress } from "@/lib/utils";
 
 interface MobilePropertyCardProps {
   property: Property;
@@ -18,47 +19,12 @@ const MobilePropertyCard = ({
   const images = property.images?.length ? property.images : [property.image];
   const totalSlides = images.length;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const touchStartX = useRef<number | null>(null);
-  const wheelAccumulator = useRef(0);
-  const navigatingRef = useRef(false);
-  const currentIndexRef = useRef(currentImageIndex);
-  currentIndexRef.current = currentImageIndex;
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const handleWheel = (e: WheelEvent) => {
-      if (navigatingRef.current) { e.preventDefault(); return; }
-      if (currentIndexRef.current === totalSlides - 1 && e.deltaX > 0) {
-        e.preventDefault();
-        wheelAccumulator.current += e.deltaX;
-        if (wheelAccumulator.current > 100) {
-          navigatingRef.current = true;
-          window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
-          setTimeout(() => { navigatingRef.current = false; wheelAccumulator.current = 0; }, 1000);
-        }
-      } else if (e.deltaX < 0) {
-        wheelAccumulator.current = 0;
-      }
-    };
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [totalSlides, property]);
-  const {
-    isAuthenticated,
-    openAuthModal
-  } = useAuth();
-
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) {
-      openAuthModal();
-      return;
-    }
-    setIsFavorite(!isFavorite);
+    toggleFavorite(Number(property.id));
   };
 
   const scrollToImage = (index: number) => {
@@ -85,7 +51,7 @@ const MobilePropertyCard = ({
     scrollToImage(newIndex);
   };
 
-  return <Link href={getPropertyUrl(property)} target="_blank" rel="noopener noreferrer" className="block">
+  return <Link href={getPropertyUrl(property)} className="block">
       <div className="bg-card rounded-xl overflow-hidden shadow-sm border border-border">
         {/* Image Section - Horizontal scroll gallery */}
         <div className="relative aspect-[4/3] overflow-hidden group">
@@ -104,18 +70,6 @@ const MobilePropertyCard = ({
               if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < totalSlides) {
                 setCurrentImageIndex(newIndex);
               }
-            }}
-            onTouchStart={e => {
-              touchStartX.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={e => {
-              if (touchStartX.current !== null && currentImageIndex === totalSlides - 1) {
-                const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-                if (deltaX < -50) {
-                  window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
-                }
-              }
-              touchStartX.current = null;
             }}
           >
             {images.map((img, index) => <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
@@ -151,7 +105,7 @@ const MobilePropertyCard = ({
 
           {/* Badge */}
           <div className="absolute top-3 left-3 pointer-events-none">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-background/95 text-foreground shadow-sm">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-foreground shadow-sm">
               {property.type === "inmobiliaria" ? "Inmobiliaria" : "Dueño directo"}
             </span>
           </div>
@@ -159,9 +113,13 @@ const MobilePropertyCard = ({
           {/* Favorite button - top right of image */}
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/50 backdrop-blur flex items-center justify-center hover:bg-background transition-colors z-10"
+            className={`absolute top-3 right-3 h-8 w-8 rounded-full backdrop-blur flex items-center justify-center transition-colors z-10 ${
+              isFavorite(Number(property.id))
+                ? "bg-background"
+                : "bg-background/50 hover:bg-background"
+            }`}
           >
-            <Heart className={`h-4 w-4 transition-colors ${isFavorite ? "fill-primary text-primary" : "text-foreground/50"}`} />
+            <Heart className={`h-4 w-4 transition-colors ${isFavorite(Number(property.id)) ? "fill-primary text-primary" : "text-foreground/50"}`} />
           </button>
 
           {/* Dots Indicator */}
@@ -172,7 +130,7 @@ const MobilePropertyCard = ({
           {/* Verified Badge */}
           {property.verified && (
             <div className="absolute bottom-3 left-3 pointer-events-none">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-background/95 text-primary shadow-sm">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
                 <CheckCircle className="h-3.5 w-3.5" />
                 Verificada
               </span>
@@ -183,10 +141,10 @@ const MobilePropertyCard = ({
         {/* Content Section */}
         <div className="px-4 pt-3 pb-4">
           {/* Address */}
-          <h3 className="font-semibold text-foreground text-base leading-snug truncate">
-            {property.address}
+          <h3 className="font-display font-semibold text-foreground text-base leading-snug truncate">
+            {formatAddress(property.address)}
           </h3>
-          <p className="text-foreground/60 text-sm mt-0.5 truncate">
+          <p className="text-muted-foreground text-sm mt-0.5 truncate">
             {property.neighborhood}
           </p>
 
@@ -195,14 +153,14 @@ const MobilePropertyCard = ({
             {property.currency === "USD" ? (
               <>
                 <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="font-bold text-2xl text-foreground">
+                  <span className="font-display font-bold text-lg text-foreground">
                     USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    TOTAL
+                  <span className="text-xs text-muted-foreground">
+                    Total
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
                     ? `+ $${property.expensas.toLocaleString("es-AR")} exp`
                     : "Sin expensas"}
@@ -211,14 +169,14 @@ const MobilePropertyCard = ({
             ) : (
               <>
                 <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="font-bold text-2xl text-foreground">
+                  <span className="font-display font-bold text-lg text-foreground">
                     ${property.price.toLocaleString("es-AR")}
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    TOTAL
+                  <span className="text-xs text-muted-foreground">
+                    Total
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {property.expensas != null && property.expensas > 0
                     ? `+ $${property.expensas.toLocaleString("es-AR")} exp`
                     : "Sin expensas"}
@@ -228,19 +186,19 @@ const MobilePropertyCard = ({
           </div>
 
           {/* Details */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2">
-            {property.rooms !== undefined && <span className="font-semibold">{property.rooms} dorm</span>}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+            {property.rooms !== undefined && <span>{property.rooms} dorm</span>}
             {property.bathrooms !== undefined && <>
                 <span>·</span>
-                <span className="font-semibold">{property.bathrooms} baño</span>
+                <span>{property.bathrooms} baño</span>
               </>}
             {property.parking !== undefined && property.parking > 0 && <>
                 <span>·</span>
-                <span className="font-semibold">{property.parking} coch</span>
+                <span>{property.parking} coch</span>
               </>}
             {property.surface !== undefined && <>
                 <span>·</span>
-                <span className="font-semibold">{property.surface} m²</span>
+                <span>{property.surface} m²</span>
               </>}
           </div>
         </div>

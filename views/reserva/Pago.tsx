@@ -76,7 +76,7 @@ const Pago = () => {
           {/* Mock Payment Form */}
           <div className="bg-card rounded-xl border border-border p-6 space-y-4">
             {/* Amount */}
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
               <span className="text-sm text-muted-foreground">Total a pagar</span>
               <span className="font-semibold text-foreground">${reservationAmount.toLocaleString("es-AR")}</span>
             </div>

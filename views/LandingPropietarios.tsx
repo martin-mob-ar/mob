@@ -153,7 +153,7 @@ const LandingPropietarios = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {benefitsCards.map(benefit => <div key={benefit.title} className="bg-card rounded-2xl p-6 shadow-sm border border-border/50 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+            {benefitsCards.map(benefit => <div key={benefit.title} className="bg-card rounded-xl p-6 shadow-sm border border-border/50 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                   <benefit.icon className="h-6 w-6 text-primary" />
                 </div>
@@ -164,7 +164,7 @@ const LandingPropietarios = () => {
 
           {/* Video Demo Placeholder */}
           <div className="mt-16 max-w-4xl mx-auto">
-            <div className="bg-muted/50 border-2 border-dashed border-border rounded-2xl aspect-video flex items-center justify-center">
+            <div className="bg-muted/50 border-2 border-dashed border-border rounded-xl aspect-video flex items-center justify-center">
               <div className="text-center">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">

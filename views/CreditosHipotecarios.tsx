@@ -259,7 +259,7 @@ export default function CreditosHipotecarios() {
             )}
           </>
         ) : (
-          <div className="text-center py-16 rounded-2xl border border-border/20 bg-card">
+          <div className="text-center py-16 rounded-xl border border-border/20 bg-card">
             <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-foreground font-display font-semibold mb-2">
               No se encontraron préstamos hipotecarios

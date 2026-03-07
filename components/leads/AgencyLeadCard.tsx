@@ -157,7 +157,7 @@ const AgencyLeadCard = ({ lead }: AgencyLeadCardProps) => {
                 <Link
                   key={prop.id}
                   href={`/gestion-inmobiliaria/propiedad/${prop.id}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-sm hover:bg-secondary/80 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-secondary text-sm hover:bg-secondary/80 transition-colors"
                 >
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                   {prop.name}

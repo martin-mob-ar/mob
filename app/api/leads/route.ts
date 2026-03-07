@@ -64,6 +64,27 @@ export async function POST(request: Request) {
       .eq('id', property.user_id)
       .single();
 
+    // Determine if the submitter (inquilino) is verified
+    let inquilinoVerified = false;
+    if (submitterUserId) {
+      const { data: submitter } = await supabaseAdmin
+        .from('users')
+        .select('last_verification_date')
+        .eq('id', submitterUserId)
+        .single();
+      inquilinoVerified = !!submitter?.last_verification_date;
+    }
+
+    // Get mob plan from the property's latest operacion
+    const { data: operacion } = await supabaseAdmin
+      .from('operaciones')
+      .select('planMobElegido')
+      .eq('property_id', propertyId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const propertyPlan = operacion?.planMobElegido || 'basico';
+
     // Dispatch to external services in parallel (non-blocking for response)
     const dispatches: Promise<void>[] = [];
 
@@ -100,7 +121,7 @@ export async function POST(request: Request) {
                 email,
                 phone: fullPhone,
                 message,
-              });
+              }, inquilinoVerified);
               status = result.success ? 'sent' : 'failed';
             }
           } catch (err) {
@@ -130,6 +151,8 @@ export async function POST(request: Request) {
                 phone: fullPhone,
                 message,
                 type,
+                propertyPlan,
+                inquilinoVerified,
               }, {
                 address: property.address || 'Dirección no disponible',
                 propertyId: property.id,

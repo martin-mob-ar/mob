@@ -9,6 +9,7 @@ export interface SearchFilters {
   location: string;
   locationId: string;
   stateId: string;
+  priceType: "total" | "alquiler";
   minPrice: string;
   maxPrice: string;
   minRooms: string;   // dormitorios min → suite_amount
@@ -49,6 +50,7 @@ const defaultFilters: SearchFilters = {
   location: "",
   locationId: "",
   stateId: "",
+  priceType: "total",
   minPrice: "",
   maxPrice: "",
   minRooms: "",
@@ -88,6 +90,7 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   const location = searchParams.get("location");
   const locationId = searchParams.get("locationId");
   const stateId = searchParams.get("stateId");
+  const priceType = searchParams.get("priceType");
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
   const minRooms = searchParams.get("minRooms");
@@ -107,6 +110,7 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   if (location) updates.location = location;
   if (locationId) updates.locationId = locationId;
   if (stateId) updates.stateId = stateId;
+  if (priceType) updates.priceType = priceType as "total" | "alquiler";
   if (minPrice) updates.minPrice = minPrice;
   if (maxPrice) updates.maxPrice = maxPrice;
   if (minRooms) updates.minRooms = minRooms;
@@ -195,6 +199,7 @@ export function SearchFiltersProvider({
     if (f.location) params.set("location", f.location);
     if (f.locationId) params.set("locationId", f.locationId);
     if (f.stateId) params.set("stateId", f.stateId);
+    if (f.priceType && f.priceType !== "total") params.set("priceType", f.priceType);
     if (f.minPrice) params.set("minPrice", f.minPrice);
     if (f.maxPrice) params.set("maxPrice", f.maxPrice);
     if (f.minRooms) params.set("minRooms", f.minRooms);

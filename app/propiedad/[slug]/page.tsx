@@ -168,7 +168,8 @@ export default async function PropiedadDetailPage({
   let description: string | null = null;
   let publisherName: string | null = null;
   let publisherLogo: string | null = null;
-  const isTokko = propertyData.tokko === true;
+  // isTokko = true only when synced from Tokko AND has a company (not a dueño directo)
+  const isTokko = propertyData.tokko === true && !!propertyData.company_name;
   let locationFull: string | null = null;
   let geoLat: number | null = null;
   let geoLong: number | null = null;
@@ -209,26 +210,30 @@ export default async function PropiedadDetailPage({
     photos = photoData.map((p: any) => p.image).filter(Boolean);
   }
 
-  // Publisher info: prefer company data from properties_read, fall back to user
+  // Publisher info: companies (Tokko-synced) get name + logo; dueño directo gets name only (person icon shown)
   publisherName = propertyData.company_name || null;
   publisherLogo = propertyData.company_logo || null;
 
   if (!publisherName && propertyData.user_id) {
-    // Fallback for properties without a company (e.g. manually created)
+    // Dueño directo: fetch name from users table; logo is intentionally not used (person icon shown instead)
     const { data: userData } = await supabase
       .from("users")
-      .select("name, logo")
+      .select("name")
       .eq("id", propertyData.user_id)
       .single();
 
-    if (userData) {
-      publisherName = userData.name || null;
-      publisherLogo = publisherLogo || userData.logo || null;
-    }
+    // Fall back to "Propietario" so the publisher section always renders for dueño directo
+    publisherName = userData?.name || "Propietario";
   }
 
   // Contact phone: stored directly on the property (producer.cellphone → producer.phone → branch phone)
   const contactPhone: string | null = propertyData.contact_phone ?? null;
+
+  // mob_plan is denormalized into properties_read from operaciones.planMobElegido
+  const propertyPlan = ((propertyData as any).mob_plan as "basico" | "acompanado" | "experiencia") ?? "basico";
+
+  // Determine publisher type: company → inmobiliaria, else propietario
+  const isInmobiliaria = !!propertyData.company_name;
 
   return (
     <PropertyDetail
@@ -246,6 +251,8 @@ export default async function PropiedadDetailPage({
       contactPhone={contactPhone}
       ownerId={propertyData.user_id}
       age={propertyData.age ?? null}
+      propertyPlan={propertyPlan}
+      isInmobiliaria={isInmobiliaria}
     />
   );
 }

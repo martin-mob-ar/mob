@@ -166,7 +166,7 @@ const PresentacionComercial = () => {
                 <div className="flex items-center gap-2 text-sm min-w-max justify-center">
                   {['Publicar', 'Responder', 'Filtrar', 'Coordinar visitas', 'Verificar', 'Armar contrato', 'Administrar'].map((step, i, arr) => (
                     <div key={step} className="flex items-center gap-2">
-                      <span className="bg-background border border-border px-3 py-2 rounded-lg font-medium text-foreground">{step}</span>
+                      <span className="bg-background border border-border px-3 py-2 rounded-xl font-medium text-foreground">{step}</span>
                       {i < arr.length - 1 && <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                     </div>
                   ))}
@@ -184,7 +184,7 @@ const PresentacionComercial = () => {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                 {['Saturación operativa', 'Errores humanos', 'Pérdida de oportunidades', 'Equipos quemados', 'Crecimiento limitado'].map((text) => (
-                  <div key={text} className="bg-foreground/5 border border-border rounded-lg px-4 py-4 text-center">
+                  <div key={text} className="bg-foreground/5 border border-border rounded-xl px-4 py-4 text-center">
                     <p className="text-sm font-semibold text-foreground">{text}</p>
                   </div>
                 ))}
@@ -192,7 +192,7 @@ const PresentacionComercial = () => {
             </div>
             
             {/* 6. Transición hacia la solución */}
-            <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl p-8 text-center">
+            <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-8 text-center">
               <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">
                 Separar operación de decisión
               </h3>
@@ -220,7 +220,7 @@ const PresentacionComercial = () => {
             
             <div className="grid md:grid-cols-2 gap-6">
               {/* Hoy */}
-              <div className="bg-muted/40 border border-border rounded-2xl p-8">
+              <div className="bg-muted/40 border border-border rounded-xl p-8">
                 <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-muted-foreground/20 flex items-center justify-center text-sm">1</span>
                   Hoy
@@ -241,7 +241,7 @@ const PresentacionComercial = () => {
               </div>
               
               {/* Con MOB */}
-              <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl p-8">
+              <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-8">
                 <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm text-primary">2</span>
                   Con MOB
@@ -271,7 +271,7 @@ const PresentacionComercial = () => {
               mob es infraestructura operativa para alquileres
             </h2>
             
-            <div className="bg-primary/5 border-2 border-primary rounded-2xl p-8 text-center">
+            <div className="bg-primary/5 border-2 border-primary rounded-xl p-8 text-center">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <CheckCircle2 className="h-6 w-6 text-primary" />
                 <span className="text-xl font-bold text-foreground">Ejecutamos el proceso operativo del alquiler</span>
@@ -297,11 +297,11 @@ const PresentacionComercial = () => {
               <p className="text-sm text-muted-foreground uppercase tracking-wider mb-4">Sin MOB</p>
               <div className="bg-muted/40 border border-border rounded-xl p-6 overflow-x-auto">
                 <div className="flex items-center gap-2 text-sm min-w-max">
-                  <span className="bg-foreground text-background px-3 py-1.5 rounded-md font-medium">Inmobiliaria</span>
+                  <span className="bg-foreground text-background px-3 py-1.5 rounded-xl font-medium">Inmobiliaria</span>
                   {['Publica', 'Filtra', 'Coordina', 'Verifica', 'Contrata', 'Administra'].map((step, i) => (
                     <div key={step} className="flex items-center gap-2">
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      <span className="bg-background border px-3 py-1.5 rounded-md">{step}</span>
+                      <span className="bg-background border px-3 py-1.5 rounded-xl">{step}</span>
                     </div>
                   ))}
                 </div>
@@ -317,7 +317,7 @@ const PresentacionComercial = () => {
                   <p className="text-sm font-semibold text-primary mb-4">MOB ejecuta</p>
                   <div className="flex flex-wrap gap-2">
                     {['Publicación', 'Interesados', 'Verificación', 'Contratos', 'Administración'].map((item) => (
-                      <span key={item} className="bg-background border border-primary/20 px-3 py-1.5 rounded-md text-sm">{item}</span>
+                      <span key={item} className="bg-background border border-primary/20 px-3 py-1.5 rounded-xl text-sm">{item}</span>
                     ))}
                   </div>
                 </div>
@@ -325,7 +325,7 @@ const PresentacionComercial = () => {
                   <p className="text-sm font-semibold text-foreground mb-4">Inmobiliaria</p>
                   <div className="flex flex-wrap gap-2">
                     {['Visitas', 'Supervisa'].map((item) => (
-                      <span key={item} className="bg-background border px-3 py-1.5 rounded-md text-sm font-medium">{item}</span>
+                      <span key={item} className="bg-background border px-3 py-1.5 rounded-xl text-sm font-medium">{item}</span>
                     ))}
                   </div>
                 </div>
@@ -351,7 +351,7 @@ const PresentacionComercial = () => {
             
             <div className="grid md:grid-cols-2 gap-8 mb-12">
               {/* Checklist */}
-              <div className="bg-background border border-border rounded-2xl p-6">
+              <div className="bg-background border border-border rounded-xl p-6">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">Qué verifica Hoggax</h3>
                 <ul className="space-y-4">
                   {['Identidad', 'Antecedentes', 'Situación financiera', 'Capacidad de pago'].map((item) => (
@@ -392,7 +392,7 @@ const PresentacionComercial = () => {
             </h2>
             
             <div className="max-w-2xl mx-auto">
-              <div className="bg-muted/40 border border-border rounded-2xl divide-y divide-border">
+              <div className="bg-muted/40 border border-border rounded-xl divide-y divide-border">
                 {[
                   { icon: Home, text: 'Estado de cada propiedad' },
                   { icon: UserCheck, text: 'Interesados verificados' },
@@ -472,7 +472,7 @@ const PresentacionComercial = () => {
             </div>
             
             {/* Pricing */}
-            <div className="bg-primary/5 border-2 border-primary/30 rounded-2xl p-8 text-center mb-8">
+            <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-8 text-center mb-8">
               <p className="text-xl font-bold text-foreground mb-4">
                 Sin costos fijos. Pagás cuando cerrás.
               </p>

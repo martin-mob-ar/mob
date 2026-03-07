@@ -76,7 +76,7 @@ const VisitaEspera = () => {
 
           {/* Property Summary */}
           <div className="bg-card rounded-xl border border-border p-4 flex gap-4">
-            <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0">
+            <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
               <img 
                 src={property.image || properties[0]?.image} 
                 alt={property.title}

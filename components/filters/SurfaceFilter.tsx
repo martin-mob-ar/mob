@@ -129,7 +129,7 @@ const SurfaceFilter = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => setSurfaceType("cubierta")}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                   surfaceType === "cubierta"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary hover:bg-secondary/80 text-foreground"
@@ -139,7 +139,7 @@ const SurfaceFilter = () => {
               </button>
               <button
                 onClick={() => setSurfaceType("total")}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                   surfaceType === "total"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary hover:bg-secondary/80 text-foreground"

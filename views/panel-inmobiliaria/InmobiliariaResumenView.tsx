@@ -93,7 +93,7 @@ const InmobiliariaResumenView = () => {
         {kpis.map((kpi) => {
           const CardContent = (
             <div
-              className={`bg-card rounded-2xl border border-border p-5 space-y-3 ${kpi.link ? "hover:border-primary/30 transition-colors" : ""}`}
+              className={`bg-card rounded-xl border border-border p-5 space-y-3 ${kpi.link ? "hover:border-primary/30 transition-colors" : ""}`}
             >
               <div className={`h-11 w-11 rounded-xl ${kpi.iconBg} flex items-center justify-center`}>
                 <kpi.icon className={`h-5 w-5 ${kpi.iconColor}`} />
@@ -129,7 +129,7 @@ const InmobiliariaResumenView = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display font-semibold text-sm uppercase tracking-wider text-muted-foreground">
             Actividad reciente

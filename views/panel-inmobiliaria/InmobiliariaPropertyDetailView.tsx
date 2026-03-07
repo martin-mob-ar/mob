@@ -188,7 +188,7 @@ const InmobiliariaPropertyDetailView = () => {
       </Link>
 
       {/* Property Header */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="flex flex-col md:flex-row">
           {/* Image */}
           <div className="md:w-80 aspect-video md:aspect-auto">
@@ -210,7 +210,7 @@ const InmobiliariaPropertyDetailView = () => {
                     <span className={`h-2 w-2 rounded-full ${statusConfig[property.status].dotColor}`} />
                     {statusConfig[property.status].label}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono bg-secondary text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs font-mono bg-secondary text-muted-foreground">
                     <RefreshCw className="h-3 w-3" />
                     {property.tokkoId}
                   </span>
@@ -254,7 +254,7 @@ const InmobiliariaPropertyDetailView = () => {
       {/* Tabs */}
       <Tabs defaultValue="interesados" className="space-y-6">
         <TabsList className="bg-card border border-border p-1 rounded-xl flex-wrap h-auto gap-1">
-          <TabsTrigger value="interesados" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
+          <TabsTrigger value="interesados" className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
             <Users className="h-4 w-4" />
             Interesados
             {propertyInterested.length > 0 && (
@@ -263,15 +263,15 @@ const InmobiliariaPropertyDetailView = () => {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="balance" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="balance" className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <DollarSign className="h-4 w-4" />
             Balance
           </TabsTrigger>
-          <TabsTrigger value="contrato" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="contrato" className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <FileText className="h-4 w-4" />
             Contrato
           </TabsTrigger>
-          <TabsTrigger value="tickets" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
+          <TabsTrigger value="tickets" className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
             <MessageCircle className="h-4 w-4" />
             Tickets
             {openTickets > 0 && (
@@ -280,7 +280,7 @@ const InmobiliariaPropertyDetailView = () => {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="info" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="info" className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Info className="h-4 w-4" />
             Información
           </TabsTrigger>
@@ -306,7 +306,7 @@ const InmobiliariaPropertyDetailView = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+            <div className="bg-card rounded-xl border border-border p-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
                 <Users className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -343,7 +343,7 @@ const InmobiliariaPropertyDetailView = () => {
           </div>
 
           {/* Transactions Table */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="p-6 border-b border-border">
               <h3 className="font-display font-semibold">Movimientos</h3>
             </div>
@@ -375,7 +375,7 @@ const InmobiliariaPropertyDetailView = () => {
           {property.status === "alquilada" && property.contractStart ? (
             <>
               {/* Contract Progress */}
-              <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-6">
                 <h3 className="font-display font-semibold mb-4">Estado del contrato</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
@@ -396,7 +396,7 @@ const InmobiliariaPropertyDetailView = () => {
               </div>
 
               {/* Documents */}
-              <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-6">
                 <h3 className="font-display font-semibold mb-4">Documentación</h3>
                 <div className="space-y-3">
                   {[
@@ -421,7 +421,7 @@ const InmobiliariaPropertyDetailView = () => {
               </div>
             </>
           ) : (
-            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+            <div className="bg-card rounded-xl border border-border p-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
                 <FileText className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -482,7 +482,7 @@ const InmobiliariaPropertyDetailView = () => {
 
         {/* Info Tab */}
         <TabsContent value="info" className="space-y-6">
-          <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="bg-card rounded-xl border border-border p-6">
             <h3 className="font-display font-semibold mb-6">Información de la propiedad</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">

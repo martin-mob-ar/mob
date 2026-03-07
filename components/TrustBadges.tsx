@@ -48,7 +48,7 @@ const TrustBadges = () => {
           {secondaryBadges.map((badge) => (
             <div 
               key={badge.text}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary/30 border border-border/50 rounded-lg"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary/30 border border-border/50 rounded-xl"
             >
               <badge.icon className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">{badge.text}</span>
@@ -61,7 +61,7 @@ const TrustBadges = () => {
       <div className="md:hidden flex flex-col gap-3 px-2">
         {/* Primary Badge - Featured */}
         {primaryBadge && (
-          <div className="flex items-center justify-center gap-2 p-4 bg-[hsl(var(--primary)/0.08)] rounded-2xl">
+          <div className="flex items-center justify-center gap-2 p-4 bg-[hsl(var(--primary)/0.08)] rounded-xl">
             <primaryBadge.icon className="h-5 w-5 text-primary" />
             <span className="text-sm font-semibold text-foreground">{primaryBadge.text}</span>
           </div>

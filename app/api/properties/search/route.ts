@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
   const propertyTypeNames = searchParams.get("propertyTypeNames"); // comma-separated: "Apartment,House"
   const tagIds = searchParams.get("tagIds"); // comma-separated tag IDs
   const maxAge = searchParams.get("maxAge"); // max property age (0 = a estrenar)
+  const priceType = searchParams.get("priceType") || "total"; // "total" | "alquiler"
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
@@ -70,12 +71,41 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (minPrice) {
-    query = query.gte("valor_total_primary", parseInt(minPrice));
-  }
+  if (minPrice || maxPrice) {
+    if (priceType === "alquiler") {
+      // Alquiler: filter on raw `price` column (no expenses) using current exchange rate.
+      // The frontend always sends values in ARS, so we derive the USD equivalent at query time
+      // to correctly compare against properties stored in either currency.
+      const { data: rateRow } = await supabaseAdmin
+        .from("exchange_rates")
+        .select("rate")
+        .eq("currency_pair", "USD_ARS")
+        .single();
+      const rate = rateRow?.rate ?? 1;
 
-  if (maxPrice) {
-    query = query.lte("valor_total_primary", parseInt(maxPrice));
+      if (minPrice) {
+        const minArs = parseInt(minPrice);
+        const minUsd = Math.round(minArs / rate);
+        query = query.or(
+          `and(currency.eq.ARS,price.gte.${minArs}),and(currency.eq.USD,price.gte.${minUsd})`
+        );
+      }
+      if (maxPrice) {
+        const maxArs = parseInt(maxPrice);
+        const maxUsd = Math.round(maxArs / rate);
+        query = query.or(
+          `and(currency.eq.ARS,price.lte.${maxArs}),and(currency.eq.USD,price.lte.${maxUsd})`
+        );
+      }
+    } else {
+      // Precio total: valor_total_primary = (price in ARS) + expenses, refreshed on rate updates
+      if (minPrice) {
+        query = query.gte("valor_total_primary", parseInt(minPrice));
+      }
+      if (maxPrice) {
+        query = query.lte("valor_total_primary", parseInt(maxPrice));
+      }
+    }
   }
 
   // Dormitorios (bedrooms) → suite_amount

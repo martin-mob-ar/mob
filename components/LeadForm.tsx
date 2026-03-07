@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, ShieldCheck, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import Link from "next/link";
 
 import {
   Form,
@@ -66,9 +67,9 @@ const COUNTRY_CODES = [
 
 function getDefaultMessage(type: "visita" | "reserva", address: string): string {
   if (type === "visita") {
-    return `¡Hola! Quiero agendar una visita para la propiedad en ${address} que vi en mob.`;
+    return `¡Hola! Quiero agendar una visita para la propiedad en ${address}.`;
   }
-  return `¡Hola! Quiero reservar la propiedad en ${address} que vi en mob.`;
+  return `¡Hola! Quiero reservar la propiedad en ${address}.`;
 }
 
 interface LeadFormProps {
@@ -78,6 +79,10 @@ interface LeadFormProps {
   onClose: () => void;
   /** The inmobiliaria's contact phone — shown after submission for WhatsApp/call. Unrelated to the submitter's phone field. */
   inmobiliariaPhone?: string;
+  /** The Mob plan the property is listed under. Controls verification requirements. */
+  propertyPlan?: "basico" | "acompanado" | "experiencia";
+  /** Whether the property was published by an inmobiliaria (true) or a propietario (false). */
+  isInmobiliaria?: boolean;
 }
 
 export default function LeadForm({
@@ -86,10 +91,17 @@ export default function LeadForm({
   propertyAddress,
   onClose,
   inmobiliariaPhone,
+  propertyPlan = "basico",
+  isInmobiliaria = false,
 }: LeadFormProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const isVerified = !!user?.isVerified;
+  const requiresVerification =
+    (propertyPlan === "acompanado" || propertyPlan === "experiencia") &&
+    !isVerified;
 
   const defaults = useMemo(() => {
     if (user) {
@@ -180,8 +192,83 @@ export default function LeadForm({
   }
 
   const title = type === "visita" ? "Agendar visita" : "Reservar";
+  const publisherLabel = isInmobiliaria ? "la inmobiliaria" : "el propietario";
 
+  // ── Blocking state: plan requires verification but user is not verified ──
+  if (requiresVerification) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
+            aria-label="Volver"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <h3 className="font-semibold text-sm">{title}</h3>
+        </div>
+
+        <div className="rounded-xl border border-border bg-secondary/40 p-4 space-y-3 text-center">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-semibold text-sm">Esta propiedad es solo para inquilinos verificados</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Al verificar tu perfil, los propietarios e inmobiliarias ven que sos
+              un candidato calificado y de confianza, lo que aumenta mucho tus
+              posibilidades de conseguir la propiedad que buscás.
+            </p>
+          </div>
+          <Link href="/verificacion" className="block">
+            <Button className="w-full h-9 rounded-xl font-semibold text-sm">
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Verificarme gratis
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Post-submission state ──
   if (submitted) {
+    // Unverified user: show verification CTA
+    if (!isVerified) {
+      return (
+        <div className="text-center py-4 space-y-3">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <CheckCircle className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">¡Consulta enviada!</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Verificate para que {publisherLabel} pueda conocer tu perfil y priorizarte.
+            </p>
+          </div>
+          <Link href="/verificacion" className="block">
+            <Button className="w-full rounded-xl h-10 font-semibold text-sm">
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Verificarme para contactar a {publisherLabel}
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSubmitted(false);
+              onClose();
+            }}
+          >
+            Volver
+          </Button>
+        </div>
+      );
+    }
+
+    // Verified user: current success state with WhatsApp/call options
     return (
       <div className="text-center py-4 space-y-3">
         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -229,6 +316,7 @@ export default function LeadForm({
     );
   }
 
+  // ── Normal form ──
   return (
     <div className="space-y-4">
       {/* Header with back button */}
@@ -236,7 +324,7 @@ export default function LeadForm({
         <button
           type="button"
           onClick={onClose}
-          className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+          className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
           aria-label="Volver"
         >
           <ArrowLeft className="h-4 w-4" />
