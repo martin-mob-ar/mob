@@ -19,26 +19,13 @@ export interface SyncResult {
 }
 
 /**
- * Fire-and-forget photo migration with self-chaining.
- * Calls the migrate endpoint and re-calls if photos remain (up to maxCalls).
+ * Fire-and-forget: kick off photo migration.
+ * The endpoint self-chains internally (up to 10 times), so we just need to fire once.
  */
-function triggerPhotoMigration(userId: string, maxCalls = 10) {
+function triggerPhotoMigration(userId: string) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const url = `${appUrl}/api/photos/migrate?userId=${userId}`;
-
-  async function run(remaining: number) {
-    if (remaining <= 0) return;
-    try {
-      const res = await fetch(url, { method: 'POST' });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.remaining > 0) {
-        run(remaining - 1);
-      }
-    } catch {}
-  }
-
-  run(maxCalls).catch(() => {});
+  fetch(url, { method: 'POST' }).catch(() => {});
 }
 
 /**

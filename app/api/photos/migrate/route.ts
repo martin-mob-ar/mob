@@ -190,6 +190,21 @@ export async function POST(request: NextRequest) {
 
     const { count: remaining } = await remainingQuery;
 
+    // Self-chain: if there are remaining photos, fire another call (up to maxChain times)
+    const chainIndex = parseInt(searchParams.get('chain') || '0', 10);
+    const maxChain = 10;
+    if ((remaining ?? 0) > 0 && totalMigrated > 0 && chainIndex < maxChain) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const nextUrl = new URL(`${appUrl}/api/photos/migrate`);
+      if (userId) nextUrl.searchParams.set('userId', userId);
+      if (all) nextUrl.searchParams.set('all', 'true');
+      nextUrl.searchParams.set('chain', String(chainIndex + 1));
+
+      // Fire-and-forget — don't await
+      fetch(nextUrl.toString(), { method: 'POST' }).catch(() => {});
+      console.log(`[photos/migrate] Self-chaining (link #${chainIndex + 1}), ${remaining} photos remaining`);
+    }
+
     return NextResponse.json({
       success: true,
       migrated: totalMigrated,
