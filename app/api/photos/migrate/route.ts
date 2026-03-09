@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { uploadPhotoFromUrl } from '@/lib/storage/gcs';
 
@@ -200,8 +200,15 @@ export async function POST(request: NextRequest) {
       if (all) nextUrl.searchParams.set('all', 'true');
       nextUrl.searchParams.set('chain', String(chainIndex + 1));
 
-      // Fire-and-forget — don't await
-      fetch(nextUrl.toString(), { method: 'POST' }).catch(() => {});
+      // Use after() to ensure the chain call is sent before Vercel kills the container
+      const chainUrl = nextUrl.toString();
+      after(async () => {
+        try {
+          await fetch(chainUrl, { method: 'POST' });
+        } catch (err) {
+          console.error('[photos/migrate] Self-chain fetch failed:', err);
+        }
+      });
       console.log(`[photos/migrate] Self-chaining (link #${chainIndex + 1}), ${remaining} photos remaining`);
     }
 
