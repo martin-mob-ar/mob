@@ -4,10 +4,11 @@ import { syncTokkoData } from '@/lib/sync/service';
 export const maxDuration = 300; // 5 minutes for large syncs
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
   console.log('[Tokko Sync API] POST /api/tokko/sync received');
   try {
     const body = await request.json();
-    const { apiKey, limit: rawLimit, authId, authEmail } = body;
+    const { apiKey, limit: rawLimit, authId, authEmail, resume } = body;
 
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
       console.warn('[Tokko Sync API] Rejected: API key missing or empty');
@@ -34,13 +35,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isResume = resume === true;
+    if (isResume) {
+      console.log('[Tokko Sync API] Self-chained resume call');
+    }
+
     const propertyLimit = typeof rawLimit === 'number' && rawLimit > 0
       ? Math.min(500, Math.max(1, Math.floor(rawLimit)))
       : typeof rawLimit === 'string' && rawLimit.trim() !== ''
         ? Math.min(500, Math.max(1, parseInt(rawLimit, 10) || 5))
         : 5;
-    console.log('[Tokko Sync API] Starting sync (API key masked, property limit:', propertyLimit, ', authId:', authId || 'none', ')');
-    const result = await syncTokkoData(apiKey.trim(), propertyLimit, authId, authEmail);
+    console.log('[Tokko Sync API] Starting sync (API key masked, property limit:', propertyLimit, ', authId:', authId || 'none', ', resume:', isResume, ')');
+    const result = await syncTokkoData(apiKey.trim(), propertyLimit, authId, authEmail, isResume, startTime);
     console.log('[Tokko Sync API] Sync completed:', {
       userId: result.userId,
       propertiesSynced: result.propertiesSynced,

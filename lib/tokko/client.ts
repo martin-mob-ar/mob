@@ -242,6 +242,14 @@ export class TokkoClient {
   }
 
   /**
+   * Fetch a single page of properties. Used by resumable discovery
+   * to paginate across function invocations.
+   */
+  async fetchPropertyPage(offset: number, limit = 500): Promise<TokkoApiResponse<TokkoProperty>> {
+    return this.fetch<TokkoProperty>('/property/', { limit, offset });
+  }
+
+  /**
    * Fetch properties with pagination.
    * If maxTotal is provided, stops once that many properties have been collected.
    */

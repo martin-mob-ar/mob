@@ -400,33 +400,425 @@ async function isNetworkKey(apiKey: string): Promise<boolean> {
   }
 }
 
+// ============================================================
+// Resumable Self-Chaining Sync (for network accounts)
+// ============================================================
+
+interface SyncProgress {
+  phase: 'discovery' | 'companies' | 'syncing' | 'finalizing';
+  discovery: {
+    offset: number;
+    totalCount: number | null;
+    scannedCount: number;
+    companies: Array<{ name: string; key: string; logo: string | null; contact_info: string | null }>;
+  };
+  companies: {
+    companyDbIds: Record<string, number>;
+    companiesProcessed: boolean;
+  };
+  syncing: {
+    companiesSynced: string[];
+    triggersDisabled: boolean;
+    propertiesSynced: number;
+    errors: string[];
+  };
+  chainIndex: number;
+}
+
+function createTimeGuard(startTime: number, budgetMs = 250_000) {
+  return {
+    hasTime: () => Date.now() - startTime < budgetMs,
+    elapsed: () => Date.now() - startTime,
+  };
+}
+
+function createInitialProgress(): SyncProgress {
+  return {
+    phase: 'discovery',
+    discovery: { offset: 0, totalCount: null, scannedCount: 0, companies: [] },
+    companies: { companyDbIds: {}, companiesProcessed: false },
+    syncing: { companiesSynced: [], triggersDisabled: false, propertiesSynced: 0, errors: [] },
+    chainIndex: 0,
+  };
+}
+
+async function loadSyncProgress(userId: string): Promise<SyncProgress | null> {
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('sync_progress')
+    .eq('id', userId)
+    .single();
+  return (data?.sync_progress as unknown as SyncProgress) ?? null;
+}
+
+async function saveSyncProgress(userId: string, progress: SyncProgress): Promise<void> {
+  await supabaseAdmin
+    .from('users')
+    .update({ sync_progress: progress as unknown as Record<string, unknown> })
+    .eq('id', userId);
+}
+
+async function clearSyncProgress(userId: string): Promise<void> {
+  await supabaseAdmin
+    .from('users')
+    .update({ sync_progress: null })
+    .eq('id', userId);
+}
+
 /**
- * Sync a network account: discover companies, then sync each company individually.
- * Branch fetches are parallelized upfront, and properties are synced via batch RPC.
+ * Fire-and-forget self-chain: POST to /api/tokko/sync with resume=true.
+ * Retries up to 2 times on failure.
  */
-async function syncNetworkAccount(
-  apiKey: string,
-  authId: string,
-  authEmail: string
-): Promise<SyncResult> {
-  const errors: string[] = [];
-  const apiKeyHash = hashApiKey(apiKey);
-  let apiKeyEnc: string | undefined;
-  try {
-    apiKeyEnc = encryptApiKey(apiKey);
-  } catch {
-    console.warn('[Tokko Sync] Could not encrypt API key (API_KEY_SECRET may not be set)');
+function triggerSyncContinuation(apiKey: string, authId: string, authEmail: string): void {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const url = `${appUrl}/api/tokko/sync`;
+
+  async function attempt(retries: number) {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, authId, authEmail, resume: true }),
+      });
+    } catch (err) {
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 2000));
+        return attempt(retries - 1);
+      }
+      console.error('[Tokko Sync] Self-chain failed after retries:', err);
+    }
   }
 
-  console.log('[Tokko Sync] Starting NETWORK account sync');
+  attempt(2).catch(() => {});
+}
 
-  try {
-    await updateSyncStatus(apiKeyHash, 'syncing', 'Conectando con Tokko (red inmobiliaria)...');
+/**
+ * Discovery phase: paginate through ALL Tokko properties to find unique companies.
+ * Saves progress every 2 pages. Stops if time runs out.
+ * Returns true if discovery is complete.
+ */
+async function discoverNetworkChunk(
+  apiKey: string,
+  apiKeyHash: string,
+  userId: string,
+  progress: SyncProgress,
+  timeGuard: ReturnType<typeof createTimeGuard>,
+): Promise<boolean> {
+  const client = new TokkoClient(apiKey);
+  const companiesByName = new Map<string, SyncProgress['discovery']['companies'][0]>();
 
-    // Find user
-    const userId = await findUser(authId, authEmail, apiKeyHash);
+  // Restore already-discovered companies
+  for (const c of progress.discovery.companies) {
+    companiesByName.set(c.name, c);
+  }
 
-    // Update user with network key hash and encrypted key (but no name/logo — that's per-company)
+  let offset = progress.discovery.offset;
+  const limit = 500;
+  let pagesSinceSave = 0;
+
+  while (timeGuard.hasTime()) {
+    console.log(`[Tokko Sync] Discovery page (offset: ${offset}, limit: ${limit})`);
+    const response = await client.fetchPropertyPage(offset, limit);
+
+    // First page gives us the total count
+    if (progress.discovery.totalCount === null) {
+      progress.discovery.totalCount = response.meta.total_count;
+    }
+
+    if (response.objects.length === 0) {
+      progress.discovery.companies = Array.from(companiesByName.values());
+      await saveSyncProgress(userId, progress);
+      return true;
+    }
+
+    // Extract unique companies from this page
+    for (const property of response.objects) {
+      if (property.company && !companiesByName.has(property.company.name)) {
+        companiesByName.set(property.company.name, {
+          name: property.company.name,
+          key: property.company.key,
+          logo: property.company.logo || null,
+          contact_info: property.company.contact_info || null,
+        });
+        console.log(`[Tokko Sync] Discovered company: "${property.company.name}"`);
+      }
+    }
+
+    const scanned = Math.min(offset + response.objects.length, progress.discovery.totalCount ?? Infinity);
+    progress.discovery.scannedCount = scanned;
+    pagesSinceSave++;
+
+    // Update status message
+    const total = progress.discovery.totalCount || 0;
+    await updateSyncStatus(
+      apiKeyHash,
+      'syncing',
+      `Descubriendo propiedades ${scanned.toLocaleString('es-AR')} de ${total.toLocaleString('es-AR')} (${companiesByName.size} inmobiliarias encontradas)...`
+    );
+
+    // Check if we've reached the end
+    if (!response.meta.next || offset + limit >= (progress.discovery.totalCount || 0)) {
+      offset += limit;
+      progress.discovery.offset = offset;
+      progress.discovery.companies = Array.from(companiesByName.values());
+      await saveSyncProgress(userId, progress);
+      return true;
+    }
+
+    offset += limit;
+    progress.discovery.offset = offset;
+
+    // Save progress every 2 pages
+    if (pagesSinceSave >= 2) {
+      progress.discovery.companies = Array.from(companiesByName.values());
+      await saveSyncProgress(userId, progress);
+      pagesSinceSave = 0;
+    }
+  }
+
+  // Ran out of time — save progress for next chain link
+  progress.discovery.companies = Array.from(companiesByName.values());
+  await saveSyncProgress(userId, progress);
+  return false;
+}
+
+/**
+ * Companies phase: upsert all discovered companies and fetch branch contact info in parallel.
+ * This is fast and should always fit in a single invocation.
+ */
+async function processCompaniesPhase(
+  apiKeyHash: string,
+  userId: string,
+  progress: SyncProgress,
+): Promise<void> {
+  const companies = progress.discovery.companies;
+
+  await updateSyncStatus(apiKeyHash, 'syncing', `Registrando ${companies.length} inmobiliarias...`);
+
+  // Upsert all companies
+  for (const company of companies) {
+    let companyKeyEnc: string | null = null;
+    try {
+      companyKeyEnc = encryptApiKey(company.key);
+    } catch {
+      console.warn(`[Tokko Sync] Could not encrypt key for company "${company.name}"`);
+    }
+
+    const companyId = await upsertCompany(userId, {
+      name: company.name,
+      logo: company.logo,
+      contact_info: company.contact_info,
+      tokko_key_enc: companyKeyEnc,
+    });
+
+    progress.companies.companyDbIds[company.name] = companyId;
+  }
+
+  console.log(`[Tokko Sync] ${companies.length} companies upserted`);
+
+  // Fetch branches in parallel for contact info
+  await updateSyncStatus(apiKeyHash, 'syncing', `Obteniendo datos de contacto de ${companies.length} inmobiliarias...`);
+
+  const branchResults = await Promise.all(
+    companies.map(async (company) => {
+      try {
+        const companyClient = new TokkoClient(company.key);
+        const branches = await companyClient.getAllBranches();
+        const contactInfo = extractBranchContactInfo(branches);
+        return {
+          companyName: company.name,
+          contactInfo,
+          warning: branches.length === 0 ? `Company "${company.name}": Could not fetch branch data` : null,
+        };
+      } catch {
+        return {
+          companyName: company.name,
+          contactInfo: null,
+          warning: `Company "${company.name}": Branch fetch failed`,
+        };
+      }
+    })
+  );
+
+  // Update company contact info
+  for (const result of branchResults) {
+    if (result.warning) {
+      progress.syncing.errors.push(result.warning);
+    }
+    if (result.contactInfo) {
+      const companyId = progress.companies.companyDbIds[result.companyName];
+      if (companyId) {
+        await supabaseAdmin
+          .from('tokko_company')
+          .update({
+            email: result.contactInfo.email,
+            phone: result.contactInfo.phone,
+            phone_country_code: result.contactInfo.phone_country_code,
+            address: result.contactInfo.address,
+          })
+          .eq('id', companyId);
+      }
+    }
+  }
+
+  progress.companies.companiesProcessed = true;
+  await saveSyncProgress(userId, progress);
+  console.log(`[Tokko Sync] Branch contact info updated for ${branchResults.filter(r => r.contactInfo).length} companies`);
+}
+
+/**
+ * Syncing phase: for each unsynced company, fetch its properties fresh and sync via RPC.
+ * Checks time budget before starting each company.
+ * Returns true if all companies are synced.
+ */
+async function syncCompaniesChunk(
+  apiKeyHash: string,
+  userId: string,
+  progress: SyncProgress,
+  timeGuard: ReturnType<typeof createTimeGuard>,
+): Promise<boolean> {
+  const companies = progress.discovery.companies;
+  const synced = new Set(progress.syncing.companiesSynced);
+
+  // Disable triggers if not already disabled
+  if (!progress.syncing.triggersDisabled) {
+    console.log('[Tokko Sync] Disabling listing triggers for bulk sync...');
+    await supabaseAdmin.rpc('disable_listing_triggers');
+    progress.syncing.triggersDisabled = true;
+    await saveSyncProgress(userId, progress);
+  }
+
+  for (const company of companies) {
+    if (synced.has(company.name)) continue;
+
+    // Check time budget before starting a company (each can take 10-30s)
+    if (!timeGuard.hasTime()) {
+      return false;
+    }
+
+    const companyId = progress.companies.companyDbIds[company.name];
+    if (!companyId) {
+      console.warn(`[Tokko Sync] No DB ID for company "${company.name}", skipping`);
+      progress.syncing.companiesSynced.push(company.name);
+      await saveSyncProgress(userId, progress);
+      continue;
+    }
+
+    try {
+      await updateSyncStatus(
+        apiKeyHash,
+        'syncing',
+        `Sincronizando "${company.name}" (${synced.size + 1}/${companies.length}, ${progress.syncing.propertiesSynced} propiedades)...`
+      );
+
+      const result = await syncCompanyProperties(userId, companyId, company.key, company.name);
+      progress.syncing.propertiesSynced += result.propertiesSynced;
+      progress.syncing.errors.push(...result.errors);
+
+      console.log(`[Tokko Sync] Company "${company.name}": ${result.propertiesSynced} properties synced`);
+    } catch (error) {
+      const errMsg = `Company "${company.name}": ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error(`[Tokko Sync] Company sync failed:`, errMsg);
+      progress.syncing.errors.push(errMsg);
+    }
+
+    progress.syncing.companiesSynced.push(company.name);
+    synced.add(company.name);
+    await saveSyncProgress(userId, progress);
+  }
+
+  return true;
+}
+
+/**
+ * Finalizing phase: re-enable triggers, rebuild listings, trigger photo migration, clear progress.
+ */
+async function finalizeSync(
+  apiKeyHash: string,
+  userId: string,
+  progress: SyncProgress,
+): Promise<void> {
+  // Re-enable triggers
+  if (progress.syncing.triggersDisabled) {
+    console.log('[Tokko Sync] Re-enabling listing triggers...');
+    await supabaseAdmin.rpc('enable_listing_triggers');
+    progress.syncing.triggersDisabled = false;
+  }
+
+  // Rebuild listings
+  console.log('[Tokko Sync] Rebuilding property listings for user...');
+  await updateSyncStatus(apiKeyHash, 'syncing', 'Reconstruyendo listados...');
+  await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
+
+  // Update final status
+  await updateSyncStatus(apiKeyHash, 'done', null, progress.syncing.propertiesSynced);
+
+  // Trigger photo migration
+  triggerPhotoMigration(userId);
+
+  // Clear progress
+  await clearSyncProgress(userId);
+
+  console.log('[Tokko Sync] Network sync finalized:', {
+    propertiesSynced: progress.syncing.propertiesSynced,
+    companiesSynced: progress.syncing.companiesSynced.length,
+    errors: progress.syncing.errors.length,
+  });
+}
+
+/**
+ * Resumable network account sync. Handles unlimited volume by splitting work
+ * across multiple 300s function invocations with self-chaining.
+ *
+ * Phases: discovery → companies → syncing → finalizing
+ *
+ * Progress is stored in the `sync_progress` JSONB column on `users`.
+ * Each invocation processes as much as it can within ~250s, saves progress,
+ * and fires a new call to continue.
+ */
+async function syncNetworkAccountResumable(
+  apiKey: string,
+  authId: string,
+  authEmail: string,
+  resume: boolean,
+  startTime: number,
+): Promise<SyncResult> {
+  const apiKeyHash = hashApiKey(apiKey);
+  const timeGuard = createTimeGuard(startTime);
+
+  // Find user
+  const userId = await findUser(authId, authEmail, apiKeyHash);
+
+  // Load or create progress
+  let progress: SyncProgress;
+  if (resume) {
+    const existing = await loadSyncProgress(userId);
+    if (!existing) {
+      console.log('[Tokko Sync] Resume requested but no progress found, nothing to do');
+      return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [] };
+    }
+    progress = existing;
+    progress.chainIndex++;
+    console.log(`[Tokko Sync] Resuming chain link #${progress.chainIndex}, phase: ${progress.phase}`);
+
+    // Refresh sync_started_at so status endpoint doesn't auto-recover during chain
+    await supabaseAdmin
+      .from('users')
+      .update({ sync_started_at: new Date().toISOString() })
+      .eq('id', userId);
+  } else {
+    // Fresh start — clear any stale progress
+    await clearSyncProgress(userId);
+    progress = createInitialProgress();
+
+    // Set up user record
+    let apiKeyEnc: string | undefined;
+    try {
+      apiKeyEnc = encryptApiKey(apiKey);
+    } catch {
+      console.warn('[Tokko Sync] Could not encrypt API key');
+    }
+
     await supabaseAdmin
       .from('users')
       .update({
@@ -436,149 +828,84 @@ async function syncNetworkAccount(
       })
       .eq('id', userId);
 
-    console.log('[Tokko Sync] User ID:', userId);
+    await updateSyncStatus(apiKeyHash, 'syncing', 'Conectando con Tokko (red inmobiliaria)...');
+    console.log('[Tokko Sync] Starting NETWORK account sync (resumable), user:', userId);
+  }
 
-    // Phase 1: Discover companies AND collect matching properties in one pass
-    await updateSyncStatus(apiKeyHash, 'syncing', 'Descubriendo inmobiliarias en la red...');
-    const networkClient = new TokkoClient(apiKey);
-    const { companies, propertiesByCompany } = await networkClient.discoverNetwork(
-      { operationTypes: [RENT_OPERATION_ID], propertyTypes: SYNC_PROPERTY_TYPES },
-      (scanned, total, found) => {
-        updateSyncStatus(apiKeyHash, 'syncing', `Descubriendo propiedades ${scanned.toLocaleString('es-AR')} de ${total.toLocaleString('es-AR')} (${found} inmobiliarias encontradas)...`);
-      }
-    );
+  try {
+    // Phase: Discovery
+    if (progress.phase === 'discovery') {
+      const discoveryComplete = await discoverNetworkChunk(apiKey, apiKeyHash, userId, progress, timeGuard);
 
-    const totalMatchingProperties = Array.from(propertiesByCompany.values()).reduce((sum, props) => sum + props.length, 0);
-    console.log(`[Tokko Sync] Discovered ${companies.length} companies, ${totalMatchingProperties} matching properties`);
-
-    if (companies.length === 0) {
-      await updateSyncStatus(apiKeyHash, 'error', 'No se encontraron inmobiliarias en esta red');
-      throw new Error('No companies found in network');
-    }
-
-    await updateSyncStatus(apiKeyHash, 'syncing', `Encontradas ${companies.length} inmobiliarias (${totalMatchingProperties} propiedades). Sincronizando...`);
-
-    // Upsert all companies
-    const companyMap = new Map<string, { id: number; key: string }>();
-    for (const company of companies) {
-      let companyKeyEnc: string | null = null;
-      try {
-        companyKeyEnc = encryptApiKey(company.key);
-      } catch {
-        console.warn(`[Tokko Sync] Could not encrypt key for company "${company.name}"`);
+      if (!discoveryComplete) {
+        console.log(`[Tokko Sync] Discovery paused at offset ${progress.discovery.offset}/${progress.discovery.totalCount}. Chaining...`);
+        triggerSyncContinuation(apiKey, authId, authEmail);
+        return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [] };
       }
 
-      const companyId = await upsertCompany(userId, {
-        name: company.name,
-        logo: company.logo,
-        contact_info: company.contact_info,
-        tokko_key_enc: companyKeyEnc,
-      });
-
-      companyMap.set(company.name, { id: companyId, key: company.key });
-    }
-    console.log(`[Tokko Sync] ${companyMap.size} companies upserted`);
-
-    // Phase 1.5: Fetch ALL branch contact info in parallel (before property sync)
-    await updateSyncStatus(apiKeyHash, 'syncing', `Obteniendo datos de contacto de ${companyMap.size} inmobiliarias...`);
-    const companyEntries = Array.from(companyMap.entries());
-
-    console.log(`[Tokko Sync] Fetching branches for all ${companyEntries.length} companies in parallel...`);
-    const branchResults = await Promise.all(
-      companyEntries.map(async ([companyName, { id: companyId, key: companyKey }]) => {
-        try {
-          const companyClient = new TokkoClient(companyKey);
-          const branches = await companyClient.getAllBranches();
-          const contactInfo = extractBranchContactInfo(branches);
-          return { companyName, companyId, contactInfo, warning: branches.length === 0 ? `Company "${companyName}": Could not fetch branch data` : null };
-        } catch {
-          return { companyName, companyId, contactInfo: null, warning: `Company "${companyName}": Branch fetch failed` };
-        }
-      })
-    );
-
-    // Batch update company contact info
-    for (const result of branchResults) {
-      if (result.warning) errors.push(result.warning);
-      if (result.contactInfo) {
-        await supabaseAdmin
-          .from('tokko_company')
-          .update({
-            email: result.contactInfo.email,
-            phone: result.contactInfo.phone,
-            phone_country_code: result.contactInfo.phone_country_code,
-            address: result.contactInfo.address,
-          })
-          .eq('id', result.companyId);
+      if (progress.discovery.companies.length === 0) {
+        await updateSyncStatus(apiKeyHash, 'error', 'No se encontraron inmobiliarias en esta red');
+        await clearSyncProgress(userId);
+        throw new Error('No companies found in network');
       }
+
+      console.log(`[Tokko Sync] Discovery complete: ${progress.discovery.companies.length} companies found`);
+      progress.phase = 'companies';
+      await saveSyncProgress(userId, progress);
     }
-    console.log(`[Tokko Sync] Branch contact info updated for ${branchResults.filter(r => r.contactInfo).length} companies`);
 
-    // Disable listing triggers during bulk sync to avoid per-row rebuilds
-    console.log('[Tokko Sync] Disabling listing triggers for bulk sync...');
-    await supabaseAdmin.rpc('disable_listing_triggers');
-
-    // Phase 2: Sync properties via batch RPC
-    let totalPropertiesSynced = 0;
-
-    try {
-      for (let i = 0; i < companyEntries.length; i++) {
-        const [companyName, { id: companyId, key: companyKey }] = companyEntries[i];
-
-        try {
-          const companyProperties = propertiesByCompany.get(companyName) || [];
-          const result = await syncCompanyProperties(userId, companyId, companyKey, companyName, { prefetchedProperties: companyProperties });
-
-          totalPropertiesSynced += result.propertiesSynced;
-          errors.push(...result.errors);
-        } catch (error) {
-          const errMsg = `Company "${companyName}": ${error instanceof Error ? error.message : 'Unknown error'}`;
-          console.error(`[Tokko Sync] Company sync failed:`, errMsg);
-          errors.push(errMsg);
-        }
-
-        // Update progress every 5 companies
-        if ((i + 1) % 5 === 0 || i === companyEntries.length - 1) {
-          await updateSyncStatus(
-            apiKeyHash,
-            'syncing',
-            `Sincronizando inmobiliarias ${i + 1}/${companyEntries.length} (${totalPropertiesSynced} propiedades)...`
-          );
-        }
+    // Phase: Companies
+    if (progress.phase === 'companies') {
+      if (!timeGuard.hasTime()) {
+        console.log('[Tokko Sync] No time for companies phase. Chaining...');
+        triggerSyncContinuation(apiKey, authId, authEmail);
+        return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [] };
       }
-    } finally {
-      // Always re-enable triggers, even if sync fails
-      console.log('[Tokko Sync] Re-enabling listing triggers...');
-      await supabaseAdmin.rpc('enable_listing_triggers');
+
+      await processCompaniesPhase(apiKeyHash, userId, progress);
+      progress.phase = 'syncing';
+      await saveSyncProgress(userId, progress);
     }
 
-    // Rebuild listings only for this user (not the entire table)
-    console.log('[Tokko Sync] Rebuilding property listings for user...');
-    await updateSyncStatus(apiKeyHash, 'syncing', 'Reconstruyendo listados...');
-    await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
+    // Phase: Syncing
+    if (progress.phase === 'syncing') {
+      const syncComplete = await syncCompaniesChunk(apiKeyHash, userId, progress, timeGuard);
 
-    console.log('[Tokko Sync] Network sync finished:', {
-      companiesSynced: companyMap.size,
-      propertiesSynced: totalPropertiesSynced,
-      errors: errors.length,
-    });
+      if (!syncComplete) {
+        console.log(`[Tokko Sync] Syncing paused (${progress.syncing.companiesSynced.length}/${progress.discovery.companies.length} companies done). Chaining...`);
+        triggerSyncContinuation(apiKey, authId, authEmail);
+        return {
+          userId,
+          propertiesSynced: progress.syncing.propertiesSynced,
+          companiesSynced: progress.syncing.companiesSynced.length,
+          locationsSynced: 0,
+          errors: progress.syncing.errors,
+        };
+      }
 
-    await updateSyncStatus(apiKeyHash, 'done', null, totalPropertiesSynced);
+      progress.phase = 'finalizing';
+      await saveSyncProgress(userId, progress);
+    }
 
-    // Trigger background photo migration (self-chaining up to 3 calls)
-    triggerPhotoMigration(userId);
+    // Phase: Finalizing
+    if (progress.phase === 'finalizing') {
+      await finalizeSync(apiKeyHash, userId, progress);
+    }
 
     return {
       userId,
-      propertiesSynced: totalPropertiesSynced,
-      companiesSynced: companyMap.size,
+      propertiesSynced: progress.syncing.propertiesSynced,
+      companiesSynced: progress.discovery.companies.length,
       locationsSynced: 0,
-      errors,
+      errors: progress.syncing.errors,
     };
   } catch (error) {
-    // Ensure triggers are re-enabled even on unexpected errors
-    try { await supabaseAdmin.rpc('enable_listing_triggers'); } catch {}
+    // Ensure triggers are re-enabled on unexpected errors
+    if (progress.syncing.triggersDisabled) {
+      try { await supabaseAdmin.rpc('enable_listing_triggers'); } catch {}
+    }
     await updateSyncStatus(apiKeyHash, 'error', error instanceof Error ? error.message : 'Error desconocido');
+    await clearSyncProgress(userId);
     throw new Error(`Network sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -586,22 +913,33 @@ async function syncNetworkAccount(
 /**
  * Main sync function.
  * Detects network vs regular account and dispatches accordingly.
+ *
+ * @param resume - true when called by self-chain (skips network detection, resumes from progress)
+ * @param startTime - when the current invocation started (for time budget)
  */
 export async function syncTokkoData(
   apiKey: string,
   propertyLimit: number = 5,
   authId: string,
-  authEmail: string
+  authEmail: string,
+  resume: boolean = false,
+  startTime: number = Date.now(),
 ): Promise<SyncResult> {
+  // Self-chained calls go straight to resumable sync (we know it's network)
+  if (resume) {
+    console.log('[Tokko Sync] Resuming network sync (self-chained)');
+    return syncNetworkAccountResumable(apiKey, authId, authEmail, true, startTime);
+  }
+
   // Detect if this is a network key
   const network = await isNetworkKey(apiKey);
 
   if (network) {
-    console.log('[Tokko Sync] Detected NETWORK account — delegating to network sync');
-    return syncNetworkAccount(apiKey, authId, authEmail);
+    console.log('[Tokko Sync] Detected NETWORK account — starting resumable sync');
+    return syncNetworkAccountResumable(apiKey, authId, authEmail, false, startTime);
   }
 
-  // Regular single-inmobiliaria sync
+  // Regular single-inmobiliaria sync (unchanged — always fits in 300s)
   console.log('[Tokko Sync] Detected REGULAR account');
   const errors: string[] = [];
   const apiKeyHash = hashApiKey(apiKey);
@@ -696,7 +1034,7 @@ export async function syncTokkoData(
 
     await updateSyncStatus(apiKeyHash, 'done', null, result.propertiesSynced);
 
-    // Trigger background photo migration (self-chaining up to 3 calls)
+    // Trigger background photo migration
     triggerPhotoMigration(userId);
 
     return {

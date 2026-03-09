@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
-/** If a sync has been running longer than this, it's dead (Vercel maxDuration = 300s). */
+/**
+ * If a sync has been running longer than this WITHOUT a chain link refreshing
+ * sync_started_at, the sync is dead. Each chain link refreshes sync_started_at,
+ * so this timeout is relative to the LAST chain link, not the original start.
+ */
 const SYNC_TIMEOUT_MS = 6 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
@@ -13,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const { data: user, error } = await supabaseAdmin
     .from('users')
-    .select('id, sync_status, sync_message, sync_properties_count, sync_started_at')
+    .select('id, sync_status, sync_message, sync_properties_count, sync_started_at, sync_progress')
     .eq('tokko_api_hash', apiKeyHash)
     .maybeSingle();
 
@@ -25,8 +29,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: 'idle', message: null, propertiesCount: null });
   }
 
-  // Auto-recovery: if sync has been running past the timeout, the Vercel function is dead.
-  // Recover by re-enabling triggers, rebuilding listings, and updating status.
+  // Auto-recovery: if sync has been running past the timeout (no chain link
+  // refreshed sync_started_at), the Vercel function is dead.
+  // Recover by re-enabling triggers, rebuilding listings, clearing progress.
   if (
     user.sync_status === 'syncing' &&
     user.sync_started_at &&
@@ -59,6 +64,7 @@ export async function GET(request: NextRequest) {
         sync_message: recoveredMessage,
         sync_properties_count: recoveredCount,
         sync_started_at: null,
+        sync_progress: null, // Clear stale progress on recovery
       })
       .eq('id', user.id);
 
