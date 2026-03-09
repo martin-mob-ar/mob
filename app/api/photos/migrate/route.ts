@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { uploadPhotoFromUrl } from '@/lib/storage/gcs';
 
-export const maxDuration = 60; // Vercel Hobby plan limit
+export const maxDuration = 300; // 5 minutes (Hobby + Fluid Compute)
 
 const BATCH_SIZE = 50;
 const CONCURRENCY = 20;
-const TIME_LIMIT_MS = 50_000; // 50s — 10s buffer before Vercel's 60s timeout
+const TIME_LIMIT_MS = 270_000; // 270s — 30s buffer before 300s timeout
 
 /**
  * Simple concurrency limiter (like p-limit). Runs async tasks
