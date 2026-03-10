@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { MonthPicker } from "@/components/ui/month-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -107,31 +107,41 @@ export default function AjustePuntual() {
           </div>
 
           <div className="space-y-2">
-            <Label>Fecha del último ajuste</Label>
+            <Label>Mes del último ajuste</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !lastDate && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {lastDate ? format(lastDate, "dd/MM/yyyy", { locale: es }) : "Seleccioná una fecha"}
+                  {lastDate ? format(lastDate, "MMMM yyyy", { locale: es }) : "Seleccioná mes y año"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={lastDate} onSelect={setLastDate} disabled={(d) => d < MIN_DATE} className="p-3 pointer-events-auto" locale={es} />
+                <MonthPicker
+                  selected={lastDate}
+                  onSelect={(d) => setLastDate(d)}
+                  minDate={MIN_DATE}
+                  maxDate={new Date()}
+                />
               </PopoverContent>
             </Popover>
           </div>
 
           <div className="space-y-2">
-            <Label>Fecha del nuevo ajuste</Label>
+            <Label>Mes del nuevo ajuste</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newDate && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {newDate ? format(newDate, "dd/MM/yyyy", { locale: es }) : "Seleccioná una fecha"}
+                  {newDate ? format(newDate, "MMMM yyyy", { locale: es }) : "Seleccioná mes y año"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={newDate} onSelect={setNewDate} disabled={(d) => d < (lastDate || MIN_DATE)} className="p-3 pointer-events-auto" locale={es} />
+                <MonthPicker
+                  selected={newDate}
+                  onSelect={(d) => setNewDate(d)}
+                  minDate={lastDate || MIN_DATE}
+                  maxDate={new Date()}
+                />
               </PopoverContent>
             </Popover>
           </div>

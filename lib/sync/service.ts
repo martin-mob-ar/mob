@@ -60,6 +60,7 @@ function extractBranchContactInfo(branches: TokkoBranch[]): {
   phone: string | null;
   phone_country_code: string | null;
   address: string | null;
+  logo: string | null;
 } {
   const primary = findPrimaryBranch(branches);
   const info = {
@@ -67,6 +68,7 @@ function extractBranchContactInfo(branches: TokkoBranch[]): {
     phone: (primary?.phone_area || '') + (primary?.phone || '') || null,
     phone_country_code: primary?.phone_country_code || null,
     address: primary?.address || null,
+    logo: primary?.logo || null,
   };
 
   // If primary branch has no phone, find the oldest branch that does
@@ -611,46 +613,46 @@ async function processCompaniesPhase(
       try {
         const companyClient = new TokkoClient(company.key);
         const branches = await companyClient.getAllBranches();
-        const contactInfo = extractBranchContactInfo(branches);
+        const branchInfo = extractBranchContactInfo(branches);
         return {
           companyName: company.name,
-          contactInfo,
+          branchInfo,
           warning: branches.length === 0 ? `Company "${company.name}": Could not fetch branch data` : null,
         };
       } catch {
         return {
           companyName: company.name,
-          contactInfo: null,
+          branchInfo: null,
           warning: `Company "${company.name}": Branch fetch failed`,
         };
       }
     })
   );
 
-  // Update company contact info
+  // Update company contact info and logo (prefer branch logo, fall back to company logo)
   for (const result of branchResults) {
     if (result.warning) {
       progress.syncing.errors.push(result.warning);
     }
-    if (result.contactInfo) {
-      const companyId = progress.companies.companyDbIds[result.companyName];
-      if (companyId) {
-        await supabaseAdmin
-          .from('tokko_company')
-          .update({
-            email: result.contactInfo.email,
-            phone: result.contactInfo.phone,
-            phone_country_code: result.contactInfo.phone_country_code,
-            address: result.contactInfo.address,
-          })
-          .eq('id', companyId);
-      }
+    const companyId = progress.companies.companyDbIds[result.companyName];
+    if (companyId && result.branchInfo) {
+      const company = companies.find(c => c.name === result.companyName);
+      await supabaseAdmin
+        .from('tokko_company')
+        .update({
+          email: result.branchInfo.email,
+          phone: result.branchInfo.phone,
+          phone_country_code: result.branchInfo.phone_country_code,
+          address: result.branchInfo.address,
+          logo: result.branchInfo.logo || company?.logo || null,
+        })
+        .eq('id', companyId);
     }
   }
 
   progress.companies.companiesProcessed = true;
   await saveSyncProgress(userId, progress);
-  console.log(`[Tokko Sync] Branch contact info updated for ${branchResults.filter(r => r.contactInfo).length} companies`);
+  console.log(`[Tokko Sync] Branch contact info updated for ${branchResults.filter(r => r.branchInfo).length} companies`);
 }
 
 /**

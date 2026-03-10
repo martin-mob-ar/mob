@@ -5,6 +5,7 @@ import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { getPropertyUrl } from "@/lib/utils/property-url";
 import { formatAddress } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { rate } = useExchangeRate();
 
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -218,21 +220,29 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
           
           <div className="mt-2">
             {property.currency === "USD" ? (
-              <>
-                <div className="flex items-baseline gap-1 flex-wrap">
-                  <span className="font-display font-bold text-sm text-foreground">
-                    USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    Total
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {property.expensas != null && property.expensas > 0
-                    ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                    : "Sin expensas"}
-                </span>
-              </>
+              (() => {
+                const rentUsd = property.rentPrice ?? property.price;
+                const hasExpensas = property.expensas != null && property.expensas > 0;
+                const expensasInUsd = hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+                const totalUsd = hasExpensas && rate ? Math.round((rentUsd + expensasInUsd) / 10) * 10 : rentUsd;
+                return (
+                  <>
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <span className="font-display font-bold text-sm text-foreground">
+                        USD {totalUsd.toLocaleString("es-AR")}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        Total
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {hasExpensas
+                        ? `USD ${rentUsd.toLocaleString("es-AR")} alq · $${property.expensas!.toLocaleString("es-AR")} exp`
+                        : "Sin expensas"}
+                    </span>
+                  </>
+                );
+              })()
             ) : (
               <>
                 <div className="flex items-baseline gap-1 flex-wrap">

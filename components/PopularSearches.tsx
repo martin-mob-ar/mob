@@ -15,7 +15,7 @@ interface PopularSearchesProps {
 
 const PopularSearches = ({ title = "Búsquedas populares" }: PopularSearchesProps) => {
   return (
-    <div className="py-6 border-t border-border">
+    <div className="pt-4 border-t border-border">
       <div className="container flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-sm">
         <span className="text-muted-foreground font-medium">{title}:</span>
         {popularSearches.map((search, index) => (

@@ -1,5 +1,5 @@
 "use client";
-import { MapPin, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import PopularSearches from "@/components/PopularSearches";
@@ -143,12 +143,15 @@ const ZoneButton = ({
         : "bg-secondary text-foreground hover:bg-secondary/80 border border-border"
     }`}
   >
-    <MapPin className="h-3.5 w-3.5" />
     {zone.name}
   </button>
 );
 
-const ExploreRentals = () => {
+interface ExploreRentalsProps {
+  title?: string;
+}
+
+const ExploreRentals = ({ title = "Alquileres para vos" }: ExploreRentalsProps) => {
   const [selectedZone, setSelectedZone] = useState("capital-federal");
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeZone = zones.find((z) => z.id === selectedZone) || zones[0];
@@ -176,12 +179,12 @@ const ExploreRentals = () => {
   return (
     <section className="py-[18px]">
       <div className="container">
-        <div className="bg-background rounded-xl border border-border shadow-sm p-6 md:p-8 text-center">
+        <div className="bg-background rounded-xl border border-border shadow-sm p-6 md:px-8 md:pt-8 md:pb-6 text-center">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="flex items-center justify-center gap-3 mb-2">
               <h2 className="font-display text-2xl font-bold text-foreground">
-                Alquileres para vos
+                {title}
               </h2>
             </div>
             <p className="text-muted-foreground text-sm">
@@ -223,7 +226,7 @@ const ExploreRentals = () => {
           </div>
 
           {/* Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             {Object.entries(categories).map(([key, category]) => (
               <div key={key} className="space-y-3">
                 <h3 className="font-medium text-foreground text-sm uppercase tracking-wider">
@@ -248,7 +251,7 @@ const ExploreRentals = () => {
           {/* CTA */}
           <Link
             href="/buscar"
-            className="inline-flex items-center gap-1 text-primary text-sm font-medium hover:underline mb-6"
+            className="inline-flex items-center gap-1 text-primary text-sm font-medium hover:underline mb-4"
           >
             Ver alquileres recientes
             <ChevronRight className="h-4 w-4" />

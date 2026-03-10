@@ -12,7 +12,7 @@ import { useMockUser } from "@/contexts/MockUserContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -545,8 +545,8 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden ml-auto">
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
+            <Drawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} shouldScaleBackground={false}>
+              <DrawerTrigger asChild>
                 <button className="relative p-2" aria-label="Abrir menú">
                   {!authLoading && isAuthenticated ? (
                     <div className="relative">
@@ -557,9 +557,9 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
                     <Menu className="h-6 w-6 text-foreground" />
                   )}
                 </button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-auto rounded-t-3xl px-6 pb-8 pt-6">
-                <SheetTitle className="sr-only">Menu</SheetTitle>
+              </DrawerTrigger>
+              <DrawerContent className="rounded-t-3xl px-6 pb-8">
+                <DrawerTitle className="sr-only">Menu</DrawerTitle>
                 <div className="flex flex-col gap-4">
                   {authLoading ? null : isAuthenticated ? (
                     <>
@@ -654,8 +654,8 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
                     </>
                   )}
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DrawerContent>
+            </Drawer>
           </div>
         </div>
       </header>

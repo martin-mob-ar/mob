@@ -22,6 +22,7 @@ interface AudienceCardProps {
   icon: React.ReactNode;
   title: string;
   highlight: string;
+  highlightBlock?: boolean;
   support: string;
   bullets: { title: string; desc: string }[];
   ctaText: string;
@@ -39,6 +40,7 @@ const AudienceCard = ({
   icon,
   title,
   highlight,
+  highlightBlock,
   support,
   bullets,
   ctaText,
@@ -163,7 +165,7 @@ const AudienceCard = ({
           style={{ transitionDelay: visible ? `${delay + 150}ms` : "0ms" }}
         >
           {titleParts[0]}
-          <span className="text-primary transition-colors duration-300 group-hover/card:brightness-110">
+          <span className={`text-primary transition-colors duration-300 group-hover/card:brightness-110 ${highlightBlock ? "block" : ""}`}>
             {highlight}
           </span>
           {titleParts[1] || ""}
@@ -320,7 +322,7 @@ const DualCTA = () => {
               support="Publicá tu propiedad gratis y recibí solo interesados verificados con garantía aprobada."
               bullets={propietariosBullets}
               ctaText="Publicar mi propiedad"
-              ctaHref="/publicar"
+              ctaHref="/propietarios"
               delay={150}
               visible={visible}
               side="left"
@@ -336,10 +338,11 @@ const DualCTA = () => {
               icon={<Building2 className="h-4 w-4" />}
               title="Digitalizá tus alquileres"
               highlight="alquileres"
+              highlightBlock
               support="Recibí pedidos de visita de usuarios verificados y con garantía aprobada por Hoggax."
               bullets={inmobiliariasBullets}
               ctaText="Sumar mi inmobiliaria"
-              ctaHref="/gestion-inmobiliaria"
+              ctaHref="/inmobiliarias"
               delay={300}
               visible={visible}
               accent

@@ -33,6 +33,7 @@ interface GestionViewProps {
   ownerProperties: OwnerProperty[];
   draftProperties: DraftProperty[];
   roles: { isTenant: boolean; isOwner: boolean };
+  accountType: number;
 }
 
 const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
@@ -122,6 +123,7 @@ const GestionView = ({
   ownerProperties: realOwnerProperties,
   draftProperties,
   roles: realRoles,
+  accountType,
 }: GestionViewProps) => {
   const [useMock, setUseMock] = useState(false);
 
@@ -172,20 +174,41 @@ const GestionView = ({
             propiedades como propietario.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
-            <Link
-              href="/buscar"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
-            >
-              <Search className="h-4 w-4" />
-              Buscar propiedades
-            </Link>
-            <Link
-              href="/subir-propiedad"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Publicar mi propiedad
-            </Link>
+            {accountType === 1 ? (
+              <>
+                <Link
+                  href="/subir-propiedad"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Publicar mi propiedad
+                </Link>
+                <Link
+                  href="/buscar"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  <Search className="h-4 w-4" />
+                  Buscar propiedades
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/buscar"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
+                >
+                  <Search className="h-4 w-4" />
+                  Buscar propiedades
+                </Link>
+                <Link
+                  href="/subir-propiedad"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Publicar mi propiedad
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

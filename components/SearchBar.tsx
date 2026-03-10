@@ -387,7 +387,7 @@ const SearchBar = () => {
               onClick={() => { setRoomsOpen(!roomsOpen); setShowLocationDropdown(false); }}
               className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2.5">
                 <BedDouble className="h-4 w-4 text-primary flex-shrink-0" />
                 <span className="text-sm text-foreground truncate">{getRoomsLabel()}</span>
               </span>

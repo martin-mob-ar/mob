@@ -190,16 +190,19 @@ export default async function PerfilPage() {
         lastVerificationDate={profile.last_verification_date ?? null}
       />
 
-      {/* Divider */}
-      <div className="border-t border-border" />
-
-      {/* Gestion section */}
-      <GestionView
-        tenantRentals={tenantRentals}
-        ownerProperties={ownerProperties}
-        draftProperties={draftProperties}
-        roles={roles}
-      />
+      {/* Gestion section — only show when user has selected a role */}
+      {profile.account_type && (
+        <>
+          <div className="border-t border-border" />
+          <GestionView
+            tenantRentals={tenantRentals}
+            ownerProperties={ownerProperties}
+            draftProperties={draftProperties}
+            roles={roles}
+            accountType={profile.account_type}
+          />
+        </>
+      )}
     </div>
   );
 }

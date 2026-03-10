@@ -88,7 +88,7 @@ const LandingPropietarios = () => {
               Alquilá tu propiedad <span className="text-primary">con seguridad</span>
             </h1>
 
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg text-muted-foreground leading-snug">
               Recibí solo interesados verificados y gestioná todo el alquiler de forma digital, simple y segura.
             </p>
 

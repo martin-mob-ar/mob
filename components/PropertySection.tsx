@@ -93,12 +93,12 @@ const PropertySection = ({
         </div>
 
         {/* Carousel */}
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex gap-4">
+        <div className="overflow-hidden -my-4 -mx-4 sm:-mx-2 md:mx-0" ref={emblaRef}>
+          <div className="flex gap-4 py-4 px-4 sm:px-2 md:px-0">
             {displayProperties.map((property) => (
               <div
                 key={property.id}
-                className="min-w-0 shrink-0 basis-[calc(50%-6px)] sm:basis-[calc(33.333%-11px)] md:basis-[calc(25%-12px)] lg:basis-[calc(20%-13px)] xl:basis-[calc(16.666%-14px)]"
+                className="min-w-0 shrink-0 basis-[43%] sm:basis-[calc(33.333%-11px)] md:basis-[calc(25%-12px)] lg:basis-[calc(20%-13px)] xl:basis-[calc(16.666%-14px)]"
               >
                 <PropertyCard property={property} compactVerified />
               </div>
@@ -106,7 +106,7 @@ const PropertySection = ({
 
             {/* "Ver todas" card at the end */}
             {showAll && (
-              <div className="min-w-0 shrink-0 basis-[calc(50%-6px)] sm:basis-[calc(33.333%-11px)] md:basis-[calc(25%-12px)] lg:basis-[calc(20%-13px)] xl:basis-[calc(16.666%-14px)]">
+              <div className="min-w-0 shrink-0 basis-[43%] sm:basis-[calc(33.333%-11px)] md:basis-[calc(25%-12px)] lg:basis-[calc(20%-13px)] xl:basis-[calc(16.666%-14px)]">
                 <Link
                   href={href}
                   className="card-mob-hover h-full flex flex-col items-center justify-center gap-3 aspect-[4/3] rounded-lg border border-border bg-accent/30 hover:bg-accent/50 transition-colors"

@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       .from('tokko_location')
       .select('id, name, depth, state_id, parent_location_id')
       .ilike('name', `%${q}%`)
-      .order('depth')
+      .order('id')
       .limit(10),
     supabaseAdmin
       .from('tokko_location')
@@ -199,6 +199,9 @@ export async function GET(request: Request) {
 
     if (results.length >= limit) break;
   }
+
+  // Sort all results by id
+  results.sort((a, b) => a.id - b.id);
 
   return NextResponse.json({ data: results });
 }

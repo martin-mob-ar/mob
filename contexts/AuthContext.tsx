@@ -78,10 +78,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(mapSupabaseUser(supabaseUser, publicUser));
         }
       } catch {
-        // resolvePublicUser failed — treat as unauthenticated
+        // resolvePublicUser failed — still show as authenticated
+        if (supabaseUser) {
+          setUser(mapSupabaseUser(supabaseUser, null));
+        }
       } finally {
         setIsLoading(false);
       }
+    }).catch(() => {
+      // getUser() rejected (network error, etc.) — clear loading state
+      setIsLoading(false);
     });
 
     // 2. onAuthStateChange handles subsequent events (login, logout, token refresh).
@@ -95,7 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const publicUser = await resolvePublicUser(session.user.id);
           setUser(mapSupabaseUser(session.user, publicUser));
         } catch {
-          // ignore
+          // resolvePublicUser failed — still show as authenticated
+          setUser(mapSupabaseUser(session.user, null));
         }
       } else {
         setUser(null);

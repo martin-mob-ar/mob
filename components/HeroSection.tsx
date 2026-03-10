@@ -58,7 +58,7 @@ const HeroSection = ({ properties }: HeroSectionProps) => {
         <div className="flex flex-col md:flex-row items-center md:items-center gap-5 md:gap-12">
           {/* Left Side - Text + SearchBar */}
           <div className="flex-1 w-full md:max-w-[55%] space-y-4 md:space-y-6 text-center md:text-left">
-            <div className="md:pl-8">
+            <div>
               <h1 className="font-display text-[1.75rem] md:text-5xl font-bold leading-[1.1]">
                 <span className="text-foreground">Alquilar ahora</span>
                 <br />

@@ -3,7 +3,7 @@
 import Header from "@/components/Header";
 import PropertyCard from "@/components/PropertyCard";
 import { Property } from "@/components/PropertyCard";
-import MobilePropertyCard from "@/components/MobilePropertyCard";
+
 import MobileSearchHeader from "@/components/MobileSearchHeader";
 import { SlidersHorizontal, ChevronDown, ArrowUpDown, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import ParkingFilter from "@/components/filters/ParkingFilter";
 import SurfaceFilter from "@/components/filters/SurfaceFilter";
 import MoreFiltersPanel from "@/components/filters/MoreFiltersPanel";
 import Footer from "@/components/Footer";
-import PopularSearches from "@/components/PopularSearches";
+import ExploreRentals from "@/components/ExploreRentals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SearchFiltersProvider, useSearchFilters } from "@/contexts/SearchFiltersContext";
 import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
@@ -42,48 +42,25 @@ const sortOptions = [
 ];
 
 /* ───────── Skeleton card for initial loading ───────── */
-function PropertyCardSkeleton({ mobile = false }: { mobile?: boolean }) {
-  if (mobile) {
-    return (
-      <div className="rounded-xl overflow-hidden bg-card border border-border animate-pulse">
-        <div className="aspect-[16/10] bg-muted" />
-        <div className="p-4 space-y-3">
-          <div className="h-4 bg-muted rounded-xl w-3/4" />
-          <div className="h-3 bg-muted rounded-xl w-1/2" />
-          <div className="h-5 bg-muted rounded-xl w-1/3" />
-        </div>
-      </div>
-    );
-  }
+function PropertyCardSkeleton() {
   return (
     <div className="rounded-xl overflow-hidden bg-card border border-border animate-pulse">
       <div className="aspect-[4/3] bg-muted" />
-      <div className="p-4 space-y-3">
-        <div className="h-4 bg-muted rounded-xl w-3/4" />
+      <div className="p-3 space-y-2">
+        <div className="h-3 bg-muted rounded-xl w-3/4" />
         <div className="h-3 bg-muted rounded-xl w-1/2" />
-        <div className="flex gap-3 mt-2">
-          <div className="h-3 bg-muted rounded-xl w-12" />
-          <div className="h-3 bg-muted rounded-xl w-12" />
-          <div className="h-3 bg-muted rounded-xl w-12" />
-        </div>
-        <div className="h-5 bg-muted rounded-xl w-1/3 mt-2" />
+        <div className="h-4 bg-muted rounded-xl w-1/3" />
       </div>
     </div>
   );
 }
 
 function PropertyGridSkeleton({ count = 8, mobile = false }: { count?: number; mobile?: boolean }) {
-  if (mobile) {
-    return (
-      <div className="space-y-4">
-        {Array.from({ length: count }).map((_, i) => (
-          <PropertyCardSkeleton key={i} mobile />
-        ))}
-      </div>
-    );
-  }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className={mobile
+      ? "grid grid-cols-2 gap-3"
+      : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+    }>
       {Array.from({ length: count }).map((_, i) => (
         <PropertyCardSkeleton key={i} />
       ))}
@@ -215,11 +192,6 @@ const SearchResultsInner = () => {
             <p className="font-display font-bold text-lg text-foreground">
               {isLoading ? "Buscando..." : `${total} propiedades`}
             </p>
-            {filters.location && (
-              <p className="text-sm text-muted-foreground">
-                en {filters.location}
-              </p>
-            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -249,18 +221,19 @@ const SearchResultsInner = () => {
         </div>
 
         {/* Property Cards */}
-        <div className="px-4 space-y-4">
+        <div className="px-4">
           {isLoading ? (
             <PropertyGridSkeleton count={4} mobile />
           ) : enrichedResults.length > 0 ? (
-            <>
+            <div className="grid grid-cols-2 gap-3">
               {enrichedResults.map((property, index) => (
-                <MobilePropertyCard
+                <PropertyCard
                   key={`${property.id}-${index}`}
                   property={property}
+                  compactVerified
                 />
               ))}
-            </>
+            </div>
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No se encontraron propiedades</p>
@@ -274,7 +247,7 @@ const SearchResultsInner = () => {
           </div>
         )}
 
-        <PopularSearches title="Más alquileres" />
+        <ExploreRentals title="Más alquileres" />
 
         <Footer className="mt-0" />
 
@@ -323,7 +296,6 @@ const SearchResultsInner = () => {
           <div className="flex items-center justify-between">
             <h1 className="font-display text-2xl font-bold text-foreground">
               {isLoading ? "Buscando..." : `${total} propiedades`}
-              {filters.location && ` en ${filters.location}`}
             </h1>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Ordenar por:</span>
@@ -378,7 +350,7 @@ const SearchResultsInner = () => {
         )}
       </main>
 
-      <PopularSearches title="Más alquileres" />
+      <ExploreRentals title="Más alquileres" />
 
       <MoreFiltersPanel
         open={showMoreFilters}

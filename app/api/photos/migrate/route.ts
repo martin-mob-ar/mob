@@ -200,13 +200,15 @@ export async function POST(request: NextRequest) {
       if (all) nextUrl.searchParams.set('all', 'true');
       nextUrl.searchParams.set('chain', String(chainIndex + 1));
 
-      // Use after() to ensure the chain call is sent before Vercel kills the container
+      // Use after() to ensure the chain call is sent before Vercel kills the container.
+      // Don't await the full response (takes 270s) — just wait long enough for the
+      // request to reach Vercel's infrastructure and spin up the next function.
       const chainUrl = nextUrl.toString();
       after(async () => {
         try {
-          await fetch(chainUrl, { method: 'POST' });
-        } catch (err) {
-          console.error('[photos/migrate] Self-chain fetch failed:', err);
+          await fetch(chainUrl, { method: 'POST', signal: AbortSignal.timeout(10_000) });
+        } catch {
+          // AbortError is expected (we abort after 10s), other errors are fine too
         }
       });
       console.log(`[photos/migrate] Self-chaining (link #${chainIndex + 1}), ${remaining} photos remaining`);

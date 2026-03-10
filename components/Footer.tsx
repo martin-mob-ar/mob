@@ -43,12 +43,18 @@ const Footer = ({ className }: { className?: string }) => {
                 </Link>
               </li>
               <li>
-                <Link href="/calculadora-ipc" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/calculadora-ipc" target="_blank" rel="noopener noreferrer" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Calculadora IPC
+                </Link>
+                <Link href="/calculadora-ipc" className="md:hidden text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Calculadora IPC
                 </Link>
               </li>
               <li>
-                <Link href="/calculadora-creditos-hipotecarios" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/calculadora-creditos-hipotecarios" target="_blank" rel="noopener noreferrer" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Calculadora créditos hipotecarios
+                </Link>
+                <Link href="/calculadora-creditos-hipotecarios" className="md:hidden text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Calculadora créditos hipotecarios
                 </Link>
               </li>

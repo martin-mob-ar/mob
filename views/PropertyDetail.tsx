@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import PopularSearches from "@/components/PopularSearches";
+import ExploreRentals from "@/components/ExploreRentals";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Property } from "@/components/PropertyCard";
 import Image from "next/image";
@@ -25,6 +25,7 @@ import LeadForm from "@/components/LeadForm";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 interface PropertyDetailProps {
   property?: Property;
@@ -57,6 +58,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const router = useRouter();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { rate } = useExchangeRate();
   const isOwnProperty = !!ownerId && !!user?.publicUserId && ownerId === user.publicUserId;
 
   const handleFavoriteClick = () => {
@@ -471,24 +473,32 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         <div className="px-4 py-5 bg-secondary/30 border-b border-border">
           {isOwnProperty ? (
             <>
-              {property.currency === "USD" ? (
-                <>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-display text-2xl font-bold text-foreground">
-                      USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                    </span>
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                      Alquiler
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {property.expensas != null && property.expensas > 0
-                      ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                      : "Sin expensas"}
-                  </p>
-                </>
-              ) : (
-                <>
+              {(() => {
+                const rentUsd = property.rentPrice ?? property.price;
+                const hasExpensas = property.expensas != null && property.expensas > 0;
+                const isUsd = property.currency === "USD";
+                const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+                const showUsdTotal = isUsd && hasExpensas && rate;
+
+                return isUsd ? (
+                  <>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="font-display text-2xl font-bold text-foreground">
+                        USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
+                      </span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                        {showUsdTotal ? "Total" : "Alquiler"}
+                      </span>
+                    </div>
+                    {!showUsdTotal && (
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {hasExpensas
+                          ? `$${property.expensas!.toLocaleString("es-AR")} expensas`
+                          : "Sin expensas"}
+                      </p>
+                    )}
+                  </>
+                ) : (
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="font-display text-2xl font-bold text-foreground">
                       ${property.price.toLocaleString("es-AR")}
@@ -497,63 +507,22 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                       Total
                     </span>
                   </div>
-                </>
-              )}
-              <div ref={mainCtaRef} className={`flex gap-4 text-sm mb-5 ${property.currency === "USD" ? "hidden" : ""}`}>
-                {property.rentPrice != null && property.rentPrice > 0 && (
-                  <div>
-                    <span className="text-muted-foreground text-xs">Alquiler</span>
-                    <p className="font-medium">${property.rentPrice.toLocaleString("es-AR")}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-muted-foreground text-xs">Expensas</span>
-                  <p className="font-medium">
-                    {property.expensas != null && property.expensas > 0
-                      ? `$${property.expensas.toLocaleString("es-AR")}`
-                      : "Sin expensas"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
-                <Home className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-sm font-medium text-primary">Tu propiedad</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <AnimateHeight show={!leadFormType}>
-                <div>
-                  {property.currency === "USD" ? (
-                    <>
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-display text-2xl font-bold text-foreground">
-                          USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                        </span>
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                          Alquiler
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {property.expensas != null && property.expensas > 0
-                          ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                          : "Sin expensas"}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-baseline gap-2 mb-3">
-                        <span className="font-display text-2xl font-bold text-foreground">
-                          ${property.price.toLocaleString("es-AR")}
-                        </span>
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                          Total
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  {/* Reference for bottom bar visibility */}
-                  <div ref={mainCtaRef} className={`flex gap-4 text-sm mb-5 ${property.currency === "USD" ? "hidden" : ""}`}>
+                );
+              })()}
+              <div ref={mainCtaRef} className={`flex gap-4 text-sm mb-5 ${property.currency === "USD" && !(property.expensas != null && property.expensas > 0 && rate) ? "hidden" : ""}`}>
+                {property.currency === "USD" ? (
+                  <>
+                    <div>
+                      <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                      <p className="font-medium">USD {(property.rentPrice ?? property.price).toLocaleString("es-AR")}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                      <p className="font-medium">${property.expensas!.toLocaleString("es-AR")}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
                     {property.rentPrice != null && property.rentPrice > 0 && (
                       <div>
                         <span className="text-muted-foreground text-xs">Alquiler</span>
@@ -568,6 +537,85 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                           : "Sin expensas"}
                       </p>
                     </div>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
+                <Home className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-medium text-primary">Tu propiedad</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <AnimateHeight show={!leadFormType}>
+                <div>
+                  {(() => {
+                    const rentUsd = property.rentPrice ?? property.price;
+                    const hasExpensas = property.expensas != null && property.expensas > 0;
+                    const isUsd = property.currency === "USD";
+                    const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+                    const showUsdTotal = isUsd && hasExpensas && rate;
+
+                    return isUsd ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="font-display text-2xl font-bold text-foreground">
+                            USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
+                          </span>
+                          <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                            {showUsdTotal ? "Total" : "Alquiler"}
+                          </span>
+                        </div>
+                        {!showUsdTotal && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {hasExpensas
+                              ? `$${property.expensas!.toLocaleString("es-AR")} expensas`
+                              : "Sin expensas"}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-baseline gap-2 mb-3">
+                        <span className="font-display text-2xl font-bold text-foreground">
+                          ${property.price.toLocaleString("es-AR")}
+                        </span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                          Total
+                        </span>
+                      </div>
+                    );
+                  })()}
+                  {/* Reference for bottom bar visibility */}
+                  <div ref={mainCtaRef} className={`flex gap-4 text-sm mb-5 ${property.currency === "USD" && !(property.expensas != null && property.expensas > 0 && rate) ? "hidden" : ""}`}>
+                    {property.currency === "USD" ? (
+                      <>
+                        <div>
+                          <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                          <p className="font-medium">USD {(property.rentPrice ?? property.price).toLocaleString("es-AR")}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                          <p className="font-medium">${property.expensas!.toLocaleString("es-AR")}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {property.rentPrice != null && property.rentPrice > 0 && (
+                          <div>
+                            <span className="text-muted-foreground text-xs">Alquiler</span>
+                            <p className="font-medium">${property.rentPrice.toLocaleString("es-AR")}</p>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-muted-foreground text-xs">Expensas</span>
+                          <p className="font-medium">
+                            {property.expensas != null && property.expensas > 0
+                              ? `$${property.expensas.toLocaleString("es-AR")}`
+                              : "Sin expensas"}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Button
@@ -650,22 +698,18 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         )}
 
         {/* Location Section */}
-        <div className="px-4 py-5 border-b border-border">
-          <h2 className="font-display text-lg font-bold text-foreground mb-3">
-            Ubicación
-          </h2>
-          <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            {property.address}, {locationSuffix}
-          </p>
-          {geoLat && geoLong ? (
+        {geoLat && geoLong && (
+          <div className="px-4 py-5 border-b border-border">
+            <h2 className="font-display text-lg font-bold text-foreground mb-3">
+              Ubicación
+            </h2>
+            <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              {property.address}, {locationSuffix}
+            </p>
             <PropertyMap lat={geoLat} lng={geoLong} className="aspect-[16/10]" />
-          ) : (
-            <div className="aspect-[16/10] bg-secondary rounded-xl flex items-center justify-center">
-              <MapPin className="h-10 w-10 text-muted-foreground" />
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Amenities Section */}
         {amenities.length > 0 && (
@@ -709,7 +753,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 </div>
                 <div>
                   <p className="font-semibold text-base text-foreground">Coordinación directa</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Sincronizamos tu agenda con la del dueño.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Sincronizamos tu agenda con la {isTokko ? "inmobiliaria" : "del dueño"}.</p>
                 </div>
               </div>
             </div>
@@ -740,15 +784,17 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             </h2>
             <div className="flex items-center gap-3 mb-4">
               {publisherLogo ? (
-                <Image
-                  src={publisherLogo}
-                  alt={publisherName}
-                  width={56}
-                  height={56}
-                  className="h-14 w-14 rounded-full object-cover"
-                />
+                <div className="h-14 w-14 rounded-lg bg-white border border-border flex items-center justify-center overflow-hidden shrink-0">
+                  <Image
+                    src={publisherLogo}
+                    alt={publisherName}
+                    width={56}
+                    height={56}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
               ) : (
-                <div className="h-14 w-14 rounded-full bg-secondary flex items-center justify-center">
+                <div className="h-14 w-14 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                   <User className="h-7 w-7 text-muted-foreground" />
                 </div>
               )}
@@ -787,29 +833,33 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       >
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            {property.currency === "USD" ? (
-              <>
-                <p className="font-display text-lg font-bold text-foreground">
-                  USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {property.expensas != null && property.expensas > 0
-                    ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                    : "Sin expensas"}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-display text-lg font-bold text-foreground">
-                  ${property.price.toLocaleString("es-AR")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {property.expensas != null && property.expensas > 0
-                    ? "Total mensual"
-                    : "Sin expensas"}
-                </p>
-              </>
-            )}
+            {(() => {
+              const rentUsd = property.rentPrice ?? property.price;
+              const hasExpensas = property.expensas != null && property.expensas > 0;
+              const isUsd = property.currency === "USD";
+              const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+              const showUsdTotal = isUsd && hasExpensas && rate;
+
+              return isUsd ? (
+                <>
+                  <p className="font-display text-lg font-bold text-foreground">
+                    USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {showUsdTotal ? "Total mensual" : hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")} expensas` : "Sin expensas"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-lg font-bold text-foreground">
+                    ${property.price.toLocaleString("es-AR")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {hasExpensas ? "Total mensual" : "Sin expensas"}
+                  </p>
+                </>
+              );
+            })()}
           </div>
           {isOwnProperty ? (
             <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2">
@@ -859,28 +909,35 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <h2 className="font-display text-lg font-bold text-foreground mb-3">
                     Sobre esta propiedad
                   </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  <p className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap ${!showFullDescription ? "line-clamp-4" : ""}`}>
                     {formatDescription(description)}
                   </p>
+                  {description.length > 150 && (
+                    <button
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                      className="text-sm font-medium text-foreground mt-2 flex items-center gap-1"
+                    >
+                      {showFullDescription ? "Ver menos" : "Ver más"}
+                      <ChevronRight className={`h-4 w-4 transition-transform ${showFullDescription ? "rotate-90" : ""}`} />
+                    </button>
+                  )}
                 </div>
               </>
             )}
 
-            <hr className="border-border" />
+            {geoLat && geoLong && (
+              <>
+                <hr className="border-border" />
 
-            {/* Location */}
-            <div>
-              <h2 className="font-display text-lg font-bold text-foreground mb-3">
-                {property.address}, {locationSuffix}
-              </h2>
-              {geoLat && geoLong ? (
-                <PropertyMap lat={geoLat} lng={geoLong} className="aspect-video" />
-              ) : (
-                <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center">
-                  <MapPin className="h-10 w-10 text-muted-foreground" />
+                {/* Location */}
+                <div>
+                  <h2 className="font-display text-lg font-bold text-foreground mb-3">
+                    {property.address}, {locationSuffix}
+                  </h2>
+                  <PropertyMap lat={geoLat} lng={geoLong} className="aspect-video" />
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
             {/* Amenities */}
             {amenities.length > 0 && (
@@ -910,54 +967,67 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               {isOwnProperty ? (
                 <>
                   <div>
-                    {property.currency === "USD" ? (
-                      <>
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-display text-2xl font-bold text-foreground">
-                            USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                          </span>
-                          <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                            Alquiler
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {property.expensas != null && property.expensas > 0
-                            ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                            : "Sin expensas"}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-display text-2xl font-bold text-foreground">
-                            ${property.price.toLocaleString("es-AR")}
-                          </span>
-                          <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                            Total
-                          </span>
-                        </div>
-                        <div className="mt-3 space-y-1.5">
-                          {property.rentPrice != null && property.rentPrice > 0 && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                                Alquiler mensual
-                              </span>
-                              <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                              Expensas
+                    {(() => {
+                      const rentUsd = property.rentPrice ?? property.price;
+                      const hasExpensas = property.expensas != null && property.expensas > 0;
+                      const isUsd = property.currency === "USD";
+                      const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+                      const showUsdTotal = isUsd && hasExpensas && rate;
+
+                      return isUsd ? (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-display text-2xl font-bold text-foreground">
+                              USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
                             </span>
-                            <span className="font-medium text-sm">
-                              {property.expensas != null && property.expensas > 0
-                                ? `$${property.expensas.toLocaleString("es-AR")}`
-                                : "Sin expensas"}
+                            <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                              {showUsdTotal ? "Total" : "Alquiler"}
                             </span>
                           </div>
-                        </div>
-                      </>
-                    )}
+                          {showUsdTotal ? (
+                            <div className="mt-3 space-y-1.5">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                                <span className="font-medium text-sm">USD {rentUsd.toLocaleString("es-AR")}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                                <span className="font-medium text-sm">${property.expensas!.toLocaleString("es-AR")}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")} expensas` : "Sin expensas"}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-display text-2xl font-bold text-foreground">
+                              ${property.price.toLocaleString("es-AR")}
+                            </span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                              Total
+                            </span>
+                          </div>
+                          <div className="mt-3 space-y-1.5">
+                            {property.rentPrice != null && property.rentPrice > 0 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                                <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                              <span className="font-medium text-sm">
+                                {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")}` : "Sin expensas"}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-3">
                     <Home className="h-4 w-4 text-primary shrink-0" />
@@ -969,54 +1039,67 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <AnimateHeight show={!leadFormType}>
                     <div className="space-y-5">
                       <div>
-                        {property.currency === "USD" ? (
-                          <>
-                            <div className="flex items-baseline gap-2">
-                              <span className="font-display text-2xl font-bold text-foreground">
-                                USD {property.rentPrice?.toLocaleString("es-AR") ?? property.price.toLocaleString("es-AR")}
-                              </span>
-                              <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                                Alquiler
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {property.expensas != null && property.expensas > 0
-                                ? `$${property.expensas.toLocaleString("es-AR")} expensas`
-                                : "Sin expensas"}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-baseline gap-2">
-                              <span className="font-display text-2xl font-bold text-foreground">
-                                ${property.price.toLocaleString("es-AR")}
-                              </span>
-                              <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                                Total
-                              </span>
-                            </div>
-                            <div className="mt-3 space-y-1.5">
-                              {property.rentPrice != null && property.rentPrice > 0 && (
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                                    Alquiler mensual
-                                  </span>
-                                  <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                                  Expensas
+                        {(() => {
+                          const rentUsd = property.rentPrice ?? property.price;
+                          const hasExpensas = property.expensas != null && property.expensas > 0;
+                          const isUsd = property.currency === "USD";
+                          const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+                          const showUsdTotal = isUsd && hasExpensas && rate;
+
+                          return isUsd ? (
+                            <>
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-display text-2xl font-bold text-foreground">
+                                  USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
                                 </span>
-                                <span className="font-medium text-sm">
-                                  {property.expensas != null && property.expensas > 0
-                                    ? `$${property.expensas.toLocaleString("es-AR")}`
-                                    : "Sin expensas"}
+                                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                                  {showUsdTotal ? "Total" : "Alquiler"}
                                 </span>
                               </div>
-                            </div>
-                          </>
-                        )}
+                              {showUsdTotal ? (
+                                <div className="mt-3 space-y-1.5">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                                    <span className="font-medium text-sm">USD {rentUsd.toLocaleString("es-AR")}</span>
+                                  </div>
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                                    <span className="font-medium text-sm">${property.expensas!.toLocaleString("es-AR")}</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")} expensas` : "Sin expensas"}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-display text-2xl font-bold text-foreground">
+                                  ${property.price.toLocaleString("es-AR")}
+                                </span>
+                                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                                  Total
+                                </span>
+                              </div>
+                              <div className="mt-3 space-y-1.5">
+                                {property.rentPrice != null && property.rentPrice > 0 && (
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                                    <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                                  <span className="font-medium text-sm">
+                                    {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")}` : "Sin expensas"}
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="space-y-2">
                         <Button
@@ -1066,7 +1149,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <Zap className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-xs text-foreground">Coordinación directa</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Sincronizamos tu agenda con la del dueño.</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Sincronizamos tu agenda con la {isTokko ? "inmobiliaria" : "del dueño"}.</p>
                   </div>
                 </div>
                 <div className="flex gap-2.5">
@@ -1087,15 +1170,17 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center gap-2.5 mb-3">
                     {publisherLogo ? (
-                      <Image
-                        src={publisherLogo}
-                        alt={publisherName}
-                        width={40}
-                        height={40}
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
+                      <div className="h-10 w-10 rounded-lg bg-white border border-border flex items-center justify-center overflow-hidden shrink-0">
+                        <Image
+                          src={publisherLogo}
+                          alt={publisherName}
+                          width={40}
+                          height={40}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                         <User className="h-5 w-5 text-muted-foreground" />
                       </div>
                     )}
@@ -1129,7 +1214,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
       </main>
       
-      <PopularSearches title="Más alquileres" />
+      <ExploreRentals title="Más alquileres" />
 
       <div className="hidden md:block">
         <Footer className="mt-0" />

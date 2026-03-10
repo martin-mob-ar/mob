@@ -25,7 +25,7 @@ const LandingInmobiliarias = () => {
   const mobDoesCards = [{
     icon: Monitor,
     title: "Promociona tus alquileres",
-    badge: null,
+    badge: "Publicá gratis",
     description: "Promocionamos todos tus alquileres. Somos la primer y única plataforma enfocada 100% en alquileres."
   }, {
     icon: ShieldCheck,
@@ -103,7 +103,7 @@ const LandingInmobiliarias = () => {
                 <span className="text-primary">Digitalizá tus alquileres</span>
               </h1>
 
-              <p className="text-xl text-muted-foreground leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-snug">
                 Verificamos y calificamos cada interesado, coordinamos la visita, armamos el contrato, y proveemos firma electrónica.
               </p>
 
@@ -150,17 +150,17 @@ const LandingInmobiliarias = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {mobDoesCards.map(card => <div key={card.title} className="feature-card">
-                <div className="icon-container mb-6">
-                  <card.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex items-center gap-3 mb-4">
-                  <h3 className="font-display text-xl font-bold">{card.title}</h3>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="icon-container">
+                    <card.icon className="h-6 w-6 text-primary" />
+                  </div>
                   {card.badge && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                       {card.badge}
                     </span>
                   )}
                 </div>
+                <h3 className="font-display text-xl font-bold mb-4">{card.title}</h3>
                 <p className="text-muted-foreground leading-relaxed">{card.description}</p>
               </div>)}
           </div>
@@ -185,16 +185,18 @@ const LandingInmobiliarias = () => {
             </div>
 
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
-              Con el respaldo de{" "}
-              <a
-                href="https://hoggax.com.ar"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block align-middle hover:opacity-80 transition-opacity"
-              >
-                <Image src="/assets/hoggax-logo-color.svg" alt="Hoggax" width={150} height={38} className="inline-block h-8 md:h-10 w-auto" />
-              </a>
-              , tu alquiler está seguro
+              <span className="flex items-center gap-3 flex-wrap">
+                Con el respaldo de
+                <a
+                  href="https://hoggax.com.ar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <Image src="/assets/hoggax-logo-color.svg" alt="Hoggax" width={773} height={194} className="h-[1.2em] w-auto translate-y-[0.05em]" />
+                </a>
+              </span>
+              <span className="block">tu alquiler está seguro</span>
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">

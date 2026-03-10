@@ -25,7 +25,7 @@ const PublishModal = ({ open, onOpenChange }: PublishModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-6">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md rounded-xl pt-12">
         <div className="space-y-4">
           <button
             onClick={() => handleSelect("inmobiliaria")}

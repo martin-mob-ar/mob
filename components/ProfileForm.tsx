@@ -74,9 +74,10 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
         return;
       }
 
-      await refreshUser();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      // Refresh auth context in background — don't block save feedback
+      refreshUser().catch(() => {});
     } catch {
       setError("Error al guardar el perfil");
     } finally {
@@ -85,91 +86,90 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* Error */}
       {error && (
-        <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl">
+        <div className="bg-destructive/10 text-destructive text-sm p-2.5 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Success */}
       {saved && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm p-3 rounded-xl flex items-center gap-2">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm p-2.5 rounded-lg flex items-center gap-2">
           <Check className="h-4 w-4" />
           Perfil actualizado correctamente
         </div>
       )}
 
-      {/* Email (read-only) */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Email</label>
-        <Input
-          type="email"
-          value={profile.email}
-          disabled
-          className="h-11 rounded-xl bg-muted"
-        />
-      </div>
-
-      {/* Name */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Nombre completo</label>
-        <Input
-          type="text"
-          placeholder="Tu nombre completo"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="h-11 rounded-xl"
-        />
-      </div>
-
-      {/* DNI — inquilino and dueño directo only */}
-      {showDni && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">DNI</label>
+      {/* Email + Name row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">Email</label>
+          <Input
+            type="email"
+            value={profile.email}
+            disabled
+            className="h-10 rounded-lg bg-muted"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">Nombre completo</label>
           <Input
             type="text"
-            inputMode="numeric"
-            placeholder="Sin puntos, ej: 30123456"
-            value={dni}
-            onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
-            className="h-11 rounded-xl"
+            placeholder="Tu nombre completo"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-10 rounded-lg"
           />
         </div>
-      )}
+      </div>
 
-      {/* Phone */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Teléfono</label>
-        <div className="flex gap-2">
-          <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
-            <SelectTrigger className="h-11 rounded-xl w-[100px] text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTRY_CODES.map((code) => (
-                <SelectItem key={code.value} value={code.value}>
-                  {code.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="tel"
-            inputMode="numeric"
-            placeholder="1112345678"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="h-11 rounded-xl flex-1"
-          />
+      {/* DNI + Phone row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {showDni && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">DNI</label>
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="Sin puntos, ej: 30123456"
+              value={dni}
+              onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
+              className="h-10 rounded-lg"
+            />
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">Teléfono</label>
+          <div className="flex gap-2">
+            <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+              <SelectTrigger className="h-10 rounded-lg w-[100px] text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRY_CODES.map((code) => (
+                  <SelectItem key={code.value} value={code.value}>
+                    {code.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="tel"
+              inputMode="numeric"
+              placeholder="1112345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="h-10 rounded-lg flex-1"
+            />
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground">Ej: +54 1112345678</p>
       </div>
 
       <Button
         type="submit"
-        className="h-11 rounded-xl font-semibold"
+        className="h-10 rounded-lg font-semibold"
         disabled={loading}
       >
         {loading ? "Guardando..." : "Guardar cambios"}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { MonthPicker } from "@/components/ui/month-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -127,16 +127,21 @@ export default function SimulacionContrato() {
           </div>
 
           <div className="space-y-2">
-            <Label>Fecha de inicio del contrato</Label>
+            <Label>Inicio del contrato</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "dd/MM/yyyy", { locale: es }) : "Seleccioná una fecha"}
+                  {startDate ? format(startDate, "MMMM yyyy", { locale: es }) : "Seleccioná mes y año"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={startDate} onSelect={setStartDate} disabled={(d) => d < MIN_DATE} className="p-3 pointer-events-auto" locale={es} captionLayout="dropdown" fromYear={2020} toYear={new Date().getFullYear() + 1} />
+                <MonthPicker
+                  selected={startDate}
+                  onSelect={(d) => setStartDate(d)}
+                  minDate={MIN_DATE}
+                  maxDate={new Date()}
+                />
               </PopoverContent>
             </Popover>
           </div>

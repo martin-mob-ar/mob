@@ -18,7 +18,7 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
   const { isLoaded, loadError } = useGoogleMaps();
 
   useEffect(() => {
-    if (!isLoaded || loadError || !mapRef.current || mapInstanceRef.current) return;
+    if (!isLoaded || loadError || !mapRef.current) return;
 
     try {
       const center = { lat, lng };
@@ -37,9 +37,19 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
 
       new google.maps.Marker({ position: center, map });
       mapInstanceRef.current = map;
+
+      // Trigger resize after layout settles to fix grey screen
+      requestAnimationFrame(() => {
+        google.maps.event.trigger(map, "resize");
+        map.setCenter(center);
+      });
     } catch {
       setError(true);
     }
+
+    return () => {
+      mapInstanceRef.current = null;
+    };
   }, [isLoaded, loadError, lat, lng]);
 
   if (loadError || error) {
@@ -58,5 +68,5 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
     );
   }
 
-  return <div ref={mapRef} className={`rounded-xl ${className || ""}`} />;
+  return <div ref={mapRef} className={`w-full overflow-hidden rounded-xl ${className || ""}`} />;
 }

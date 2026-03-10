@@ -547,44 +547,52 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
 
   const renderStep = () => {
     switch (currentStep) {
-      // Step 1: Intro (Airbnb-style)
+      // Step 1: Intro
       case 1:
         return (
-          <div className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
             <div>
-              <h1 className="font-display text-4xl md:text-5xl font-bold leading-tight mb-6">
+              <h1 className="font-display text-3xl sm:text-4xl md:text-[3.25rem] md:leading-[1.15] font-bold leading-tight mb-4 sm:mb-6">
                 Publicar tu propiedad es fácil
               </h1>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-base sm:text-lg">
                 Te guiamos paso a paso para que tu inmueble luzca increíble y llegue a los mejores inquilinos verificados.
               </p>
             </div>
-            <div className="space-y-8">
+            <div className="divide-y divide-border">
               {[
                 {
                   num: "1",
                   title: "Contanos acerca de tu propiedad",
                   desc: "Compartí la ubicación, tipo y características principales.",
+                  img: "/assets/subir-propiedad-1.png",
                 },
                 {
                   num: "2",
                   title: "Hacé que se destaque",
                   desc: "Subí fotos y elegí el plan que mejor se adapte a vos.",
+                  img: "/assets/subir-propiedad-2.png",
                 },
                 {
                   num: "3",
                   title: "Terminá todo y publicá tu anuncio",
                   desc: "Revisá los detalles y publicá en minutos.",
+                  img: "/assets/subir-propiedad-3.png",
                 },
               ].map((item) => (
-                <div key={item.num} className="flex items-start gap-5">
-                  <div className="w-10 h-10 rounded-full border-2 border-foreground flex items-center justify-center shrink-0 font-display font-bold text-lg">
-                    {item.num}
+                <div key={item.num} className="flex items-center gap-5 py-8 first:pt-0 last:pb-0">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <span className="font-display font-bold text-lg mt-0.5">{item.num}</span>
+                    <div>
+                      <p className="font-semibold text-base sm:text-lg">{item.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-base">{item.title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
-                  </div>
+                  <img
+                    src={item.img}
+                    alt=""
+                    className="w-28 h-28 sm:w-32 sm:h-32 object-contain shrink-0"
+                  />
                 </div>
               ))}
             </div>
@@ -594,7 +602,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       // Step 2: Barrio + Calle + Tipo
       case 2:
         return (
-          <div className="max-w-xl mx-auto space-y-8">
+          <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
             <div className="space-y-4">
               <h1 className="font-display text-xl sm:text-3xl font-bold">
                 ¿Qué tipo de propiedad es?
@@ -605,7 +613,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                     key={type.id}
                     onClick={() => { setTypeId(type.id); setShowErrors(false); }}
                     className={cn(
-                      "py-3 sm:py-4 px-2 sm:px-6 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all",
+                      "py-3 sm:py-4 px-1.5 sm:px-6 rounded-xl border-2 text-[11px] sm:text-sm font-semibold transition-all truncate min-w-0",
                       typeId === type.id
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -621,8 +629,8 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
             </div>
 
             <AnimateHeight show={!!typeId}>
-              <div className="space-y-6 pt-8">
-                <h2 className="font-display text-2xl font-bold">
+              <div className="space-y-6 pt-5 sm:pt-8">
+                <h2 className="font-display text-xl sm:text-2xl font-bold">
                   ¿En qué barrio está?
                 </h2>
 
@@ -640,7 +648,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
 
                 <AnimateHeight show={!!selectedLocation}>
                   <div className="pt-1 space-y-2">
-                    <h2 className="font-display text-2xl font-bold">
+                    <h2 className="font-display text-xl sm:text-2xl font-bold">
                       ¿En qué calle está?
                     </h2>
                     <input
@@ -727,7 +735,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       case 4:
         return (
           <div className="max-w-xl mx-auto space-y-6">
-            <h1 className="font-display text-3xl font-bold">
+            <h1 className="font-display text-xl sm:text-3xl font-bold">
               Detalles del espacio
             </h1>
 
@@ -788,7 +796,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                     key={disp}
                     onClick={() => setDisposicion(disp)}
                     className={cn(
-                      "py-4 px-4 rounded-xl border-2 text-sm font-semibold transition-all",
+                      "py-4 px-2 rounded-xl border-2 text-xs font-semibold transition-all text-center",
                       disposicion === disp
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
@@ -805,8 +813,8 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       // Step 5: Precio y características
       case 5:
         return (
-          <div className="max-w-xl mx-auto space-y-8">
-            <h1 className="font-display text-3xl font-bold">
+          <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
+            <h1 className="font-display text-xl sm:text-3xl font-bold">
               Precio y características
             </h1>
 
@@ -929,7 +937,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                     }
                   }}
                   className={cn(
-                    "h-full rounded-xl border-2 text-sm text-center font-semibold transition-all",
+                    "h-full rounded-xl border-2 text-sm text-center font-semibold transition-all focus-visible:ring-0 focus-visible:ring-offset-0",
                     customDuracion
                       ? "border-primary bg-accent text-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
@@ -1039,8 +1047,8 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       // Step 7: Logística y disponibilidad
       case 7:
         return (
-          <div className="max-w-xl mx-auto space-y-8">
-            <h1 className="font-display text-3xl font-bold">
+          <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
+            <h1 className="font-display text-xl sm:text-3xl font-bold">
               Logística y disponibilidad
             </h1>
 
@@ -1136,7 +1144,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
         return (
           <div className="max-w-5xl mx-auto space-y-6">
             <div>
-              <h1 className="font-display text-3xl font-bold">Elegí tu plan</h1>
+              <h1 className="font-display text-xl sm:text-3xl font-bold">Elegí tu plan</h1>
               <p className="text-muted-foreground mt-2">
                 Seleccioná el nivel de acompañamiento que mejor se adapte a tus necesidades.
               </p>
@@ -1152,7 +1160,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       case 9:
         return (
           <div className="max-w-xl mx-auto space-y-6">
-            <h1 className="font-display text-3xl font-bold">
+            <h1 className="font-display text-xl sm:text-3xl font-bold">
               Revisá tu publicación
             </h1>
             <p className="text-muted-foreground">
@@ -1288,33 +1296,33 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
     <div className="h-dvh bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="shrink-0 border-b border-border">
-        <div className="container flex items-center h-16">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className={cn(
-              "p-2 -ml-2 rounded-full transition-colors",
-              currentStep === 1
-                ? "text-muted-foreground/30 cursor-not-allowed"
-                : "text-muted-foreground hover:bg-secondary"
-            )}
-            aria-label="Atrás"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button onClick={() => router.push("/")} className="ml-2">
-            <img src={mobLogo} alt="MOB" className="h-6" />
-          </button>
-          <div className="ml-auto">
+        <div className="container flex items-center justify-between h-16">
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleSaveAndExit}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className={cn(
+                "p-1.5 rounded-full transition-colors",
+                currentStep === 1
+                  ? "text-muted-foreground/30 cursor-not-allowed"
+                  : "text-muted-foreground hover:bg-secondary"
+              )}
+              aria-label="Atrás"
             >
-              Guardar y salir
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button onClick={() => router.push("/")}>
+              <img src={mobLogo} alt="MOB" className="h-6" />
             </button>
           </div>
+          <button
+            onClick={handleSaveAndExit}
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Guardar y salir
+          </button>
         </div>
 
         {/* Progress bar */}
@@ -1323,13 +1331,13 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
 
       {/* Content — scrollable area between sticky header and footer */}
       <main className="flex-1 overflow-y-auto">
-        <div className="container py-12 min-h-[700px]">
+        <div className="container py-6 sm:py-12 min-h-[700px]">
           {renderStep()}
           {/* Map — always in DOM to prevent Google Maps orphaned elements.
               Hidden when not on step 3; visible only on map confirmation step. */}
           <div className={cn(currentStep !== 3 && "hidden", "max-w-xl mx-auto space-y-6")}>
             <div>
-              <h1 className="font-display text-3xl font-bold mb-2">
+              <h1 className="font-display text-xl sm:text-3xl font-bold mb-2">
                 Confirmá la ubicación exacta
               </h1>
             </div>

@@ -150,6 +150,16 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Montserrat', system-ui, sans-serif;
   }
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
 }
 
 @layer components {
@@ -251,6 +261,52 @@
 
   .animate-badge-float {
     animation: badge-float 3s ease-in-out infinite;
+  }
+
+  /* Bento card shimmer sweep */
+  @keyframes shimmer-sweep {
+    0% {
+      transform: translateX(-100%) skewX(-15deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-15deg);
+    }
+  }
+
+  .bento-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .bento-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.08) 45%,
+      hsl(0 0% 100% / 0.15) 50%,
+      hsl(0 0% 100% / 0.08) 55%,
+      transparent 100%
+    );
+    animation: shimmer-sweep 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Bento icon glow */
+  .bento-icon-glow {
+    position: relative;
+  }
+  .bento-icon-glow::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: inherit;
+    opacity: 0.4;
+    filter: blur(10px);
+    z-index: -1;
+    transition: opacity 0.3s ease;
   }
 
 }

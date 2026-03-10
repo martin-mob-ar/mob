@@ -163,7 +163,7 @@ export default function ProfileSection({
   // ── No account type selected ─────────────────────────────────────────────
   if (!accountType) {
     return (
-      <div>
+      <div className="max-w-md mx-auto">
         <div className="mb-6">
           <h1 className="font-display text-2xl font-bold text-foreground">
             Mi perfil
@@ -188,7 +188,7 @@ export default function ProfileSection({
   // ── Inmobiliaria: no tokko key yet — show setup form ────────────────────
   if (accountType === 3 && !hasTokkoHash && syncStatus !== "syncing") {
     return (
-      <div className="max-w-md">
+      <div className="max-w-md mx-auto">
         {/* Icon + title */}
         <div className="h-14 w-14 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
           <Building2 className="h-7 w-7 text-blue-500" />
@@ -266,7 +266,7 @@ export default function ProfileSection({
   // ── Inmobiliaria: sync in progress ───────────────────────────────────────
   if (accountType === 3 && syncStatus === "syncing") {
     return (
-      <div>
+      <div className="max-w-md mx-auto">
         <div className="mb-6">
           <h1 className="font-display text-2xl font-bold text-foreground">
             Mi perfil
@@ -308,7 +308,7 @@ export default function ProfileSection({
   // ── Inquilino: not verified — show conversion block ──────────────────────
   if (isInquilino && !inquilinoVerified) {
     return (
-      <div className="max-w-md">
+      <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm mb-3">
           <Zap className="h-4 w-4" />
@@ -374,7 +374,7 @@ export default function ProfileSection({
   // ── Dueño directo: not verified — show conversion block ─────────────────
   if (isDuenioDirecto && !duenioVerified) {
     return (
-      <div className="max-w-md">
+      <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm mb-3">
           <Zap className="h-4 w-4" />
@@ -481,28 +481,28 @@ export default function ProfileSection({
   // ── Normal profile form (all types, including inmobiliaria post-sync) ────
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="font-display text-2xl font-bold text-foreground">
           Mi perfil
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground mt-0.5 text-sm">
           Editá tu información personal
         </p>
       </div>
       {verificationBadge}
-      <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <ProfileForm profile={profile} accountType={accountType} />
 
         {/* Tokko section — only for inmobiliaria with key */}
         {accountType === 3 && tokkoKeyPreview && (
           <>
             <div className="border-t border-border" />
-            <div className="space-y-4">
+            <div className="space-y-3">
               <h3 className="font-semibold text-base text-foreground">
                 Tokko Broker
               </h3>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Key className="h-4 w-4" />
                   API Key
@@ -511,7 +511,7 @@ export default function ProfileSection({
                   type="text"
                   value={`${tokkoKeyPreview}••••••••••••••••`}
                   disabled
-                  className="h-11 rounded-xl bg-muted font-mono text-sm"
+                  className="h-10 rounded-lg bg-muted font-mono text-sm"
                 />
               </div>
 
@@ -528,7 +528,7 @@ export default function ProfileSection({
 
               <Button
                 variant="outline"
-                className="h-10 rounded-xl font-medium gap-2"
+                className="h-9 rounded-lg font-medium gap-2"
                 disabled
               >
                 <RefreshCw className="h-4 w-4" />
