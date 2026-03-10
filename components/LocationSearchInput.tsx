@@ -108,7 +108,7 @@ const LocationSearchInput = ({
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 right-0 top-full z-50 mt-2 bg-background border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto"
+          className="absolute left-0 right-0 top-full z-50 bg-background border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto"
         >
           {isLoading ? (
             <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">

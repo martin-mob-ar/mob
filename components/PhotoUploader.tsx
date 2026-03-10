@@ -59,6 +59,17 @@ const MIN_WIDTH = 1200;
 const MIN_HEIGHT = 800;
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "jfif", "pjp", "pjpeg"];
+
+function getFileExtension(name: string): string {
+  return (name.split(".").pop() || "").toLowerCase();
+}
+
+function isAllowedImage(file: File): boolean {
+  if (ALLOWED_TYPES.includes(file.type)) return true;
+  // Fallback: check extension when browser doesn't detect MIME type (common on Windows)
+  return ALLOWED_EXTENSIONS.includes(getFileExtension(file.name));
+}
 
 function validateImageDimensions(
   file: File
@@ -216,7 +227,7 @@ export default function PhotoUploader({
 
   const addError = (msg: string) => {
     setErrors((prev) => [...prev, msg]);
-    setTimeout(() => setErrors((prev) => prev.slice(1)), 5000);
+    setTimeout(() => setErrors((prev) => prev.slice(1)), 15000);
   };
 
   const processFiles = useCallback(
@@ -226,7 +237,7 @@ export default function PhotoUploader({
       let accumulated = [...photos];
 
       for (const file of fileArr) {
-        if (!ALLOWED_TYPES.includes(file.type)) {
+        if (!isAllowedImage(file)) {
           addError(`"${file.name}" — Solo JPEG, PNG o WebP.`);
           continue;
         }
@@ -252,13 +263,24 @@ export default function PhotoUploader({
 
         try {
           const order = accumulated.length;
+          // Derive content type from extension when browser doesn't detect it
+          let contentType = file.type;
+          if (!contentType || !ALLOWED_TYPES.includes(contentType)) {
+            const ext = getFileExtension(file.name);
+            const extMap: Record<string, string> = {
+              jpg: "image/jpeg", jpeg: "image/jpeg", jfif: "image/jpeg",
+              pjp: "image/jpeg", pjpeg: "image/jpeg",
+              png: "image/png", webp: "image/webp",
+            };
+            contentType = extMap[ext] || "image/jpeg";
+          }
           const signedRes = await fetch("/api/photos/signed-url", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(
               propertyId != null
-                ? { propertyId, order, contentType: file.type }
-                : { tempFolder: tempFolderRef.current, order, contentType: file.type }
+                ? { propertyId, order, contentType }
+                : { tempFolder: tempFolderRef.current, order, contentType }
             ),
           });
 
@@ -272,7 +294,7 @@ export default function PhotoUploader({
 
           const uploadRes = await fetch(signedUrl, {
             method: "PUT",
-            headers: { "Content-Type": file.type },
+            headers: { "Content-Type": contentType },
             body: file,
           });
 

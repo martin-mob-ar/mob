@@ -43,6 +43,7 @@ const corsConfig = [
       'http://localhost:3000',
       'https://mob.ar',
       'https://www.mob.ar',
+      'https://v0-mob-omega.vercel.app',
     ],
     method: ['PUT', 'GET', 'HEAD', 'OPTIONS'],
     responseHeader: [

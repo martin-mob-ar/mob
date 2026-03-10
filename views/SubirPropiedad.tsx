@@ -9,7 +9,9 @@ import {
   Pencil,
   Plus,
   Minus,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -125,6 +127,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
   // Step 6: Fotos y descripción
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const [descripcion, setDescripcion] = useState("");
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
 
   // Step 7: Logística
   const [fechaDisponible, setFechaDisponible] = useState("");
@@ -307,7 +310,9 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       case 3:
         return !!geoLat && !!geoLong;
       case 4:
-        return !!antiguedad && !!superficieCubierta && !!superficieTotal;
+        if (!antiguedad || !superficieCubierta || !superficieTotal) return false;
+        if (Number(superficieTotal) < Number(superficieCubierta)) return false;
+        return true;
       case 5:
         return !!precioMensual && (expensasIncluidas || !!expensas);
       case 6: {
@@ -441,6 +446,54 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       ...prev,
       [dia]: { ...prev[dia], [field]: value },
     }));
+  };
+
+  const handleGenerateDescription = async () => {
+    setIsGeneratingDesc(true);
+    try {
+      const tagLabels = selectedTagIds
+        .map((id) => ALL_TAGS.find((t) => t.id === id)?.label)
+        .filter(Boolean) as string[];
+
+      const res = await fetch("/api/ai/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyType: propertyTypes.find((t) => t.id === typeId)?.label || "",
+          location: selectedLocation
+            ? `${selectedLocation.name}${selectedLocation.display ? `, ${selectedLocation.display}` : ""}`
+            : "",
+          address,
+          piso,
+          depto,
+          ambientes,
+          dormitorios,
+          banos,
+          toilettes,
+          cocheras,
+          superficieCubierta,
+          superficieTotal,
+          antiguedad,
+          disposicion,
+          amoblado,
+          tags: tagLabels,
+        }),
+      });
+
+      if (!res.ok) {
+        toast.error("No se pudo generar la descripción. Intentá de nuevo.");
+        return;
+      }
+
+      const { description } = await res.json();
+      if (description) {
+        setDescripcion(description);
+      }
+    } catch {
+      toast.error("No se pudo generar la descripción. Intentá de nuevo.");
+    } finally {
+      setIsGeneratingDesc(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -769,9 +822,17 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   onChange={(e) => setSuperficieTotal(e.target.value)}
                   placeholder="0"
                   type="number"
-                  className={cn("h-14 rounded-xl text-base", showErrors && !superficieTotal && "border-red-500")}
+                  className={cn(
+                    "h-14 rounded-xl text-base",
+                    showErrors && (!superficieTotal || (superficieCubierta && Number(superficieTotal) < Number(superficieCubierta))) && "border-red-500"
+                  )}
                 />
               </div>
+            </div>
+            {showErrors && superficieTotal && superficieCubierta && Number(superficieTotal) < Number(superficieCubierta) && (
+              <p className="text-sm text-red-500">La superficie total debe ser igual o mayor a la superficie cubierta</p>
+            )}
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
                   Antigüedad (años)
@@ -1027,9 +1088,31 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
             )}
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                Descripción (opcional)
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Descripción (opcional)
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateDescription}
+                  disabled={isGeneratingDesc}
+                  className="gap-1.5 text-xs"
+                >
+                  {isGeneratingDesc ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Crear descripción con IA
+                    </>
+                  )}
+                </Button>
+              </div>
               <textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
