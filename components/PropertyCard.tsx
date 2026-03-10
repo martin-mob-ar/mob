@@ -237,7 +237,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                     </div>
                     <span className="text-[10px] text-muted-foreground">
                       {hasExpensas
-                        ? `USD ${rentUsd.toLocaleString("es-AR")} alq · $${property.expensas!.toLocaleString("es-AR")} exp`
+                        ? `USD ${rentUsd.toLocaleString("es-AR")} Alq · $${property.expensas!.toLocaleString("es-AR")} Exp`
                         : "Sin expensas"}
                     </span>
                   </>
@@ -255,7 +255,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
-                    ? `($${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp)`
+                    ? `$${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp`
                     : "Sin expensas"}
                 </span>
               </>

@@ -1331,7 +1331,10 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
 
       {/* Content — scrollable area between sticky header and footer */}
       <main className="flex-1 overflow-y-auto">
-        <div className="container py-6 sm:py-12 min-h-[700px]">
+        <div className={cn(
+          "container py-6 sm:py-12",
+          currentStep === 1 ? "min-h-full flex flex-col justify-center" : "min-h-[700px]"
+        )}>
           {renderStep()}
           {/* Map — always in DOM to prevent Google Maps orphaned elements.
               Hidden when not on step 3; visible only on map confirmation step. */}
