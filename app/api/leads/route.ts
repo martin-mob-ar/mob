@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     // Dispatch to external services in parallel (non-blocking for response)
     const dispatches: Promise<void>[] = [];
 
-    // 1. Tokko or Email
+    // 1. Inmobiliarias (tokko) → Tokko WebContact, Dueños/inquilinos → Email
     if (property.tokko && property.tokko_id) {
       dispatches.push(
         (async () => {

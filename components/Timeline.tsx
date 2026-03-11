@@ -113,10 +113,11 @@ const Timeline = () => {
       if (!el) return;
       const obs = new IntersectionObserver(
         ([entry]) => {
+          if (!entry.isIntersecting) return;
           setVisibleCards((prev) => {
-            if (prev[i] === entry.isIntersecting) return prev;
+            if (prev[i]) return prev;
             const next = [...prev];
-            next[i] = entry.isIntersecting;
+            next[i] = true;
             return next;
           });
         },
@@ -162,7 +163,7 @@ const Timeline = () => {
   const t = (value: string) => (reducedMotion ? "none" : value);
 
   return (
-    <section className="relative py-16 bg-[#f8faff] overflow-hidden">
+    <section className="relative py-8 lg:py-16 bg-[#f8faff] overflow-hidden">
       {/* Ambient glow */}
       <div
         className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full -z-10 opacity-40"
@@ -172,7 +173,7 @@ const Timeline = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div
           ref={ref}
-          className="relative pt-8 pb-8 lg:pt-24 lg:pb-28"
+          className="relative pt-2 pb-2 lg:pt-24 lg:pb-28"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
@@ -217,7 +218,7 @@ const Timeline = () => {
           {/* ======= Mobile vertical progress line (<md) ======= */}
           <div
             className="md:hidden absolute pointer-events-none z-0"
-            style={{ left: 20, top: 40, bottom: 40, width: 2 }}
+            style={{ left: 20, top: 16, bottom: 16, width: 2 }}
           >
             {/* Track */}
             <div className="absolute inset-0 rounded-full bg-[#e5eaf5]" />

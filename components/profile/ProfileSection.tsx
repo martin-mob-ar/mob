@@ -310,9 +310,9 @@ export default function ProfileSection({
     return (
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm mb-3">
+        <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm mb-3">
           <Zap className="h-4 w-4" />
-          Verificación en 2 minutos
+          Verificate para publicar
         </div>
         <p className="text-muted-foreground text-sm mb-6">
           Completás tu perfil una sola vez y validamos tu identidad e ingresos.
@@ -322,24 +322,24 @@ export default function ProfileSection({
         {/* Benefits list */}
         <div className="space-y-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-              <Clock className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <Clock className="h-4 w-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium text-foreground">
               Verificate en menos de 2 minutos
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-4 w-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium text-foreground">
               Accedé a garantía 50% OFF con aprobación instantánea
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-              <CalendarDays className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <CalendarDays className="h-4 w-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium text-foreground">
               Agendá visitas y reservá online
@@ -349,7 +349,7 @@ export default function ProfileSection({
 
         {/* Primary CTA */}
         <Link href="/verificacion">
-          <Button className="h-13 w-full rounded-full bg-emerald-600 hover:bg-emerald-700 font-semibold text-base gap-2">
+          <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2">
             <Shield className="h-5 w-5" />
             Verificar mi perfil
           </Button>
@@ -376,9 +376,9 @@ export default function ProfileSection({
     return (
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm mb-3">
+        <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm mb-3">
           <Zap className="h-4 w-4" />
-          Verificación en 2 minutos
+          Verificate para publicar
         </div>
         <p className="text-muted-foreground text-sm mb-6">
           Completás tu perfil una sola vez y validamos tu identidad. Quedás
@@ -388,24 +388,24 @@ export default function ProfileSection({
         {/* Benefits list */}
         <div className="space-y-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-              <Clock className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <Clock className="h-4 w-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium text-foreground">
               Verificate en menos de 2 minutos
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-              <Home className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <Home className="h-4 w-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium text-foreground">
               Publicá tu propiedad gratis
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-4 w-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium text-foreground">
               Recibí consultas de inquilinos verificados
@@ -415,7 +415,7 @@ export default function ProfileSection({
 
         {/* Primary CTA */}
         <Link href="/verificacion">
-          <Button className="h-13 w-full rounded-full bg-emerald-600 hover:bg-emerald-700 font-semibold text-base gap-2">
+          <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2">
             <Shield className="h-5 w-5" />
             Verificar mi perfil
           </Button>

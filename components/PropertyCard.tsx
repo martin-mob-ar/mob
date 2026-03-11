@@ -4,10 +4,14 @@ import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
+import { useRouter } from "next/navigation";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { getPropertyUrl } from "@/lib/utils/property-url";
 import { formatAddress } from "@/lib/utils";
+import { PublisherBadge } from "@/components/PublisherBadge";
+import type { PublisherType, BadgeContext } from "@/lib/publisher";
 
 export interface Property {
   id: string;
@@ -29,21 +33,25 @@ export interface Property {
   age?: number | null;
   verified?: boolean;
   propertyType?: string;
+  publisherType?: PublisherType;
 }
 
 interface PropertyCardProps {
   property: Property;
   showDetails?: boolean;
   compactVerified?: boolean;
+  context?: BadgeContext;
 }
 
-const PropertyCard = ({ property, showDetails = false, compactVerified = false }: PropertyCardProps) => {
+const PropertyCard = ({ property, showDetails = false, compactVerified = false, context = "search" }: PropertyCardProps) => {
   const images = property.images?.length ? property.images : [property.image];
   const totalSlides = images.length;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
   const { rate } = useExchangeRate();
+  const isMobile = useIsMobile();
+  const router = useRouter();
 
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -81,7 +89,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
   };
 
   return (
-    <Link href={getPropertyUrl(property)} target="_blank" rel="noopener noreferrer" className="group block h-full">
+    <Link href={getPropertyUrl(property)} {...(!isMobile ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="group block h-full">
       <div className="card-mob-hover overflow-hidden h-full flex flex-col">
         <div 
           className="relative aspect-[4/3] overflow-hidden"
@@ -139,7 +147,11 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                   if (currentImageIndex === totalSlides - 1) {
                     e.preventDefault();
                     e.stopPropagation();
-                    window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                    if (isMobile) {
+                      router.push(getPropertyUrl(property));
+                    } else {
+                      window.open(getPropertyUrl(property), '_blank', 'noopener,noreferrer');
+                    }
                   } else {
                     nextImage(e);
                     scrollToImage(Math.min(currentImageIndex + 1, totalSlides - 1));
@@ -172,23 +184,14 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
             </div>
           )}
 
-          {/* Verified Badge */}
-          {property.verified && (
-            <div className="absolute bottom-3 left-2">
-              <span className={`inline-flex items-center gap-1 rounded-full font-medium bg-background text-primary border border-border shadow-sm ${
-                compactVerified ? "p-1" : "px-2 py-0.5 text-[10px]"
-              }`}>
-                <CheckCircle className="h-3 w-3" />
-                {!compactVerified && "Verificada"}
-              </span>
-            </div>
-          )}
-          
-          {/* Badge - White bg with blue text */}
-          <div className="absolute top-2 left-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-background text-primary border border-border shadow-sm">
-              {property.type === "inmobiliaria" ? "Inmobiliaria" : "Dueño directo"}
-            </span>
+
+          {/* Publisher Badge */}
+          <div className="absolute top-3 left-3">
+            <PublisherBadge
+              publisherType={property.publisherType}
+              legacyType={property.type}
+              context={context}
+            />
           </div>
           
           {/* Favorite button - Always visible */}
@@ -235,7 +238,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                         Total
                       </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground mt-0.5 block">
                       {hasExpensas
                         ? `USD ${rentUsd.toLocaleString("es-AR")} Alq · $${property.expensas!.toLocaleString("es-AR")} Exp`
                         : "Sin expensas"}
@@ -253,7 +256,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
                     Total
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground mt-0.5 block">
                   {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
                     ? `$${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp`
                     : "Sin expensas"}
@@ -262,7 +265,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false }
             )}
           </div>
           
-          <div className="text-[9px] text-muted-foreground mt-auto pt-1.5 truncate min-w-0">
+          <div className="text-[10px] text-muted-foreground mt-auto pt-1.5 truncate min-w-0">
             {property.rooms !== undefined ? (
               <>
                 <span>{property.rooms} dorm</span>

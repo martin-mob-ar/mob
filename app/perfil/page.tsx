@@ -200,6 +200,7 @@ export default async function PerfilPage() {
             draftProperties={draftProperties}
             roles={roles}
             accountType={profile.account_type}
+            userEmail={profile.email}
           />
         </>
       )}

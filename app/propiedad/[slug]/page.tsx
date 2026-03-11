@@ -27,20 +27,20 @@ export async function generateMetadata({
   const propertyId = extractPropertyId(slugParam);
 
   if (!propertyId) {
-    return { title: "Propiedad no encontrada | Mob" };
+    return { title: "Propiedad no encontrada | Mob.ar" };
   }
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("properties_read")
     .select(
-      "property_id, property_type_id, property_type_name, room_amount, location_name, parent_location_name, address, description, cover_photo_url, currency, price, expenses, total_surface, slug"
+      "property_id, property_type_id, property_type_name, room_amount, location_name, parent_location_name, address, description, cover_photo_url, currency, price, expenses, valor_total_primary, total_surface, slug"
     )
     .eq("property_id", propertyId)
     .single();
 
   if (!data) {
-    return { title: "Propiedad no encontrada | Mob" };
+    return { title: "Propiedad no encontrada | Mob.ar" };
   }
 
   // Get Spanish type name
@@ -54,7 +54,7 @@ export async function generateMetadata({
     if (typeData?.name) typeNameEs = typeData.name;
   }
 
-  // Build title: "Departamento 2 ambientes en Centro, Mar Del Plata | Mob"
+  // Build title: "Departamento 2 ambientes en Centro, Mar Del Plata | Mob.ar"
   const titleParts: string[] = [typeNameEs];
   if (data.room_amount && data.room_amount > 0) {
     titleParts.push(
@@ -67,7 +67,7 @@ export async function generateMetadata({
       : `en ${data.location_name}`;
     titleParts.push(locationStr);
   }
-  const title = titleParts.join(" ") + " | Mob";
+  const title = titleParts.join(" ") + " | Mob.ar";
 
   // Build description
   const descParts: string[] = [];
@@ -83,10 +83,10 @@ export async function generateMetadata({
   if (data.parent_location_name) {
     descParts.push(`- ${data.parent_location_name}`);
   }
-  if (data.price && data.currency) {
-    const totalPrice = Number(data.price) + (data.expenses || 0);
+  if ((data.valor_total_primary || data.price) && data.currency) {
+    const totalPrice = Number(data.valor_total_primary || data.price);
     descParts.push(
-      `- ${data.currency === "USD" ? "USD " : "$"}${totalPrice.toLocaleString("es-AR")}`
+      `- $${totalPrice.toLocaleString("es-AR")}`
     );
   }
   if (data.total_surface) {

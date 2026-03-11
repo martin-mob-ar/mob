@@ -4,23 +4,14 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 import { Users, ShieldCheck, Smartphone, Award, CreditCard, TrendingUp, ArrowRight, FileCheck, Building } from "lucide-react";
-import { cn } from "@/lib/utils";
 import PlanSelector from "@/components/pricing/PlanSelector";
 const MobBrand = () => <span className="font-ubuntu font-bold text-primary">mob</span>;
 const LandingPropietarios = () => {
   const router = useRouter();
-  const {
-    isAuthenticated
-  } = useAuth();
 
-  const handleStartPublish = () => {
-    if (isAuthenticated) {
-      router.push("/subir-propiedad");
-    } else {
-      router.push("/auth?redirect=/subir-propiedad");
-    }
+  const handleCTA = () => {
+    router.push("/?auth=open");
   };
   const whyPublish = [{
     icon: ShieldCheck,
@@ -114,7 +105,7 @@ const LandingPropietarios = () => {
             <Button
               size="lg"
               className="rounded-full px-8 py-6 text-base font-semibold"
-              onClick={handleStartPublish}
+              onClick={handleCTA}
             >
               Publicá gratis
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -194,7 +185,7 @@ const LandingPropietarios = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={handleStartPublish}>
+            <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={handleCTA}>
               Publicá gratis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -214,7 +205,7 @@ const LandingPropietarios = () => {
             </p>
           </div>
 
-          <PlanSelector selectedPlan={null} onSelectPlan={() => handleStartPublish()} />
+          <PlanSelector selectedPlan={null} onSelectPlan={() => handleCTA()} />
 
           {/* Disclaimer */}
           

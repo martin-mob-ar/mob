@@ -1,17 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { CheckCircle, CalendarCheck, ShieldCheck, Globe } from "lucide-react";
+import { CalendarCheck, ShieldCheck, Globe } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import HeroCards from "@/components/HeroCards";
 import HeroBadges from "@/components/HeroBadges";
-import { Property } from "@/components/PropertyCard";
-import { getPropertyUrl } from "@/lib/utils/property-url";
-
-interface HeroSectionProps {
-  properties: Property[];
-}
 
 /** Hardcoded mobile hero card — purely decorative, not clickable. */
 const MobileHeroCard = () => {
@@ -28,8 +21,8 @@ const MobileHeroCard = () => {
         >
           <div className="relative aspect-[4/3]">
             <Image
-              src="/assets/property-7.jpg"
-              alt="Av del Libertador 2400"
+              src="/assets/landing-hero/1.png"
+              alt="Av Libertador al 3500"
               fill
               className="object-cover"
               sizes="240px"
@@ -37,13 +30,9 @@ const MobileHeroCard = () => {
             />
           </div>
           <div className="p-3 text-left">
-            <p className="text-sm font-bold text-foreground">
-              $800.000
-              <span className="text-[10px] font-normal text-muted-foreground ml-1">/mes</span>
-            </p>
-            <p className="text-xs font-medium text-foreground truncate mt-1">Av del Libertador 2400</p>
+            <p className="text-xs font-medium text-foreground truncate">Av Libertador al 3500</p>
             <p className="text-[11px] text-muted-foreground truncate">Palermo</p>
-            <p className="text-[10px] text-muted-foreground mt-1">2 dorm · 1 baño · 52m²</p>
+            <p className="text-[10px] text-muted-foreground mt-1">2 amb · 1 baño · 42m²</p>
           </div>
         </div>
       </div>
@@ -51,7 +40,7 @@ const MobileHeroCard = () => {
   );
 };
 
-const HeroSection = ({ properties }: HeroSectionProps) => {
+const HeroSection = () => {
   return (
     <section className="pt-8 pb-6 md:pt-16 md:pb-14 overflow-visible">
       <div className="container px-6 md:px-10 lg:px-16 max-w-[1400px] mx-auto">
@@ -172,7 +161,7 @@ const HeroSection = ({ properties }: HeroSectionProps) => {
                 zIndex: 0,
               }}
             />
-            <HeroCards properties={properties} />
+            <HeroCards />
             <HeroBadges />
           </div>
         </div>

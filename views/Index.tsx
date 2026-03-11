@@ -25,7 +25,7 @@ const Index = ({ properties }: IndexProps) => {
       <Header />
 
       {/* Hero Section */}
-      <HeroSection properties={enrichedProperties.slice(0, 4)} />
+      <HeroSection />
 
       {/* Properties Sections */}
       <PropertySection title="Propiedades destacadas" properties={enrichedProperties} />

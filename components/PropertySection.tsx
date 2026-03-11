@@ -100,7 +100,7 @@ const PropertySection = ({
                 key={property.id}
                 className="min-w-0 shrink-0 basis-[43%] sm:basis-[calc(33.333%-11px)] md:basis-[calc(25%-12px)] lg:basis-[calc(20%-13px)] xl:basis-[calc(16.666%-14px)]"
               >
-                <PropertyCard property={property} compactVerified />
+                <PropertyCard property={property} context="home" />
               </div>
             ))}
 
@@ -109,7 +109,7 @@ const PropertySection = ({
               <div className="min-w-0 shrink-0 basis-[43%] sm:basis-[calc(33.333%-11px)] md:basis-[calc(25%-12px)] lg:basis-[calc(20%-13px)] xl:basis-[calc(16.666%-14px)]">
                 <Link
                   href={href}
-                  className="card-mob-hover h-full flex flex-col items-center justify-center gap-3 aspect-[4/3] rounded-lg border border-border bg-accent/30 hover:bg-accent/50 transition-colors"
+                  className="card-mob-hover h-full flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-accent/30 hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex items-center justify-center h-12 w-12 rounded-full border-2 border-foreground/20">
                     <ArrowRight className="h-5 w-5 text-foreground" />

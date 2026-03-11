@@ -230,7 +230,7 @@ const SearchResultsInner = () => {
                 <PropertyCard
                   key={`${property.id}-${index}`}
                   property={property}
-                  compactVerified
+                  context="search"
                 />
               ))}
             </div>
@@ -336,7 +336,7 @@ const SearchResultsInner = () => {
                 <PropertyCard
                   key={`${property.id}-${index}`}
                   property={property}
-                  showDetails
+                  context="search"
                 />
               ))}
             </div>

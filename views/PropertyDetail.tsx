@@ -3,7 +3,10 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { PublisherType } from "@/lib/publisher";
+import { getPublisherBadgeConfig } from "@/lib/publisher";
 import { Button } from "@/components/ui/button";
 import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
@@ -23,6 +26,12 @@ import PropertyMap from "@/components/PropertyMap";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import LeadForm from "@/components/LeadForm";
 import { AnimateHeight } from "@/components/ui/animate-height";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
@@ -63,6 +72,56 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const handleFavoriteClick = () => {
     if (propPropertyId) toggleFavorite(propPropertyId);
   };
+
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openShareMenu = () => {
+    if (shareCloseTimer.current) clearTimeout(shareCloseTimer.current);
+    setShareOpen(true);
+  };
+  const scheduleShareClose = () => {
+    shareCloseTimer.current = setTimeout(() => setShareOpen(false), 150);
+  };
+
+  const getShareUrl = () => `https://mob.ar/propiedad/${slug}`;
+
+  const getShareTitle = () => {
+    if (propProperty) {
+      const parts = [propProperty.propertyType, propProperty.address, propProperty.neighborhood].filter(Boolean);
+      return parts.length > 0 ? parts.join(" - ") : "Mirá esta propiedad en Mob";
+    }
+    return "Mirá esta propiedad en Mob";
+  };
+
+  const getShareText = () => `${getShareTitle()} ${getShareUrl()}`;
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(getShareUrl());
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const handleWhatsAppShare = () => {
+    const text = encodeURIComponent(getShareText());
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: getShareTitle(),
+          text: "Mirá esta propiedad en Mob",
+          url: getShareUrl(),
+        });
+      } catch {
+        // User cancelled share - do nothing
+      }
+    }
+  };
+
   const [leadFormType, setLeadFormType] = useState<"visita" | "reserva" | null>(null);
   // Extract numeric ID from slug for mock data fallback
   const idFromSlug = (slug as string)?.match(/(\d+)$/)?.[1] || (slug as string);
@@ -115,7 +174,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const publisherName = propPublisherName || null;
   const publisherLogo = propPublisherLogo || null;
   const locationSuffix = propLocationFull || `${property.neighborhood}`;
-  const showVerifiedOwnerBadge = !isInmobiliaria && propertyPlan !== "basico";
+  const publisherType: PublisherType = isInmobiliaria
+    ? (isTokko ? "inmobiliaria-red" : "inmobiliaria-normal")
+    : (propertyPlan !== "basico" ? "dueno-verificado" : "dueno-directo");
+  const publisherConfig = getPublisherBadgeConfig(publisherType, "detail");
+  const publisherSubtitleColor = publisherType === "dueno-verificado"
+    ? "text-emerald-600"
+    : publisherType === "dueno-directo"
+      ? "text-muted-foreground"
+      : "text-primary";
 
   // Detect scroll to show/hide bottom bar
   useEffect(() => {
@@ -292,10 +359,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-end">
             <div className="flex items-center gap-4">
-              <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <Share2 className="h-4 w-4" />
-                Compartir
-              </button>
               <button
                 onClick={handleFavoriteClick}
                 aria-label={propPropertyId && isFavorite(propPropertyId) ? "Quitar de favoritos" : "Guardar en favoritos"}
@@ -310,6 +373,34 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 />
                 {propPropertyId && isFavorite(propPropertyId) ? "Guardada" : "Guardar"}
               </button>
+              <DropdownMenu open={shareOpen} onOpenChange={setShareOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    onPointerDown={(e) => e.preventDefault()}
+                    onMouseEnter={openShareMenu}
+                    onMouseLeave={scheduleShareClose}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Compartir
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48"
+                  onMouseEnter={openShareMenu}
+                  onMouseLeave={scheduleShareClose}
+                >
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleCopyLink(); }} className="gap-2 cursor-pointer">
+                    {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Link2 className="h-4 w-4" />}
+                    {linkCopied ? "¡Copiado!" : "Copiar link"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleWhatsAppShare} className="gap-2 cursor-pointer">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    WhatsApp
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -327,9 +418,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <ArrowLeft className="h-5 w-5 text-foreground" />
             </button>
             <div className="flex items-center gap-2">
-              <button className="h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center">
-                <Share2 className="h-5 w-5 text-foreground" />
-              </button>
               <button
                 onClick={handleFavoriteClick}
                 aria-label={propPropertyId && isFavorite(propPropertyId) ? "Quitar de favoritos" : "Guardar en favoritos"}
@@ -340,6 +428,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     propPropertyId && isFavorite(propPropertyId) ? "fill-primary text-primary" : "text-foreground"
                   }`}
                 />
+              </button>
+              <button
+                onClick={handleNativeShare}
+                aria-label="Compartir"
+                className="h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+              >
+                <Share2 className="h-5 w-5 text-foreground" />
               </button>
             </div>
           </div>
@@ -469,109 +564,110 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
 
         {/* Price + CTA Block - Priority section */}
-        <div className="px-4 py-5 bg-secondary/30 border-b border-border">
-              <AnimateHeight show={!leadFormType}>
-                <div>
-                  {(() => {
-                    const rentUsd = property.rentPrice ?? property.price;
-                    const hasExpensas = property.expensas != null && property.expensas > 0;
-                    const isUsd = property.currency === "USD";
-                    const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
-                    const showUsdTotal = isUsd && hasExpensas && rate;
+        <div ref={mainCtaRef} className="px-4 py-5 bg-secondary/30 border-b border-border scroll-mt-20">
+          {(() => {
+            const rentUsd = property.rentPrice ?? property.price;
+            const hasExpensas = property.expensas != null && property.expensas > 0;
+            const isUsd = property.currency === "USD";
+            const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+            const showUsdTotal = isUsd && hasExpensas && rate;
 
-                    return isUsd ? (
-                      <>
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="font-display text-2xl font-bold text-foreground">
-                            USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
-                          </span>
-                          <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                            {showUsdTotal ? "Total" : "Alquiler"}
-                          </span>
-                        </div>
-                        {!showUsdTotal && (
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {hasExpensas
-                              ? `$${property.expensas!.toLocaleString("es-AR")} expensas`
-                              : "Sin expensas"}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex items-baseline gap-2 mb-3">
-                        <span className="font-display text-2xl font-bold text-foreground">
-                          ${property.price.toLocaleString("es-AR")}
-                        </span>
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                          Total
-                        </span>
-                      </div>
-                    );
-                  })()}
-                  {/* Reference for bottom bar visibility */}
-                  <div ref={mainCtaRef} className={`flex gap-4 text-sm mb-5 ${property.currency === "USD" && !(property.expensas != null && property.expensas > 0 && rate) ? "hidden" : ""}`}>
-                    {property.currency === "USD" ? (
-                      <>
-                        <div>
-                          <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
-                          <p className="font-medium">USD {(property.rentPrice ?? property.price).toLocaleString("es-AR")}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
-                          <p className="font-medium">${property.expensas!.toLocaleString("es-AR")}</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {property.rentPrice != null && property.rentPrice > 0 && (
-                          <div>
-                            <span className="text-muted-foreground text-xs">Alquiler</span>
-                            <p className="font-medium">${property.rentPrice.toLocaleString("es-AR")}</p>
-                          </div>
-                        )}
-                        <div>
-                          <span className="text-muted-foreground text-xs">Expensas</span>
-                          <p className="font-medium">
-                            {property.expensas != null && property.expensas > 0
-                              ? `$${property.expensas.toLocaleString("es-AR")}`
-                              : "Sin expensas"}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Button
-                      className="w-full rounded-xl h-12 font-semibold text-base"
-                      onClick={() => setLeadFormType("visita")}
-                    >
-                      <Calendar className="h-5 w-5 mr-2" />
-                      Agendar visita
-                    </Button>
-                    <Button
-                      className="w-full rounded-xl h-12 font-medium text-base bg-secondary hover:bg-secondary/80 text-foreground border-0"
-                      onClick={() => setLeadFormType("reserva")}
-                    >
-                      <Image src={KeyRoundIcon} alt="" width={20} height={20} className="mr-2" />
-                      Quiero reservar
-                    </Button>
-                  </div>
+            return isUsd ? (
+              <>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="font-display text-2xl font-bold text-foreground">
+                    USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                    {showUsdTotal ? "Total" : "Alquiler"}
+                  </span>
                 </div>
-              </AnimateHeight>
-
-              <AnimateHeight show={!!leadFormType}>
-                {leadFormType && propPropertyId && (
-                  <LeadForm
-                    type={leadFormType}
-                    propertyId={propPropertyId}
-                    propertyAddress={property?.address || ""}
-                    onClose={() => setLeadFormType(null)}
-                    inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
-                    propertyPlan={propertyPlan}
-                    isInmobiliaria={isInmobiliaria}
-                  />
+                {!showUsdTotal && (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {hasExpensas
+                      ? `$${property.expensas!.toLocaleString("es-AR")} expensas`
+                      : "Sin expensas"}
+                  </p>
                 )}
-              </AnimateHeight>
+              </>
+            ) : (
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="font-display text-2xl font-bold text-foreground">
+                  ${property.price.toLocaleString("es-AR")}
+                </span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Total
+                </span>
+              </div>
+            );
+          })()}
+
+          <div className={`flex gap-4 text-sm ${property.currency === "USD" && !(property.expensas != null && property.expensas > 0 && rate) ? "hidden" : ""}`}>
+            {property.currency === "USD" ? (
+              <>
+                <div>
+                  <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                  <p className="font-medium">USD {(property.rentPrice ?? property.price).toLocaleString("es-AR")}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                  <p className="font-medium">${property.expensas!.toLocaleString("es-AR")}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                {property.rentPrice != null && property.rentPrice > 0 && (
+                  <div>
+                    <span className="text-muted-foreground text-xs">Alquiler</span>
+                    <p className="font-medium">${property.rentPrice.toLocaleString("es-AR")}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground text-xs">Expensas</span>
+                  <p className="font-medium">
+                    {property.expensas != null && property.expensas > 0
+                      ? `$${property.expensas.toLocaleString("es-AR")}`
+                      : "Sin expensas"}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <AnimateHeight show={!leadFormType}>
+            <div className="space-y-2 mt-5">
+              <Button
+                className="w-full rounded-xl h-12 font-semibold text-base"
+                onClick={() => setLeadFormType("visita")}
+              >
+                <Calendar className="h-5 w-5 mr-2" />
+                Agendar visita
+              </Button>
+              <Button
+                className="w-full rounded-xl h-12 font-medium text-base bg-secondary hover:bg-secondary/80 text-foreground border-0"
+                onClick={() => setLeadFormType("reserva")}
+              >
+                <Image src={KeyRoundIcon} alt="" width={20} height={20} className="mr-2" />
+                Quiero reservar
+              </Button>
+            </div>
+          </AnimateHeight>
+
+          <AnimateHeight show={!!leadFormType}>
+            <div className="mt-3 pt-3 border-t border-border">
+              {leadFormType && propPropertyId && (
+                <LeadForm
+                  type={leadFormType}
+                  propertyId={propPropertyId}
+                  propertyAddress={property?.address || ""}
+                  onClose={() => setLeadFormType(null)}
+                  inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
+                  propertyPlan={propertyPlan}
+                  isInmobiliaria={isInmobiliaria}
+                />
+              )}
+            </div>
+          </AnimateHeight>
 
           {/* Quick Stats - Below CTAs */}
           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border/50">
@@ -685,7 +781,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <BadgeCheck className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base text-foreground">Validación por Mob</p>
+                  <p className="font-semibold text-base text-foreground">Validación por mob</p>
                   <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span> para cualquier alquiler.</p>
                 </div>
               </div>
@@ -721,22 +817,22 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               )}
               <div className="flex-1">
                 <p className="font-semibold text-foreground">{publisherName}</p>
-                {isTokko ? (
-                  <p className="text-xs text-primary uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                    <Shield className="h-3.5 w-3.5" />
-                    Inmobiliaria verificada
-                  </p>
-                ) : showVerifiedOwnerBadge ? (
-                  <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-                    <BadgeCheck className="h-3.5 w-3.5" />
-                    Dueño verificado por Mob
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-0.5">Dueño directo</p>
-                )}
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className={`text-xs font-semibold flex items-center gap-1 mt-0.5 cursor-default ${publisherSubtitleColor}`}>
+                        {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
+                        {publisherConfig.label}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-relaxed whitespace-pre-line">
+                      {publisherConfig.tooltipText}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
-            {isTokko && (
+            {(publisherType === "inmobiliaria-red" || publisherType === "inmobiliaria-normal") && (
               <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
                 Esta inmobiliaria utiliza la infraestructura digital de{" "}
                 <span className="font-ubuntu text-primary font-medium">mob</span>
@@ -748,7 +844,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
       {/* Mobile Fixed Bottom CTA - Only shows after scrolling past main CTA */}
       <div 
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3 z-40 transition-transform duration-300 ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-5 z-40 transition-transform duration-300 ${
           showBottomBar ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -784,7 +880,10 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           </div>
           <Button
               className="rounded-xl h-11 px-6 font-semibold"
-              onClick={() => setLeadFormType("visita")}
+              onClick={() => {
+                setLeadFormType("visita");
+                mainCtaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
             >
               Agendar visita
             </Button>
@@ -879,91 +978,89 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <div className="card-mob p-5 sticky top-20 space-y-5">
               {/* Price + CTAs */}
               <div>
-                  <AnimateHeight show={!leadFormType}>
-                    <div className="space-y-5">
-                      <div>
-                        {(() => {
-                          const rentUsd = property.rentPrice ?? property.price;
-                          const hasExpensas = property.expensas != null && property.expensas > 0;
-                          const isUsd = property.currency === "USD";
-                          const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
-                          const showUsdTotal = isUsd && hasExpensas && rate;
+                {(() => {
+                  const rentUsd = property.rentPrice ?? property.price;
+                  const hasExpensas = property.expensas != null && property.expensas > 0;
+                  const isUsd = property.currency === "USD";
+                  const expensasInUsd = isUsd && hasExpensas && rate ? Math.round(property.expensas! / rate) : 0;
+                  const showUsdTotal = isUsd && hasExpensas && rate;
 
-                          return isUsd ? (
-                            <>
-                              <div className="flex items-baseline gap-2">
-                                <span className="font-display text-2xl font-bold text-foreground">
-                                  USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
-                                </span>
-                                <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                                  {showUsdTotal ? "Total" : "Alquiler"}
-                                </span>
-                              </div>
-                              {showUsdTotal ? (
-                                <div className="mt-3 space-y-1.5">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
-                                    <span className="font-medium text-sm">USD {rentUsd.toLocaleString("es-AR")}</span>
-                                  </div>
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
-                                    <span className="font-medium text-sm">${property.expensas!.toLocaleString("es-AR")}</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")} expensas` : "Sin expensas"}
-                                </p>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex items-baseline gap-2">
-                                <span className="font-display text-2xl font-bold text-foreground">
-                                  ${property.price.toLocaleString("es-AR")}
-                                </span>
-                                <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                                  Total
-                                </span>
-                              </div>
-                              <div className="mt-3 space-y-1.5">
-                                {property.rentPrice != null && property.rentPrice > 0 && (
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
-                                    <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
-                                  </div>
-                                )}
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
-                                  <span className="font-medium text-sm">
-                                    {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")}` : "Sin expensas"}
-                                  </span>
-                                </div>
-                              </div>
-                            </>
-                          );
-                        })()}
+                  return isUsd ? (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-2xl font-bold text-foreground">
+                          USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
+                        </span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                          {showUsdTotal ? "Total" : "Alquiler"}
+                        </span>
                       </div>
-                      <div className="space-y-2">
-                        <Button
-                          className="w-full rounded-xl py-5 font-medium text-sm"
-                          onClick={() => setLeadFormType("visita")}
-                        >
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Agendar visita
-                        </Button>
-                        <Button
-                          className="w-full rounded-xl py-5 font-medium text-sm bg-secondary hover:bg-secondary/80 text-foreground border-0"
-                          onClick={() => setLeadFormType("reserva")}
-                        >
-                          <Image src={KeyRoundIcon} alt="" width={16} height={16} className="mr-2" />
-                          Quiero reservar
-                        </Button>
+                      {showUsdTotal ? (
+                        <div className="mt-3 space-y-1.5" style={{ fontVariantNumeric: "tabular-nums" }}>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                            <span className="font-medium text-sm">USD {rentUsd.toLocaleString("es-AR")}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                            <span className="font-medium text-sm">${property.expensas!.toLocaleString("es-AR")}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")} expensas` : "Sin expensas"}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-2xl font-bold text-foreground">
+                          ${property.price.toLocaleString("es-AR")}
+                        </span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                          Total
+                        </span>
                       </div>
-                    </div>
-                  </AnimateHeight>
+                      <div className="mt-3 space-y-1.5" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        {property.rentPrice != null && property.rentPrice > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground text-xs uppercase tracking-wider">Alquiler mensual</span>
+                            <span className="font-medium text-sm">${property.rentPrice.toLocaleString("es-AR")}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground text-xs uppercase tracking-wider">Expensas</span>
+                          <span className="font-medium text-sm">
+                            {hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")}` : "Sin expensas"}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
-                  <AnimateHeight show={!!leadFormType}>
+                <AnimateHeight show={!leadFormType}>
+                  <div className="space-y-2 mt-5">
+                    <Button
+                      className="w-full rounded-xl py-5 font-medium text-sm"
+                      onClick={() => setLeadFormType("visita")}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Agendar visita
+                    </Button>
+                    <Button
+                      className="w-full rounded-xl py-5 font-medium text-sm bg-secondary hover:bg-secondary/80 text-foreground border-0"
+                      onClick={() => setLeadFormType("reserva")}
+                    >
+                      <Image src={KeyRoundIcon} alt="" width={16} height={16} className="mr-2" />
+                      Quiero reservar
+                    </Button>
+                  </div>
+                </AnimateHeight>
+
+                <AnimateHeight show={!!leadFormType}>
+                  <div className="mt-3 pt-3 border-t border-border">
                     {leadFormType && propPropertyId && (
                       <LeadForm
                         type={leadFormType}
@@ -975,8 +1072,9 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                         isInmobiliaria={isInmobiliaria}
                       />
                     )}
-                  </AnimateHeight>
-                </div>
+                  </div>
+                </AnimateHeight>
+              </div>
 
               {/* Trust Elements */}
               <div className="space-y-3 pt-4 border-t border-border">
@@ -997,12 +1095,12 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <div className="flex gap-2.5">
                   <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-xs text-foreground">Validación por Mob</p>
+                    <p className="font-medium text-xs text-foreground">Validación por mob</p>
                     <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span> para cualquier alquiler.</p>
                   </div>
                 </div>
                 
-                <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider pt-2">
+                <p className="text-[10px] text-center text-muted-foreground tracking-wider pt-2">
                   Tus datos están protegidos por <span className="font-ubuntu">mob</span>
                 </p>
               </div>
@@ -1028,22 +1126,22 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     )}
                     <div>
                       <p className="font-semibold text-sm text-foreground">{publisherName}</p>
-                      {isTokko ? (
-                        <p className="text-[10px] text-primary uppercase tracking-wider flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          Inmobiliaria verificada
-                        </p>
-                      ) : showVerifiedOwnerBadge ? (
-                        <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-                          <BadgeCheck className="h-3 w-3" />
-                          Dueño verificado por Mob
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">Dueño directo</p>
-                      )}
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className={`text-[10px] font-semibold flex items-center gap-1 cursor-default ${publisherSubtitleColor}`}>
+                              {publisherConfig.showCheckmark && <BadgeCheck className="h-3 w-3" />}
+                              {publisherConfig.label}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-relaxed whitespace-pre-line">
+                            {publisherConfig.tooltipText}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
-                  {isTokko && (
+                  {(publisherType === "inmobiliaria-red" || publisherType === "inmobiliaria-normal") && (
                     <p className="text-[10px] text-center text-muted-foreground mt-2 leading-snug">
                       Esta inmobiliaria utiliza la infraestructura digital de{" "}
                       <span className="font-ubuntu text-primary font-medium">mob</span> para agilizar tu alquiler.

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { LOCATION_ALIASES, normalizeForAlias } from '@/lib/constants/location-aliases';
 
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
@@ -14,14 +15,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: [] });
   }
 
+  // Alias lookup (exact match on normalized full query)
+  const aliasMatch = LOCATION_ALIASES[normalizeForAlias(q)];
+
   // Split query into tokens (each must be at least 2 chars)
   const tokens = q.split(/\s+/).filter((t) => t.length >= 2);
   if (tokens.length === 0) {
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({ data: aliasMatch?.results ?? [] });
   }
 
-  // Build Supabase OR filter: name matches ANY token
-  const orFilter = tokens.map((t) => `name.ilike.%${t}%`).join(',');
+  // Normalize tokens for accent-insensitive search against name_search column
+  const searchTokens = tokens.map(normalize);
+
+  // Build Supabase OR filter: name_search matches ANY normalized token
+  const orFilter = searchTokens.map((t) => `name_search.ilike.%${t}%`).join(',');
 
   // Run three queries in parallel:
   // 1. Direct match on the full query string (exact substring) — ensures "Mar del Plata" always appears
@@ -31,7 +38,7 @@ export async function GET(request: Request) {
     supabaseAdmin
       .from('tokko_location')
       .select('id, name, depth, state_id, parent_location_id')
-      .ilike('name', `%${q}%`)
+      .ilike('name_search', `%${normalize(q)}%`)
       .order('id')
       .limit(10),
     supabaseAdmin
@@ -102,7 +109,7 @@ export async function GET(request: Request) {
   }
 
   if (locations.length === 0 && results.length === 0) {
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({ data: aliasMatch?.results ?? [] });
   }
 
   // Walk the full parent chain for all locations.
@@ -200,8 +207,15 @@ export async function GET(request: Request) {
     if (results.length >= limit) break;
   }
 
-  // Sort all results by id
-  results.sort((a, b) => a.id - b.id);
+  // Inject alias results at the top, deduplicating against DB results
+  if (aliasMatch) {
+    const aliasIds = new Set(aliasMatch.results.map((r) => `${r.type}:${r.id}`));
+    const filtered = results.filter((r) => !aliasIds.has(`${r.type}:${r.id}`));
+    results.length = 0;
+    results.push(...aliasMatch.results, ...filtered);
+  } else {
+    results.sort((a, b) => a.id - b.id);
+  }
 
   return NextResponse.json({ data: results });
 }

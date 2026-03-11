@@ -198,7 +198,7 @@ export default function LeadForm({
   if (requiresVerification) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 -ml-2">
           <button
             type="button"
             onClick={onClose}
@@ -318,9 +318,9 @@ export default function LeadForm({
 
   // ── Normal form ──
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header with back button */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 -ml-2">
         <button
           type="button"
           onClick={onClose}
@@ -338,7 +338,7 @@ export default function LeadForm({
             e.preventDefault();
             handleSubmit();
           }}
-          className="space-y-3"
+          className="space-y-2"
         >
           {/* Name + Email */}
           <div className="grid grid-cols-2 gap-2">
@@ -351,6 +351,7 @@ export default function LeadForm({
                   <FormControl>
                     <Input
                       placeholder="Tu nombre"
+                      autoComplete="given-name"
                       className="h-9 text-sm"
                       {...field}
                     />
@@ -369,6 +370,7 @@ export default function LeadForm({
                     <Input
                       type="email"
                       placeholder="tu@email.com"
+                      autoComplete="email"
                       className="h-9 text-sm"
                       {...field}
                     />
@@ -416,6 +418,7 @@ export default function LeadForm({
                         type="tel"
                         inputMode="numeric"
                         placeholder="11 1234 5678"
+                        autoComplete="tel-national"
                         className="h-9 text-sm"
                         {...field}
                         onChange={(e) => {
@@ -438,7 +441,7 @@ export default function LeadForm({
             className="w-full h-10 rounded-xl font-semibold text-sm"
           >
             <Send className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Enviando..." : "Enviar"}
+            {isSubmitting ? "Enviando\u2026" : "Enviar"}
           </Button>
         </form>
       </Form>

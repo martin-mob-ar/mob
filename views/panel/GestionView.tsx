@@ -34,6 +34,7 @@ interface GestionViewProps {
   draftProperties: DraftProperty[];
   roles: { isTenant: boolean; isOwner: boolean };
   accountType: number;
+  userEmail?: string;
 }
 
 const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
@@ -118,13 +119,17 @@ const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
   );
 };
 
+const MOCK_ALLOWED_EMAILS = ["tutequijano@gmail.com", "martin@mob.ar"];
+
 const GestionView = ({
   tenantRentals: realTenantRentals,
   ownerProperties: realOwnerProperties,
   draftProperties,
   roles: realRoles,
   accountType,
+  userEmail,
 }: GestionViewProps) => {
+  const canToggleMock = !!userEmail && MOCK_ALLOWED_EMAILS.includes(userEmail);
   const [useMock, setUseMock] = useState(false);
 
   const tenantRentals = useMock ? mockTenantRentals : realTenantRentals;
@@ -135,7 +140,7 @@ const GestionView = ({
 
   const { isTenant, isOwner } = roles;
 
-  const dataToggle = (
+  const dataToggle = canToggleMock ? (
     <button
       onClick={() => setUseMock((v) => !v)}
       className="fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg border transition-colors cursor-pointer bg-card border-border text-muted-foreground hover:text-foreground"
@@ -146,7 +151,7 @@ const GestionView = ({
         className={`h-2 w-2 rounded-full ${useMock ? "bg-amber-500" : "bg-green-500"}`}
       />
     </button>
-  );
+  ) : null;
 
   // Neither role — show empty state
   if (!isTenant && !isOwner) {

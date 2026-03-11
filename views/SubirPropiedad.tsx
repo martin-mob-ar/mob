@@ -145,6 +145,9 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
   // Step 8: Plan
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
 
+  // Scrollable main area
+  const mainRef = useRef<HTMLDivElement>(null);
+
   // Google Maps
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -410,8 +413,13 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
         const nextStep = currentStep + 1;
         if (currentStep >= 2) await saveDraft(nextStep);
         setCurrentStep(nextStep);
+        mainRef.current?.scrollTo({ top: 0 });
       } else {
         setShowErrors(true);
+        setTimeout(() => {
+          const el = mainRef.current?.querySelector('.border-red-500, .text-red-500');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
       }
     }
   };
@@ -419,6 +427,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      mainRef.current?.scrollTo({ top: 0 });
     }
   };
 
@@ -609,7 +618,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                 Publicar tu propiedad es fácil
               </h1>
               <p className="text-muted-foreground text-base sm:text-lg">
-                Te guiamos paso a paso para que tu inmueble luzca increíble y llegue a los mejores inquilinos verificados.
+                Paso a paso para que tu propiedad se vea increíble y la vean los mejores inquilinos.
               </p>
             </div>
             <div className="divide-y divide-border">
@@ -633,8 +642,8 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   img: "/assets/subir-propiedad-3.png",
                 },
               ].map((item) => (
-                <div key={item.num} className="flex items-center gap-5 py-8 first:pt-0 last:pb-0">
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div key={item.num} className="flex items-center gap-4 sm:gap-5 py-5 sm:py-8 first:pt-0 last:pb-0">
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                     <span className="font-display font-bold text-lg mt-0.5">{item.num}</span>
                     <div>
                       <p className="font-semibold text-base sm:text-lg">{item.title}</p>
@@ -644,7 +653,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   <img
                     src={item.img}
                     alt=""
-                    className="w-28 h-28 sm:w-32 sm:h-32 object-contain shrink-0"
+                    className="w-22 h-22 sm:w-32 sm:h-32 object-contain shrink-0"
                   />
                 </div>
               ))}
@@ -1250,7 +1259,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               Verificá que toda la información sea correcta antes de publicar.
             </p>
 
-            <SummarySection title="Tipo de propiedad y ubicación" onEdit={() => setCurrentStep(2)}>
+            <SummarySection title="Tipo de propiedad y ubicación" onEdit={() => { setCurrentStep(2); mainRef.current?.scrollTo({ top: 0 }); }}>
               <p className="font-medium">{getPropertyTypeLabel()}</p>
               {selectedLocation && (
                 <p className="text-sm">
@@ -1264,7 +1273,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               {piso && <p className="text-sm text-muted-foreground">Piso {piso}{depto ? `, Depto ${depto}` : ""}</p>}
             </SummarySection>
 
-            <SummarySection title="Detalles de la propiedad" onEdit={() => setCurrentStep(4)}>
+            <SummarySection title="Detalles de la propiedad" onEdit={() => { setCurrentStep(4); mainRef.current?.scrollTo({ top: 0 }); }}>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <span>{ambientes} ambientes</span>
                 <span>{dormitorios} dormitorios</span>
@@ -1278,7 +1287,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               </div>
             </SummarySection>
 
-            <SummarySection title="Precio y características" onEdit={() => setCurrentStep(5)}>
+            <SummarySection title="Precio y características" onEdit={() => { setCurrentStep(5); mainRef.current?.scrollTo({ top: 0 }); }}>
               <div className="space-y-1 text-sm">
                 {precioMensual && (
                   <p className="font-medium">
@@ -1314,7 +1323,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               </div>
             </SummarySection>
 
-            <SummarySection title="Fotos y descripción" onEdit={() => setCurrentStep(6)}>
+            <SummarySection title="Fotos y descripción" onEdit={() => { setCurrentStep(6); mainRef.current?.scrollTo({ top: 0 }); }}>
               {uploadedPhotos.length > 0 ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">{uploadedPhotos.length} {uploadedPhotos.length === 1 ? "foto" : "fotos"}</p>
@@ -1341,7 +1350,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               )}
             </SummarySection>
 
-            <SummarySection title="Logística y disponibilidad" onEdit={() => setCurrentStep(7)}>
+            <SummarySection title="Logística y disponibilidad" onEdit={() => { setCurrentStep(7); mainRef.current?.scrollTo({ top: 0 }); }}>
               <div className="space-y-1 text-sm">
                 {fechaDisponible && (
                   <p>Disponible desde: {new Date(fechaDisponible + "T12:00:00").toLocaleDateString("es-AR")}</p>
@@ -1354,7 +1363,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               </div>
             </SummarySection>
 
-            <SummarySection title="Plan elegido" onEdit={() => setCurrentStep(8)}>
+            <SummarySection title="Plan elegido" onEdit={() => { setCurrentStep(8); mainRef.current?.scrollTo({ top: 0 }); }}>
               {selectedPlan ? (
                 <p className="font-medium capitalize">{selectedPlan === "acompanado" ? "Acompañado" : selectedPlan === "experiencia" ? "Experiencia mob" : "Básico"}</p>
               ) : (
@@ -1413,7 +1422,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       </header>
 
       {/* Content — scrollable area between sticky header and footer */}
-      <main className="flex-1 overflow-y-auto">
+      <main ref={mainRef} className="flex-1 overflow-y-auto">
         <div className={cn(
           "container py-6 sm:py-12",
           currentStep === 1 ? "min-h-full flex flex-col justify-center" : "min-h-[700px]"

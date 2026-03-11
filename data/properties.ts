@@ -27,6 +27,7 @@ export const properties: Property[] = [
     bathrooms: 1,
     parking: 1,
     verified: true,
+    publisherType: "inmobiliaria-red",
   },
   {
     id: "2",
@@ -44,6 +45,7 @@ export const properties: Property[] = [
     bathrooms: 1,
     parking: 0,
     verified: true,
+    publisherType: "dueno-verificado",
   },
   {
     id: "3",
@@ -61,6 +63,7 @@ export const properties: Property[] = [
     bathrooms: 2,
     parking: 2,
     verified: true,
+    publisherType: "inmobiliaria-normal",
   },
   {
     id: "4",
@@ -77,7 +80,8 @@ export const properties: Property[] = [
     surface: 55,
     bathrooms: 1,
     parking: 0,
-    verified: false,
+    verified: true,
+    publisherType: "dueno-directo",
   },
   {
     id: "5",
@@ -95,6 +99,7 @@ export const properties: Property[] = [
     bathrooms: 3,
     parking: 1,
     verified: true,
+    publisherType: "inmobiliaria-red",
   },
   {
     id: "6",
@@ -111,7 +116,8 @@ export const properties: Property[] = [
     surface: 85,
     bathrooms: 2,
     parking: 1,
-    verified: false,
+    verified: true,
+    publisherType: "inmobiliaria-normal",
   },
 ];
 

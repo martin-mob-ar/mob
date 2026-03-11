@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Users, Cog, TrendingUp, ShieldCheck, Eye, Target, Zap, Scale, Building, FileCheck, Calendar, CreditCard, BarChart3, ArrowRight, CheckCircle, ChevronRight, Monitor, BadgeCheck } from "lucide-react";
 import Image from "next/image";
+import HeroFloatingCards from "@/components/inmobiliarias/HeroFloatingCards";
+import FunnelComparison from "@/components/inmobiliarias/FunnelComparison";
 const MobBrand = () => <span className="font-ubuntu font-bold text-primary">mob</span>;
 const HoggaxBrand = () => (
   <a
@@ -17,10 +20,12 @@ const HoggaxBrand = () => (
     Hoggax
   </a>
 );
-const CTA_URL = "https://tally.so/r/5Bk4y6";
-const openCTA = () => window.open(CTA_URL, "_blank", "noopener,noreferrer");
 
 const LandingInmobiliarias = () => {
+  const router = useRouter();
+  const handleCTA = () => {
+    router.push("/?auth=open");
+  };
   const heroFeatures = ["Recibí pedidos de visita de usuarios verificados", "Garantía de alquiler aprobada por Hoggax"];
   const mobDoesCards = [{
     icon: Monitor,
@@ -115,26 +120,14 @@ const LandingInmobiliarias = () => {
               </div>
 
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={openCTA}>
+                <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={handleCTA}>
                   Sumá tu inmobiliaria
                 </Button>
               </div>
             </div>
 
-            {/* Hero Image */}
-            <div className="relative">
-              <div className="card-mob overflow-hidden aspect-[4/3]">
-                <div className="w-full h-full bg-gradient-to-br from-primary/5 via-secondary to-accent/30 flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                      <Building className="h-10 w-10 text-primary" />
-                    </div>
-                    <p className="text-lg font-medium text-foreground mb-2">Dashboard mob</p>
-                    <p className="text-sm text-muted-foreground">Supervisión en tiempo real</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Hero Floating Cards */}
+            <HeroFloatingCards />
           </div>
         </div>
       </section>
@@ -229,6 +222,9 @@ const LandingInmobiliarias = () => {
           </div>
         </div>
       </section>
+
+      {/* Funnel Comparison Section */}
+      <FunnelComparison />
 
       {/* Execution vs Decision Section */}
       <section className="py-16 md:py-24 bg-secondary/30">
@@ -338,7 +334,7 @@ const LandingInmobiliarias = () => {
             <div className="max-w-xl mx-auto bg-primary/5 rounded-xl border border-primary/10 p-8">
               <h3 className="font-display text-2xl font-bold mb-2">Empezá a publicar hoy gratis</h3>
               <p className="text-muted-foreground mb-6">En 5 min conectate y comenzá a recibir leads calificados</p>
-              <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={openCTA}>
+              <Button size="lg" className="rounded-full px-8 py-6 text-base font-semibold" onClick={handleCTA}>
                 Sumá tu inmobiliaria gratis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -389,7 +385,7 @@ const LandingInmobiliarias = () => {
             <span className="font-bold">mob</span> acelera el proceso, para que cierres más rápido
           </p>
 
-          <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-base font-semibold" onClick={openCTA}>
+          <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-base font-semibold" onClick={handleCTA}>
             Sumar mi inmobiliaria gratis
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>

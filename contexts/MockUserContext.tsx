@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext, useState, ReactNode } from "react";
 
 // Lead stages for interested parties (not user profile)

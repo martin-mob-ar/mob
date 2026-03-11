@@ -1,4 +1,5 @@
 import { Property } from "@/components/PropertyCard";
+import { derivePublisherType } from "@/lib/publisher";
 
 /**
  * Maps a properties_read row from Supabase to the frontend Property interface.
@@ -21,8 +22,9 @@ export function transformPropertyRead(row: any): Property {
     bathrooms: row.bathroom_amount || undefined,
     parking: row.parking_lot_amount || undefined,
     age: row.age != null ? row.age : null,
-    verified: true, // Placeholder - always true for now
+    verified: true,
     propertyType: row.property_type_name || undefined,
+    publisherType: derivePublisherType(!!row.tokko, row.company_name, row.mob_plan),
   };
 }
 

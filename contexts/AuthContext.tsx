@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/auth/errors";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface User {
@@ -131,7 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setAuthError(error.message);
+      setAuthError(translateAuthError(error));
       throw error;
     }
     claimGuestLeads();
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     if (error) {
-      setAuthError(error.message);
+      setAuthError(translateAuthError(error));
       throw error;
     }
     claimGuestLeads();

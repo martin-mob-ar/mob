@@ -1,12 +1,33 @@
 "use client";
 
 import Image from "next/image";
-import { CheckCircle } from "lucide-react";
-import { Property } from "@/components/PropertyCard";
 
-interface HeroCardsProps {
-  properties: Property[];
-}
+const heroProperties = [
+  {
+    address: "Av Libertador al 3500",
+    neighborhood: "Palermo",
+    specs: "2 amb · 1 baño · 42m²",
+    image: "/assets/landing-hero/1.png",
+  },
+  {
+    address: "Av Cabildo al 2450",
+    neighborhood: "Belgrano",
+    specs: "3 amb · 2 baños · 60m²",
+    image: "/assets/landing-hero/2.webp",
+  },
+  {
+    address: "Av Callao al 1852",
+    neighborhood: "Recoleta",
+    specs: "2 amb · 1 baño · 37m²",
+    image: "/assets/landing-hero/3.png",
+  },
+  {
+    address: "Segurola 4280",
+    neighborhood: "Villa Devoto",
+    specs: "2 amb · 1 baño · 52m²",
+    image: "/assets/landing-hero/4.png",
+  },
+];
 
 /**
  * 4 property cards in a natural scattered cluster — two loose pairs
@@ -60,20 +81,15 @@ const cardLayout = [
   },
 ];
 
-const HeroCards = ({ properties }: HeroCardsProps) => {
-  const showcase = properties.slice(0, 4);
-
-  if (showcase.length === 0) return null;
-
+const HeroCards = () => {
   return (
     <div className="relative w-full h-full">
-      {showcase.map((property, i) => {
-        const layout = cardLayout[i] ?? cardLayout[0];
-        const images = property.images?.length ? property.images : [property.image];
+      {heroProperties.map((property, i) => {
+        const layout = cardLayout[i];
 
         return (
           <div
-            key={property.id}
+            key={property.address}
             className="absolute opacity-0 animate-fade-in"
             style={{
               top: `${layout.top}px`,
@@ -100,36 +116,18 @@ const HeroCards = ({ properties }: HeroCardsProps) => {
               >
                 <div className="relative aspect-[4/3]">
                   <Image
-                    src={images[0]}
+                    src={property.image}
                     alt={property.address}
                     fill
                     className="object-cover"
                     sizes="200px"
                     priority={i <= 1}
                   />
-                  {property.verified && (
-                    <div className="absolute bottom-2 left-2">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background/90 backdrop-blur-sm text-[10px] font-semibold text-primary border border-border/50 shadow-sm">
-                        <CheckCircle className="h-3 w-3" />
-                        Verificada
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <div className="p-3">
-                  <p className="text-sm font-bold text-foreground">
-                    ${property.price?.toLocaleString("es-AR")}
-                    <span className="text-[10px] font-normal text-muted-foreground ml-1">/mes</span>
-                  </p>
-                  <p className="text-xs font-medium text-foreground truncate mt-1">{property.address}</p>
+                  <p className="text-xs font-medium text-foreground truncate">{property.address}</p>
                   <p className="text-[11px] text-muted-foreground truncate">{property.neighborhood}</p>
-                  {(property.rooms || property.surface) && (
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {property.rooms ? `${property.rooms} amb.` : ""}
-                      {property.rooms && property.surface ? " · " : ""}
-                      {property.surface ? `${property.surface}m²` : ""}
-                    </p>
-                  )}
+                  <p className="text-[10px] text-muted-foreground mt-1">{property.specs}</p>
                 </div>
               </div>
             </div>
