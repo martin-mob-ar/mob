@@ -4,9 +4,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PublisherType } from "@/lib/publisher";
 import { getPublisherBadgeConfig } from "@/lib/publisher";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { Button } from "@/components/ui/button";
 import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
@@ -463,15 +463,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             </CarouselContent>
           </Carousel>
 
-          {/* Verified Badge - Bottom left */}
-          {property.verified && (
-            <div className="absolute bottom-4 left-4 z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
-                <CheckCircle className="h-3.5 w-3.5" />
-                Verificada
-              </span>
-            </div>
-          )}
+          {/* Publisher Badge - Bottom left */}
+          <div className="absolute bottom-4 left-4 z-10">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
+              {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
+              {publisherConfig.label}
+              <InfoTooltip text={publisherConfig.tooltipText} size={13} className="text-primary/60 hover:text-primary" />
+            </span>
+          </div>
 
           {/* Subtle navigation arrows */}
           <button 
@@ -512,15 +511,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               priority
               className="object-cover"
             />
-            {/* Verified Badge - Desktop */}
-            {property.verified && (
-              <div className="absolute bottom-3 left-3 z-10">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  Verificada
-                </span>
-              </div>
-            )}
+            {/* Publisher Badge - Desktop */}
+            <div className="absolute bottom-3 left-3 z-10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
+                {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
+                {publisherConfig.label}
+                <InfoTooltip text={publisherConfig.tooltipText} size={13} className="text-primary/60 hover:text-primary" />
+              </span>
+            </div>
           </div>
           {galleryImages.slice(1, 5).map((img, index) => (
             <div
@@ -817,19 +815,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               )}
               <div className="flex-1">
                 <p className="font-semibold text-foreground">{publisherName}</p>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <p className={`text-xs font-semibold flex items-center gap-1 mt-0.5 cursor-default ${publisherSubtitleColor}`}>
-                        {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
-                        {publisherConfig.label}
-                      </p>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-relaxed whitespace-pre-line">
-                      {publisherConfig.tooltipText}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <p className={`text-xs font-semibold flex items-center gap-1 mt-0.5 ${publisherSubtitleColor}`}>
+                  {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
+                  {publisherConfig.label}
+                  <InfoTooltip text={publisherConfig.tooltipText} size={13} />
+                </p>
               </div>
             </div>
             {(publisherType === "inmobiliaria-red" || publisherType === "inmobiliaria-normal") && (
@@ -1126,19 +1116,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     )}
                     <div>
                       <p className="font-semibold text-sm text-foreground">{publisherName}</p>
-                      <TooltipProvider delayDuration={100}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <p className={`text-[10px] font-semibold flex items-center gap-1 cursor-default ${publisherSubtitleColor}`}>
-                              {publisherConfig.showCheckmark && <BadgeCheck className="h-3 w-3" />}
-                              {publisherConfig.label}
-                            </p>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-relaxed whitespace-pre-line">
-                            {publisherConfig.tooltipText}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <p className={`text-[10px] font-semibold flex items-center gap-1 ${publisherSubtitleColor}`}>
+                        {publisherConfig.showCheckmark && <BadgeCheck className="h-3 w-3" />}
+                        {publisherConfig.label}
+                        <InfoTooltip text={publisherConfig.tooltipText} size={12} />
+                      </p>
                     </div>
                   </div>
                   {(publisherType === "inmobiliaria-red" || publisherType === "inmobiliaria-normal") && (

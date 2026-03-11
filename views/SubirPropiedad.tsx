@@ -653,7 +653,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                   <img
                     src={item.img}
                     alt=""
-                    className="w-22 h-22 sm:w-32 sm:h-32 object-contain shrink-0"
+                    className="w-20 h-20 sm:w-32 sm:h-32 object-contain shrink-0"
                   />
                 </div>
               ))}
