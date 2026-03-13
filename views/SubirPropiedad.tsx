@@ -168,7 +168,18 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
     }
     if (draftData.geo_lat) setGeoLat(String(draftData.geo_lat));
     if (draftData.geo_long) setGeoLong(String(draftData.geo_long));
-    if (draftData.location_id) setLocationId(draftData.location_id);
+    if (draftData.location_id) {
+      setLocationId(draftData.location_id);
+      if (draftData.tokko_location) {
+        setSelectedLocation({
+          id: draftData.tokko_location.id,
+          name: draftData.tokko_location.name,
+          depth: draftData.tokko_location.depth,
+          display: "",
+          type: "location",
+        });
+      }
+    }
     if (draftData.floor) setPiso(String(draftData.floor));
     if (draftData.apartment_door) setDepto(String(draftData.apartment_door));
     if (draftData.room_amount != null) setAmbientes(draftData.room_amount);
@@ -733,6 +744,10 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
                           types: ["address"],
                           componentRestrictions: { country: "ar" },
                           fields: ["geometry", "formatted_address", "name", "address_components"],
+                          bounds: new google.maps.LatLngBounds(
+                            { lat: -34.705, lng: -58.531 },
+                            { lat: -34.527, lng: -58.335 },
+                          ),
                         });
                         autocomplete.addListener("place_changed", onPlaceSelect);
                         autocompleteRef.current = autocomplete;

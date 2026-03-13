@@ -222,12 +222,6 @@ export default function LeadForm({
               posibilidades de conseguir la propiedad que buscás.
             </p>
           </div>
-          <Link href="/verificacion" className="block">
-            <Button className="w-full h-9 rounded-xl font-semibold text-sm">
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Verificarme gratis
-            </Button>
-          </Link>
         </div>
       </div>
     );
@@ -248,12 +242,6 @@ export default function LeadForm({
               Verificate para que {publisherLabel} pueda conocer tu perfil y priorizarte.
             </p>
           </div>
-          <Link href="/verificacion" className="block">
-            <Button className="w-full rounded-xl h-10 font-semibold text-sm">
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Verificarme para contactar a {publisherLabel}
-            </Button>
-          </Link>
           <Button
             variant="ghost"
             size="sm"

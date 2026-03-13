@@ -12,7 +12,7 @@ import FunnelComparison from "@/components/inmobiliarias/FunnelComparison";
 const MobBrand = () => <span className="font-ubuntu font-bold text-primary">mob</span>;
 const HoggaxBrand = () => (
   <a
-    href="https://hoggax.com.ar"
+    href="https://hoggax.com"
     target="_blank"
     rel="noopener noreferrer"
     className="inline-flex items-center gap-1.5 font-bold text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
@@ -96,7 +96,7 @@ const LandingInmobiliarias = () => {
     question: "¿Cómo se integran las propiedades?",
     answer: "Podés cargar propiedades manualmente desde el panel o integrar automáticamente con sistemas como Tokko."
   }];
-  return <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background overflow-x-hidden">
       <Header hideSearch />
 
       {/* Hero Section */}
@@ -181,7 +181,7 @@ const LandingInmobiliarias = () => {
               <span className="flex items-center gap-3 flex-wrap">
                 Con el respaldo de
                 <a
-                  href="https://hoggax.com.ar"
+                  href="https://hoggax.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:opacity-80 transition-opacity"

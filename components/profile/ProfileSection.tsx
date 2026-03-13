@@ -348,12 +348,10 @@ export default function ProfileSection({
         </div>
 
         {/* Primary CTA */}
-        <Link href="/verificacion">
-          <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2">
-            <Shield className="h-5 w-5" />
-            Verificar mi perfil
-          </Button>
-        </Link>
+        <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2" disabled>
+          <Shield className="h-5 w-5" />
+          Verificar mi perfil
+        </Button>
 
         <div className="border-t border-border my-5" />
 
@@ -414,12 +412,10 @@ export default function ProfileSection({
         </div>
 
         {/* Primary CTA */}
-        <Link href="/verificacion">
-          <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2">
-            <Shield className="h-5 w-5" />
-            Verificar mi perfil
-          </Button>
-        </Link>
+        <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2" disabled>
+          <Shield className="h-5 w-5" />
+          Verificar mi perfil
+        </Button>
 
         <div className="border-t border-border my-5" />
 
@@ -455,8 +451,8 @@ export default function ProfileSection({
     // Inquilino: show if verification expired
     if (isInquilino && isExpired) {
       return (
-        <Link href="/verificacion" className="block mb-6">
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+        <div className="block mb-6">
+          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
             <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center shrink-0">
               <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             </div>
@@ -469,9 +465,8 @@ export default function ProfileSection({
                 verificarte de nuevo para seguir alquilando.
               </p>
             </div>
-            <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
           </div>
-        </Link>
+        </div>
       );
     }
 

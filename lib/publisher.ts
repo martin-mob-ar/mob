@@ -41,8 +41,8 @@ const LABELS: Record<PublisherType, Record<BadgeContext, { label: string; showCh
     detail: { label: "Inmobiliaria asociada", showCheckmark: true },
   },
   "dueno-verificado": {
-    home:   { label: "Dueño verificado", showCheckmark: true },
-    search: { label: "Dueño verificado", showCheckmark: true },
+    home:   { label: "Dueño verificado", showCheckmark: false },
+    search: { label: "Dueño verificado", showCheckmark: false },
     detail: { label: "Dueño verificado", showCheckmark: true },
   },
   "dueno-directo": {

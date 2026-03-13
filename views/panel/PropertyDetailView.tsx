@@ -201,6 +201,8 @@ function ConsultaCard({ consulta }: { consulta: MockConsulta }) {
 
 // ─── Types ────────────────────────────────────────────────────────────
 
+const MOCK_ALLOWED_EMAILS = ["tutequijano@gmail.com", "martin@mob.ar"];
+
 interface PropertyDetailViewProps {
   property: any;
   operations: OperationHistoryEntry[];
@@ -209,6 +211,7 @@ interface PropertyDetailViewProps {
   mockMode?: boolean;
   tokko?: boolean;
   tokkoId?: number | null;
+  userEmail?: string;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────
@@ -221,6 +224,7 @@ const PropertyDetailView = ({
   mockMode,
   tokko: realTokko,
   tokkoId: realTokkoId,
+  userEmail,
 }: PropertyDetailViewProps) => {
   const router = useRouter();
   const [useMock, setUseMock] = useState(mockMode ?? false);
@@ -291,7 +295,8 @@ const PropertyDetailView = ({
   const hasHistory = historicalOps.length > 0;
 
   // ─── Data toggle ─────────────────────────────────────────────────
-  const dataToggle = (
+  const canToggleMock = !!userEmail && MOCK_ALLOWED_EMAILS.includes(userEmail);
+  const dataToggle = canToggleMock ? (
     <button
       onClick={() => setUseMock((v) => !v)}
       className="fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg border transition-colors cursor-pointer bg-card border-border text-muted-foreground hover:text-foreground"
@@ -302,7 +307,7 @@ const PropertyDetailView = ({
         className={`h-2 w-2 rounded-full ${useMock ? "bg-amber-500" : "bg-green-500"}`}
       />
     </button>
-  );
+  ) : null;
 
   return (
     <div className="space-y-6">

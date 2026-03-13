@@ -58,9 +58,10 @@ export default async function PerfilPage() {
         .order("property_created_at", { ascending: false }),
       supabaseAdmin
         .from("properties")
-        .select("id, type_id, address, location_id, draft_step, updated_at, tokko_property_type(name), tokko_location(name)")
+        .select("id, type_id, address, location_id, draft_step, updated_at, tokko_property_type(name), tokko_location!location_id(name)")
         .eq("user_id", publicUserId)
         .not("draft_step", "is", null)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
     ]);
 

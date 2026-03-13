@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -71,19 +72,19 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/login?error=auth`);
     }
 
-    // Check if this user needs to select an account type
+    // Invalidate all RSC cached pages so they re-render with new auth state
+    revalidatePath("/", "layout");
+
+    // Check if this user needs to select an account type.
+    // Use getOrCreateUserFromAuth to handle DB trigger race condition
+    // for brand-new Google signups (trigger may not have fired yet).
     const authId = data.user?.id;
     if (authId) {
-      const supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-
+      const publicUserId = await getOrCreateUserFromAuth(authId);
       const { data: publicUser } = await supabaseAdmin
         .from("users")
         .select("account_type")
-        .eq("auth_id", authId)
+        .eq("id", publicUserId)
         .maybeSingle();
 
       if (!publicUser || publicUser.account_type === null) {

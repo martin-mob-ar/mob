@@ -3,10 +3,15 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info } from "lucide-react";
 import type { PublisherType } from "@/lib/publisher";
 import { getPublisherBadgeConfig } from "@/lib/publisher";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
@@ -134,6 +139,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [badgeTooltipOpen, setBadgeTooltipOpen] = useState(false);
+  const [publisherTooltipOpen, setPublisherTooltipOpen] = useState(false);
 
   // Gallery images: use real photos if available, otherwise mock
   const galleryImages = propPhotos && propPhotos.length > 0
@@ -465,11 +472,20 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
           {/* Publisher Badge - Bottom left */}
           <div className="absolute bottom-4 left-4 z-10">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
-              {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
-              {publisherConfig.label}
-              <InfoTooltip text={publisherConfig.tooltipText} size={13} className="text-primary/60 hover:text-primary" />
-            </span>
+            <Popover open={badgeTooltipOpen} onOpenChange={setBadgeTooltipOpen}>
+              <PopoverAnchor asChild>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-background/95 text-primary shadow-sm">
+                  {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
+                  <span className="cursor-pointer" onClick={() => setBadgeTooltipOpen(v => !v)}>{publisherConfig.label}</span>
+                  <button type="button" aria-label="Más información" className="inline-flex items-center justify-center text-primary/60 hover:text-primary touch-manipulation" onClick={() => setBadgeTooltipOpen(v => !v)}>
+                    <Info className="h-[13px] w-[13px]" />
+                  </button>
+                </span>
+              </PopoverAnchor>
+              <PopoverContent side="bottom" align="start" className="max-w-[260px] text-xs leading-relaxed whitespace-pre-line px-3 py-2">
+                {publisherConfig.tooltipText}
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Subtle navigation arrows */}
@@ -767,8 +783,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base text-foreground">Coordinación directa</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Sincronizamos tu agenda con la {isTokko ? "inmobiliaria" : "del dueño"}.</p>
+                  <p className="font-semibold text-base text-foreground">{isTokko ? "Solicitud de visita" : "Coordinación directa"}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : "Sincronizamos tu agenda con la del dueño."}</p>
                 </div>
               </div>
             </div>
@@ -797,31 +813,43 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <h2 className="font-display text-lg font-bold text-foreground mb-4">
               Publicado por
             </h2>
-            <div className="flex items-center gap-3 mb-4">
-              {publisherLogo ? (
-                <div className="h-14 w-14 rounded-lg bg-white border border-border flex items-center justify-center overflow-hidden shrink-0">
-                  <Image
-                    src={publisherLogo}
-                    alt={publisherName}
-                    width={56}
-                    height={56}
-                    className="max-h-full max-w-full object-contain"
-                  />
+            <Popover open={publisherTooltipOpen} onOpenChange={setPublisherTooltipOpen}>
+              <PopoverAnchor asChild>
+                <div className="flex items-center gap-3 mb-4">
+                  {publisherLogo ? (
+                    <div className="h-14 w-14 rounded-lg bg-white border border-border flex items-center justify-center overflow-hidden shrink-0">
+                      <Image
+                        src={publisherLogo}
+                        alt={publisherName}
+                        width={56}
+                        height={56}
+                        className="max-h-full max-w-full object-contain cursor-pointer"
+                        onClick={() => setPublisherTooltipOpen(v => !v)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                      <User className="h-7 w-7 text-muted-foreground cursor-pointer" onClick={() => setPublisherTooltipOpen(v => !v)} />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground w-fit cursor-pointer" onClick={() => setPublisherTooltipOpen(v => !v)}>{publisherName}</p>
+                    <p className={`text-xs font-semibold flex items-center gap-1 mt-0.5 ${publisherSubtitleColor}`}>
+                      <span className="inline-flex items-center gap-1 cursor-pointer" onClick={() => setPublisherTooltipOpen(v => !v)}>
+                        {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
+                        {publisherConfig.label}
+                      </span>
+                      <button type="button" aria-label="Más información" className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground touch-manipulation" onClick={() => setPublisherTooltipOpen(v => !v)}>
+                        <Info className="h-[13px] w-[13px]" />
+                      </button>
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="h-14 w-14 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                  <User className="h-7 w-7 text-muted-foreground" />
-                </div>
-              )}
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{publisherName}</p>
-                <p className={`text-xs font-semibold flex items-center gap-1 mt-0.5 ${publisherSubtitleColor}`}>
-                  {publisherConfig.showCheckmark && <BadgeCheck className="h-3.5 w-3.5" />}
-                  {publisherConfig.label}
-                  <InfoTooltip text={publisherConfig.tooltipText} size={13} />
-                </p>
-              </div>
-            </div>
+              </PopoverAnchor>
+              <PopoverContent side="bottom" align="center" className="max-w-[260px] text-xs leading-relaxed whitespace-pre-line px-3 py-2">
+                {publisherConfig.tooltipText}
+              </PopoverContent>
+            </Popover>
             {(publisherType === "inmobiliaria-red" || publisherType === "inmobiliaria-normal") && (
               <p className="text-xs text-center text-muted-foreground mt-3 leading-relaxed">
                 Esta inmobiliaria utiliza la infraestructura digital de{" "}
@@ -1078,8 +1106,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <div className="flex gap-2.5">
                   <Zap className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-xs text-foreground">Coordinación directa</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Sincronizamos tu agenda con la {isTokko ? "inmobiliaria" : "del dueño"}.</p>
+                    <p className="font-medium text-xs text-foreground">{isTokko ? "Solicitud de visita" : "Coordinación directa"}</p>
+                    <p className="text-xs text-muted-foreground leading-snug">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : "Sincronizamos tu agenda con la del dueño."}</p>
                   </div>
                 </div>
                 <div className="flex gap-2.5">

@@ -19,6 +19,17 @@ export default async function GestionPropertyDetailPage({
 
   // ─── Mock mode ─────────────────────────────────────────────────────
   if (mock === "true") {
+    const authUser = await getAuthUser();
+    const email = authUser
+      ? (
+          await supabaseAdmin
+            .from("users")
+            .select("email")
+            .eq("auth_id", authUser.id)
+            .maybeSingle()
+        ).data?.email
+      : undefined;
+
     const mockData = getMockPropertyDetail(propertyId);
     if (!mockData) redirect("/gestion");
     return (
@@ -30,6 +41,7 @@ export default async function GestionPropertyDetailPage({
         mockMode
         tokko={mockData.tokko}
         tokkoId={mockData.tokkoId}
+        userEmail={email}
       />
     );
   }
@@ -42,7 +54,7 @@ export default async function GestionPropertyDetailPage({
   // Resolve auth UUID → public users.id
   const { data: publicUser } = await supabaseAdmin
     .from("users")
-    .select("id")
+    .select("id, email")
     .eq("auth_id", authUser.id)
     .maybeSingle();
 
@@ -114,6 +126,7 @@ export default async function GestionPropertyDetailPage({
       currentOperation={currentOp}
       tokko={propertySource?.tokko ?? false}
       tokkoId={propertySource?.tokko_id ?? null}
+      userEmail={publicUser.email}
     />
   );
 }

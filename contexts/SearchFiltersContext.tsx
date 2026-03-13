@@ -146,6 +146,8 @@ export function SearchFiltersProvider({
   const hasUrlFilters = Object.keys(urlUpdates).length > 0;
   const pageFromUrl = parseInt(searchParams.get("page") || "1") || 1;
   const isInitialMount = useRef(true);
+  const searchParamsString = searchParams.toString();
+  const prevSearchParamsRef = useRef(searchParamsString);
 
   const [filters, setFiltersState] = useState<SearchFilters>({
     ...defaultFilters,
@@ -274,6 +276,15 @@ export function SearchFiltersProvider({
     const newUrl = qs ? `/buscar?${qs}` : "/buscar";
     router.replace(newUrl, { scroll: false });
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect external URL changes (e.g. clicking links while already on /buscar)
+  useEffect(() => {
+    if (searchParamsString === prevSearchParamsRef.current) return;
+    prevSearchParamsRef.current = searchParamsString;
+    setIsLoading(true);
+    const urlFilters = getInitialFiltersFromParams(searchParams);
+    setFiltersState({ ...defaultFilters, ...urlFilters });
+  }, [searchParamsString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-search when filters change
   // On first mount: if URL has filters or a specific page, use those; otherwise use server initial results

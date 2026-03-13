@@ -10,9 +10,9 @@ import {
 import type { OwnerProperty, OperacionStatus } from "@/lib/transforms/property";
 
 const planConfig: Record<string, { label: string; className: string }> = {
-  basico: { label: "Básico", className: "bg-muted text-muted-foreground border border-border" },
-  acompanado: { label: "Acompañado", className: "bg-primary/10 text-primary border border-primary/20" },
-  experiencia: { label: "Experiencia mob", className: "bg-amber-500/10 text-amber-600 border border-amber-500/20" },
+  basico: { label: "Básico", className: "bg-card/90 text-muted-foreground" },
+  acompanado: { label: "Acompañado", className: "bg-primary text-primary-foreground" },
+  experiencia: { label: "Experiencia mob", className: "bg-primary text-primary-foreground" },
 };
 
 const statusConfig: Record<

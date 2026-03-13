@@ -16,6 +16,7 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/
 import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
 const mobLogo = "/assets/mob-logo-new.png";
 
@@ -461,7 +462,12 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
-            {authLoading ? null : isAuthenticated ? (
+            {authLoading ? (
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-40 rounded-full" />
+                <Skeleton className="h-9 w-9 rounded-full" />
+              </div>
+            ) : isAuthenticated ? (
               <>
                 <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
                   Publicar mi propiedad
@@ -481,27 +487,22 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                     <DropdownMenuSeparator />
-                    {/* CTA de verificación si no está verificado — temporarily hidden
-                    {!isVerified && (
+                    {isVerified && (
                       <>
                         <div className="p-3">
-                          <Link href="/verificacion" className="block">
-                            <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl hover:bg-primary/10 transition-colors border border-primary/10">
-                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                <BadgeCheck className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-foreground">Verificarme</p>
-                                <p className="text-xs text-muted-foreground">Menos de 2 minutos</p>
-                              </div>
-                              <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+                          <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <BadgeCheck className="h-5 w-5 text-primary" />
                             </div>
-                          </Link>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground">Perfil verificado</p>
+                              <p className="text-xs text-muted-foreground">Validación por Mob</p>
+                            </div>
+                          </div>
                         </div>
                         <DropdownMenuSeparator />
                       </>
                     )}
-                    */}
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href="/perfil">
                         <User className="mr-2 h-4 w-4" />
@@ -561,7 +562,15 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
               <DrawerContent className="rounded-t-3xl px-6 pb-8">
                 <DrawerTitle className="sr-only">Menu</DrawerTitle>
                 <div className="flex flex-col gap-4">
-                  {authLoading ? null : isAuthenticated ? (
+                  {authLoading ? (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    </div>
+                  ) : isAuthenticated ? (
                     <>
                       {/* User identity card */}
                       <div className="flex items-center gap-3 px-4 py-3 bg-secondary/30 rounded-xl">
@@ -582,24 +591,17 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
                       </Button>
 
                       {/* CTA de verificación mobile */}
-                      {/* Verificarme badge — temporarily hidden
-                      {!isVerified && (
-                        <Link
-                          href="/verificacion"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center gap-3 p-4 bg-primary/5 rounded-xl hover:bg-primary/10 transition-colors border border-primary/10"
-                        >
+                      {isVerified && (
+                        <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
                           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <BadgeCheck className="h-5 w-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-foreground">Verificarme</p>
-                            <p className="text-xs text-muted-foreground">Menos de 2 minutos</p>
+                            <p className="text-sm font-semibold text-foreground">Perfil verificado</p>
+                            <p className="text-xs text-muted-foreground">Validación por Mob</p>
                           </div>
-                          <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-                        </Link>
+                        </div>
                       )}
-                      */}
 
                       <Button
                         variant="ghost"

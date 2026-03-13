@@ -86,6 +86,12 @@ export async function POST(request: Request) {
       providerOptions: {
         google: { thinkingConfig: { thinkingBudget: 0 } },
       },
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: "property-description-generator",
+        recordInputs: true,
+        recordOutputs: true,
+      },
     });
 
     const description = text?.trim();

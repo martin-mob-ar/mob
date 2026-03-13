@@ -603,6 +603,10 @@ export default function PropertyEditForm({
                     types: ["address"],
                     componentRestrictions: { country: "ar" },
                     fields: ["geometry", "formatted_address", "name", "address_components"],
+                    bounds: new google.maps.LatLngBounds(
+                      { lat: -34.705, lng: -58.531 },
+                      { lat: -34.527, lng: -58.335 },
+                    ),
                   });
                   autocomplete.addListener("place_changed", onPlaceSelect);
                   autocompleteRef.current = autocomplete;

@@ -4,6 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Home, Building2, Search, Plus, FlaskConical, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import TenantSection from "./TenantSection";
 import OwnerSection from "./OwnerSection";
 import Link from "next/link";
@@ -40,14 +50,15 @@ interface GestionViewProps {
 const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   if (drafts.length === 0) return null;
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminás este borrador?")) return;
+    setConfirmDeleteId(null);
     setDeletingId(id);
     try {
-      await fetch(`/api/properties/${id}/delete`, { method: "DELETE" });
+      await fetch(`/api/properties/${id}/delete`, { method: "POST" });
       router.refresh();
     } finally {
       setDeletingId(null);
@@ -100,7 +111,7 @@ const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
                   Continuar
                 </button>
                 <button
-                  onClick={() => handleDelete(draft.id)}
+                  onClick={() => setConfirmDeleteId(draft.id)}
                   disabled={deletingId === draft.id}
                   className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-border text-muted-foreground hover:text-red-500 hover:border-red-300 transition-colors"
                 >
@@ -115,6 +126,26 @@ const DraftPropertiesSection = ({ drafts }: { drafts: DraftProperty[] }) => {
           );
         })}
       </div>
+
+      <AlertDialog open={confirmDeleteId !== null} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminás este borrador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se va a eliminar el borrador de forma permanente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

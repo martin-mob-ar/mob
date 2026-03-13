@@ -1,6 +1,15 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  ReactNode,
+} from "react";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/auth/errors";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -11,9 +20,22 @@ interface User {
   phone: string;
   phoneCountryCode: string;
   isOwner: boolean;
+  accountType: number | null;
   publicUserId: string | null;
   isVerified: boolean;
 }
+
+/** Exported so layout.tsx can build the same shape server-side. */
+export type InitialAuthUser = User;
+
+type PublicUser = {
+  id: string;
+  name: string | null;
+  telefono: string | null;
+  telefono_country_code: string | null;
+  last_verification_date: string | null;
+  account_type: number | null;
+};
 
 interface AuthContextType {
   user: User | null;
@@ -21,12 +43,14 @@ interface AuthContextType {
   isAuthModalOpen: boolean;
   isLoading: boolean;
   authError: string | null;
+  authExpired: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, isOwner: boolean) => Promise<void>;
+  register: (email: string, password: string, isOwner: boolean) => Promise<{ confirmed: boolean }>;
   logout: () => Promise<void>;
   clearError: () => void;
+  clearAuthExpired: () => void;
   refreshUser: () => Promise<void>;
 }
 
@@ -34,7 +58,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapSupabaseUser(
   supabaseUser: SupabaseUser,
-  publicUser?: { id: string; name: string | null; telefono: string | null; telefono_country_code: string | null; last_verification_date: string | null } | null
+  publicUser?: PublicUser | null
 ): User {
   return {
     email: supabaseUser.email || "",
@@ -45,62 +69,165 @@ function mapSupabaseUser(
       "",
     phone: publicUser?.telefono || "",
     phoneCountryCode: publicUser?.telefono_country_code || "+54",
-    isOwner: supabaseUser.user_metadata?.isOwner ?? false,
+    // Derive isOwner from DB account_type (3 = inmobiliaria), fall back to signup metadata
+    isOwner: publicUser
+      ? publicUser.account_type === 3
+      : (supabaseUser.user_metadata?.isOwner ?? false),
+    accountType: publicUser?.account_type ?? null,
     publicUserId: publicUser?.id ?? null,
     isVerified: !!publicUser?.last_verification_date,
   };
 }
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+interface AuthProviderProps {
+  children: ReactNode;
+  /** Server-resolved user passed from layout.tsx to avoid hydration skeleton flash. */
+  initialUser?: InitialAuthUser | null;
+}
 
+export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  // When server already resolved the user, skip the loading state entirely.
+  const [isLoading, setIsLoading] = useState(!initialUser);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authExpired, setAuthExpired] = useState(false);
+
+  // createBrowserClient from @supabase/ssr is a singleton — safe to call in body.
   const supabase = createClient();
 
-  // Resolve auth user → public users row (id + name)
-  const resolvePublicUser = async (authId: string): Promise<{ id: string; name: string | null; telefono: string | null; telefono_country_code: string | null; last_verification_date: string | null } | null> => {
-    const { data } = await supabase
-      .from("users")
-      .select("id, name, telefono, telefono_country_code, last_verification_date")
-      .eq("auth_id", authId)
-      .maybeSingle();
-    return data ?? null;
-  };
+  // When login/register eagerly set user state, skip the next onAuthStateChange
+  // event to avoid a redundant resolvePublicUser call + potential flicker.
+  const skipNextAuthEventRef = useRef(false);
+  // Safety net timeout to auto-clear the skip flag if it's never consumed.
+  const skipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Background retry for publicUserId resolution when it fails initially.
+  const publicUserRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Resolve auth user → public users row (id + name).
+  // Retries up to 3 times when result is null (handles DB trigger delay for new signups).
+  const resolvePublicUser = useCallback(
+    async (
+      authId: string,
+      maxAttempts = 3,
+      delayMs = 500
+    ): Promise<PublicUser | null> => {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const { data } = await supabase
+          .from("users")
+          .select("id, name, telefono, telefono_country_code, last_verification_date, account_type")
+          .eq("auth_id", authId)
+          .maybeSingle();
+        if (data) return data;
+        // Only retry if there are attempts left
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, delayMs * Math.pow(2, attempt)));
+        }
+      }
+      return null;
+    },
+    [supabase]
+  );
+
+  // Resolve public user, set user state, and schedule a background retry
+  // if publicUserId is null (handles DB trigger delay for new signups).
+  const resolveAndSetUser = useCallback(
+    async (supabaseUser: SupabaseUser) => {
+      const publicUser = await resolvePublicUser(supabaseUser.id);
+      setUser(mapSupabaseUser(supabaseUser, publicUser));
+
+      // If publicUser is null, schedule a background retry
+      if (!publicUser) {
+        if (publicUserRetryRef.current) clearTimeout(publicUserRetryRef.current);
+        publicUserRetryRef.current = setTimeout(async () => {
+          try {
+            const retryPublicUser = await resolvePublicUser(supabaseUser.id, 3, 1000);
+            if (retryPublicUser) {
+              setUser(mapSupabaseUser(supabaseUser, retryPublicUser));
+            }
+          } catch {
+            // Still failed — user stays with publicUserId: null
+          }
+        }, 10000);
+      }
+    },
+    [resolvePublicUser]
+  );
+
+  // Helper to set the skip flag with a safety-net timeout.
+  const setSkipFlag = useCallback(() => {
+    skipNextAuthEventRef.current = true;
+    if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
+    skipTimeoutRef.current = setTimeout(() => {
+      skipNextAuthEventRef.current = false;
+      skipTimeoutRef.current = null;
+    }, 5000);
+  }, []);
+
+  // Helper to consume (clear) the skip flag and its timeout.
+  const consumeSkipFlag = useCallback(() => {
+    skipNextAuthEventRef.current = false;
+    if (skipTimeoutRef.current) {
+      clearTimeout(skipTimeoutRef.current);
+      skipTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    // 1. getUser() handles the initial auth state (validates token server-side).
-    //    This is the single path that sets isLoading to false on mount.
-    supabase.auth.getUser().then(async ({ data: { user: supabaseUser } }) => {
-      try {
-        if (supabaseUser) {
-          const publicUser = await resolvePublicUser(supabaseUser.id);
-          setUser(mapSupabaseUser(supabaseUser, publicUser));
-        }
-      } catch {
-        // resolvePublicUser failed — still show as authenticated
-        if (supabaseUser) {
-          setUser(mapSupabaseUser(supabaseUser, null));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }).catch(() => {
-      // getUser() rejected (network error, etc.) — clear loading state
-      setIsLoading(false);
-    });
+    // 1. If the server already resolved the user via getAuthUser() in layout.tsx,
+    //    skip the redundant getUser() network round-trip. The middleware already
+    //    refreshed the session, so the server-provided initialUser is trustworthy.
+    if (!initialUser) {
+      // No server-side user — validate client-side (e.g., client-side navigation
+      // that didn't go through the server, or unauthenticated initial load).
+      supabase.auth
+        .getUser()
+        .then(async ({ data: { user: supabaseUser } }) => {
+          try {
+            if (supabaseUser) {
+              await resolveAndSetUser(supabaseUser);
+            } else {
+              setUser(null);
+            }
+          } catch {
+            // resolvePublicUser failed — still show as authenticated
+            if (supabaseUser) {
+              setUser(mapSupabaseUser(supabaseUser, null));
+            }
+          } finally {
+            setIsLoading(false);
+          }
+        })
+        .catch(() => {
+          // getUser() rejected (network error, etc.) — clear loading state
+          setIsLoading(false);
+        });
+    }
+    // else: initialUser is already set in useState, isLoading starts as false.
 
     // 2. onAuthStateChange handles subsequent events (login, logout, token refresh).
-    //    Skip INITIAL_SESSION to avoid racing with getUser() above.
+    //    Skip INITIAL_SESSION to avoid racing with getUser() / initialUser above.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "INITIAL_SESSION") return;
+
+      // Skip if login/register already eagerly set the user state
+      if (skipNextAuthEventRef.current && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+        consumeSkipFlag();
+        return;
+      }
+
+      // Handle silent token refresh failure — session expired without feedback
+      if (event === "TOKEN_REFRESHED" && !session) {
+        setUser(null);
+        setAuthExpired(true);
+        return;
+      }
+
       if (session?.user) {
         try {
-          const publicUser = await resolvePublicUser(session.user.id);
-          setUser(mapSupabaseUser(session.user, publicUser));
+          await resolveAndSetUser(session.user);
         } catch {
           // resolvePublicUser failed — still show as authenticated
           setUser(mapSupabaseUser(session.user, null));
@@ -110,86 +237,136 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
+      if (publicUserRetryRef.current) clearTimeout(publicUserRetryRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const openAuthModal = () => {
+  const openAuthModal = useCallback(() => {
     setAuthError(null);
     setIsAuthModalOpen(true);
-  };
-  const closeAuthModal = () => {
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
     setAuthError(null);
     setIsAuthModalOpen(false);
-  };
-  const clearError = () => setAuthError(null);
+  }, []);
 
-  const claimGuestLeads = () => {
+  const clearError = useCallback(() => setAuthError(null), []);
+  const clearAuthExpired = useCallback(() => setAuthExpired(false), []);
+
+  const claimGuestLeads = useCallback(() => {
     // Fire and forget — link any guest leads submitted with this email
-    fetch('/api/leads/claim', { method: 'POST' }).catch(() => {});
-  };
+    fetch("/api/leads/claim", { method: "POST" }).catch(() => {});
+  }, []);
 
-  const login = async (email: string, password: string) => {
-    setAuthError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setAuthError(translateAuthError(error));
-      throw error;
-    }
-    claimGuestLeads();
-  };
-
-  const register = async (email: string, password: string, isOwner: boolean) => {
-    setAuthError(null);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { isOwner },
-      },
-    });
-    if (error) {
-      setAuthError(translateAuthError(error));
-      throw error;
-    }
-    claimGuestLeads();
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    // Full page reload clears all React state and the Next.js Router Cache.
-    // router.push + router.refresh is unreliable because cached RSC payloads
-    // may still contain authenticated data.
-    window.location.href = "/";
-  };
-
-  const refreshUser = async () => {
-    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-    if (supabaseUser) {
-      const publicUser = await resolvePublicUser(supabaseUser.id);
-      setUser(mapSupabaseUser(supabaseUser, publicUser));
-    }
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isAuthModalOpen,
-        isLoading,
-        authError,
-        openAuthModal,
-        closeAuthModal,
-        login,
-        register,
-        logout,
-        clearError,
-        refreshUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setAuthError(null);
+      setSkipFlag();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        consumeSkipFlag();
+        setAuthError(translateAuthError(error));
+        throw error;
+      }
+      // Eagerly resolve and set user state BEFORE returning,
+      // so callers see isAuthenticated = true immediately.
+      if (data.user) {
+        await resolveAndSetUser(data.user);
+      }
+      claimGuestLeads();
+    },
+    [supabase, resolveAndSetUser, claimGuestLeads, setSkipFlag, consumeSkipFlag]
   );
+
+  const register = useCallback(
+    async (email: string, password: string, isOwner: boolean): Promise<{ confirmed: boolean }> => {
+      setAuthError(null);
+      setSkipFlag();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { isOwner },
+        },
+      });
+      if (error) {
+        consumeSkipFlag();
+        setAuthError(translateAuthError(error));
+        throw error;
+      }
+      // If auto-confirmed (session exists), eagerly set user state
+      if (data.session && data.user) {
+        await resolveAndSetUser(data.user);
+        claimGuestLeads();
+        return { confirmed: true };
+      }
+      // Email confirmation required — user is NOT authenticated yet
+      consumeSkipFlag();
+      return { confirmed: false };
+    },
+    [supabase, resolveAndSetUser, claimGuestLeads, setSkipFlag, consumeSkipFlag]
+  );
+
+  const logout = useCallback(async () => {
+    // Server-side signout clears cookies and revalidates RSC cache
+    await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
+    // Client-side signout clears local Supabase session state
+    await supabase.auth.signOut();
+    // Set user to null immediately for UI feedback
+    setUser(null);
+    // Full page reload clears all React state and the Next.js Router Cache.
+    window.location.href = "/";
+  }, [supabase]);
+
+  const refreshUser = useCallback(async () => {
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser();
+    if (supabaseUser) {
+      await resolveAndSetUser(supabaseUser);
+    }
+  }, [supabase, resolveAndSetUser]);
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isAuthModalOpen,
+      isLoading,
+      authError,
+      authExpired,
+      openAuthModal,
+      closeAuthModal,
+      login,
+      register,
+      logout,
+      clearError,
+      clearAuthExpired,
+      refreshUser,
+    }),
+    [
+      user,
+      isAuthModalOpen,
+      isLoading,
+      authError,
+      authExpired,
+      openAuthModal,
+      closeAuthModal,
+      login,
+      register,
+      logout,
+      clearError,
+      clearAuthExpired,
+      refreshUser,
+    ]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

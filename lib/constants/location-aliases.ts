@@ -24,6 +24,34 @@ export const LOCATION_ALIASES: Record<string, AliasEntry> = {
     results: [{ id: 146, name: "Capital Federal", depth: 0, display: "Argentina", type: "state" }],
   },
 
+  "buenos aires": {
+    results: [
+      { id: 146, name: "Capital Federal", depth: 0, display: "Argentina", type: "state" },
+      { id: 147, name: "G.B.A. Zona Norte", depth: 0, display: "Argentina", type: "state" },
+      { id: 148, name: "G.B.A. Zona Oeste", depth: 0, display: "Argentina", type: "state" },
+      { id: 149, name: "G.B.A. Zona Sur", depth: 0, display: "Argentina", type: "state" },
+      { id: 151, name: "Interior Buenos Aires", depth: 0, display: "Argentina", type: "state" },
+    ],
+  },
+  "bs as": {
+    results: [
+      { id: 146, name: "Capital Federal", depth: 0, display: "Argentina", type: "state" },
+      { id: 147, name: "G.B.A. Zona Norte", depth: 0, display: "Argentina", type: "state" },
+      { id: 148, name: "G.B.A. Zona Oeste", depth: 0, display: "Argentina", type: "state" },
+      { id: 149, name: "G.B.A. Zona Sur", depth: 0, display: "Argentina", type: "state" },
+      { id: 151, name: "Interior Buenos Aires", depth: 0, display: "Argentina", type: "state" },
+    ],
+  },
+  bsas: {
+    results: [
+      { id: 146, name: "Capital Federal", depth: 0, display: "Argentina", type: "state" },
+      { id: 147, name: "G.B.A. Zona Norte", depth: 0, display: "Argentina", type: "state" },
+      { id: 148, name: "G.B.A. Zona Oeste", depth: 0, display: "Argentina", type: "state" },
+      { id: 149, name: "G.B.A. Zona Sur", depth: 0, display: "Argentina", type: "state" },
+      { id: 151, name: "Interior Buenos Aires", depth: 0, display: "Argentina", type: "state" },
+    ],
+  },
+
   // --- GBA zone abbreviations ---
   gba: {
     results: [

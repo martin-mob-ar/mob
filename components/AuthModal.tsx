@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { useTokkoSync } from "@/hooks/useTokkoSync";
 import AccountTypeSelector from "@/components/profile/AccountTypeSelector";
 
 
-type AuthStep = "email" | "register" | "register-inmobiliaria" | "select-account-type";
+type AuthStep = "email" | "register" | "register-inmobiliaria" | "select-account-type" | "check-email";
 
 const GUEST_STORAGE_KEY = "mob_guest_contact";
 
@@ -36,7 +37,7 @@ async function applyGuestContactToProfile() {
 }
 
 const AuthModal = () => {
-  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading, refreshUser } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -123,6 +124,8 @@ const AuthModal = () => {
         router.refresh();
       } else {
         handleClose();
+        // Invalidate RSC cache so server components reflect the new auth state
+        router.refresh();
       }
     } catch {
       // Error is set in AuthContext
@@ -135,9 +138,14 @@ const AuthModal = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(email, password, false);
-      await applyGuestContactToProfile();
-      setStep("select-account-type");
+      const { confirmed } = await register(email, password, false);
+      if (confirmed) {
+        await applyGuestContactToProfile();
+        setStep("select-account-type");
+      } else {
+        // Email confirmation required — show check-email step
+        setStep("check-email");
+      }
     } catch {
       // Error is set in AuthContext
     } finally {
@@ -153,6 +161,8 @@ const AuthModal = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ account_type: accountTypeId }),
       });
+      // Refresh AuthContext so isOwner and accountType reflect the new value
+      await refreshUser();
       closeAuthModal();
       resetForm();
       router.push("/perfil");
@@ -162,7 +172,9 @@ const AuthModal = () => {
     }
   };
 
-  const handleSkipAccountType = () => {
+  const handleSkipAccountType = async () => {
+    // Refresh AuthContext to pick up any DB changes from signup
+    await refreshUser();
     closeAuthModal();
     resetForm();
     router.push("/perfil");
@@ -173,7 +185,12 @@ const AuthModal = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(email, password, true);
+      const { confirmed } = await register(email, password, true);
+      if (!confirmed) {
+        // Email confirmation required — show check-email step
+        setStep("check-email");
+        return;
+      }
       // Get the auth user ID to link with the public users row during sync
       const supabase = (await import("@/lib/supabase/client")).createClient();
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -205,7 +222,7 @@ const AuthModal = () => {
       scope: "openid email profile",
       state,
       access_type: "offline",
-      prompt: "consent",
+      prompt: "select_account",
     });
 
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -464,6 +481,41 @@ const AuthModal = () => {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 ← Volver
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "check-email" && (
+          <div className="space-y-5">
+            <div className="flex justify-center">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Mail className="h-7 w-7 text-primary" />
+              </div>
+            </div>
+            <div className="text-center">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Revisá tu email
+              </h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Te enviamos un email de confirmación a{" "}
+                <span className="font-medium text-foreground">{email}</span>.
+                Revisá tu bandeja de entrada para activar tu cuenta.
+              </p>
+            </div>
+            <Button
+              onClick={handleClose}
+              className="w-full h-11 rounded-xl font-semibold"
+            >
+              Entendido
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setStep("email"); clearError(); }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Volver a iniciar sesión
               </button>
             </div>
           </div>

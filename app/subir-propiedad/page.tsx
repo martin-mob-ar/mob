@@ -25,7 +25,7 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
     const publicUserId = await getOrCreateUserFromAuth(user.id);
     const { data } = await supabaseAdmin
       .from("properties")
-      .select("*, tokko_property_photo(*), tokko_property_property_tag(*)")
+      .select("*, tokko_property_photo(*), tokko_property_property_tag(*), tokko_location!location_id(id, name, depth)")
       .eq("id", draftId)
       .eq("user_id", publicUserId)
       .not("draft_step", "is", null)

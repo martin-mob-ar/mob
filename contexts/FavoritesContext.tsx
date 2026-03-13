@@ -46,12 +46,15 @@ const FavoritesContext = createContext<FavoritesContextValue>({
 });
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const prevAuthRef = useRef(isAuthenticated);
 
-  // Load favorites on mount and auth changes
+  // Load favorites on mount and auth changes.
+  // Skip until auth has finished loading to avoid a flash of guest favorites.
   useEffect(() => {
+    if (isLoading) return;
+
     const wasAuthenticated = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
 
@@ -93,7 +96,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       // Guest — load from localStorage
       setFavorites(readLocalFavorites());
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading]);
 
   const isFavorite = useCallback((id: number) => favorites.has(id), [favorites]);
 

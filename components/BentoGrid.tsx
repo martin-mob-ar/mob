@@ -32,7 +32,7 @@ const BentoGrid = () => {
             Plataforma integral
           </span>
           <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-            Todo lo que necesitás, en un solo lugar
+            Todo lo que necesitás para alquilar, en un solo lugar
           </h2>
         </div>
 
@@ -172,9 +172,8 @@ const BentoGrid = () => {
           </Link>
 
           {/* Card 7 - Inquilinos verificados */}
-          <Link
-            href="/verificacion"
-            className="group relative bg-gradient-to-br from-card to-primary/[0.03] border border-border rounded-xl p-6 flex items-center gap-5 overflow-hidden transition-all duration-300 hover:border-primary/25 hover:shadow-[0_8px_30px_-8px_hsl(227_100%_66%/0.10)] cursor-pointer"
+          <div
+            className="group relative bg-gradient-to-br from-card to-primary/[0.03] border border-border rounded-xl p-6 flex items-center gap-5 overflow-hidden transition-all duration-300 hover:border-primary/25 hover:shadow-[0_8px_30px_-8px_hsl(227_100%_66%/0.10)]"
             style={cardStyle(480)}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.02] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -188,7 +187,7 @@ const BentoGrid = () => {
                 Verificamos cada propietario junto con sus antecedentes y situación financiera
               </p>
             </div>
-          </Link>
+          </div>
         </div>
 
         {/* Mobile: Single column stack */}
@@ -281,12 +280,12 @@ const BentoGrid = () => {
               </div>
               <h3 className="font-display font-bold text-sm text-foreground">Inmobiliarias verificadas</h3>
             </Link>
-            <Link href="/verificacion" className="relative bg-gradient-to-br from-card to-primary/[0.03] border border-border rounded-xl p-4 overflow-hidden">
+            <div className="relative bg-gradient-to-br from-card to-primary/[0.03] border border-border rounded-xl p-4 overflow-hidden">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                 <Shield className="h-5 w-5 text-primary" />
               </div>
               <h3 className="font-display font-bold text-sm text-foreground">Inquilinos verificados</h3>
-            </Link>
+            </div>
           </div>
         </div>
       </div>
