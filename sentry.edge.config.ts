@@ -6,6 +6,6 @@ Sentry.init({
   // Performance Monitoring
   tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.2,
 
-  environment: process.env.NODE_ENV,
+  environment: process.env.VERCEL_ENV || process.env.NODE_ENV,
   enabled: process.env.NODE_ENV === "production",
 });

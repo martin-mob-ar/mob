@@ -9,6 +9,6 @@ Sentry.init({
   // AI Monitoring - Vercel AI SDK integration
   integrations: [Sentry.vercelAIIntegration({ force: true })],
 
-  environment: process.env.NODE_ENV,
+  environment: process.env.VERCEL_ENV || process.env.NODE_ENV,
   enabled: process.env.NODE_ENV === "production",
 });
