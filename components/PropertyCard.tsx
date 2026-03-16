@@ -191,6 +191,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
               publisherType={property.publisherType}
               legacyType={property.type}
               context={context}
+              compact={isMobile}
             />
           </div>
           
@@ -238,11 +239,26 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
                         Total
                       </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground mt-0.5 block">
-                      {hasExpensas
-                        ? `USD ${rentUsd.toLocaleString("es-AR")} Alq · $${property.expensas!.toLocaleString("es-AR")} Exp`
-                        : "Sin expensas"}
-                    </span>
+                    {hasExpensas ? (
+                      isMobile ? (
+                        <div className="flex flex-col mt-0.5 min-w-0">
+                          <span className="text-[10px] text-muted-foreground truncate">
+                            USD {rentUsd.toLocaleString("es-AR")} Alquiler
+                          </span>
+                          <span className="text-[10px] text-muted-foreground truncate">
+                            ${property.expensas!.toLocaleString("es-AR")} Expensas
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                          USD {rentUsd.toLocaleString("es-AR")} Alq · ${property.expensas!.toLocaleString("es-AR")} Exp
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                        Sin expensas
+                      </span>
+                    )}
                   </>
                 );
               })()
@@ -256,11 +272,26 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
                     Total
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground mt-0.5 block">
-                  {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0
-                    ? `$${property.rentPrice.toLocaleString("es-AR")} Alq + $${property.expensas.toLocaleString("es-AR")} Exp`
-                    : "Sin expensas"}
-                </span>
+                {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
+                  isMobile ? (
+                    <div className="flex flex-col mt-0.5 min-w-0">
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        ${property.rentPrice.toLocaleString("es-AR")} Alquiler
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        ${property.expensas.toLocaleString("es-AR")} Expensas
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                      ${property.rentPrice.toLocaleString("es-AR")} Alq + ${property.expensas.toLocaleString("es-AR")} Exp
+                    </span>
+                  )
+                ) : (
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                    Sin expensas
+                  </span>
+                )}
               </>
             )}
           </div>
