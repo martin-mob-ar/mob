@@ -93,8 +93,8 @@ const PropertySection = ({
         </div>
 
         {/* Carousel */}
-        <div className="overflow-hidden -my-4 -mx-4 sm:-mx-2 md:mx-0" ref={emblaRef}>
-          <div className="flex gap-4 py-4 px-4 sm:px-2 md:px-0">
+        <div className="overflow-hidden -my-4 -mx-6 md:mx-0" ref={emblaRef}>
+          <div className="flex gap-4 py-4 px-6 md:px-0">
             {displayProperties.map((property) => (
               <div
                 key={property.id}
