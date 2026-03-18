@@ -38,7 +38,7 @@ const Footer = ({ className }: { className?: string }) => {
             <h4 className="font-display font-semibold text-foreground mb-4">Recursos</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/blog" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Blog
                 </Link>
               </li>

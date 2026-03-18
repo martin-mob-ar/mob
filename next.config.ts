@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "storage.googleapis.com" },
       { protocol: "https", hostname: "**.tokkobroker.com" },
       { protocol: "https", hostname: "**.tokko.io" },
+      { protocol: "https", hostname: "cdn.sanity.io" },
     ],
   },
 };

@@ -250,6 +250,31 @@ export class TokkoClient {
   }
 
   /**
+   * Fetch active properties modified since a given datetime.
+   * Uses the deleted_at__gte parameter which Tokko interprets as "updated since".
+   */
+  async fetchChangedProperties(since: string, offset = 0, limit = 100): Promise<TokkoApiResponse<TokkoProperty>> {
+    return this.fetch<TokkoProperty>('/property/', {
+      deleted_at__gte: since,
+      limit,
+      offset,
+    });
+  }
+
+  /**
+   * Fetch properties that became inactive since a given datetime.
+   * Returns minimal objects with only id, deleted_at, and resource_uri.
+   * Covers Tokko states: Para tasar, Reservada, No disponible.
+   */
+  async fetchInactiveProperties(since: string, offset = 0, limit = 100): Promise<TokkoApiResponse<{ id: number; deleted_at: string; resource_uri: string }>> {
+    return this.fetch<{ id: number; deleted_at: string; resource_uri: string }>('/inactiveproperty/', {
+      deleted_at__gte: since,
+      limit,
+      offset,
+    });
+  }
+
+  /**
    * Fetch properties with pagination.
    * If maxTotal is provided, stops once that many properties have been collected.
    */

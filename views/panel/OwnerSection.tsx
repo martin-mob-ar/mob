@@ -114,12 +114,15 @@ const OwnerSection = ({ properties, mockMode }: OwnerSectionProps) => {
 
         {/* Property cards */}
         {properties.map((property) => {
-          const config = statusConfig[property.status];
+          const isPaused = property.propertyStatus === 1;
+          const config = isPaused
+            ? { label: "Pausada", className: "bg-amber-500/10 text-amber-600", dotColor: "bg-amber-500" }
+            : statusConfig[property.status];
           return (
             <Link
               key={property.id}
               href={`/gestion/propiedad/${property.id}${mockMode ? "?mock=true" : ""}`}
-              className="bg-card rounded-xl border border-border overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all relative"
+              className={`bg-card rounded-xl border border-border overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all relative ${isPaused ? "opacity-60" : ""}`}
             >
               {/* Image */}
               <div className="relative aspect-[4/3] overflow-hidden">

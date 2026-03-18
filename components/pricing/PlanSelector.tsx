@@ -182,12 +182,11 @@ const MobilePlanCard = ({
       </div>
 
       <Button
-        variant={isSelected ? "default" : plan === "experiencia" ? "default" : "outline"}
+        variant={isSelected ? "default" : "outline"}
         size="lg"
         className={cn(
           "w-full rounded-full",
-          isSelected && "ring-2 ring-offset-2 ring-primary",
-          plan === "experiencia" && !isSelected && "shadow-md shadow-primary/20"
+          isSelected && "ring-2 ring-offset-2 ring-primary"
         )}
         onClick={(e) => { e.stopPropagation(); onSelectPlan(plan); }}
       >
@@ -315,12 +314,11 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
           {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
             <div key={plan} className="px-2 flex justify-center">
               <Button
-                variant={selectedPlan === plan ? "default" : plan === "experiencia" ? "default" : "outline"}
+                variant={selectedPlan === plan ? "default" : "outline"}
                 size="lg"
                 className={cn(
                   "rounded-full w-full",
-                  selectedPlan === plan && "ring-2 ring-offset-2 ring-primary",
-                  plan === "experiencia" && selectedPlan !== plan && "shadow-md shadow-primary/20"
+                  selectedPlan === plan && "ring-2 ring-offset-2 ring-primary"
                 )}
                 onClick={() => onSelectPlan(plan)}
               >

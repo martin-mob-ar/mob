@@ -299,6 +299,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: "María García",
     operacionId: 8001,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5002",
@@ -316,6 +318,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: "Carlos López",
     operacionId: 8002,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5003",
@@ -333,6 +337,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: "Ana Rodríguez",
     operacionId: 8003,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5004",
@@ -350,6 +356,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: "Roberto Fernández",
     operacionId: 8004,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5005",
@@ -367,6 +375,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: null,
     operacionId: null,
     plan: "experiencia",
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5006",
@@ -384,6 +394,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: null,
     operacionId: null,
     plan: "acompanado",
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5007",
@@ -401,6 +413,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: null,
     operacionId: 8005,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5008",
@@ -418,6 +432,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: "Gastro Bar SRL",
     operacionId: 8006,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5009",
@@ -435,6 +451,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: null,
     operacionId: 8007,
     plan: "basico",
+    propertyStatus: 2,
+    tokko: false,
   },
   {
     id: "5010",
@@ -452,6 +470,8 @@ export const mockOwnerProperties: OwnerProperty[] = [
     tenantName: "Sofía Martínez",
     operacionId: 8008,
     plan: null,
+    propertyStatus: 2,
+    tokko: false,
   },
 ];
 

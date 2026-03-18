@@ -58,6 +58,7 @@ interface PropertyDetailProps {
   age?: number | null;
   propertyPlan?: "basico" | "acompanado" | "experiencia";
   isInmobiliaria?: boolean;
+  isUnavailable?: boolean;
 }
 
 function formatDescription(text: string): string {
@@ -67,7 +68,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -579,6 +580,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
         {/* Price + CTA Block - Priority section */}
         <div ref={mainCtaRef} className="px-4 py-5 bg-secondary/30 border-b border-border scroll-mt-20">
+          {isUnavailable ? (
+            <div className="rounded-xl border border-border bg-background p-5 text-center space-y-2">
+              <Info className="h-10 w-10 text-muted-foreground mx-auto" />
+              <p className="font-display text-lg font-bold text-foreground">Propiedad no disponible</p>
+              <p className="text-sm text-muted-foreground">
+                Esta propiedad ya no se encuentra disponible para alquiler.
+              </p>
+            </div>
+          ) : (<>
           {(() => {
             const rentUsd = property.rentPrice ?? property.price;
             const hasExpensas = property.expensas != null && property.expensas > 0;
@@ -682,6 +692,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               )}
             </div>
           </AnimateHeight>
+          </>)}
 
           {/* Quick Stats - Below CTAs */}
           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border/50">
@@ -861,9 +872,9 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       </div>
 
       {/* Mobile Fixed Bottom CTA - Only shows after scrolling past main CTA */}
-      <div 
+      <div
         className={`md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-5 z-40 transition-transform duration-300 ${
-          showBottomBar ? "translate-y-0" : "translate-y-full"
+          showBottomBar && !isUnavailable ? "translate-y-0" : "translate-y-full"
         }`}
       >
         <div className="flex items-center gap-3">
@@ -995,6 +1006,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           <div className="col-span-1">
             <div className="card-mob p-5 sticky top-20 space-y-5">
               {/* Price + CTAs */}
+              {isUnavailable ? (
+                <div className="rounded-xl border border-border bg-secondary/30 p-5 text-center space-y-2">
+                  <Info className="h-10 w-10 text-muted-foreground mx-auto" />
+                  <p className="font-display text-lg font-bold text-foreground">Propiedad no disponible</p>
+                  <p className="text-sm text-muted-foreground">
+                    Esta propiedad ya no se encuentra disponible para alquiler.
+                  </p>
+                </div>
+              ) : (<>
               <div>
                 {(() => {
                   const rentUsd = property.rentPrice ?? property.price;
@@ -1122,6 +1142,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   Tus datos están protegidos por <span className="font-ubuntu">mob</span>
                 </p>
               </div>
+
+              </>)}
 
               {/* Publisher */}
               {publisherName && (

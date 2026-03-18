@@ -52,6 +52,11 @@ const LABELS: Record<PublisherType, Record<BadgeContext, { label: string; showCh
   },
 };
 
+const COMPACT_LABELS: Partial<Record<PublisherType, string>> = {
+  "dueno-directo": "Dueño",
+  "dueno-verificado": "Dueño",
+};
+
 const TOOLTIPS: Record<PublisherType, string> = {
   "inmobiliaria-red":
     "Inmobiliaria asociada a la red de Hoggax. Accedés a una garantía 50% off",
@@ -68,10 +73,13 @@ const TOOLTIPS: Record<PublisherType, string> = {
  */
 export function getPublisherBadgeConfig(
   type: PublisherType,
-  context: BadgeContext
+  context: BadgeContext,
+  compact?: boolean
 ): PublisherBadgeConfig {
+  const base = LABELS[type][context];
   return {
-    ...LABELS[type][context],
+    ...base,
+    label: (compact && COMPACT_LABELS[type]) || base.label,
     tooltipText: TOOLTIPS[type],
   };
 }

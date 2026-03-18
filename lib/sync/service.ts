@@ -813,6 +813,7 @@ async function syncNetworkAccountResumable(
       .update({
         tokko_api_hash: apiKeyHash,
         tokko_api_key_enc: apiKeyEnc || null,
+        account_type: 4, // Upgrade from inmobiliaria (3) to network (4)
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);

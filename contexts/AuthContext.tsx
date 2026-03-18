@@ -69,9 +69,9 @@ function mapSupabaseUser(
       "",
     phone: publicUser?.telefono || "",
     phoneCountryCode: publicUser?.telefono_country_code || "+54",
-    // Derive isOwner from DB account_type (3 = inmobiliaria), fall back to signup metadata
+    // Derive isOwner from DB account_type (3 = inmobiliaria, 4 = red inmobiliaria), fall back to signup metadata
     isOwner: publicUser
-      ? publicUser.account_type === 3
+      ? publicUser.account_type === 3 || publicUser.account_type === 4
       : (supabaseUser.user_metadata?.isOwner ?? false),
     accountType: publicUser?.account_type ?? null,
     publicUserId: publicUser?.id ?? null,
@@ -313,14 +313,16 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
   );
 
   const logout = useCallback(async () => {
-    // Server-side signout clears cookies and revalidates RSC cache
-    await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
-    // Client-side signout clears local Supabase session state
-    await supabase.auth.signOut();
-    // Set user to null immediately for UI feedback
-    setUser(null);
-    // Full page reload clears all React state and the Next.js Router Cache.
-    window.location.href = "/";
+    try {
+      // Server-side signout clears cookies and revalidates RSC cache
+      await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
+      // Client-side signout clears local Supabase session state
+      await supabase.auth.signOut();
+    } finally {
+      // Always clear state and redirect, even if signOut errored
+      setUser(null);
+      window.location.href = "/";
+    }
   }, [supabase]);
 
   const refreshUser = useCallback(async () => {
