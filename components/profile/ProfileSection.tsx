@@ -52,6 +52,72 @@ interface ProfileSectionProps {
   /** SHA-256 hash of API key — safe to pass to client for polling */
   tokkoApiHash: string | null;
   lastVerificationDate: string | null;
+  /** Auth user ID (Supabase auth.users.id) — needed for sync endpoint */
+  authId: string;
+  /** Auth user email — needed for sync endpoint */
+  authEmail: string;
+}
+
+function ResyncButton() {
+  const router = useRouter();
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<{
+    success?: boolean;
+    propertiesUpdated?: number;
+    propertiesDeleted?: number;
+    error?: string;
+  } | null>(null);
+
+  async function handleResync() {
+    setSyncing(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/tokko/sync/incremental", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setResult({ error: data.error || "Error desconocido" });
+      } else {
+        setResult({
+          success: true,
+          propertiesUpdated: data.propertiesUpdated,
+          propertiesDeleted: data.propertiesDeleted,
+        });
+        router.refresh();
+      }
+    } catch {
+      setResult({ error: "Error de conexión" });
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Button
+        variant="outline"
+        className="h-9 rounded-lg font-medium gap-2"
+        disabled={syncing}
+        onClick={handleResync}
+      >
+        <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+        {syncing ? "Sincronizando..." : "Resincronizar con Tokko"}
+      </Button>
+      {result?.success && (
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+          {result.propertiesUpdated || result.propertiesDeleted
+            ? `${result.propertiesUpdated} actualizadas, ${result.propertiesDeleted} eliminadas`
+            : "Todo al día, sin cambios"}
+        </p>
+      )}
+      {result?.error && (
+        <p className="text-sm text-destructive flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          {result.error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function ProfileSection({
@@ -63,11 +129,14 @@ export default function ProfileSection({
   tokkoKeyPreview,
   tokkoApiHash,
   lastVerificationDate,
+  authId,
+  authEmail,
 }: ProfileSectionProps) {
   const router = useRouter();
 
   const [accountType, setAccountType] = useState(initialAccountType);
   const [selectingType, setSelectingType] = useState(false);
+  const isInmobiliaria = accountType === 3 || accountType === 4;
 
   // Inmobiliaria setup state
   const [tokkoApiKey, setTokkoApiKey] = useState("");
@@ -77,6 +146,7 @@ export default function ProfileSection({
   // Sync polling state
   const [syncStatus, setSyncStatus] = useState(initialSyncStatus);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [syncPropertiesCount, setSyncPropertiesCount] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startPolling = useCallback(
@@ -93,10 +163,11 @@ export default function ProfileSection({
 
           if (data.status === "syncing") {
             setSyncMessage(data.message || "Sincronizando propiedades...");
+            if (data.propertiesCount) setSyncPropertiesCount(data.propertiesCount);
           } else if (data.status === "done") {
             clearInterval(intervalRef.current!);
+            setSyncPropertiesCount(data.propertiesCount ?? 0);
             setSyncStatus("done");
-            router.refresh();
           } else if (data.status === "error") {
             clearInterval(intervalRef.current!);
             setSyncStatus("error");
@@ -129,6 +200,8 @@ export default function ProfileSection({
         body: JSON.stringify({ account_type: type }),
       });
       setAccountType(type);
+      // Re-run the server component so the GestionView section renders
+      router.refresh();
     } finally {
       setSelectingType(false);
     }
@@ -149,7 +222,12 @@ export default function ProfileSection({
         method: "POST",
         keepalive: true,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: tokkoApiKey.trim(), limit: 500 }),
+        body: JSON.stringify({
+          apiKey: tokkoApiKey.trim(),
+          limit: 500,
+          authId,
+          authEmail,
+        }),
       });
 
       startPolling(apiKeyHash);
@@ -186,7 +264,7 @@ export default function ProfileSection({
   }
 
   // ── Inmobiliaria: no tokko key yet — show setup form ────────────────────
-  if (accountType === 3 && !hasTokkoHash && syncStatus !== "syncing") {
+  if (isInmobiliaria && !hasTokkoHash && syncStatus !== "syncing" && syncStatus !== "done") {
     return (
       <div className="max-w-md mx-auto">
         {/* Icon + title */}
@@ -264,7 +342,7 @@ export default function ProfileSection({
   }
 
   // ── Inmobiliaria: sync in progress ───────────────────────────────────────
-  if (accountType === 3 && syncStatus === "syncing") {
+  if (isInmobiliaria && syncStatus === "syncing") {
     return (
       <div className="max-w-md mx-auto">
         <div className="mb-6">
@@ -285,7 +363,53 @@ export default function ProfileSection({
               <p className="text-sm text-muted-foreground mt-1">
                 {syncMessage || "Esto puede tardar unos minutos..."}
               </p>
+              {syncPropertiesCount != null && syncPropertiesCount > 0 && (
+                <p className="text-sm font-medium text-foreground mt-3">
+                  {syncPropertiesCount} {syncPropertiesCount === 1 ? "propiedad sincronizada" : "propiedades sincronizadas"}
+                </p>
+              )}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Inmobiliaria: sync just completed ──────────────────────────────────
+  if (isInmobiliaria && syncStatus === "done" && syncPropertiesCount != null) {
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="mb-6">
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Mi perfil
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Sincronización completada
+          </p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-6">
+          <div className="flex flex-col items-center gap-4 py-8">
+            <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-emerald-500" />
+            </div>
+            <div className="text-center">
+              <p className="font-semibold text-foreground">
+                ¡Sincronización exitosa!
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {syncPropertiesCount} {syncPropertiesCount === 1 ? "propiedad sincronizada" : "propiedades sincronizadas"} desde Tokko Broker
+              </p>
+            </div>
+            <Button
+              className="h-11 rounded-xl font-semibold gap-2 mt-2"
+              onClick={() => {
+                setSyncPropertiesCount(null);
+                router.refresh();
+              }}
+            >
+              Continuar
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -489,7 +613,7 @@ export default function ProfileSection({
         <ProfileForm profile={profile} accountType={accountType} />
 
         {/* Tokko section — only for inmobiliaria with key */}
-        {accountType === 3 && tokkoKeyPreview && (
+        {isInmobiliaria && tokkoKeyPreview && (
           <>
             <div className="border-t border-border" />
             <div className="space-y-3">
@@ -521,14 +645,7 @@ export default function ProfileSection({
                 </p>
               )}
 
-              <Button
-                variant="outline"
-                className="h-9 rounded-lg font-medium gap-2"
-                disabled
-              >
-                <RefreshCw className="h-4 w-4" />
-                Resincronizar con Tokko (todavia no anda)
-              </Button>
+              <ResyncButton />
             </div>
           </>
         )}
