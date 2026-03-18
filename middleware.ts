@@ -6,6 +6,11 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', request.nextUrl.pathname + request.nextUrl.search)
 
+  // Skip Supabase auth refresh for Sanity Studio — it handles its own auth
+  if (request.nextUrl.pathname.startsWith('/studio')) {
+    return NextResponse.next({ request: { headers: requestHeaders } })
+  }
+
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
   })

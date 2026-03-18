@@ -5,7 +5,7 @@ import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 import SubirPropiedad from "@/views/SubirPropiedad";
 
 interface PageProps {
-  searchParams: Promise<{ draftId?: string }>;
+  searchParams: Promise<{ draftId?: string; editId?: string }>;
 }
 
 export default async function SubirPropiedadPage({ searchParams }: PageProps) {
@@ -19,10 +19,23 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const draftId = params?.draftId ? parseInt(params.draftId) : null;
+  const editId = params?.editId ? parseInt(params.editId) : null;
+
+  const publicUserId = await getOrCreateUserFromAuth(user.id);
+
+  // Always fetch existing drafts (lightweight query for draft prompt)
+  const { data: existingDrafts } = await supabaseAdmin
+    .from("properties")
+    .select(
+      "id, type_id, address, location_id, draft_step, updated_at, tokko_property_type(name), tokko_location!location_id(name)"
+    )
+    .eq("user_id", publicUserId)
+    .not("draft_step", "is", null)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
 
   let draftData = null;
   if (draftId) {
-    const publicUserId = await getOrCreateUserFromAuth(user.id);
     const { data } = await supabaseAdmin
       .from("properties")
       .select("*, tokko_property_photo(*), tokko_property_property_tag(*), tokko_location!location_id(id, name, depth)")
@@ -33,5 +46,40 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
     draftData = data;
   }
 
-  return <SubirPropiedad userId={user.id} draftData={draftData} />;
+  // Edit mode: load published property + operacion
+  let editData = null;
+  if (editId && !draftId) {
+    const [{ data: property }, { data: operacion }] = await Promise.all([
+      supabaseAdmin
+        .from("properties")
+        .select(
+          "*, tokko_property_photo(*), tokko_property_property_tag(*), tokko_location!location_id(id, name, depth)"
+        )
+        .eq("id", editId)
+        .eq("user_id", publicUserId)
+        .eq("tokko", false)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("operaciones")
+        .select("*")
+        .eq("property_id", editId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (property) {
+      editData = { ...property, operacion };
+    }
+  }
+
+  return (
+    <SubirPropiedad
+      userId={user.id}
+      draftData={draftData}
+      editData={editData}
+      existingDrafts={existingDrafts || []}
+    />
+  );
 }

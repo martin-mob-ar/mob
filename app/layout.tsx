@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { headers } from "next/headers";
 import "./globals.css";
 import { Providers } from "./providers";
 import { getAuthUser } from "@/lib/supabase/auth";
@@ -19,6 +20,19 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isStudio = pathname.startsWith("/studio");
+
+  // Skip auth resolution for Studio — it handles its own auth
+  if (isStudio) {
+    return (
+      <html lang="es">
+        <body style={{ margin: 0 }}>{children}</body>
+      </html>
+    );
+  }
+
   // Resolve auth user server-side so the client AuthProvider can skip
   // the loading skeleton on initial render for authenticated users.
   const authUser = await getAuthUser();
@@ -40,9 +54,9 @@ export default async function RootLayout({
         "",
       phone: publicUser?.telefono || "",
       phoneCountryCode: publicUser?.telefono_country_code || "+54",
-      // Derive isOwner from DB account_type (3 = inmobiliaria), fall back to signup metadata
+      // Derive isOwner from DB account_type (3 = inmobiliaria, 4 = red inmobiliaria), fall back to signup metadata
       isOwner: publicUser
-        ? publicUser.account_type === 3
+        ? publicUser.account_type === 3 || publicUser.account_type === 4
         : (authUser.user_metadata?.isOwner ?? false),
       accountType: publicUser?.account_type ?? null,
       publicUserId: publicUser?.id ?? null,

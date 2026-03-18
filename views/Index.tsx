@@ -9,15 +9,18 @@ import WhyMob from "@/components/WhyMob";
 import DualCTA from "@/components/DualCTA";
 import ExploreRentals from "@/components/ExploreRentals";
 import Footer from "@/components/Footer";
+import LatestPosts from "@/components/blog/LatestPosts";
 import { properties as mockProperties } from "@/data/properties";
 import { Property } from "@/components/PropertyCard";
 import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
+import type { Post } from "@/lib/sanity/types";
 
 interface IndexProps {
   properties?: Property[];
+  latestPosts?: Post[];
 }
 
-const Index = ({ properties }: IndexProps) => {
+const Index = ({ properties, latestPosts }: IndexProps) => {
   const displayProperties = properties && properties.length > 0 ? properties : mockProperties;
   const enrichedProperties = usePropertyPhotos(displayProperties);
 
@@ -40,6 +43,11 @@ const Index = ({ properties }: IndexProps) => {
 
       {/* Propuesta MOB */}
       <WhyMob />
+
+      {/* Latest Blog Posts */}
+      {latestPosts && latestPosts.length > 0 && (
+        <LatestPosts posts={latestPosts} />
+      )}
 
       {/* Dual CTA - Propietarios & Inmobiliarias */}
       <DualCTA />

@@ -10,6 +10,7 @@ import {
   Plus,
   Minus,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,16 @@ import LocationSearchInput from "@/components/LocationSearchInput";
 import { LocationResult } from "@/hooks/useLocationSearch";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { TAG_SECTIONS, ALL_TAGS } from "@/lib/constants/tags";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import PhotoUploader, { UploadedPhoto } from "@/components/PhotoUploader";
 import PlanSelector, { PlanType } from "@/components/pricing/PlanSelector";
 
@@ -66,20 +77,54 @@ const hours = Array.from({ length: 24 }, (_, i) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DraftData = Record<string, any> | null;
 
+interface DraftProperty {
+  id: number;
+  type_id: number | null;
+  address: string | null;
+  location_id: number | null;
+  draft_step: number | null;
+  updated_at: string | null;
+  tokko_property_type: { name: string }[] | { name: string } | null;
+  tokko_location: { name: string }[] | { name: string } | null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EditData = Record<string, any> | null;
+
 interface SubirPropiedadProps {
   userId: string;
   draftData?: DraftData;
+  editData?: EditData;
+  existingDrafts?: DraftProperty[];
 }
 
-const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
+const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: SubirPropiedadProps) => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
-  // Draft tracking
+  // Draft / edit tracking
   const [draftPropertyId, setDraftPropertyId] = useState<number | null>(null);
+  const isEditMode = !!editData && !draftData;
+
+  // Draft prompt (step 1) — delete flow
+  const [deletingDraftId, setDeletingDraftId] = useState<number | null>(null);
+  const [confirmDeleteDraftId, setConfirmDeleteDraftId] = useState<number | null>(null);
+
+  const showDraftPrompt = currentStep === 1 && existingDrafts.length > 0 && !draftData && !editData;
+
+  const handleDeleteDraft = async (id: number) => {
+    setConfirmDeleteDraftId(null);
+    setDeletingDraftId(id);
+    try {
+      await fetch(`/api/properties/${id}/delete`, { method: "POST" });
+      router.refresh();
+    } finally {
+      setDeletingDraftId(null);
+    }
+  };
 
   // Step 2: Tipo de propiedad
   const [typeId, setTypeId] = useState<number | null>(null);
@@ -223,6 +268,104 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
     // Restore tags
     if (draftData.tokko_property_property_tag?.length) {
       setSelectedTagIds(draftData.tokko_property_property_tag.map((t: { tag_id: number }) => t.tag_id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Restore edit data on mount (published property editing)
+  useEffect(() => {
+    if (!editData || draftData) return;
+    setDraftPropertyId(editData.id);
+    setCurrentStep(9);
+    if (editData.type_id) setTypeId(editData.type_id);
+    if (editData.address) {
+      setAddress(editData.address);
+      setPlaceSelected(true);
+    }
+    if (editData.geo_lat) setGeoLat(String(editData.geo_lat));
+    if (editData.geo_long) setGeoLong(String(editData.geo_long));
+    if (editData.location_id) {
+      setLocationId(editData.location_id);
+      if (editData.tokko_location) {
+        const loc = Array.isArray(editData.tokko_location) ? editData.tokko_location[0] : editData.tokko_location;
+        if (loc) {
+          setSelectedLocation({
+            id: loc.id,
+            name: loc.name,
+            depth: loc.depth ?? 0,
+            display: "",
+            type: "location",
+          });
+        }
+      }
+    }
+    if (editData.floor) setPiso(String(editData.floor));
+    if (editData.apartment_door) setDepto(String(editData.apartment_door));
+    if (editData.room_amount != null) setAmbientes(editData.room_amount);
+    if (editData.bathroom_amount != null) setBanos(editData.bathroom_amount);
+    if (editData.toilet_amount != null) setToilettes(editData.toilet_amount);
+    if (editData.suite_amount != null) setDormitorios(editData.suite_amount);
+    if (editData.parking_lot_amount != null) setCocheras(editData.parking_lot_amount);
+    if (editData.roofed_surface) setSuperficieCubierta(String(editData.roofed_surface));
+    if (editData.total_surface) setSuperficieTotal(String(editData.total_surface));
+    if (editData.age != null) setAntiguedad(String(editData.age));
+    if (editData.disposition) setDisposicion(editData.disposition);
+    if (editData.available_date) setFechaDisponible(editData.available_date);
+    if (editData.visit_days) setDiasVisita(editData.visit_days);
+    if (editData.description) setDescripcion(editData.description);
+
+    // Restore pricing from operacion
+    const op = editData.operacion;
+    if (op) {
+      if (op.price != null) setPrecioMensual(String(Math.round(Number(op.price))));
+      if (op.currency) setMoneda(op.currency as "ARS" | "USD");
+      if (op.expenses != null) {
+        setExpensas(String(op.expenses));
+        setExpensasIncluidas(false);
+      } else if (op.price != null) {
+        setExpensasIncluidas(true);
+      }
+      if (op.duration_months != null) setDuracionContrato(op.duration_months);
+      if (op.ipc_adjustment) {
+        setIpcEnabled(true);
+        setIpcPeriodo(op.ipc_adjustment);
+      } else {
+        setIpcEnabled(false);
+      }
+      if (op.planMobElegido) setSelectedPlan(op.planMobElegido as PlanType);
+    }
+
+    // Parse visit_hours strings (format: "lunes 09:00-18:00") → horariosVisita
+    if (editData.visit_hours?.length) {
+      const parsed: Record<string, { start: string; end: string }> = {};
+      for (const entry of editData.visit_hours as string[]) {
+        const match = entry.match(/^(\w+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+        if (match) {
+          parsed[match[1]] = { start: match[2], end: match[3] };
+        }
+      }
+      if (Object.keys(parsed).length > 0) {
+        setHorariosVisita((prev) => ({ ...prev, ...parsed }));
+      }
+    }
+
+    // Restore photos
+    if (editData.tokko_property_photo?.length) {
+      setUploadedPhotos(
+        editData.tokko_property_photo
+          .filter((p: { storage_path: string | null }) => p.storage_path)
+          .map((p: { image: string; storage_path: string; order: number; is_front_cover: boolean }) => ({
+            publicUrl: p.image,
+            storagePath: p.storage_path,
+            order: p.order,
+            isCover: p.is_front_cover,
+          }))
+      );
+    }
+
+    // Restore tags
+    if (editData.tokko_property_property_tag?.length) {
+      setSelectedTagIds(editData.tokko_property_property_tag.map((t: { tag_id: number }) => t.tag_id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -422,7 +565,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       if (validateStep(currentStep)) {
         setShowErrors(false);
         const nextStep = currentStep + 1;
-        if (currentStep >= 2) await saveDraft(nextStep);
+        if (currentStep >= 2 && !isEditMode) await saveDraft(nextStep);
         setCurrentStep(nextStep);
         mainRef.current?.scrollTo({ top: 0 });
       } else {
@@ -443,6 +586,10 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
   };
 
   const handleSaveAndExit = async () => {
+    if (isEditMode) {
+      router.push(`/gestion/propiedad/${draftPropertyId}`);
+      return;
+    }
     if (currentStep >= 2) await saveDraft(currentStep);
     router.push("/gestion");
   };
@@ -527,59 +674,122 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
 
       const visitHoursArr = buildVisitHoursArr();
 
-      const body = {
-        profile_id: userId,
-        draftId: draftPropertyId,
-        type_id: typeId,
-        address: address || null,
-        geo_lat: geoLat || null,
-        geo_long: geoLong || null,
-        location_id: locationId,
-        room_amount: ambientes,
-        suite_amount: dormitorios,
-        bathroom_amount: banos,
-        toilet_amount: toilettes,
-        parking_lot_amount: cocheras,
-        roofed_surface: superficieCubierta ? String(superficieCubierta) : null,
-        total_surface: superficieTotal ? String(superficieTotal) : null,
-        unroofed_surface:
-          superficieTotal && superficieCubierta
-            ? String(Math.max(0, Number(superficieTotal) - Number(superficieCubierta)))
-            : null,
-        age: antiguedad ? parseInt(antiguedad) : null,
-        disposition: disposicion || null,
-        floor: piso || null,
-        apartment_door: depto || null,
-        price: precioMensual ? Number(precioMensual) : null,
-        currency: moneda,
-        expenses: !expensasIncluidas && expensas ? Number(expensas) : null,
-        duration_months: duracionContrato,
-        ipc_adjustment: ipcEnabled ? ipcPeriodo : null,
-        tagIds: selectedTagIds,
-        photos: uploadedPhotos,
-        publication_title: autoTitle,
-        description: descripcion.trim() || null,
-        available_date: fechaDisponible || null,
-        visit_days: diasVisita,
-        visit_hours: visitHoursArr,
-        selectedPlan,
-      };
+      if (isEditMode && draftPropertyId) {
+        // Edit mode: update existing published property
+        const body = {
+          type_id: typeId,
+          address: address || null,
+          address_complement: null,
+          geo_lat: geoLat || null,
+          geo_long: geoLong || null,
+          location_id: locationId,
+          gm_location_type: null,
+          room_amount: ambientes || null,
+          bathroom_amount: banos || null,
+          toilet_amount: toilettes || null,
+          suite_amount: dormitorios || null,
+          parking_lot_amount: cocheras || null,
+          roofed_surface: superficieCubierta || null,
+          total_surface: superficieTotal || null,
+          semiroofed_surface: null,
+          unroofed_surface:
+            superficieTotal && superficieCubierta
+              ? String(Math.max(0, Number(superficieTotal) - Number(superficieCubierta)))
+              : null,
+          age: antiguedad ? parseInt(antiguedad) : null,
+          floors_amount: null,
+          disposition: disposicion || null,
+          floor: piso || null,
+          apartment_door: depto || null,
+          price: precioMensual ? Number(precioMensual) : null,
+          currency: moneda,
+          expenses: !expensasIncluidas && expensas ? Number(expensas) : null,
+          duration_months: duracionContrato,
+          ipc_adjustment: ipcEnabled ? ipcPeriodo : null,
+          tagIds: selectedTagIds,
+          photos: uploadedPhotos,
+          publication_title: autoTitle,
+          description: descripcion.trim() || null,
+          rich_description: null,
+          reference_code: null,
+          available_date: fechaDisponible || null,
+          key_coordination: null,
+          visit_days: diasVisita,
+          visit_hours: visitHoursArr,
+        };
 
-      const res = await fetch("/api/properties/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+        const res = await fetch(`/api/properties/${draftPropertyId}/update`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
 
-      const result = await res.json();
+        const result = await res.json();
 
-      if (!res.ok) {
-        setSubmitError(result.error || "Error al crear la propiedad.");
-        setIsSubmitting(false);
-        return;
+        if (!res.ok) {
+          setSubmitError(result.error || "Error al guardar los cambios.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        toast.success("Cambios guardados correctamente");
+        router.push(`/gestion/propiedad/${draftPropertyId}`);
+      } else {
+        // Create mode (new or from draft)
+        const body = {
+          profile_id: userId,
+          draftId: draftPropertyId,
+          type_id: typeId,
+          address: address || null,
+          geo_lat: geoLat || null,
+          geo_long: geoLong || null,
+          location_id: locationId,
+          room_amount: ambientes,
+          suite_amount: dormitorios,
+          bathroom_amount: banos,
+          toilet_amount: toilettes,
+          parking_lot_amount: cocheras,
+          roofed_surface: superficieCubierta ? String(superficieCubierta) : null,
+          total_surface: superficieTotal ? String(superficieTotal) : null,
+          unroofed_surface:
+            superficieTotal && superficieCubierta
+              ? String(Math.max(0, Number(superficieTotal) - Number(superficieCubierta)))
+              : null,
+          age: antiguedad ? parseInt(antiguedad) : null,
+          disposition: disposicion || null,
+          floor: piso || null,
+          apartment_door: depto || null,
+          price: precioMensual ? Number(precioMensual) : null,
+          currency: moneda,
+          expenses: !expensasIncluidas && expensas ? Number(expensas) : null,
+          duration_months: duracionContrato,
+          ipc_adjustment: ipcEnabled ? ipcPeriodo : null,
+          tagIds: selectedTagIds,
+          photos: uploadedPhotos,
+          publication_title: autoTitle,
+          description: descripcion.trim() || null,
+          available_date: fechaDisponible || null,
+          visit_days: diasVisita,
+          visit_hours: visitHoursArr,
+          selectedPlan,
+        };
+
+        const res = await fetch("/api/properties/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          setSubmitError(result.error || "Error al crear la propiedad.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        router.push(`/propiedad/${result.id}`);
       }
-
-      router.push(`/propiedad/${result.id}`);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error inesperado.");
     } finally {
@@ -620,8 +830,119 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
 
   const renderStep = () => {
     switch (currentStep) {
-      // Step 1: Intro
+      // Step 1: Intro (or draft prompt if user has unfinished drafts)
       case 1:
+        if (showDraftPrompt) {
+          return (
+            <div className="max-w-3xl mx-auto space-y-8">
+              <div>
+                <h1 className="font-display text-3xl sm:text-4xl font-bold leading-tight">
+                  Tus publicaciones en progreso
+                </h1>
+                <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                  Tenés {existingDrafts.length === 1 ? "una publicación" : `${existingDrafts.length} publicaciones`} sin terminar. Podés continuar donde dejaste o empezar una nueva.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {existingDrafts.map((draft) => {
+                  const typeObj = Array.isArray(draft.tokko_property_type) ? draft.tokko_property_type[0] : draft.tokko_property_type;
+                  const locObj = Array.isArray(draft.tokko_location) ? draft.tokko_location[0] : draft.tokko_location;
+                  const typeName = typeObj?.name || null;
+                  const locationName = locObj?.name || null;
+                  const title =
+                    typeName && locationName
+                      ? `${typeName} en ${locationName}`
+                      : typeName || draft.address || "Nueva propiedad";
+                  const step = draft.draft_step ?? 2;
+                  const updatedAt = draft.updated_at
+                    ? new Date(draft.updated_at).toLocaleDateString("es-AR")
+                    : null;
+
+                  return (
+                    <div
+                      key={draft.id}
+                      className="bg-card rounded-xl border border-border/60 p-5 space-y-4"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm leading-snug">{title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Paso {step} de {TOTAL_STEPS}
+                          {updatedAt && ` · Guardado el ${updatedAt}`}
+                        </p>
+                      </div>
+
+                      <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => router.push(`/subir-propiedad?draftId=${draft.id}`)}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Continuar
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteDraftId(draft.id)}
+                          disabled={deletingDraftId === draft.id}
+                          className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-border text-muted-foreground hover:text-red-500 hover:border-red-300 transition-colors"
+                        >
+                          {deletingDraftId === draft.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors text-center group"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Plus className="h-6 w-6 text-primary" />
+                  </div>
+                  <span className="font-semibold text-base">Crear nueva propiedad</span>
+                  <span className="text-sm text-muted-foreground">Empezar desde cero</span>
+                </div>
+              </button>
+
+              <AlertDialog
+                open={confirmDeleteDraftId !== null}
+                onOpenChange={(open) => { if (!open) setConfirmDeleteDraftId(null); }}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminás este borrador?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. Se va a eliminar el borrador de forma permanente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => confirmDeleteDraftId && handleDeleteDraft(confirmDeleteDraftId)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          );
+        }
+
         return (
           <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
             <div>
@@ -1268,10 +1589,12 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
         return (
           <div className="max-w-xl mx-auto space-y-6">
             <h1 className="font-display text-xl sm:text-3xl font-bold">
-              Revisá tu publicación
+              {isEditMode ? "Editá tu publicación" : "Revisá tu publicación"}
             </h1>
             <p className="text-muted-foreground">
-              Verificá que toda la información sea correcta antes de publicar.
+              {isEditMode
+                ? "Modificá los datos que necesites y guardá los cambios."
+                : "Verificá que toda la información sea correcta antes de publicar."}
             </p>
 
             <SummarySection title="Tipo de propiedad y ubicación" onEdit={() => { setCurrentStep(2); mainRef.current?.scrollTo({ top: 0 }); }}>
@@ -1428,7 +1751,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
             onClick={handleSaveAndExit}
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Guardar y salir
+            {isEditMode ? "Cancelar" : currentStep === 1 ? "Salir" : "Guardar y salir"}
           </button>
         </div>
 
@@ -1469,7 +1792,7 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
       {/* Footer — always pinned to bottom */}
       <footer className="shrink-0 border-t border-border">
         <div className="container flex items-center justify-end h-20">
-          {currentStep === TOTAL_STEPS ? (
+          {showDraftPrompt ? null : currentStep === TOTAL_STEPS ? (
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -1478,10 +1801,10 @@ const SubirPropiedad = ({ userId, draftData }: SubirPropiedadProps) => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Publicando...
+                  {isEditMode ? "Guardando..." : "Publicando..."}
                 </>
               ) : (
-                "Publicar propiedad"
+                isEditMode ? "Guardar cambios" : "Publicar propiedad"
               )}
             </Button>
           ) : (
