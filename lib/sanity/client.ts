@@ -1,10 +1,9 @@
 import { createClient, type QueryParams } from "next-sanity";
-import { sanityConfig } from "./config";
+import { sanityConfig, isSanityConfigured } from "./config";
 
-export const client = createClient({
-  ...sanityConfig,
-  useCdn: true,
-});
+export const client = isSanityConfigured
+  ? createClient({ ...sanityConfig, useCdn: true })
+  : null;
 
 export async function sanityFetch<T>({
   query,
@@ -17,6 +16,10 @@ export async function sanityFetch<T>({
   tags?: string[];
   fallback?: T;
 }): Promise<T> {
+  if (!client) {
+    if (fallback !== undefined) return fallback;
+    throw new Error("Sanity is not configured (missing NEXT_PUBLIC_SANITY_PROJECT_ID)");
+  }
   try {
     return await client.fetch<T>(query, params, {
       next: {

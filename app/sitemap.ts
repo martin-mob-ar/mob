@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const posts = await sanityFetch<
       { slug: string; publishedAt: string; _updatedAt: string }[]
-    >({ query: sitemapPostsQuery, tags: ["post"] });
+    >({ query: sitemapPostsQuery, tags: ["post"], fallback: [] });
 
     blogPages = posts.map((post) => ({
       url: `${APP_URL}/blog/${post.slug}`,
@@ -40,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let categoryPages: MetadataRoute.Sitemap = [];
   try {
     const categories = await sanityFetch<{ slug: string; _updatedAt: string }[]>(
-      { query: sitemapCategoriesQuery, tags: ["category"] }
+      { query: sitemapCategoriesQuery, tags: ["category"], fallback: [] }
     );
 
     categoryPages = categories.map((cat) => ({
