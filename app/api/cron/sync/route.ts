@@ -136,6 +136,19 @@ export async function GET(request: NextRequest) {
     }
 
     totals.targetsProcessed++;
+
+    // Update log progressively so progress isn't lost if function times out
+    await supabaseAdmin
+      .from('cron_sync_log')
+      .update({
+        companies_processed: totals.targetsProcessed,
+        properties_updated: totals.propertiesUpdated,
+        properties_deleted: totals.propertiesDeleted,
+        photos_added: totals.photosAdded,
+        photos_removed: totals.photosRemoved,
+        errors: totals.errors.slice(0, 50),
+      })
+      .eq('id', currentLogId);
   }
 
   // ── 7. Check if we need to chain ──
