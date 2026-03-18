@@ -208,31 +208,90 @@ export class TokkoClient {
   private apiKey: string;
   private baseUrl: string;
 
+  /**
+   * Shared across all instances within the same process to enforce
+   * Tokko's IP-level rate limit (100 req/min). 700ms gap = ~85 req/min,
+   * leaving headroom for other Vercel functions sharing the same IP.
+   */
+  private static lastRequestAt = 0;
+  private static readonly MIN_REQUEST_GAP_MS = 700;
+  private static readonly MAX_RETRIES = 2;
+  private static readonly TIMEOUT_MS = 30_000;
+
   constructor(apiKey: string) {
     this.apiKey = apiKey;
     this.baseUrl = TOKKO_BASE_URL;
   }
 
+  /** Enforce minimum gap between Tokko API requests. */
+  private static async throttle(): Promise<void> {
+    const now = Date.now();
+    const elapsed = now - TokkoClient.lastRequestAt;
+    if (elapsed < TokkoClient.MIN_REQUEST_GAP_MS) {
+      await new Promise(r => setTimeout(r, TokkoClient.MIN_REQUEST_GAP_MS - elapsed));
+    }
+    TokkoClient.lastRequestAt = Date.now();
+  }
+
+  /**
+   * Low-level fetch with throttle, timeout, and retry.
+   * Retries on timeout, 429, and 5xx errors.
+   */
+  private async fetchWithRetry(url: string): Promise<Response> {
+    const maxAttempts = TokkoClient.MAX_RETRIES + 1;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await TokkoClient.throttle();
+
+      try {
+        const response = await fetch(url, {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(TokkoClient.TIMEOUT_MS),
+        });
+
+        if (response.status === 429) {
+          if (attempt < maxAttempts) {
+            const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+            console.warn(`[Tokko API] 429 rate limited, waiting ${retryAfter}s (attempt ${attempt}/${maxAttempts})`);
+            await new Promise(r => setTimeout(r, retryAfter * 1000));
+            continue;
+          }
+        }
+
+        if (response.status >= 500 && attempt < maxAttempts) {
+          console.warn(`[Tokko API] ${response.status} server error, retrying in ${attempt}s (attempt ${attempt}/${maxAttempts})`);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+
+        return response;
+      } catch (error) {
+        const isTimeout = error instanceof Error &&
+          (error.name === 'TimeoutError' || error.name === 'AbortError');
+        if (isTimeout && attempt < maxAttempts) {
+          console.warn(`[Tokko API] Timeout, retrying in ${attempt}s (attempt ${attempt}/${maxAttempts})`);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Unreachable');
+  }
+
   private async fetch<T>(endpoint: string, params?: Record<string, string | number>): Promise<TokkoApiResponse<T>> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
-
-    // Add API key and language as query parameters
     url.searchParams.set('key', this.apiKey);
     url.searchParams.set('lang', 'es_ar');
 
-    // Add any additional params
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.set(key, String(value));
       });
     }
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Accept': 'application/json',
-      },
-      signal: AbortSignal.timeout(30_000), // 30s timeout per API call
-    });
+    const response = await this.fetchWithRetry(url.toString());
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -351,9 +410,7 @@ export class TokkoClient {
       // not the URL-encoded version that searchParams.set produces.
       const url = `${this.baseUrl}/property/search/?key=${this.apiKey}&lang=es_ar&limit=${limit}&offset=${offset}&format=json&data=${encodeURIComponent(data)}`;
 
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-      });
+      const res = await this.fetchWithRetry(url);
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -398,9 +455,7 @@ export class TokkoClient {
       url.searchParams.set('key', this.apiKey);
       url.searchParams.set('lang', 'es_ar');
 
-      const res = await fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' },
-      });
+      const res = await this.fetchWithRetry(url.toString());
 
       if (!res.ok) {
         console.warn(`[Tokko API] getPropertyById(${propertyId}): ${res.status} ${res.statusText}`);
@@ -419,22 +474,13 @@ export class TokkoClient {
    * Returns empty array on failure (network keys don't support this endpoint).
    */
   async getAllBranches(): Promise<TokkoBranch[]> {
-    const MAX_RETRIES = 3;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const response = await this.fetch<TokkoBranch>('/branch/', { limit: 100 });
-        return response.objects;
-      } catch (error) {
-        if (attempt < MAX_RETRIES) {
-          console.warn(`[Tokko API] getAllBranches failed (attempt ${attempt}/${MAX_RETRIES}), retrying...`);
-          await new Promise(r => setTimeout(r, 3000 * attempt));
-          continue;
-        }
-        console.warn('[Tokko API] getAllBranches failed after retries:', error instanceof Error ? error.message : error);
-        return [];
-      }
+    try {
+      const response = await this.fetch<TokkoBranch>('/branch/', { limit: 100 });
+      return response.objects;
+    } catch (error) {
+      console.warn('[Tokko API] getAllBranches failed:', error instanceof Error ? error.message : error);
+      return [];
     }
-    return [];
   }
 
   /**
