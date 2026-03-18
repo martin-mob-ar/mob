@@ -119,6 +119,8 @@ export interface OwnerProperty {
   tenantName: string | null;
   operacionId: number | null;
   plan: string | null;
+  propertyStatus: number; // 0=deleted, 1=paused, 2=active
+  tokko: boolean;
 }
 
 export interface OperationHistoryEntry {
@@ -204,6 +206,46 @@ export function transformToOwnerProperty(
     tenantName: tenantName || null,
     operacionId: row.operacion_id || null,
     plan: plan || null,
+    propertyStatus: row.property_status ?? 2,
+    tokko: row.tokko ?? false,
+  };
+}
+
+/**
+ * Maps a raw `properties` row (with joined location/type/operacion) to an OwnerProperty.
+ * Used for paused properties (status=1) which are NOT in properties_read.
+ */
+export function transformToOwnerPropertyFromRaw(
+  row: any,
+  operacion?: any,
+  coverPhotoUrl?: string | null,
+  tenantName?: string | null,
+  plan?: string | null
+): OwnerProperty {
+  const price = operacion?.price ? Number(operacion.price) : null;
+  const currency = operacion?.currency || "ARS";
+  const locationName = row.tokko_location?.name;
+  const parentLocationName = row.tokko_location?.parent?.name;
+  return {
+    id: String(row.id),
+    name: row.publication_title || row.address || "Propiedad",
+    location: [locationName, parentLocationName].filter(Boolean).join(", ") || "",
+    price,
+    priceFormatted: price
+      ? `$${price.toLocaleString("es-AR")} ${currency}`
+      : "Sin precio",
+    currency,
+    status: (operacion?.status as OperacionStatus) || "available",
+    image: coverPhotoUrl || "/assets/property-new-1.png",
+    rooms: row.room_amount || null,
+    surface: row.total_surface ? Number(row.total_surface) : null,
+    bathrooms: row.bathroom_amount || null,
+    expenses: operacion?.expenses ? Number(operacion.expenses) : null,
+    tenantName: tenantName || null,
+    operacionId: operacion?.id || null,
+    plan: plan || null,
+    propertyStatus: row.status,
+    tokko: row.tokko ?? false,
   };
 }
 

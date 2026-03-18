@@ -31,6 +31,8 @@ import {
   Mail,
   CalendarDays,
   Star,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -212,6 +214,7 @@ interface PropertyDetailViewProps {
   tokko?: boolean;
   tokkoId?: number | null;
   userEmail?: string;
+  propertyStatus?: number;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────
@@ -225,12 +228,16 @@ const PropertyDetailView = ({
   tokko: realTokko,
   tokkoId: realTokkoId,
   userEmail,
+  propertyStatus: initialPropertyStatus = 2,
 }: PropertyDetailViewProps) => {
   const router = useRouter();
   const [useMock, setUseMock] = useState(mockMode ?? false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [propertyStatus, setPropertyStatus] = useState(initialPropertyStatus);
+  const [isPausing, setIsPausing] = useState(false);
+  const [isUnpausing, setIsUnpausing] = useState(false);
 
   // ─── Mock data resolution ───────────────────────────────────────
   const mockData = getMockPropertyDetail("5005"); // default demo property
@@ -265,6 +272,44 @@ const PropertyDetailView = ({
     } catch {
       setDeleteError("Error inesperado. Intentá de nuevo.");
       setIsDeleting(false);
+    }
+  };
+
+  const handlePause = async () => {
+    setIsPausing(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/properties/${realProperty.property_id}/pause`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        setDeleteError(data.error || "Error al pausar");
+      } else {
+        setPropertyStatus(1);
+        router.refresh();
+      }
+    } catch {
+      setDeleteError("Error inesperado. Intentá de nuevo.");
+    } finally {
+      setIsPausing(false);
+    }
+  };
+
+  const handleUnpause = async () => {
+    setIsUnpausing(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/properties/${realProperty.property_id}/unpause`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        setDeleteError(data.error || "Error al reactivar");
+      } else {
+        setPropertyStatus(2);
+        router.refresh();
+      }
+    } catch {
+      setDeleteError("Error inesperado. Intentá de nuevo.");
+    } finally {
+      setIsUnpausing(false);
     }
   };
 
@@ -321,6 +366,17 @@ const PropertyDetailView = ({
         <ArrowLeft className="h-4 w-4" />
         Volver a mis propiedades
       </Link>
+
+      {/* Paused banner */}
+      {propertyStatus === 1 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+          <PauseCircle className="h-5 w-5 text-amber-600 shrink-0" />
+          <div>
+            <p className="font-semibold text-amber-800">Publicación pausada</p>
+            <p className="text-sm text-amber-700">Esta propiedad no es visible en búsquedas. Podés reactivarla en cualquier momento.</p>
+          </div>
+        </div>
+      )}
 
       {/* Property Header */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -438,7 +494,7 @@ const PropertyDetailView = ({
           </Button>
         ) : !tokko ? (
           <Button asChild variant="outline" className="rounded-full gap-2">
-            <Link href={`/gestion/propiedad/${propertyId}/editar`}>
+            <Link href={`/subir-propiedad?editId=${propertyId}`}>
               <FileText className="h-4 w-4" />
               Editar información
             </Link>
@@ -453,12 +509,40 @@ const PropertyDetailView = ({
           </Button>
         )}
 
-        {/* Delete — pushed to the right, only shown for non-mock */}
-        {!useMock && (
+        {/* Pause / Unpause / Delete — only for non-tokko, non-mock */}
+        {!useMock && !tokko && (
           <div className="ml-auto flex items-center gap-2">
             {deleteError && (
               <span className="text-sm text-destructive">{deleteError}</span>
             )}
+
+            {/* Pause button (active properties) */}
+            {propertyStatus === 2 && (
+              <Button
+                variant="ghost"
+                className="rounded-full gap-2 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10"
+                onClick={handlePause}
+                disabled={isPausing}
+              >
+                {isPausing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PauseCircle className="h-4 w-4" />}
+                Pausar publicación
+              </Button>
+            )}
+
+            {/* Unpause button (paused properties) */}
+            {propertyStatus === 1 && (
+              <Button
+                variant="outline"
+                className="rounded-full gap-2 text-primary"
+                onClick={handleUnpause}
+                disabled={isUnpausing}
+              >
+                {isUnpausing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+                Reactivar publicación
+              </Button>
+            )}
+
+            {/* Delete button with two-step confirm */}
             {confirmDelete ? (
               <>
                 <span className="text-sm text-muted-foreground">

@@ -61,14 +61,94 @@ export default async function GestionPropertyDetailPage({
   if (!publicUser) redirect("/gestion");
 
   // Fetch property (only if owned by this user)
-  const { data: property } = await supabaseAdmin
+  let property: any;
+  let propertyStatus = 2;
+
+  const { data: activeProperty } = await supabaseAdmin
     .from("properties_read")
     .select("*")
     .eq("property_id", Number(propertyId))
     .eq("user_id", publicUser.id)
     .maybeSingle();
 
-  if (!property) redirect("/gestion");
+  if (activeProperty) {
+    property = activeProperty;
+    propertyStatus = activeProperty.property_status ?? 2;
+  } else {
+    // Fallback: check for paused property (status=1) in properties table
+    const { data: pausedProp } = await supabaseAdmin
+      .from("properties")
+      .select(`id, user_id, tokko, status, description, address, publication_title,
+        geo_lat, geo_long, room_amount, bathroom_amount, suite_amount, total_surface,
+        roofed_surface, parking_lot_amount, age, slug, contact_phone, company_id, created_at, updated_at,
+        tokko_property_type!type_id(id, name),
+        tokko_location!location_id(id, name, parent:tokko_location!parent_location_id(name)),
+        tokko_company!company_id(name, logo)`)
+      .eq("id", Number(propertyId))
+      .eq("user_id", publicUser.id)
+      .eq("status", 1)
+      .maybeSingle();
+
+    if (!pausedProp) redirect("/gestion");
+
+    propertyStatus = 1;
+
+    // Fetch latest operacion + cover photo for the paused property
+    const [opResult, photoResult] = await Promise.all([
+      supabaseAdmin
+        .from("operaciones")
+        .select("*")
+        .eq("property_id", pausedProp.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("tokko_property_photo")
+        .select("image, thumb")
+        .eq("property_id", pausedProp.id)
+        .order("is_front_cover", { ascending: false })
+        .order("order", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    // Build a properties_read-like shape for PropertyDetailView
+    property = {
+      property_id: pausedProp.id,
+      user_id: pausedProp.user_id,
+      tokko: pausedProp.tokko,
+      description: pausedProp.description,
+      address: pausedProp.address,
+      title: pausedProp.publication_title,
+      geo_lat: pausedProp.geo_lat,
+      geo_long: pausedProp.geo_long,
+      property_type_id: (pausedProp as any).tokko_property_type?.id,
+      property_type_name: (pausedProp as any).tokko_property_type?.name,
+      location_name: (pausedProp as any).tokko_location?.name,
+      parent_location_name: (pausedProp as any).tokko_location?.parent?.name,
+      company_name: (pausedProp as any).tokko_company?.name,
+      company_logo: (pausedProp as any).tokko_company?.logo,
+      contact_phone: pausedProp.contact_phone,
+      slug: pausedProp.slug,
+      age: pausedProp.age,
+      room_amount: pausedProp.room_amount,
+      bathroom_amount: pausedProp.bathroom_amount,
+      suite_amount: pausedProp.suite_amount,
+      total_surface: pausedProp.total_surface,
+      roofed_surface: pausedProp.roofed_surface,
+      parking_lot_amount: pausedProp.parking_lot_amount,
+      cover_photo_url: photoResult.data?.image || null,
+      cover_photo_thumb: photoResult.data?.thumb || null,
+      operacion_id: opResult.data?.id || null,
+      operacion_status: opResult.data?.status || "available",
+      currency: opResult.data?.currency || null,
+      price: opResult.data?.price || null,
+      expenses: opResult.data?.expenses || null,
+      property_status: 1,
+      property_created_at: pausedProp.created_at,
+      property_updated_at: pausedProp.updated_at,
+    };
+  }
 
   // Fetch tokko source info (tokko_id not in properties_read)
   const { data: propertySource } = await supabaseAdmin
@@ -127,6 +207,7 @@ export default async function GestionPropertyDetailPage({
       tokko={propertySource?.tokko ?? false}
       tokkoId={propertySource?.tokko_id ?? null}
       userEmail={publicUser.email}
+      propertyStatus={propertyStatus}
     />
   );
 }

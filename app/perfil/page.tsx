@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   transformToTenantRental,
   transformToOwnerProperty,
+  transformToOwnerPropertyFromRaw,
 } from "@/lib/transforms/property";
 import GestionView from "@/views/panel/GestionView";
 import ProfileSection from "@/components/profile/ProfileSection";
@@ -45,7 +46,7 @@ export default async function PerfilPage() {
   let draftProperties: any[] = [];
 
   if (publicUserId) {
-    const [tenantOpsResult, ownerPropsResult, draftPropsResult] = await Promise.all([
+    const [tenantOpsResult, ownerPropsResult, draftPropsResult, pausedPropsResult] = await Promise.all([
       supabaseAdmin
         .from("operaciones")
         .select("*")
@@ -63,11 +64,24 @@ export default async function PerfilPage() {
         .not("draft_step", "is", null)
         .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
+      // Paused properties (status=1) — not in properties_read, need direct query
+      supabaseAdmin
+        .from("properties")
+        .select(`id, user_id, tokko, status, address, publication_title,
+          room_amount, bathroom_amount, suite_amount, total_surface, parking_lot_amount, age,
+          tokko_property_type!type_id(id, name),
+          tokko_location!location_id(name, parent:tokko_location!parent_location_id(name))`)
+        .eq("user_id", publicUserId)
+        .eq("status", 1)
+        .is("deleted_at", null)
+        .is("draft_step", null)
+        .order("updated_at", { ascending: false }),
     ]);
 
     const tenantOps = tenantOpsResult.data || [];
     const ownerProps = ownerPropsResult.data || [];
     draftProperties = draftPropsResult.data || [];
+    const pausedProps = pausedPropsResult.data || [];
 
     // Tenant rentals
     if (tenantOps.length > 0) {
@@ -152,11 +166,51 @@ export default async function PerfilPage() {
         planMap.get(row.property_id) ?? null
       )
     );
+
+    // Paused properties: fetch operacion + cover photo for each, then merge
+    if (pausedProps.length > 0) {
+      const pausedIds = pausedProps.map((p: any) => p.id);
+      const [pausedOpsResult, pausedPhotosResult] = await Promise.all([
+        supabaseAdmin
+          .from("operaciones")
+          .select("id, property_id, status, price, currency, expenses, planMobElegido")
+          .in("property_id", pausedIds)
+          .order("created_at", { ascending: false }),
+        supabaseAdmin
+          .from("tokko_property_photo")
+          .select("property_id, image")
+          .in("property_id", pausedIds)
+          .order("is_front_cover", { ascending: false })
+          .order("order", { ascending: true }),
+      ]);
+
+      const pausedOpsMap = new Map<number, any>();
+      for (const op of pausedOpsResult.data || []) {
+        if (!pausedOpsMap.has(op.property_id)) pausedOpsMap.set(op.property_id, op);
+      }
+      const pausedPhotoMap = new Map<number, string>();
+      for (const photo of pausedPhotosResult.data || []) {
+        if (!pausedPhotoMap.has(photo.property_id)) pausedPhotoMap.set(photo.property_id, photo.image);
+      }
+
+      const pausedOwnerProperties = pausedProps.map((row: any) => {
+        const op = pausedOpsMap.get(row.id);
+        return transformToOwnerPropertyFromRaw(
+          row,
+          op,
+          pausedPhotoMap.get(row.id) ?? null,
+          null,
+          op?.planMobElegido ?? null
+        );
+      });
+
+      ownerProperties = [...ownerProperties, ...pausedOwnerProperties];
+    }
   }
 
   const roles = {
     isTenant: tenantRentals.length > 0,
-    isOwner: ownerProperties.length > 0,
+    isOwner: ownerProperties.length > 0 || draftProperties.length > 0,
   };
 
   // Decrypt the first 8 chars of the API key server-side (never send full key to client)
@@ -189,6 +243,8 @@ export default async function PerfilPage() {
         tokkoKeyPreview={tokkoKeyPreview}
         tokkoApiHash={profile.tokko_api_hash ?? null}
         lastVerificationDate={profile.last_verification_date ?? null}
+        authId={authUser.id}
+        authEmail={authUser.email!}
       />
 
       {/* Gestion section — only show when user has selected a role */}

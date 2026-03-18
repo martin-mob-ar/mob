@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server-component";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { transformPropertyRead } from "@/lib/transforms/property";
 import PropertyDetail from "@/views/PropertyDetail";
 import { permanentRedirect, notFound } from "next/navigation";
@@ -16,6 +17,71 @@ function extractPropertyId(slugOrId: string): number | null {
     return parseInt(match[1]);
   }
   return null;
+}
+
+/**
+ * Fetch unavailable property from the raw `properties` table.
+ * Used as fallback when properties_read has no row (paused or deleted).
+ */
+async function fetchUnavailableProperty(propertyId: number) {
+  const { data } = await supabaseAdmin
+    .from("properties")
+    .select(`id, user_id, tokko, status, description, address, publication_title,
+      geo_lat, geo_long, room_amount, bathroom_amount, suite_amount,
+      parking_lot_amount, total_surface, roofed_surface, age, slug, company_id, contact_phone,
+      type_id, location_id,
+      tokko_property_type!type_id(id, name),
+      tokko_location!location_id(id, name, parent_location_id,
+        parent:tokko_location!parent_location_id(name)),
+      tokko_company!company_id(name, logo)`)
+    .eq("id", propertyId)
+    .in("status", [0, 1])
+    .maybeSingle();
+
+  return data;
+}
+
+/** Map a raw properties row to a properties_read-like shape */
+function mapRawToPropertyData(raw: any) {
+  return {
+    property_id: raw.id,
+    user_id: raw.user_id,
+    tokko: raw.tokko,
+    description: raw.description,
+    address: raw.address,
+    title: raw.publication_title,
+    geo_lat: raw.geo_lat,
+    geo_long: raw.geo_long,
+    property_type_id: raw.tokko_property_type?.id ?? null,
+    property_type_name: raw.tokko_property_type?.name ?? null,
+    location_id: raw.tokko_location?.id ?? null,
+    location_name: raw.tokko_location?.name ?? null,
+    parent_location_name: raw.tokko_location?.parent?.name ?? null,
+    company_name: raw.tokko_company?.name ?? null,
+    company_logo: raw.tokko_company?.logo ?? null,
+    contact_phone: raw.contact_phone,
+    slug: raw.slug,
+    age: raw.age,
+    room_amount: raw.room_amount,
+    bathroom_amount: raw.bathroom_amount,
+    suite_amount: raw.suite_amount,
+    total_surface: raw.total_surface,
+    roofed_surface: raw.roofed_surface,
+    parking_lot_amount: raw.parking_lot_amount,
+    // Price fields null for unavailable properties
+    currency: null,
+    price: null,
+    expenses: null,
+    valor_total_primary: null,
+    cover_photo_url: null,
+    cover_photo_thumb: null,
+    tag_names_type_1: null,
+    tag_names_type_2: null,
+    tag_names_type_3: null,
+    mob_plan: "basico",
+    operacion_status: null,
+    property_status: raw.status,
+  };
 }
 
 export async function generateMetadata({
@@ -39,8 +105,39 @@ export async function generateMetadata({
     .eq("property_id", propertyId)
     .single();
 
+  // Fallback for unavailable properties
   if (!data) {
-    return { title: "Propiedad no encontrada | Mob.ar" };
+    const rawProperty = await fetchUnavailableProperty(propertyId);
+    if (!rawProperty) {
+      return { title: "Propiedad no encontrada | Mob.ar" };
+    }
+
+    const raw = rawProperty as any;
+    const typeNameEs = raw.tokko_property_type?.name || "Propiedad";
+    const locationName = raw.tokko_location?.name;
+    const parentLocationName = raw.tokko_location?.parent?.name;
+
+    const titleParts: string[] = [typeNameEs];
+    if (rawProperty.room_amount && rawProperty.room_amount > 0) {
+      titleParts.push(
+        `${rawProperty.room_amount} ${rawProperty.room_amount === 1 ? "ambiente" : "ambientes"}`
+      );
+    }
+    if (locationName) {
+      titleParts.push(parentLocationName ? `en ${locationName}, ${parentLocationName}` : `en ${locationName}`);
+    }
+    const title = titleParts.join(" ") + " - No disponible | Mob.ar";
+    const description = `${typeNameEs} ya no disponible para alquiler. Alquileres 100% online en mob.`;
+    const canonicalSlug = rawProperty.slug || slugParam;
+    const canonicalUrl = `https://www.mob.ar/propiedad/${canonicalSlug}`;
+
+    return {
+      title,
+      description,
+      alternates: { canonical: canonicalUrl },
+      openGraph: { title, description, url: canonicalUrl, siteName: "mob", type: "website" },
+      twitter: { card: "summary_large_image", title, description },
+    };
   }
 
   // Get Spanish type name
@@ -96,7 +193,7 @@ export async function generateMetadata({
     descParts.join(" ") + ". Alquileres 100% online en mob.";
 
   const canonicalSlug = data.slug || slugParam;
-  const canonicalUrl = `https://mob.com.ar/propiedad/${canonicalSlug}`;
+  const canonicalUrl = `https://www.mob.ar/propiedad/${canonicalSlug}`;
 
   return {
     title,
@@ -147,18 +244,29 @@ export default async function PropiedadDetailPage({
   const supabase = await createClient();
 
   // Fetch property from properties_read
-  const { data: propertyData } = await supabase
+  const { data: activePropertyData } = await supabase
     .from("properties_read")
     .select("*")
     .eq("property_id", propertyId)
     .single();
 
-  if (!propertyData) {
-    notFound();
+  let propertyData: any;
+  let isUnavailable = false;
+
+  if (activePropertyData) {
+    propertyData = activePropertyData;
+  } else {
+    // Fallback: check if property exists but is paused/deleted
+    const rawProperty = await fetchUnavailableProperty(propertyId);
+    if (!rawProperty) {
+      notFound();
+    }
+    propertyData = mapRawToPropertyData(rawProperty);
+    isUnavailable = true;
   }
 
-  // 301 redirect if accessed via numeric ID or wrong slug
-  if (propertyData.slug && slugParam !== propertyData.slug) {
+  // 301 redirect if accessed via numeric ID or wrong slug (only for active properties)
+  if (!isUnavailable && propertyData.slug && slugParam !== propertyData.slug) {
     permanentRedirect(`/propiedad/${propertyData.slug}`);
   }
 
@@ -198,6 +306,18 @@ export default async function PropiedadDetailPage({
     allTags.push(...propertyData.tag_names_type_3);
   tags = allTags;
 
+  // For unavailable properties, fetch tags from normalized tables
+  if (isUnavailable && tags.length === 0) {
+    const { data: tagData } = await supabaseAdmin
+      .from("tokko_property_property_tag")
+      .select("tokko_property_tag(name)")
+      .eq("property_id", propertyId);
+
+    if (tagData) {
+      tags = tagData.map((t: any) => t.tokko_property_tag?.name).filter(Boolean);
+    }
+  }
+
   // Fetch all photos for this property
   const { data: photoData } = await supabase
     .from("tokko_property_photo")
@@ -216,7 +336,7 @@ export default async function PropiedadDetailPage({
 
   if (!publisherName && propertyData.user_id) {
     // Dueño directo: fetch name from users table; logo is intentionally not used (person icon shown instead)
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseAdmin
       .from("users")
       .select("name")
       .eq("id", propertyData.user_id)
@@ -253,6 +373,7 @@ export default async function PropiedadDetailPage({
       age={propertyData.age ?? null}
       propertyPlan={propertyPlan}
       isInmobiliaria={isInmobiliaria}
+      isUnavailable={isUnavailable}
     />
   );
 }
