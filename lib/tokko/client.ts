@@ -231,6 +231,7 @@ export class TokkoClient {
       headers: {
         'Accept': 'application/json',
       },
+      signal: AbortSignal.timeout(30_000), // 30s timeout per API call
     });
 
     if (!response.ok) {
