@@ -25,6 +25,8 @@ export interface IncrementalSyncStats {
   photosAdded: number;
   photosRemoved: number;
   errors: string[];
+  /** True when all pages were processed without timing out or catastrophic error. */
+  completed: boolean;
 }
 
 /**
@@ -140,6 +142,7 @@ export async function syncTargetIncremental(
     photosAdded: 0,
     photosRemoved: 0,
     errors: [],
+    completed: false,
   };
 
   // 1. Decrypt API key
@@ -160,8 +163,6 @@ export async function syncTargetIncremental(
     return stats;
   }
 
-  // 3. Capture sync timestamp BEFORE API calls (prevents gap where changes are missed)
-  const syncTimestamp = new Date().toISOString();
   const client = new TokkoClient(apiKey);
   let needsPhotoMigration = false;
   let timedOut = false;
@@ -262,22 +263,8 @@ export async function syncTargetIncremental(
       triggerPhotoMigration(target.userId);
     }
 
-    // ── Step D: Update timestamp ONLY if we completed all pages ──
-    if (!timedOut) {
-      // Update company-level timestamp if applicable
-      if (target.companyId) {
-        await supabaseAdmin
-          .from('tokko_company')
-          .update({ last_incremental_sync_at: syncTimestamp })
-          .eq('id', target.companyId);
-      }
-
-      // Always update user-level timestamp (used for display + standalone "since")
-      await supabaseAdmin
-        .from('users')
-        .update({ tokko_last_sync_at: syncTimestamp })
-        .eq('id', target.userId);
-    }
+    // Mark completed — timestamp updates are batched by the caller
+    stats.completed = !timedOut;
 
     console.log(`[Incremental Sync] ${target.name}: ${stats.propertiesUpdated} updated, ${stats.propertiesDeleted} deleted, +${stats.photosAdded}/-${stats.photosRemoved} photos${timedOut ? ' (timed out)' : ''}`);
   } catch (error) {

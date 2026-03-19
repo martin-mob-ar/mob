@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
   console.log(`[Cron Sync] Chain #${chainIndex}: ${targets.length} targets to process`);
 
   // ── 6. Process targets with time guard ──
+  const syncTimestamp = new Date().toISOString(); // Captured before any API calls
   const timeGuard = {
     hasTime: () => Date.now() - startTime < 250_000,
   };
@@ -118,6 +119,9 @@ export async function GET(request: NextRequest) {
     errors: [] as string[],
   };
 
+  const completedCompanyIds: number[] = [];
+  const completedUserIds = new Set<string>();
+
   for (const target of targets) {
     if (!timeGuard.hasTime()) break;
 
@@ -129,6 +133,11 @@ export async function GET(request: NextRequest) {
       totals.photosAdded += stats.photosAdded;
       totals.photosRemoved += stats.photosRemoved;
       totals.errors.push(...stats.errors);
+
+      if (stats.completed) {
+        if (target.companyId) completedCompanyIds.push(target.companyId);
+        completedUserIds.add(target.userId);
+      }
     } catch (error) {
       const msg = `Target ${target.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       totals.errors.push(msg);
@@ -149,6 +158,20 @@ export async function GET(request: NextRequest) {
         errors: totals.errors.slice(0, 50),
       })
       .eq('id', currentLogId);
+  }
+
+  // ── 6b. Batch-update sync timestamps for completed targets ──
+  if (completedCompanyIds.length > 0) {
+    await supabaseAdmin
+      .from('tokko_company')
+      .update({ last_incremental_sync_at: syncTimestamp })
+      .in('id', completedCompanyIds);
+  }
+  if (completedUserIds.size > 0) {
+    await supabaseAdmin
+      .from('users')
+      .update({ tokko_last_sync_at: syncTimestamp })
+      .in('id', [...completedUserIds]);
   }
 
   // ── 7. Check if we need to chain ──
