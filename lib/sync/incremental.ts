@@ -30,6 +30,27 @@ export interface IncrementalSyncStats {
 }
 
 /**
+ * In-memory cache shared across all targets in a single cron run.
+ * Avoids redundant Supabase calls for reference data and location lookups.
+ */
+export interface SyncCache {
+  propertyTypes: Set<number>;
+  tags: Set<number>;
+  operationTypes: Set<number>;
+  /** location_id → exists in DB (true/false) */
+  locations: Map<number, boolean>;
+}
+
+export function createSyncCache(): SyncCache {
+  return {
+    propertyTypes: new Set(),
+    tags: new Set(),
+    operationTypes: new Set(),
+    locations: new Map(),
+  };
+}
+
+/**
  * Fire-and-forget: kick off photo migration for a user.
  * The endpoint self-chains internally, so we just need to fire once.
  */
@@ -135,6 +156,7 @@ export async function getIncrementalSyncTargets(): Promise<IncrementalSyncTarget
 export async function syncTargetIncremental(
   target: IncrementalSyncTarget,
   timeGuard: { hasTime: () => boolean },
+  cache?: SyncCache,
 ): Promise<IncrementalSyncStats> {
   const stats: IncrementalSyncStats = {
     propertiesUpdated: 0,
@@ -185,7 +207,7 @@ export async function syncTargetIncremental(
           const typeMatch = SYNC_PROPERTY_TYPES.includes(tkkProp.type?.id);
 
           if (typeMatch) {
-            const result = await syncSingleProperty(target.userId, target.companyId, tkkProp);
+            const result = await syncSingleProperty(target.userId, target.companyId, tkkProp, cache);
             if (result) {
               const photoDiff = await diffAndSyncPhotos(result.propertyId, tkkProp.photos);
               stats.photosAdded += photoDiff.added;
@@ -289,25 +311,77 @@ async function syncSingleProperty(
   userId: string,
   companyId: number | null,
   tkkProp: TokkoProperty,
+  cache?: SyncCache,
 ): Promise<{ propertyId: number } | null> {
 
-  // ── Step 0: Upsert reference data (types, tags, operation types) ──
-  if (tkkProp.type?.id) {
+  // ── Step 0: Resolve location FIRST (skip early if unknown) ──
+  let locationId: number | null = null;
+  let parentDivisionLocationId: number | null = null;
+
+  if (tkkProp.location?.id) {
+    const locId = tkkProp.location.id;
+
+    if (cache && cache.locations.has(locId)) {
+      if (!cache.locations.get(locId)) return null; // Known missing location
+      locationId = locId;
+    } else {
+      const { data: loc } = await supabaseAdmin
+        .from('tokko_location')
+        .select('id')
+        .eq('id', locId)
+        .maybeSingle();
+
+      cache?.locations.set(locId, !!loc);
+      if (!loc) return null;
+      locationId = loc.id;
+    }
+
+    // Parse parent_division URL: "/location/12345/"
+    if (tkkProp.location.parent_division) {
+      const match = tkkProp.location.parent_division.match(/\/location\/(\d+)\//);
+      if (match) {
+        const parentId = parseInt(match[1], 10);
+
+        if (cache && cache.locations.has(parentId)) {
+          if (cache.locations.get(parentId)) parentDivisionLocationId = parentId;
+        } else {
+          const { data: parentLoc } = await supabaseAdmin
+            .from('tokko_location')
+            .select('id')
+            .eq('id', parentId)
+            .maybeSingle();
+          cache?.locations.set(parentId, !!parentLoc);
+          if (parentLoc) parentDivisionLocationId = parentLoc.id;
+        }
+      }
+    }
+  }
+
+  // ── Step 1: Upsert reference data (cached — skip if already seen) ──
+  if (tkkProp.type?.id && !cache?.propertyTypes.has(tkkProp.type.id)) {
     await supabaseAdmin
       .from('tokko_property_type')
       .upsert(
         { id: tkkProp.type.id, code: tkkProp.type.code, name: tkkProp.type.name },
         { onConflict: 'id', ignoreDuplicates: true },
       );
+    cache?.propertyTypes.add(tkkProp.type.id);
   }
 
   if (tkkProp.tags?.length) {
-    await supabaseAdmin
-      .from('tokko_property_tag')
-      .upsert(
-        tkkProp.tags.map(tag => ({ id: tag.id, name: tag.name, type: tag.type })),
-        { onConflict: 'id' },
-      );
+    const newTags = cache
+      ? tkkProp.tags.filter(t => !cache.tags.has(t.id))
+      : tkkProp.tags;
+
+    if (newTags.length > 0) {
+      await supabaseAdmin
+        .from('tokko_property_tag')
+        .upsert(
+          newTags.map(tag => ({ id: tag.id, name: tag.name, type: tag.type })),
+          { onConflict: 'id' },
+        );
+      for (const tag of newTags) cache?.tags.add(tag.id);
+    }
   }
 
   if (tkkProp.operations?.length) {
@@ -315,43 +389,13 @@ async function syncSingleProperty(
       ...new Map(
         tkkProp.operations.map(op => [op.operation_id, { id: op.operation_id, name: op.operation_type }])
       ).values(),
-    ];
-    await supabaseAdmin
-      .from('tokko_operation_type')
-      .upsert(uniqueOpTypes, { onConflict: 'id' });
-  }
+    ].filter(op => !cache?.operationTypes.has(op.id));
 
-  // ── Step 1: Resolve location ──
-  let locationId: number | null = null;
-  let parentDivisionLocationId: number | null = null;
-
-  if (tkkProp.location?.id) {
-    const { data: loc } = await supabaseAdmin
-      .from('tokko_location')
-      .select('id')
-      .eq('id', tkkProp.location.id)
-      .maybeSingle();
-
-    if (!loc) {
-      // Location not in DB (likely non-Argentina) — skip property
-      return null;
-    }
-    locationId = loc.id;
-
-    // Parse parent_division URL: "/location/12345/"
-    if (tkkProp.location.parent_division) {
-      const match = tkkProp.location.parent_division.match(/\/location\/(\d+)\//);
-      if (match) {
-        const parentId = parseInt(match[1], 10);
-        const { data: parentLoc } = await supabaseAdmin
-          .from('tokko_location')
-          .select('id')
-          .eq('id', parentId)
-          .maybeSingle();
-        if (parentLoc) {
-          parentDivisionLocationId = parentLoc.id;
-        }
-      }
+    if (uniqueOpTypes.length > 0) {
+      await supabaseAdmin
+        .from('tokko_operation_type')
+        .upsert(uniqueOpTypes, { onConflict: 'id' });
+      for (const op of uniqueOpTypes) cache?.operationTypes.add(op.id);
     }
   }
 
