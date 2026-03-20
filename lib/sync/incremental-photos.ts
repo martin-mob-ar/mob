@@ -77,13 +77,15 @@ export async function diffAndSyncPhotos(
     await insertPhotos(propertyId, toAdd);
   }
 
-  // Reorder existing photos
-  for (const photo of toReorder) {
-    const existing = dbByUrl.get(photo.original)!;
-    await supabaseAdmin
-      .from('tokko_property_photo')
-      .update({ order: photo.order, is_front_cover: photo.order === 0 })
-      .eq('id', existing.id);
+  // Reorder existing photos (parallel to reduce wall time)
+  if (toReorder.length > 0) {
+    await Promise.all(toReorder.map(photo => {
+      const existing = dbByUrl.get(photo.original)!;
+      return supabaseAdmin
+        .from('tokko_property_photo')
+        .update({ order: photo.order, is_front_cover: photo.order === 0 })
+        .eq('id', existing.id);
+    }));
   }
 
   return { added: toAdd.length, removed: toRemove.length };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { getIncrementalSyncTargets, syncTargetIncremental } from '@/lib/sync/incremental';
+import { getIncrementalSyncTargets, syncTargetIncremental, createSyncCache } from '@/lib/sync/incremental';
 
 export const maxDuration = 300;
 
@@ -121,13 +121,14 @@ export async function GET(request: NextRequest) {
 
   const completedCompanyIds: number[] = [];
   const completedUserIds = new Set<string>();
+  const cache = createSyncCache();
 
   for (const target of targets) {
     if (!timeGuard.hasTime()) break;
 
     try {
       console.log(`[Cron Sync] Processing target: ${target.name} (company: ${target.companyId ?? 'standalone'})`);
-      const stats = await syncTargetIncremental(target, timeGuard);
+      const stats = await syncTargetIncremental(target, timeGuard, cache);
       totals.propertiesUpdated += stats.propertiesUpdated;
       totals.propertiesDeleted += stats.propertiesDeleted;
       totals.photosAdded += stats.photosAdded;
@@ -146,18 +147,20 @@ export async function GET(request: NextRequest) {
 
     totals.targetsProcessed++;
 
-    // Update log progressively so progress isn't lost if function times out
-    await supabaseAdmin
-      .from('cron_sync_log')
-      .update({
-        companies_processed: totals.targetsProcessed,
-        properties_updated: totals.propertiesUpdated,
-        properties_deleted: totals.propertiesDeleted,
-        photos_added: totals.photosAdded,
-        photos_removed: totals.photosRemoved,
-        errors: totals.errors.slice(0, 50),
-      })
-      .eq('id', currentLogId);
+    // Update log every 10 targets (and always on last) to reduce Supabase calls
+    if (totals.targetsProcessed % 10 === 0 || totals.targetsProcessed >= targets.length || !timeGuard.hasTime()) {
+      await supabaseAdmin
+        .from('cron_sync_log')
+        .update({
+          companies_processed: totals.targetsProcessed,
+          properties_updated: totals.propertiesUpdated,
+          properties_deleted: totals.propertiesDeleted,
+          photos_added: totals.photosAdded,
+          photos_removed: totals.photosRemoved,
+          errors: totals.errors.slice(0, 50),
+        })
+        .eq('id', currentLogId);
+    }
   }
 
   // ── 6b. Batch-update sync timestamps for completed targets ──
