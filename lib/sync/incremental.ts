@@ -205,8 +205,11 @@ export async function syncTargetIncremental(
 
         try {
           const typeMatch = SYNC_PROPERTY_TYPES.includes(tkkProp.type?.id);
+          const hasRentOp = (tkkProp.operations ?? []).some(
+            op => op.operation_id === RENT_OPERATION_ID,
+          );
 
-          if (typeMatch) {
+          if (typeMatch && hasRentOp) {
             const result = await syncSingleProperty(target.userId, target.companyId, tkkProp, cache);
             if (result) {
               const photoDiff = await diffAndSyncPhotos(result.propertyId, tkkProp.photos);
@@ -216,7 +219,7 @@ export async function syncTargetIncremental(
               if (photoDiff.added > 0) needsPhotoMigration = true;
             }
           } else {
-            // Property type changed to excluded type -> soft-delete if it exists in our DB
+            // Type doesn't match OR no rent operation -> soft-delete if it exists in our DB
             const { data: existing } = await supabaseAdmin
               .from('properties')
               .select('id, status')
@@ -512,10 +515,13 @@ async function syncSingleProperty(
 }
 
 /**
- * Sync operations for a property, matching the batch RPC behavior.
+ * Sync operations for a property.
+ * Only called when the property HAS rent operations (checked by caller).
  * Preserves user-set fields (planMobElegido, ipc_adjustment, min_start_date).
  */
 async function syncOperations(propertyId: number, tkkProp: TokkoProperty): Promise<void> {
+  const rentOps = (tkkProp.operations ?? []).filter(op => op.operation_id === RENT_OPERATION_ID);
+
   // Preserve user-set fields from existing available operation
   const { data: existingOp } = await supabaseAdmin
     .from('operaciones')
@@ -536,43 +542,30 @@ async function syncOperations(propertyId: number, tkkProp: TokkoProperty): Promi
     .eq('property_id', propertyId)
     .eq('status', 'available');
 
-  // Common property-level fields stored on operations
-  const baseFields = {
-    property_id: propertyId,
-    status: 'available' as const,
-    expenses: tkkProp.expenses ?? null,
-    cleaning_tax: parseNumericField(tkkProp.cleaning_tax),
-    fire_insurance_cost: parseNumericField(tkkProp.fire_insurance_cost),
-    down_payment: parseNumericField(tkkProp.down_payment),
-    custom1: tkkProp.custom1 ?? null,
-    credit_eligible: tkkProp.credit_eligible ?? null,
-    iptu: tkkProp.iptu ?? null,
-    planMobElegido: preservedPlan,
-    ipc_adjustment: preservedIpc,
-    min_start_date: preservedMinStartDate,
-  };
+  for (const op of rentOps) {
+    const primaryPrice = op.prices?.[0];
+    const secondaryPrice = op.prices?.[1];
 
-  // Filter to rent operations (operation_id = 2)
-  const rentOps = (tkkProp.operations ?? []).filter(op => op.operation_id === RENT_OPERATION_ID);
-
-  if (rentOps.length > 0) {
-    for (const op of rentOps) {
-      const primaryPrice = op.prices?.[0];
-      const secondaryPrice = op.prices?.[1];
-
-      await supabaseAdmin.from('operaciones').insert({
-        ...baseFields,
-        tokko_operation_id: op.operation_id,
-        currency: primaryPrice?.currency ?? null,
-        price: primaryPrice?.price ?? null,
-        period: primaryPrice?.period != null ? String(primaryPrice.period) : '0',
-        is_promotional: primaryPrice?.is_promotional ?? false,
-        secondary_currency: secondaryPrice?.currency ?? null,
-        secondary_price: secondaryPrice?.price ?? null,
-      });
-    }
-  } else {
-    // No rent operations — insert bare row (matches batch RPC behavior)
-    await supabaseAdmin.from('operaciones').insert(baseFields);
+    await supabaseAdmin.from('operaciones').insert({
+      property_id: propertyId,
+      status: 'available' as const,
+      expenses: tkkProp.expenses ?? null,
+      cleaning_tax: parseNumericField(tkkProp.cleaning_tax),
+      fire_insurance_cost: parseNumericField(tkkProp.fire_insurance_cost),
+      down_payment: parseNumericField(tkkProp.down_payment),
+      custom1: tkkProp.custom1 ?? null,
+      credit_eligible: tkkProp.credit_eligible ?? null,
+      iptu: tkkProp.iptu ?? null,
+      planMobElegido: preservedPlan,
+      ipc_adjustment: preservedIpc,
+      min_start_date: preservedMinStartDate,
+      tokko_operation_id: op.operation_id,
+      currency: primaryPrice?.currency ?? null,
+      price: primaryPrice?.price ?? null,
+      period: primaryPrice?.period != null ? String(primaryPrice.period) : '0',
+      is_promotional: primaryPrice?.is_promotional ?? false,
+      secondary_currency: secondaryPrice?.currency ?? null,
+      secondary_price: secondaryPrice?.price ?? null,
+    });
   }
 }
