@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: true,
+    unoptimized: isDev,
     remotePatterns: [
       { protocol: "https", hostname: "storage.googleapis.com" },
       { protocol: "https", hostname: "**.tokkobroker.com" },

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useLoadScript } from "@react-google-maps/api";
 import {
   Calendar,
@@ -29,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import LocationSearchInput from "@/components/LocationSearchInput";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { LocationResult } from "@/hooks/useLocationSearch";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { TAG_SECTIONS, ALL_TAGS } from "@/lib/constants/tags";
@@ -43,13 +45,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import PhotoUploader, { UploadedPhoto } from "@/components/PhotoUploader";
-import PlanSelector, { PlanType } from "@/components/pricing/PlanSelector";
+import PlanSelector, { PlanType, pricingCost } from "@/components/pricing/PlanSelector";
 
 const mobLogo = "/assets/mob-logo-new.png";
 
 const TOTAL_STEPS = 9;
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places"];
-const DEFAULT_CENTER = { lat: -34.6037, lng: -58.3816 };
 
 const propertyTypes = [
   { id: 2, label: "Departamento" },
@@ -107,6 +108,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
 
   // Draft / edit tracking
   const [draftPropertyId, setDraftPropertyId] = useState<number | null>(null);
+  const draftPropertyIdRef = useRef<number | null>(null);
+  const maxStepReachedRef = useRef<number>(1);
+  const saveDraftPromiseRef = useRef<Promise<void> | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAndExiting, setIsSavingAndExiting] = useState(false);
   const isEditMode = !!editData && !draftData;
 
   // Draft prompt (step 1) — delete flow
@@ -140,12 +146,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
   const [piso, setPiso] = useState("");
   const [depto, setDepto] = useState("");
 
-  // Step 3: Map
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
-
-  // Step 4: Detalles
+  // Step 3: Detalles
   const [ambientes, setAmbientes] = useState(0);
   const [dormitorios, setDormitorios] = useState(0);
   const [banos, setBanos] = useState(0);
@@ -156,38 +157,44 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
   const [superficieTotal, setSuperficieTotal] = useState("");
   const [disposicion, setDisposicion] = useState("");
 
-  // Step 5: Precio y características
+  // Step 4: Precio y características
   const [precioMensual, setPrecioMensual] = useState("");
   const [moneda, setMoneda] = useState<"ARS" | "USD">("ARS");
   const [expensas, setExpensas] = useState("");
   const [expensasIncluidas, setExpensasIncluidas] = useState(false);
   const [amoblado, setAmoblado] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-  const [duracionContrato, setDuracionContrato] = useState<number | null>(12);
+  const [duracionContrato, setDuracionContrato] = useState<number | null>(24);
   const [customDuracion, setCustomDuracion] = useState("");
   const [showDuracionHint, setShowDuracionHint] = useState(false);
+  const [expandedTagSections, setExpandedTagSections] = useState<Set<string>>(new Set());
   const [ipcEnabled, setIpcEnabled] = useState(true);
   const [ipcPeriodo, setIpcPeriodo] = useState<string>("trimestral");
 
-  // Step 6: Fotos y descripción
+  // Step 5: Fotos y descripción
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const [descripcion, setDescripcion] = useState("");
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
 
   // Step 7: Logística
-  const [fechaDisponible, setFechaDisponible] = useState("");
-  const [diasVisita, setDiasVisita] = useState<string[]>(["lunes", "miercoles", "jueves"]);
+  const [noPuedeDefinirHorarios, setNoPuedeDefinirHorarios] = useState(false);
+  const [fechaDisponible, setFechaDisponible] = useState(() => {
+    const now = new Date();
+    const firstOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return firstOfNextMonth.toISOString().split("T")[0];
+  });
+  const [diasVisita, setDiasVisita] = useState<string[]>(["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]);
   const [horariosVisita, setHorariosVisita] = useState<Record<string, { start: string; end: string }>>({
-    lunes: { start: "09:00", end: "18:00" },
-    martes: { start: "09:00", end: "18:00" },
-    miercoles: { start: "09:00", end: "18:00" },
-    jueves: { start: "09:00", end: "18:00" },
-    viernes: { start: "09:00", end: "18:00" },
-    sabado: { start: "10:00", end: "14:00" },
-    domingo: { start: "10:00", end: "14:00" },
+    lunes: { start: "08:00", end: "20:00" },
+    martes: { start: "08:00", end: "20:00" },
+    miercoles: { start: "08:00", end: "20:00" },
+    jueves: { start: "08:00", end: "20:00" },
+    viernes: { start: "08:00", end: "20:00" },
+    sabado: { start: "08:00", end: "20:00" },
+    domingo: { start: "08:00", end: "20:00" },
   });
 
-  // Step 8: Plan
+  // Step 8: Plan elegido
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
 
   // Scrollable main area
@@ -205,7 +212,12 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
   useEffect(() => {
     if (!draftData) return;
     setDraftPropertyId(draftData.id);
-    setCurrentStep(draftData.draft_step ?? 2);
+    draftPropertyIdRef.current = draftData.id;
+    // Map old 10-step draft_step to new 9-step flow (step 3 map confirmation removed)
+    const rawStep = draftData.draft_step ?? 2;
+    const mappedStep = rawStep <= 2 ? rawStep : rawStep === 3 ? 2 : Math.min(rawStep - 1, TOTAL_STEPS);
+    setCurrentStep(mappedStep);
+    maxStepReachedRef.current = mappedStep;
     if (draftData.type_id) setTypeId(draftData.type_id);
     if (draftData.address) {
       setAddress(draftData.address);
@@ -252,6 +264,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
     if (extra.ipcEnabled != null) setIpcEnabled(extra.ipcEnabled);
     if (extra.ipcPeriodo) setIpcPeriodo(extra.ipcPeriodo);
     if (extra.selectedPlan) setSelectedPlan(extra.selectedPlan);
+    if (extra.noPuedeDefinirHorarios != null) setNoPuedeDefinirHorarios(extra.noPuedeDefinirHorarios);
 
     // Restore photos
     if (draftData.tokko_property_photo?.length) {
@@ -276,7 +289,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
   useEffect(() => {
     if (!editData || draftData) return;
     setDraftPropertyId(editData.id);
+    draftPropertyIdRef.current = editData.id;
     setCurrentStep(9);
+    maxStepReachedRef.current = 9;
     if (editData.type_id) setTypeId(editData.type_id);
     if (editData.address) {
       setAddress(editData.address);
@@ -380,41 +395,6 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
     setIpcEnabled(moneda === "ARS");
   }, [moneda]);
 
-  // Initialize/update map on Step 3 (map confirmation)
-  useEffect(() => {
-    if (currentStep !== 3 || !isLoaded || !mapRef.current || typeof google === "undefined") return;
-
-    const lat = geoLat ? parseFloat(geoLat) : DEFAULT_CENTER.lat;
-    const lng = geoLong ? parseFloat(geoLong) : DEFAULT_CENTER.lng;
-    const hasCoords = geoLat && geoLong;
-
-    if (!mapInstanceRef.current) {
-      const map = new google.maps.Map(mapRef.current, {
-        center: { lat, lng },
-        zoom: hasCoords ? 16 : 10,
-        disableDefaultUI: false,
-      });
-      mapInstanceRef.current = map;
-    } else {
-      mapInstanceRef.current.setCenter({ lat, lng });
-      mapInstanceRef.current.setZoom(hasCoords ? 16 : 10);
-    }
-
-    if (hasCoords) {
-      if (markerRef.current) {
-        markerRef.current.setPosition({ lat, lng });
-      } else {
-        const marker = new google.maps.Marker({
-          map: mapInstanceRef.current,
-          position: { lat, lng },
-          draggable: false,
-          title: address || "Ubicación",
-        });
-        markerRef.current = marker;
-      }
-    }
-  }, [currentStep, isLoaded, geoLat, geoLong, address]);
-
   const handleLocationSelect = (location: LocationResult) => {
     setSelectedLocation(location);
     setLocationId(location.id);
@@ -465,20 +445,19 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
         if ((typeId === 2 || typeId === 13) && (!piso || !depto)) return false;
         return true;
       case 3:
-        return !!geoLat && !!geoLong;
-      case 4:
         if (!antiguedad || !superficieCubierta || !superficieTotal) return false;
-        if (Number(superficieTotal) < Number(superficieCubierta)) return false;
         return true;
-      case 5:
-        return !!precioMensual && (expensasIncluidas || !!expensas);
-      case 6: {
+      case 4:
+        return !!precioMensual && (expensasIncluidas || !!expensas) && !!duracionContrato;
+      case 5: {
         if (uploadedPhotos.length < 5) return false;
         const urls = uploadedPhotos.map((p) => p.publicUrl);
         return new Set(urls).size === urls.length;
       }
+      case 6:
+        return true; // Description is optional
       case 7: {
-        if (!fechaDisponible || diasVisita.length === 0) return false;
+        if (!fechaDisponible || (!noPuedeDefinirHorarios && diasVisita.length === 0)) return false;
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
@@ -498,61 +477,81 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
       return `${dia} ${h?.start || "09:00"}-${h?.end || "18:00"}`;
     });
 
-  const saveDraft = useCallback(async (nextStep: number) => {
-    try {
-      const res = await fetch("/api/properties/save-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile_id: userId,
-          draftId: draftPropertyId,
-          draft_step: nextStep,
-          type_id: typeId,
-          address: address || null,
-          geo_lat: geoLat || null,
-          geo_long: geoLong || null,
-          location_id: locationId,
-          floor: piso || null,
-          apartment_door: depto || null,
-          room_amount: ambientes,
-          bathroom_amount: banos,
-          toilet_amount: toilettes,
-          suite_amount: dormitorios,
-          parking_lot_amount: cocheras,
-          roofed_surface: superficieCubierta || null,
-          total_surface: superficieTotal || null,
-          age: antiguedad ? parseInt(antiguedad) : null,
-          disposition: disposicion || null,
-          available_date: fechaDisponible || null,
-          visit_days: diasVisita,
-          visit_hours: buildVisitHoursArr(),
-          description: descripcion.trim() || null,
-          tagIds: selectedTagIds,
-          photos: uploadedPhotos,
-          draftExtra: {
-            amoblado,
-            precioMensual,
-            moneda,
-            expensas,
-            expensasIncluidas,
-            duracionContrato,
-            customDuracion,
-            ipcEnabled,
-            ipcPeriodo,
-            selectedPlan,
-          },
-        }),
-      });
-      if (res.ok) {
-        const { id } = await res.json();
-        if (!draftPropertyId) setDraftPropertyId(id);
+  const saveDraft = useCallback((nextStep: number) => {
+    const doSave = async () => {
+      setIsSaving(true);
+      try {
+        // Chain: wait for any previous save to complete (ensures draftPropertyId is set)
+        if (saveDraftPromiseRef.current) {
+          await saveDraftPromiseRef.current;
+        }
+
+        const effectiveDraftStep = Math.max(maxStepReachedRef.current, nextStep);
+
+        const res = await fetch("/api/properties/save-draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profile_id: userId,
+            draftId: draftPropertyIdRef.current,
+            draft_step: effectiveDraftStep,
+            type_id: typeId,
+            address: address || null,
+            geo_lat: geoLat || null,
+            geo_long: geoLong || null,
+            location_id: locationId,
+            floor: piso || null,
+            apartment_door: depto || null,
+            room_amount: ambientes,
+            bathroom_amount: banos,
+            toilet_amount: toilettes,
+            suite_amount: dormitorios,
+            parking_lot_amount: cocheras,
+            roofed_surface: superficieCubierta || null,
+            total_surface: superficieTotal || null,
+            age: antiguedad ? parseInt(antiguedad) : null,
+            disposition: disposicion || null,
+            available_date: fechaDisponible || null,
+            visit_days: diasVisita,
+            visit_hours: buildVisitHoursArr(),
+            description: descripcion.trim() || null,
+            tagIds: selectedTagIds,
+            photos: uploadedPhotos,
+            draftExtra: {
+              amoblado,
+              precioMensual,
+              moneda,
+              expensas,
+              expensasIncluidas,
+              duracionContrato,
+              customDuracion,
+              ipcEnabled,
+              ipcPeriodo,
+              selectedPlan,
+              noPuedeDefinirHorarios,
+            },
+          }),
+        });
+        if (res.ok) {
+          const { id } = await res.json();
+          if (!draftPropertyIdRef.current) {
+            draftPropertyIdRef.current = id;
+            setDraftPropertyId(id);
+          }
+        }
+      } catch {
+        // Non-blocking — draft save failure should not interrupt user flow
+      } finally {
+        setIsSaving(false);
       }
-    } catch {
-      // Non-blocking — draft save failure should not interrupt user flow
-    }
+    };
+
+    const promise = doSave();
+    saveDraftPromiseRef.current = promise;
+    return promise;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    userId, draftPropertyId, typeId, address, geoLat, geoLong, locationId,
+    userId, typeId, address, geoLat, geoLong, locationId,
     piso, depto, ambientes, banos, toilettes, dormitorios, cocheras,
     superficieCubierta, superficieTotal, antiguedad, disposicion,
     fechaDisponible, diasVisita, horariosVisita, descripcion, selectedTagIds,
@@ -565,7 +564,18 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
       if (validateStep(currentStep)) {
         setShowErrors(false);
         const nextStep = currentStep + 1;
-        if (currentStep >= 2 && !isEditMode) await saveDraft(nextStep);
+        maxStepReachedRef.current = Math.max(maxStepReachedRef.current, nextStep);
+
+        if (currentStep >= 2 && !isEditMode) {
+          if (!draftPropertyIdRef.current) {
+            // First save: must await to get the draftPropertyId
+            await saveDraft(nextStep);
+          } else {
+            // Subsequent saves: fire-and-forget (optimistic advance)
+            saveDraft(nextStep);
+          }
+        }
+
         setCurrentStep(nextStep);
         mainRef.current?.scrollTo({ top: 0 });
       } else {
@@ -590,7 +600,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
       router.push(`/gestion/propiedad/${draftPropertyId}`);
       return;
     }
-    if (currentStep >= 2) await saveDraft(currentStep);
+    if (currentStep >= 2) {
+      setIsSavingAndExiting(true);
+      await saveDraft(maxStepReachedRef.current);
+      setIsSavingAndExiting(false);
+    }
     router.push("/gestion");
   };
 
@@ -692,10 +706,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           roofed_surface: superficieCubierta || null,
           total_surface: superficieTotal || null,
           semiroofed_surface: null,
-          unroofed_surface:
-            superficieTotal && superficieCubierta
-              ? String(Math.max(0, Number(superficieTotal) - Number(superficieCubierta)))
-              : null,
+          unroofed_surface: null,
           age: antiguedad ? parseInt(antiguedad) : null,
           floors_amount: null,
           disposition: disposicion || null,
@@ -714,8 +725,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           reference_code: null,
           available_date: fechaDisponible || null,
           key_coordination: null,
-          visit_days: diasVisita,
-          visit_hours: visitHoursArr,
+          visit_days: noPuedeDefinirHorarios ? [] : diasVisita,
+          visit_hours: noPuedeDefinirHorarios ? [] : visitHoursArr,
+          no_puede_definir_horarios: noPuedeDefinirHorarios,
         };
 
         const res = await fetch(`/api/properties/${draftPropertyId}/update`, {
@@ -751,10 +763,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           parking_lot_amount: cocheras,
           roofed_surface: superficieCubierta ? String(superficieCubierta) : null,
           total_surface: superficieTotal ? String(superficieTotal) : null,
-          unroofed_surface:
-            superficieTotal && superficieCubierta
-              ? String(Math.max(0, Number(superficieTotal) - Number(superficieCubierta)))
-              : null,
+          unroofed_surface: null,
           age: antiguedad ? parseInt(antiguedad) : null,
           disposition: disposicion || null,
           floor: piso || null,
@@ -769,8 +778,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           publication_title: autoTitle,
           description: descripcion.trim() || null,
           available_date: fechaDisponible || null,
-          visit_days: diasVisita,
-          visit_hours: visitHoursArr,
+          visit_days: noPuedeDefinirHorarios ? [] : diasVisita,
+          visit_hours: noPuedeDefinirHorarios ? [] : visitHoursArr,
+          no_puede_definir_horarios: noPuedeDefinirHorarios,
           selectedPlan,
         };
 
@@ -905,7 +915,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               </div>
 
               <button
-                onClick={() => setCurrentStep(2)}
+                onClick={() => {
+                  maxStepReachedRef.current = Math.max(maxStepReachedRef.current, 2);
+                  setCurrentStep(2);
+                }}
                 className="w-full p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors text-center group"
               >
                 <div className="flex flex-col items-center gap-2">
@@ -982,9 +995,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                       <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
                     </div>
                   </div>
-                  <img
+                  <Image
                     src={item.img}
                     alt=""
+                    width={128}
+                    height={128}
                     className="w-20 h-20 sm:w-32 sm:h-32 object-contain shrink-0"
                   />
                 </div>
@@ -1129,8 +1144,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           </div>
         );
 
-      // Step 4: Detalles del espacio
-      case 4:
+      // Step 3: Detalles del espacio
+      case 3:
         return (
           <div className="max-w-xl mx-auto space-y-6">
             <h1 className="font-display text-xl sm:text-3xl font-bold">
@@ -1155,6 +1170,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   onChange={(e) => setSuperficieCubierta(e.target.value)}
                   placeholder="0"
                   type="number"
+                  inputMode="numeric"
                   className={cn("h-14 rounded-xl text-base", showErrors && !superficieCubierta && "border-red-500")}
                 />
               </div>
@@ -1167,16 +1183,14 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   onChange={(e) => setSuperficieTotal(e.target.value)}
                   placeholder="0"
                   type="number"
+                  inputMode="numeric"
                   className={cn(
                     "h-14 rounded-xl text-base",
-                    showErrors && (!superficieTotal || (superficieCubierta && Number(superficieTotal) < Number(superficieCubierta))) && "border-red-500"
+                    showErrors && !superficieTotal && "border-red-500"
                   )}
                 />
               </div>
             </div>
-            {showErrors && superficieTotal && superficieCubierta && Number(superficieTotal) < Number(superficieCubierta) && (
-              <p className="text-sm text-red-500">La superficie total debe ser igual o mayor a la superficie cubierta</p>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
@@ -1187,6 +1201,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   onChange={(e) => setAntiguedad(e.target.value)}
                   placeholder="0"
                   type="number"
+                  inputMode="numeric"
                   className={cn("h-14 rounded-xl text-base", showErrors && !antiguedad && "border-red-500")}
                 />
               </div>
@@ -1213,11 +1228,70 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                 ))}
               </div>
             </div>
+
+            {TAG_SECTIONS.map((section) => {
+              const title =
+                section.title === "Amenities del edificio" && typeId === 3
+                  ? "Amenities"
+                  : section.title;
+              const isExpanded = expandedTagSections.has(section.title);
+              const selectedCount = section.tags.filter((t) => selectedTagIds.includes(t.id)).length;
+              return (
+                <div key={section.title}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedTagSections((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(section.title)) next.delete(section.title);
+                        else next.add(section.title);
+                        return next;
+                      })
+                    }
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-border hover:bg-secondary/50 transition-colors"
+                  >
+                    <span className="font-medium text-sm">
+                      {title}
+                      {selectedCount > 0 && (
+                        <span className="ml-2 text-xs text-primary font-semibold">({selectedCount})</span>
+                      )}
+                    </span>
+                    <svg
+                      className={cn("h-4 w-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <AnimateHeight show={isExpanded}>
+                    <div className="flex flex-wrap gap-2 pt-3 pb-1">
+                      {section.tags.map((tag) => (
+                        <button
+                          key={tag.id}
+                          onClick={() => toggleTagId(tag.id)}
+                          className={cn(
+                            "px-4 py-2.5 rounded-full border text-sm font-medium transition-all",
+                            selectedTagIds.includes(tag.id)
+                              ? "border-primary bg-accent text-primary"
+                              : "border-border text-muted-foreground hover:border-primary/50"
+                          )}
+                        >
+                          {tag.label}
+                        </button>
+                      ))}
+                    </div>
+                  </AnimateHeight>
+                </div>
+              );
+            })}
           </div>
         );
 
-      // Step 5: Precio y características
-      case 5:
+      // Step 4: Precio y características
+      case 4:
         return (
           <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
             <h1 className="font-display text-xl sm:text-3xl font-bold">
@@ -1261,43 +1335,46 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 rounded-xl border border-border">
-                <span className="font-medium">¿Expensas incluidas?</span>
-                <Switch
-                  checked={expensasIncluidas}
-                  onCheckedChange={(checked) => {
-                    setExpensasIncluidas(checked);
-                    if (checked) setExpensas("");
-                  }}
-                />
-              </div>
-
-              <AnimateHeight show={!expensasIncluidas}>
-                <div className="pt-1 pb-2">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                    Expensas
-                  </label>
-                  <CurrencyInput
-                    value={expensas}
-                    onChange={setExpensas}
-                    currency="ARS"
-                    placeholder="$ 0"
-                    className={cn("h-14 rounded-xl text-base", showErrors && !expensasIncluidas && !expensas && "border-red-500")}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                Expensas
+              </label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border">
+                  <span className="font-medium">¿Expensas incluidas?</span>
+                  <Switch
+                    checked={expensasIncluidas}
+                    onCheckedChange={(checked) => {
+                      setExpensasIncluidas(checked);
+                      if (checked) setExpensas("");
+                    }}
                   />
                 </div>
-              </AnimateHeight>
 
-              <div className="flex items-center justify-between p-4 rounded-xl border border-border">
-                <span className="font-medium">¿Está amoblado?</span>
-                <Switch checked={amoblado} onCheckedChange={setAmoblado} />
+                  <AnimateHeight show={!expensasIncluidas}>
+                  <div className="pt-1 pb-2">
+                    <CurrencyInput
+                      value={expensas}
+                      onChange={setExpensas}
+                      currency="ARS"
+                      placeholder="$ 0"
+                      className={cn("h-14 rounded-xl text-base", showErrors && !expensasIncluidas && !expensas && "border-red-500")}
+                    />
+                  </div>
+                </AnimateHeight>
               </div>
             </div>
 
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border">
+              <span className="font-medium">¿Está amoblado?</span>
+              <Switch checked={amoblado} onCheckedChange={setAmoblado} />
+            </div>
+
             <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 block">
                 Duración de contrato (meses)
               </label>
+              <p className="text-xs text-muted-foreground mb-3">Usamos esta información para redactar el contrato de alquiler.</p>
               <div className="grid grid-cols-4 gap-3">
                 {[
                   { months: 12, label: "12 meses" },
@@ -1346,18 +1423,26 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                     "h-full rounded-xl border-2 text-sm text-center font-semibold transition-all focus-visible:ring-0 focus-visible:ring-offset-0",
                     customDuracion
                       ? "border-primary bg-accent text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
+                      : showErrors && !duracionContrato
+                        ? "border-red-500 text-muted-foreground"
+                        : "border-border text-muted-foreground hover:border-primary/50"
                   )}
                 />
               </div>
               <AnimateHeight show={showDuracionHint}>
-                <p className="text-xs text-muted-foreground mt-2">Mínimo 6 meses</p>
+                <p className="text-xs text-muted-foreground mt-2 text-right">Mínimo 6 meses</p>
+              </AnimateHeight>
+              <AnimateHeight show={showErrors && !duracionContrato}>
+                <p className="text-sm text-red-500 mt-2">Completá la duración del contrato</p>
               </AnimateHeight>
             </div>
 
             <div>
               <div className="flex items-center justify-between p-4 rounded-xl border border-border">
-                <span className="font-medium">Actualización por IPC (inflación)</span>
+                <span className="font-medium flex items-center gap-1.5">
+                  Actualización por IPC
+                  <InfoTooltip text="El Índice de Precios al Consumidor (IPC) permite ajustar el alquiler periódicamente según la inflación publicada por el INDEC." size={14} />
+                </span>
                 <Switch checked={ipcEnabled} onCheckedChange={setIpcEnabled} />
               </div>
 
@@ -1381,40 +1466,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               </AnimateHeight>
             </div>
 
-            {TAG_SECTIONS.map((section) => {
-              const title =
-                section.title === "Amenities del edificio" && typeId === 3
-                  ? "Amenities"
-                  : section.title;
-              return (
-                <div key={section.title}>
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                    {title}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {section.tags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        onClick={() => toggleTagId(tag.id)}
-                        className={cn(
-                          "px-4 py-2.5 rounded-full border text-sm font-medium transition-all",
-                          selectedTagIds.includes(tag.id)
-                            ? "border-primary bg-accent text-primary"
-                            : "border-border text-muted-foreground hover:border-primary/50"
-                        )}
-                      >
-                        {tag.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         );
 
-      // Step 6: Fotos y descripción
-      case 6:
+      // Step 5: Fotos y descripción
+      case 5:
         return (
           <div className="max-w-xl mx-auto space-y-8">
             <PhotoUploader
@@ -1431,6 +1487,17 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
             })() && (
               <p className="text-sm text-red-500">Hay fotos duplicadas</p>
             )}
+
+          </div>
+        );
+
+      // Step 6: Describí tu propiedad
+      case 6:
+        return (
+          <div className="max-w-xl mx-auto space-y-6">
+            <h1 className="font-display text-xl sm:text-3xl font-bold">
+              Describí tu propiedad
+            </h1>
 
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -1459,11 +1526,17 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                 </Button>
               </div>
               <textarea
+                ref={(el) => {
+                  if (el) {
+                    el.style.height = "auto";
+                    el.style.height = `${Math.max(el.scrollHeight, 120)}px`;
+                  }
+                }}
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 placeholder="Contá lo mejor de tu propiedad: luminosidad, vistas, estado, cercanía a transporte..."
-                rows={5}
-                className="flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                rows={3}
+                className="flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none overflow-hidden"
               />
               <p className="text-xs text-muted-foreground mt-2">
                 {descripcion.length > 0 ? `${descripcion.length} caracteres` : "Una buena descripción ayuda a conseguir más consultas"}
@@ -1482,10 +1555,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
 
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                ¿Cuándo está disponible?
+                ¿Desde cuándo se puede alquilar?
               </label>
               <div className="relative">
                 <Input
+                  id="fecha-disponible-input"
                   type="date"
                   min={getTomorrowDateString()}
                   max="9999-12-31"
@@ -1493,7 +1567,18 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   onChange={(e) => setFechaDisponible(e.target.value)}
                   className={cn("h-14 rounded-xl text-base pr-12", showErrors && !fechaDisponible && "border-red-500")}
                 />
-                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                <button
+                  type="button"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => {
+                    const input = document.getElementById("fecha-disponible-input") as HTMLInputElement;
+                    input?.showPicker?.();
+                    input?.focus();
+                  }}
+                  aria-label="Abrir calendario"
+                >
+                  <Calendar className="h-5 w-5" />
+                </button>
               </div>
               {showErrors && fechaDisponible && new Date(fechaDisponible) < new Date(getTomorrowDateString()) && (
                 <p className="text-sm text-red-500 mt-1">La fecha debe ser a partir de mañana</p>
@@ -1504,6 +1589,16 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
                 ¿Cuándo se puede visitar?
               </label>
+
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border mb-3">
+                <span className="font-medium flex items-center gap-1.5">
+                  No puedo definir horarios
+                  <InfoTooltip text="Te vamos a mandar WhatsApp con propuestas de horarios para coordinar las visitas." size={14} />
+                </span>
+                <Switch checked={noPuedeDefinirHorarios} onCheckedChange={setNoPuedeDefinirHorarios} />
+              </div>
+
+              <AnimateHeight show={!noPuedeDefinirHorarios}>
               <div className="space-y-2">
                 {weekDays.map((day) => (
                   <div
@@ -1560,7 +1655,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   </div>
                 ))}
               </div>
-              {showErrors && diasVisita.length === 0 && (
+              </AnimateHeight>
+              {showErrors && !noPuedeDefinirHorarios && diasVisita.length === 0 && (
                 <p className="text-sm text-red-500 mt-1">Seleccioná al menos un día de visita</p>
               )}
             </div>
@@ -1573,14 +1669,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           <div className="max-w-5xl mx-auto space-y-6">
             <div>
               <h1 className="font-display text-xl sm:text-3xl font-bold">Elegí tu plan</h1>
-              <p className="text-muted-foreground mt-2">
-                Seleccioná el nivel de acompañamiento que mejor se adapte a tus necesidades.
-              </p>
             </div>
             {showErrors && !selectedPlan && (
               <p className="text-sm text-red-500">Seleccioná un plan para continuar</p>
             )}
-            <PlanSelector selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
+            <PlanSelector selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} variant="wizard" />
           </div>
         );
 
@@ -1609,9 +1702,18 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               )}
               {address && <p className="text-sm text-muted-foreground">{address}</p>}
               {piso && <p className="text-sm text-muted-foreground">Piso {piso}{depto ? `, Depto ${depto}` : ""}</p>}
+              {geoLat && geoLong && (
+                <div className="mt-3 rounded-xl overflow-hidden border border-border">
+                  <img
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${geoLat},${geoLong}&zoom=16&size=600x200&scale=2&markers=color:red%7C${geoLat},${geoLong}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+                    alt="Ubicación de la propiedad"
+                    className="w-full h-auto"
+                  />
+                </div>
+              )}
             </SummarySection>
 
-            <SummarySection title="Detalles de la propiedad" onEdit={() => { setCurrentStep(4); mainRef.current?.scrollTo({ top: 0 }); }}>
+            <SummarySection title="Detalles de la propiedad" onEdit={() => { setCurrentStep(3); mainRef.current?.scrollTo({ top: 0 }); }}>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <span>{ambientes} ambientes</span>
                 <span>{dormitorios} dormitorios</span>
@@ -1625,7 +1727,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               </div>
             </SummarySection>
 
-            <SummarySection title="Precio y características" onEdit={() => { setCurrentStep(5); mainRef.current?.scrollTo({ top: 0 }); }}>
+            <SummarySection title="Precio y características" onEdit={() => { setCurrentStep(4); mainRef.current?.scrollTo({ top: 0 }); }}>
               <div className="space-y-1 text-sm">
                 {precioMensual && (
                   <p className="font-medium">
@@ -1661,7 +1763,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               </div>
             </SummarySection>
 
-            <SummarySection title="Fotos y descripción" onEdit={() => { setCurrentStep(6); mainRef.current?.scrollTo({ top: 0 }); }}>
+            <SummarySection title="Fotos" onEdit={() => { setCurrentStep(5); mainRef.current?.scrollTo({ top: 0 }); }}>
               {uploadedPhotos.length > 0 ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">{uploadedPhotos.length} {uploadedPhotos.length === 1 ? "foto" : "fotos"}</p>
@@ -1681,10 +1783,13 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               ) : (
                 <p className="text-sm text-muted-foreground">Sin fotos</p>
               )}
+            </SummarySection>
+
+            <SummarySection title="Descripción" onEdit={() => { setCurrentStep(6); mainRef.current?.scrollTo({ top: 0 }); }}>
               {descripcion.trim() ? (
-                <p className="text-sm text-muted-foreground line-clamp-3 mt-2">{descripcion}</p>
+                <p className="text-sm text-muted-foreground line-clamp-3">{descripcion}</p>
               ) : (
-                <p className="text-sm text-muted-foreground mt-2">Sin descripción</p>
+                <p className="text-sm text-muted-foreground">Sin descripción</p>
               )}
             </SummarySection>
 
@@ -1703,7 +1808,13 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
 
             <SummarySection title="Plan elegido" onEdit={() => { setCurrentStep(8); mainRef.current?.scrollTo({ top: 0 }); }}>
               {selectedPlan ? (
-                <p className="font-medium capitalize">{selectedPlan === "acompanado" ? "Acompañado" : selectedPlan === "experiencia" ? "Experiencia mob" : "Básico"}</p>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{selectedPlan === "acompanado" ? "Acompañado" : selectedPlan === "experiencia" ? "Experiencia mob" : "Básico"}</p>
+                    <p className="text-sm font-medium text-foreground">{pricingCost[selectedPlan]}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">El costo se cobra únicamente cuando la operación se concreta.</p>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No seleccionado</p>
               )}
@@ -1727,32 +1838,31 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
       {/* Header */}
       <header className="shrink-0 border-b border-border">
         <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
+          <button onClick={() => router.push("/")}>
+            <img src={mobLogo} alt="MOB" className="h-6" />
+          </button>
+          <div className="flex items-center gap-3">
+            <AnimateHeight show={isSaving && !isSavingAndExiting}>
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Guardando...
+              </span>
+            </AnimateHeight>
             <button
-              onClick={handleBack}
-              disabled={currentStep === 1}
-              className={cn(
-                "p-1.5 rounded-full transition-colors",
-                currentStep === 1
-                  ? "text-muted-foreground/30 cursor-not-allowed"
-                  : "text-muted-foreground hover:bg-secondary"
-              )}
-              aria-label="Atrás"
+              onClick={handleSaveAndExit}
+              disabled={isSavingAndExiting}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button onClick={() => router.push("/")}>
-              <img src={mobLogo} alt="MOB" className="h-6" />
+              {isSavingAndExiting ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Guardando...
+                </span>
+              ) : (
+                isEditMode ? "Cancelar" : currentStep === 1 ? "Salir" : "Guardar y salir"
+              )}
             </button>
           </div>
-          <button
-            onClick={handleSaveAndExit}
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {isEditMode ? "Cancelar" : currentStep === 1 ? "Salir" : "Guardar y salir"}
-          </button>
         </div>
 
         {/* Progress bar */}
@@ -1766,32 +1876,26 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           currentStep === 1 ? "min-h-full flex flex-col justify-center" : "min-h-[700px]"
         )}>
           {renderStep()}
-          {/* Map — always in DOM to prevent Google Maps orphaned elements.
-              Hidden when not on step 3; visible only on map confirmation step. */}
-          <div className={cn(currentStep !== 3 && "hidden", "max-w-xl mx-auto space-y-6")}>
-            <div>
-              <h1 className="font-display text-xl sm:text-3xl font-bold mb-2">
-                Confirmá la ubicación exacta
-              </h1>
-            </div>
-            <div
-              ref={mapRef}
-              className="w-full aspect-square max-w-lg mx-auto rounded-xl overflow-hidden border border-border"
-              style={{ minHeight: "400px" }}
-            >
-              {!isLoaded && (
-                <div className="flex items-center justify-center h-full bg-secondary/30">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </main>
 
       {/* Footer — always pinned to bottom */}
       <footer className="shrink-0 border-t border-border">
-        <div className="container flex items-center justify-end h-20">
+        <div className="container flex items-center justify-between h-20">
+          {/* Back button — hidden on step 1 and draft prompt */}
+          {!showDraftPrompt && currentStep > 1 ? (
+            <Button
+              variant="ghost"
+              onClick={handleBack}
+              className="rounded-full px-6 h-12"
+            >
+              Atrás
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          {/* Forward / submit button */}
           {showDraftPrompt ? null : currentStep === TOTAL_STEPS ? (
             <Button
               onClick={handleSubmit}
@@ -1808,8 +1912,15 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               )}
             </Button>
           ) : (
-            <Button onClick={handleNext} className="rounded-full px-10 h-12">
-              {currentStep === 1 ? "Comenzar" : "Siguiente"}
+            <Button onClick={handleNext} disabled={isSaving && !draftPropertyIdRef.current} className="rounded-full px-10 h-12">
+              {isSaving && !draftPropertyIdRef.current ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Guardando...
+                </>
+              ) : (
+                currentStep === 1 ? "Comenzar" : "Siguiente"
+              )}
             </Button>
           )}
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Header from "@/components/Header";
+import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -23,8 +24,18 @@ const HoggaxBrand = () => (
 
 const LandingInmobiliarias = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, openAuthModal } = useAuth();
+
   const handleCTA = () => {
-    router.push("/?auth=open");
+    if (isAuthenticated) {
+      router.push("/perfil");
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.set("redirect", "/perfil");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    openAuthModal();
   };
   const heroFeatures = ["Recibí pedidos de visita de usuarios verificados", "Garantía de alquiler aprobada por Hoggax"];
   const mobDoesCards = [{
@@ -96,11 +107,11 @@ const LandingInmobiliarias = () => {
     question: "¿Cómo se integran las propiedades?",
     answer: "Podés cargar propiedades manualmente desde el panel o integrar automáticamente con sistemas como Tokko."
   }];
-  return <div className="min-h-screen bg-background overflow-x-hidden">
-      <Header hideSearch />
+  return <div className="min-h-screen bg-background overflow-x-clip">
+      <Header hideSearch landingCta="Sumá tu inmobiliaria" />
 
       {/* Hero Section */}
-      <section className="py-8 md:py-24">
+      <section className="landing-hero py-8 md:py-24">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 md:space-y-8">

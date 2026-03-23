@@ -128,6 +128,7 @@ const SearchBar = () => {
     const params = new URLSearchParams();
     if (selectedLocation) {
       params.set("location", selectedLocation.name);
+      params.set("locationNames", selectedLocation.name);
       if (selectedLocation.type === "state") {
         params.set("stateId", String(selectedLocation.id));
       } else {

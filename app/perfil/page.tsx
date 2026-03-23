@@ -102,9 +102,9 @@ export default async function PerfilPage() {
       );
     }
 
-    // Owner properties: fetch plans for tokko=false ones
+    // Owner properties: fetch plans for non-tokko ones
     const planMap = new Map<number, string | null>();
-    const manualProps = ownerProps.filter((p: any) => !p.tokko);
+    const manualProps = ownerProps.filter((p: any) => p.tokko_id == null);
     if (manualProps.length > 0) {
       const manualIds = manualProps.map((p: any) => p.property_id);
       const { data: planOps } = await supabaseAdmin

@@ -6,13 +6,14 @@ import { Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AnimateHeight } from "@/components/ui/animate-height";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTokkoSync } from "@/hooks/useTokkoSync";
 
 import AccountTypeSelector from "@/components/profile/AccountTypeSelector";
 
 
-type AuthStep = "email" | "register" | "register-inmobiliaria" | "select-account-type" | "check-email";
+type AuthStep = "initial" | "password" | "register-inmobiliaria" | "select-account-type" | "check-email";
 
 const GUEST_STORAGE_KEY = "mob_guest_contact";
 
@@ -35,6 +36,27 @@ async function applyGuestContactToProfile() {
     // non-critical — ignore
   }
 }
+
+const GoogleIcon = () => (
+  <svg className="h-5 w-5" viewBox="0 0 24 24">
+    <path
+      fill="#4285F4"
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+    />
+  </svg>
+);
 
 const AuthModal = () => {
   const { isAuthModalOpen, closeAuthModal, openAuthModal, login, register, authError, clearError, isAuthenticated, isLoading, refreshUser } = useAuth();
@@ -83,17 +105,31 @@ const AuthModal = () => {
   }, [searchParams, isAuthenticated, isLoading, pathname, router, openAuthModal]);
 
   const { startSync } = useTokkoSync();
-  const [step, setStep] = useState<AuthStep>("email");
+  const [step, setStep] = useState<AuthStep>("initial");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tokkoApiKey, setTokkoApiKey] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState<boolean | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const displayError = localError || authError;
 
   const resetForm = () => {
-    setStep("email");
+    setStep("initial");
     setEmail("");
     setPassword("");
     setTokkoApiKey("");
+    setIsExistingUser(null);
+    setLocalError(null);
+    clearError();
+  };
+
+  const goBackToInitial = () => {
+    setStep("initial");
+    setPassword("");
+    setIsExistingUser(null);
+    setLocalError(null);
     clearError();
   };
 
@@ -110,46 +146,85 @@ const AuthModal = () => {
     }
   };
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
+  const handleEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLocalError(null);
+    clearError();
     try {
-      await login(email, password);
-      const redirectTo = searchParams.get("redirect");
-      if (redirectTo) {
-        // Navigate to the originally-intended page after login
-        closeAuthModal();
-        resetForm();
-        router.push(redirectTo);
-        router.refresh();
-      } else {
-        handleClose();
-        // Invalidate RSC cache so server components reflect the new auth state
-        router.refresh();
+      const res = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLocalError("Error al verificar el email. Intentá de nuevo.");
+        return;
       }
+      setIsExistingUser(data.exists);
+      setStep("password");
     } catch {
-      // Error is set in AuthContext
+      setLocalError("Error de conexión. Intentá de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      const { confirmed } = await register(email, password, false);
-      if (confirmed) {
-        await applyGuestContactToProfile();
-        setStep("select-account-type");
-      } else {
-        // Email confirmation required — show check-email step
-        setStep("check-email");
+    if (isExistingUser) {
+      // Login flow
+      try {
+        await login(email, password);
+        const redirectTo = searchParams.get("redirect");
+        if (redirectTo) {
+          closeAuthModal();
+          resetForm();
+          router.push(redirectTo);
+          router.refresh();
+        } else {
+          handleClose();
+          router.refresh();
+        }
+      } catch {
+        // Error is set in AuthContext
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      // Error is set in AuthContext
-    } finally {
-      setLoading(false);
+    } else {
+      // Register flow
+      try {
+        const { confirmed } = await register(email, password, false);
+        if (confirmed) {
+          await applyGuestContactToProfile();
+          // Claim guest leads
+          fetch("/api/leads/claim", { method: "POST" }).catch(() => {});
+          // Auto-infer account type from landing page
+          const inferredType = pathname === "/propietarios" ? 2 : pathname === "/inmobiliarias" ? 3 : null;
+          if (inferredType) {
+            await fetch("/api/users/account-type", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ account_type: inferredType }),
+            });
+            await refreshUser();
+            closeAuthModal();
+            resetForm();
+            router.push("/perfil");
+            router.refresh();
+          } else {
+            setStep("select-account-type");
+          }
+        } else {
+          setStep("check-email");
+        }
+      } catch {
+        // Error is set in AuthContext
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -163,10 +238,16 @@ const AuthModal = () => {
       });
       // Refresh AuthContext so isOwner and accountType reflect the new value
       await refreshUser();
-      closeAuthModal();
-      resetForm();
-      router.push("/perfil");
-      router.refresh();
+      const redirectTo = searchParams.get("redirect");
+      if (redirectTo) {
+        closeAuthModal();
+        resetForm();
+        router.push(redirectTo);
+        router.refresh();
+      } else {
+        handleClose();
+        router.refresh();
+      }
     } finally {
       setLoading(false);
     }
@@ -175,10 +256,16 @@ const AuthModal = () => {
   const handleSkipAccountType = async () => {
     // Refresh AuthContext to pick up any DB changes from signup
     await refreshUser();
-    closeAuthModal();
-    resetForm();
-    router.push("/perfil");
-    router.refresh();
+    const redirectTo = searchParams.get("redirect");
+    if (redirectTo) {
+      closeAuthModal();
+      resetForm();
+      router.push(redirectTo);
+      router.refresh();
+    } else {
+      handleClose();
+      router.refresh();
+    }
   };
 
   const handleInmobiliariaSubmit = async (e: React.FormEvent) => {
@@ -211,7 +298,7 @@ const AuthModal = () => {
   };
 
   const handleGoogleLogin = () => {
-    const redirectTo = searchParams.get("redirect") || "/";
+    const redirectTo = searchParams.get("redirect") || pathname;
     const state = encodeURIComponent(redirectTo);
     const redirectUri = `${window.location.origin}/api/auth/callback/google`;
 
@@ -232,195 +319,130 @@ const AuthModal = () => {
     <Dialog open={isAuthModalOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-sm p-6 gap-0">
         <DialogTitle className="sr-only">Autenticación</DialogTitle>
-        {step === "email" && (
+
+        {/* ── Initial step: Google + email ── */}
+        <AnimateHeight show={step === "initial"}>
           <div className="space-y-5">
-            {/* Header */}
             <div className="text-center">
               <h2 className="font-display text-xl font-semibold text-foreground">
-                Iniciar sesión
+                Ingresá a tu cuenta
               </h2>
             </div>
 
-            {/* Error display */}
-            {authError && (
+            {displayError && (
               <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
-                {authError}
+                {displayError}
               </div>
             )}
 
-            {/* Login Form */}
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <Input
-                type="email"
-                placeholder="Ingresá tu e-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 rounded-xl"
-              />
-              <Input
-                type="password"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11 rounded-xl"
-              />
-              <Button
-                type="submit"
-                className="w-full h-11 rounded-xl font-semibold"
-                disabled={loading}
-              >
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-
-            {/* Create account link */}
-            <div className="text-center">
-              <span className="text-sm text-muted-foreground">¿No tenés cuenta? </span>
-              <button
-                type="button"
-                onClick={() => setStep("register")}
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                Crear una cuenta
-              </button>
-            </div>
-
-            {/* Separator */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-sm text-muted-foreground">o</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-
-            {/* Social Login Options */}
-            <div className="space-y-3">
-              {/* Google */}
-              <Button
-                variant="outline"
-                className="w-full h-11 rounded-xl font-medium justify-center gap-3"
-                onClick={handleGoogleLogin}
-              >
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                Continuar con Google
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === "register" && (
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="text-center">
-              <h2 className="font-display text-xl font-semibold text-foreground">
-                Crear cuenta
-              </h2>
-            </div>
-
-            {/* Error display */}
-            {authError && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
-                {authError}
-              </div>
-            )}
-
-            {/* Register Form */}
-            <form onSubmit={handleRegisterSubmit} className="space-y-4">
-              <Input
-                type="email"
-                placeholder="Ingresá tu e-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 rounded-xl"
-              />
-              <Input
-                type="password"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11 rounded-xl"
-              />
-
-              <Button
-                type="submit"
-                className="w-full h-11 rounded-xl font-semibold"
-                disabled={loading}
-              >
-                {loading ? "Creando cuenta..." : "Crear cuenta"}
-              </Button>
-            </form>
-
-            {/* Login link */}
-            <div className="text-center">
-              <span className="text-sm text-muted-foreground">¿Ya tenés cuenta? </span>
-              <button
-                type="button"
-                onClick={() => { setStep("email"); clearError(); }}
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                Iniciar sesión
-              </button>
-            </div>
-
-            {/* Separator */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-sm text-muted-foreground">o</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-
-            {/* Google */}
             <Button
               variant="outline"
               className="w-full h-11 rounded-xl font-medium justify-center gap-3"
               onClick={handleGoogleLogin}
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
+              <GoogleIcon />
               Continuar con Google
             </Button>
-          </div>
-        )}
 
-        {step === "register-inmobiliaria" && (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-sm text-muted-foreground">o</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <form onSubmit={handleEmailContinue} className="space-y-4">
+              <Input
+                type="email"
+                name="email"
+                placeholder="Ingresá tu e-mail"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setLocalError(null); }}
+                required
+                autoComplete="email"
+                spellCheck={false}
+                className="h-11 rounded-xl"
+              />
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl font-semibold"
+                disabled={loading}
+              >
+                {loading ? "Verificando..." : "Continuar con e-mail"}
+              </Button>
+            </form>
+          </div>
+        </AnimateHeight>
+
+        {/* ── Password step: login or register ── */}
+        <AnimateHeight show={step === "password"}>
           <div className="space-y-5">
-            {/* Header */}
+            <div className="text-center">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                {isExistingUser ? "Ingresá tu contraseña" : "Creá tu contraseña"}
+              </h2>
+            </div>
+
+            {authError && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="email"
+                  value={email}
+                  disabled
+                  className="h-11 rounded-xl flex-1 opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={goBackToInitial}
+                  className="text-sm text-primary hover:underline font-medium shrink-0"
+                >
+                  Cambiar
+                </button>
+              </div>
+
+              <Input
+                type="password"
+                name="password"
+                placeholder={isExistingUser ? "Contraseña" : "Creá una contraseña"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete={isExistingUser ? "current-password" : "new-password"}
+                className="h-11 rounded-xl"
+              />
+
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl font-semibold"
+                disabled={loading}
+              >
+                {loading
+                  ? (isExistingUser ? "Entrando..." : "Creando cuenta...")
+                  : (isExistingUser ? "Entrar" : "Crear cuenta")
+                }
+              </Button>
+            </form>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={goBackToInitial}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Volver
+              </button>
+            </div>
+          </div>
+        </AnimateHeight>
+
+        {/* ── Inmobiliaria registration ── */}
+        <AnimateHeight show={step === "register-inmobiliaria"}>
+          <div className="space-y-5">
             <div className="text-center">
               <h2 className="font-display text-xl font-semibold text-foreground">
                 Registro inmobiliaria
@@ -430,37 +452,42 @@ const AuthModal = () => {
               </p>
             </div>
 
-            {/* Error display */}
             {authError && (
               <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
                 {authError}
               </div>
             )}
 
-            {/* Inmobiliaria Form */}
             <form onSubmit={handleInmobiliariaSubmit} className="space-y-4">
               <Input
                 type="email"
+                name="email"
                 placeholder="Ingresá tu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
+                spellCheck={false}
                 className="h-11 rounded-xl"
               />
               <Input
                 type="password"
+                name="password"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="new-password"
                 className="h-11 rounded-xl"
               />
               <Input
                 type="text"
+                name="tokkoApiKey"
                 placeholder="Tokko API Key"
                 value={tokkoApiKey}
                 onChange={(e) => setTokkoApiKey(e.target.value)}
                 required
+                autoComplete="off"
                 className="h-11 rounded-xl font-mono text-sm"
               />
 
@@ -473,20 +500,20 @@ const AuthModal = () => {
               </Button>
             </form>
 
-            {/* Back link */}
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => { setStep("register"); clearError(); }}
+                onClick={() => { goBackToInitial(); }}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 ← Volver
               </button>
             </div>
           </div>
-        )}
+        </AnimateHeight>
 
-        {step === "check-email" && (
+        {/* ── Check email confirmation ── */}
+        <AnimateHeight show={step === "check-email"}>
           <div className="space-y-5">
             <div className="flex justify-center">
               <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
@@ -512,18 +539,18 @@ const AuthModal = () => {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => { setStep("email"); clearError(); }}
+                onClick={goBackToInitial}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Volver a iniciar sesión
+                Volver al inicio
               </button>
             </div>
           </div>
-        )}
+        </AnimateHeight>
 
-        {step === "select-account-type" && (
+        {/* ── Account type selection ── */}
+        <AnimateHeight show={step === "select-account-type"}>
           <div className="space-y-5">
-            {/* Header */}
             <div className="text-center">
               <h2 className="font-display text-xl font-semibold text-foreground">
                 ¿Cuál es tu tipo de cuenta?
@@ -538,7 +565,6 @@ const AuthModal = () => {
               loading={loading}
             />
 
-            {/* Skip link */}
             <div className="text-center">
               <button
                 type="button"
@@ -549,7 +575,7 @@ const AuthModal = () => {
               </button>
             </div>
           </div>
-        )}
+        </AnimateHeight>
       </DialogContent>
     </Dialog>
   );

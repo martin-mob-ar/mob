@@ -159,41 +159,29 @@ export async function POST(request: Request) {
       }
     }
 
-    // Upsert photos by storage_path
+    // Batch upsert photos using unique index on (property_id, storage_path)
     if (Array.isArray(photos) && photos.length > 0) {
-      for (const photo of photos as { publicUrl: string; storagePath: string; order: number; isCover: boolean }[]) {
-        if (!photo.storagePath) continue;
+      const validPhotos = (photos as { publicUrl: string; storagePath: string; order: number; isCover: boolean }[])
+        .filter(p => p.storagePath);
 
-        const { data: existing } = await supabaseAdmin
+      if (validPhotos.length > 0) {
+        const photoRows = validPhotos.map(photo => ({
+          property_id: propertyId,
+          image: photo.publicUrl,
+          original: photo.publicUrl,
+          thumb: photo.publicUrl,
+          storage_path: photo.storagePath,
+          is_front_cover: photo.isCover ?? false,
+          order: photo.order ?? 0,
+          is_blueprint: false,
+        }));
+
+        await supabaseAdmin
           .from('tokko_property_photo')
-          .select('id')
-          .eq('property_id', propertyId)
-          .eq('storage_path', photo.storagePath)
-          .maybeSingle();
+          .upsert(photoRows, { onConflict: 'property_id,storage_path' });
 
-        if (!existing) {
-          await supabaseAdmin.from('tokko_property_photo').insert({
-            property_id: propertyId,
-            image: photo.publicUrl,
-            original: photo.publicUrl,
-            thumb: photo.publicUrl,
-            storage_path: photo.storagePath,
-            is_front_cover: photo.isCover ?? false,
-            order: photo.order ?? 0,
-            is_blueprint: false,
-          });
-        } else {
-          // Update order and cover status
-          await supabaseAdmin
-            .from('tokko_property_photo')
-            .update({ order: photo.order, is_front_cover: photo.isCover ?? false })
-            .eq('id', existing.id);
-        }
-      }
-
-      // Remove photos that are no longer in the list
-      const currentPaths = photos.map((p: { storagePath: string }) => p.storagePath).filter(Boolean);
-      if (currentPaths.length > 0) {
+        // Remove photos no longer in the list
+        const currentPaths = validPhotos.map(p => p.storagePath);
         await supabaseAdmin
           .from('tokko_property_photo')
           .delete()

@@ -211,7 +211,6 @@ interface PropertyDetailViewProps {
   currentTenant: { name: string; email: string } | null;
   currentOperation: any | null;
   mockMode?: boolean;
-  tokko?: boolean;
   tokkoId?: number | null;
   userEmail?: string;
   propertyStatus?: number;
@@ -225,7 +224,6 @@ const PropertyDetailView = ({
   currentTenant: realCurrentTenant,
   currentOperation: realCurrentOperation,
   mockMode,
-  tokko: realTokko,
   tokkoId: realTokkoId,
   userEmail,
   propertyStatus: initialPropertyStatus = 2,
@@ -245,8 +243,8 @@ const PropertyDetailView = ({
   const operations = useMock ? (mockData?.operations ?? realOperations) : realOperations;
   const currentTenant = useMock ? (mockData?.currentTenant ?? null) : realCurrentTenant;
   const currentOperation = useMock ? (mockData?.currentOperation ?? null) : realCurrentOperation;
-  const tokko = useMock ? (mockData?.tokko ?? false) : (realTokko ?? false);
   const tokkoId = useMock ? (mockData?.tokkoId ?? null) : (realTokkoId ?? null);
+  const tokko = tokkoId != null;
 
   // Mock consultas keyed by property ID string
   const propertyIdStr = String(property.property_id);
@@ -474,6 +472,13 @@ const PropertyDetailView = ({
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Tokko ID reference */}
+            {tokkoId && (
+              <p className="mt-4 text-xs text-muted-foreground/60">
+                Tokko ID: {tokkoId}
+              </p>
             )}
           </div>
         </div>

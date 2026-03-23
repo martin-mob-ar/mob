@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, Zap, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2 } from "lucide-react";
 import type { PublisherType } from "@/lib/publisher";
 import { getPublisherBadgeConfig } from "@/lib/publisher";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -40,6 +40,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
+import VerificationRequiredDialog from "@/components/VerificationRequiredDialog";
 
 interface PropertyDetailProps {
   property?: Property;
@@ -59,6 +60,11 @@ interface PropertyDetailProps {
   propertyPlan?: "basico" | "acompanado" | "experiencia";
   isInmobiliaria?: boolean;
   isUnavailable?: boolean;
+  isPendingVerification?: boolean;
+  suiteAmount?: number | null;
+  roofedSurface?: number | null;
+  ipcAdjustment?: string | null;
+  publicationDate?: string | null;
 }
 
 function formatDescription(text: string): string {
@@ -68,12 +74,15 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { rate } = useExchangeRate();
+
+  const isCurrentUserOwner = !!user?.publicUserId && user.publicUserId === ownerId;
+  const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
 
   const handleFavoriteClick = () => {
     if (propPropertyId) toggleFavorite(propPropertyId);
@@ -262,25 +271,29 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           {/* Main image area */}
           <div className="flex-1 flex items-center justify-center relative px-4">
             {/* Navigation controls above image */}
-            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6">
-              <button 
-                onClick={() => setShowGallery(false)}
-                className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl"
-              >
-                <ChevronLeft className="h-5 w-5" />
-                <span className="text-sm font-medium">Volver</span>
-              </button>
-              
+            <div className="absolute top-4 left-0 right-0 flex items-center px-6">
+              <div className="flex-1 flex justify-start">
+                <button
+                  onClick={() => setShowGallery(false)}
+                  className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  <span className="text-sm font-medium">Volver</span>
+                </button>
+              </div>
+
               <div className="text-muted-foreground text-sm font-medium bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl">
                 {galleryIndex + 1} / {galleryImages.length}
               </div>
 
-              <button 
-                onClick={() => setShowGallery(false)}
-                className="h-10 w-10 flex items-center justify-center bg-background/80 backdrop-blur-sm hover:bg-secondary rounded-xl transition-colors"
-              >
-                <span className="text-foreground text-xl leading-none">&times;</span>
-              </button>
+              <div className="flex-1 flex justify-end">
+                <button
+                  onClick={() => setShowGallery(false)}
+                  className="h-10 w-10 flex items-center justify-center bg-background/80 backdrop-blur-sm hover:bg-secondary rounded-xl transition-colors"
+                >
+                  <span className="text-foreground text-xl leading-none">&times;</span>
+                </button>
+              </div>
             </div>
 
             {/* Previous arrow */}
@@ -509,13 +522,32 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       <div className="hidden md:block max-w-6xl mx-auto px-6 py-6">
         {/* Title - Desktop */}
         <div className="mb-4">
-          <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">
-            {property.propertyType ? `${property.propertyType} en ${property.address}` : property.address}
-          </h1>
-          <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-            <MapPin className="h-3.5 w-3.5" />
-            {property.address}, {locationSuffix}
-          </p>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">
+              {property.propertyType ? `${property.propertyType} en ${property.address}` : property.address}
+            </h1>
+            {user?.publicUserId && user.publicUserId === ownerId && propPropertyId && (
+              <Link
+                href={`/gestion/propiedad/${propPropertyId}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors whitespace-nowrap"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                Ir a gestionar
+              </Link>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" />
+              {property.address}, {locationSuffix}
+            </p>
+            {publicationDate && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                Publicado el {new Date(publicationDate).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-xl overflow-hidden mb-6 h-[400px]">
@@ -564,18 +596,49 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
       </div>
 
+      {/* Verification Banner - Mobile */}
+      {showVerificationBanner && (
+        <div className="md:hidden mx-4 mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+          <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-amber-800 text-sm">
+              Tu propiedad no es visible en las búsquedas
+            </p>
+            <p className="text-amber-700 text-sm mt-1">
+              Verificá tu identidad para que otros usuarios puedan encontrarla.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Content */}
       <div className="md:hidden pb-6">
         {/* Property Info Block */}
         <div className="px-4 py-5 border-b border-border">
-          <h1 className="font-display text-xl font-bold text-foreground mb-1">
-            {property.propertyType ? `${property.propertyType} en ${property.address}` : property.address}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-xl font-bold text-foreground mb-1">
+              {property.propertyType ? `${property.propertyType} en ${property.address}` : property.address}
+            </h1>
+            {user?.publicUserId && user.publicUserId === ownerId && propPropertyId && (
+              <Link
+                href={`/gestion/propiedad/${propPropertyId}`}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                Gestionar
+              </Link>
+            )}
+          </div>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
             {property.address}, {property.neighborhood}
           </p>
-
+          {publicationDate && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
+              <Calendar className="h-3 w-3" />
+              Publicado el {new Date(publicationDate).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+          )}
         </div>
 
         {/* Price + CTA Block - Priority section */}
@@ -658,6 +721,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             )}
           </div>
 
+          {ipcAdjustment && (
+            <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-secondary/50 rounded-xl">
+              <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Actualización por IPC: <span className="font-semibold text-foreground">{ipcAdjustment}</span>
+              </p>
+            </div>
+          )}
+
           <AnimateHeight show={!leadFormType}>
             <div className="space-y-2 mt-5">
               <Button
@@ -695,27 +767,29 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           </>)}
 
           {/* Quick Stats - Below CTAs */}
-          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border/50">
-            {[
-              { icon: Square, label: `${property.surface} m²` },
-              { icon: Home, label: `${property.rooms + 1} amb` },
-              { icon: Bed, label: `${property.rooms} ${property.rooms === 1 ? 'dorm' : 'dorms'}` },
-              { icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` },
-              { icon: Car, label: "–" },
-            ].map((stat, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-1.5"
-              >
-                <div className="h-6 w-6 rounded-xl border border-border flex items-center justify-center">
-                  <stat.icon className="h-3 w-3 text-muted-foreground" strokeWidth={1.5} />
-                </div>
-                <span className="text-xs font-semibold text-foreground">
-                  {stat.label}
-                </span>
+          {(() => {
+            const mobileStats: { Icon: typeof Home; label: string }[] = [];
+            if (property.rooms != null) mobileStats.push({ Icon: Home, label: `${property.rooms} amb` });
+            if (suiteAmount != null) mobileStats.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dorm' : 'dorms'}` });
+            if (property.surface != null) mobileStats.push({ Icon: Square, label: `${property.surface} m²` });
+            if (roofedSurface != null) mobileStats.push({ Icon: Square, label: `${roofedSurface} m² cub` });
+            if (property.bathrooms != null) mobileStats.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
+            if (property.parking != null && property.parking > 0) mobileStats.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
+            return (
+              <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border/50">
+                {mobileStats.map((stat, index) => (
+                  <div key={index} className="flex items-center gap-1.5">
+                    <div className="h-6 w-6 rounded-xl border border-border flex items-center justify-center">
+                      <stat.Icon className="h-3 w-3 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">
+                      {stat.label}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
 
         {/* About Section */}
@@ -806,7 +880,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <BadgeCheck className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base text-foreground">Validación por mob</p>
+                  <p className="font-semibold text-base text-foreground">Garantía con 50% off</p>
                   <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span> para cualquier alquiler.</p>
                 </div>
               </div>
@@ -921,27 +995,49 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
       {/* Desktop Layout */}
       <main className="hidden md:block max-w-6xl mx-auto px-6 pb-6">
+        {/* Verification Banner - Desktop */}
+        {showVerificationBanner && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+            <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium text-amber-800 text-sm">
+                Tu propiedad no es visible en las búsquedas
+              </p>
+              <p className="text-amber-700 text-sm mt-1">
+                Verificá tu identidad para que otros usuarios puedan encontrarla.
+              </p>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-10">
           {/* Left Column - Details */}
           <div className="col-span-2 space-y-6">
             {/* Quick Stats */}
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { label: "Ambientes", value: `${property.rooms} Ambientes` },
-                { label: "Superficie", value: `${property.surface} m²` },
-                { label: "Baños", value: `${property.bathrooms} Baño` },
-                { label: "Antigüedad", value: propAge === 0 ? "A estrenar" : propAge != null ? `${propAge} ${propAge === 1 ? "Año" : "Años"}` : "–" },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                  <p className="font-display font-semibold text-foreground text-sm mt-0.5">
-                    {stat.value}
-                  </p>
+            {(() => {
+              const dStats: { label: string; value: string }[] = [];
+              if (property.rooms != null) dStats.push({ label: "Ambientes", value: `${property.rooms}` });
+              if (suiteAmount != null) dStats.push({ label: "Dormitorios", value: `${suiteAmount}` });
+              if (property.surface != null) dStats.push({ label: "Sup. total", value: `${property.surface} m²` });
+              if (roofedSurface != null) dStats.push({ label: "Sup. cubierta", value: `${roofedSurface} m²` });
+              if (property.bathrooms != null) dStats.push({ label: "Baños", value: `${property.bathrooms}` });
+              if (property.parking != null && property.parking > 0) dStats.push({ label: "Cocheras", value: `${property.parking}` });
+              dStats.push({ label: "Antigüedad", value: propAge === 0 ? "A estrenar" : propAge != null ? `${propAge} ${propAge === 1 ? "Año" : "Años"}` : "–" });
+              const cols = Math.min(dStats.length, 7);
+              return (
+                <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+                  {dStats.map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                        {stat.label}
+                      </p>
+                      <p className="font-display font-semibold text-foreground text-sm mt-0.5">
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
 
             {/* About */}
             {description && (
@@ -1078,6 +1174,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   );
                 })()}
 
+                {ipcAdjustment && (
+                  <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-secondary/50 rounded-xl">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <p className="text-xs text-muted-foreground">
+                      Actualización por IPC: <span className="font-semibold text-foreground">{ipcAdjustment}</span>
+                    </p>
+                  </div>
+                )}
+
                 <AnimateHeight show={!leadFormType}>
                   <div className="space-y-2 mt-5">
                     <Button
@@ -1124,7 +1229,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   </div>
                 </div>
                 <div className="flex gap-2.5">
-                  <Zap className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <Calendar className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-xs text-foreground">{isTokko ? "Solicitud de visita" : "Coordinación directa"}</p>
                     <p className="text-xs text-muted-foreground leading-snug">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : "Sincronizamos tu agenda con la del dueño."}</p>
@@ -1133,7 +1238,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <div className="flex gap-2.5">
                   <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-xs text-foreground">Validación por mob</p>
+                    <p className="font-medium text-xs text-foreground">Garantía con 50% off</p>
                     <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span> para cualquier alquiler.</p>
                   </div>
                 </div>
@@ -1213,6 +1318,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </p>
       </div>
     </div>
+    {showVerificationBanner && <VerificationRequiredDialog />}
     </GoogleMapsProvider>
   );
 };

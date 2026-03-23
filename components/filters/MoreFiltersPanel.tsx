@@ -1,4 +1,4 @@
-import { X, ArrowRightLeft, MapPin, Loader2 as Spinner, Calendar } from "lucide-react";
+import { X, ArrowRightLeft, MapPin, Loader2 as Spinner, Calendar, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSearchFilters, SearchFilters } from "@/contexts/SearchFiltersContext";
+import { useSearchFilters, SearchFilters, SelectedLocation } from "@/contexts/SearchFiltersContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { TAG_SECTIONS } from "@/lib/constants/tags";
@@ -134,51 +134,48 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
   const [minSurface, setMinSurface] = useState(filters.minSurface);
   const [maxSurface, setMaxSurface] = useState(filters.maxSurface);
   const [surfaceType, setSurfaceType] = useState<"cubierta" | "total">(
-    (filters.surfaceType as "cubierta" | "total") || "total"
+    (filters.surfaceType as "cubierta" | "total") || "cubierta"
   );
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(filters.tagIds);
   const [availabilityFilter, setAvailabilityFilter] = useState<"" | "immediate" | "next-month" | "custom">(filters.availabilityFilter);
   const [availabilityDate, setAvailabilityDate] = useState(filters.availabilityDate);
+  const [ownerType, setOwnerType] = useState<"" | "dueno" | "inmobiliaria">(filters.ownerType);
 
-  // Location search state
-  const [locationSearch, setLocationSearch] = useState(filters.location);
-  const [pendingLocation, setPendingLocation] = useState<{ name: string; locationId: string; stateId: string }>({
-    name: filters.location,
-    locationId: filters.locationId,
-    stateId: filters.stateId,
-  });
-  const [locationSelected, setLocationSelected] = useState(!!filters.location);
+  // Location multi-select state
+  const [locationSearch, setLocationSearch] = useState("");
+  const [pendingLocations, setPendingLocations] = useState<SelectedLocation[]>(filters.selectedLocations);
   const { results: locationResults, isLoading: locationLoading } = useLocationSearch(locationSearch, {
-    enabled: open && !locationSelected,
+    enabled: open && locationSearch.length >= 2,
   });
+
+  const isPendingSelected = (loc: LocationResult) =>
+    pendingLocations.some((s) => s.id === loc.id && s.type === loc.type);
 
   const handleLocationSelect = (loc: LocationResult) => {
-    setLocationSearch(loc.name);
-    if (loc.type === "state") {
-      setPendingLocation({ name: loc.name, locationId: "", stateId: String(loc.id) });
+    if (isPendingSelected(loc)) {
+      setPendingLocations((prev) => prev.filter((l) => !(l.id === loc.id && l.type === loc.type)));
     } else {
-      setPendingLocation({ name: loc.name, locationId: String(loc.id), stateId: "" });
+      setPendingLocations((prev) => [...prev, { id: loc.id, name: loc.name, display: loc.display, type: loc.type }]);
     }
-    setLocationSelected(true);
+    setLocationSearch("");
+  };
+
+  const handleLocationRemove = (id: number, type: "location" | "state") => {
+    setPendingLocations((prev) => prev.filter((l) => !(l.id === id && l.type === type)));
   };
 
   const handleLocationClear = () => {
     setLocationSearch("");
-    setPendingLocation({ name: "", locationId: "", stateId: "" });
-    setLocationSelected(false);
-  };
-
-  const handleLocationInputChange = (value: string) => {
-    setLocationSearch(value);
-    setLocationSelected(false);
+    setPendingLocations([]);
   };
 
   // Sync local state when panel opens
   useEffect(() => {
     if (open) {
-      setLocationSearch(filters.location);
-      setPendingLocation({ name: filters.location, locationId: filters.locationId, stateId: filters.stateId });
-      setLocationSelected(!!filters.location);
+      setLocationSearch("");
+      setPendingLocations(filters.selectedLocations);
+      setCurrency(filters.currency || "ARS");
+      setPriceType(filters.priceType || "total");
       setMinPrice(filters.minPrice);
       setMaxPrice(filters.maxPrice);
       setSelectedTypes(filters.propertyTypeNames);
@@ -190,10 +187,11 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
       setBathrooms(filters.bathrooms);
       setMinSurface(filters.minSurface);
       setMaxSurface(filters.maxSurface);
-      setSurfaceType((filters.surfaceType as "cubierta" | "total") || "total");
+      setSurfaceType((filters.surfaceType as "cubierta" | "total") || "cubierta");
       setSelectedTagIds(filters.tagIds);
       setAvailabilityFilter(filters.availabilityFilter);
       setAvailabilityDate(filters.availabilityDate);
+      setOwnerType(filters.ownerType);
     }
   }, [open, filters]);
 
@@ -215,13 +213,8 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
   if (!open) return null;
 
   const handleApply = () => {
-    // Convert to ARS for the search
     let min = minPrice;
     let max = maxPrice;
-    if (currency === "USD" && usdRate) {
-      if (min) min = String(Math.round(parseFloat(min) * usdRate));
-      if (max) max = String(Math.round(parseFloat(max) * usdRate));
-    }
     // Auto-swap if min > max
     if (min && max && parseInt(min) > parseInt(max)) {
       [min, max] = [max, min];
@@ -232,10 +225,17 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     if (surfMin && surfMax && parseInt(surfMin) > parseInt(surfMax)) {
       [surfMin, surfMax] = [surfMax, surfMin];
     }
+    // Build location filter values from pending selections
+    const pendingStates = pendingLocations.filter((l) => l.type === "state");
+    const pendingLocs = pendingLocations.filter((l) => l.type === "location");
+
     setFilters({
-      location: pendingLocation.name,
-      locationId: pendingLocation.locationId,
-      stateId: pendingLocation.stateId,
+      selectedLocations: pendingLocations,
+      location: pendingLocations.map((l) => l.name).join(", "),
+      locationId: pendingLocs.map((l) => l.id).join(","),
+      stateId: pendingStates.length > 0 ? String(pendingStates[0].id) : "",
+      currency,
+      priceType,
       minPrice: min,
       maxPrice: max,
       propertyTypeNames: selectedTypes,
@@ -251,14 +251,14 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
       tagIds: selectedTagIds,
       availabilityFilter,
       availabilityDate: availabilityFilter === "custom" ? availabilityDate : "",
+      ownerType,
     });
     onClose();
   };
 
   const handleClear = () => {
     setLocationSearch("");
-    setPendingLocation({ name: "", locationId: "", stateId: "" });
-    setLocationSelected(false);
+    setPendingLocations([]);
     setMinPrice("");
     setMaxPrice("");
     setCurrency("ARS");
@@ -271,10 +271,11 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     setBathrooms("");
     setMinSurface("");
     setMaxSurface("");
-    setSurfaceType("total");
+    setSurfaceType("cubierta");
     setSelectedTagIds([]);
     setAvailabilityFilter("");
     setAvailabilityDate("");
+    setOwnerType("");
     clearFilters();
     router.replace("/buscar");
     onClose();
@@ -316,26 +317,45 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
         {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-4">
-            {/* Ubicación */}
+            {/* Ubicación — multi-select */}
             <FilterSection title="Ubicación">
               <div className="space-y-2">
+                {/* Selected chips */}
+                {pendingLocations.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pb-1">
+                    {pendingLocations.map((loc) => (
+                      <span
+                        key={`${loc.type}-${loc.id}`}
+                        className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium"
+                      >
+                        {loc.name}
+                        <button
+                          onClick={() => handleLocationRemove(loc.id, loc.type)}
+                          className="h-4 w-4 rounded-full hover:bg-primary/20 flex items-center justify-center transition-colors cursor-pointer"
+                          aria-label={`Quitar ${loc.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <button
+                      onClick={handleLocationClear}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1 cursor-pointer"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                )}
+
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar ubicación..."
+                    placeholder="Buscar barrio, ciudad..."
                     value={locationSearch}
-                    onChange={(e) => handleLocationInputChange(e.target.value)}
+                    onChange={(e) => setLocationSearch(e.target.value)}
                     className="rounded-xl pl-9"
                   />
                 </div>
-                {pendingLocation.name && locationSelected && (
-                  <button
-                    onClick={handleLocationClear}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Limpiar
-                  </button>
-                )}
                 <div className="max-h-44 overflow-y-auto">
                   {locationLoading ? (
                     <div className="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground">
@@ -344,29 +364,44 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                     </div>
                   ) : locationResults.length > 0 ? (
                     <div className="space-y-0.5">
-                      {locationResults.map((loc) => (
-                        <button
-                          key={loc.id}
-                          onClick={() => handleLocationSelect(loc)}
-                          className="w-full text-left px-3 py-2 rounded-xl hover:bg-secondary/50 transition-colors flex items-start gap-2"
-                        >
-                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                          <div className="min-w-0">
-                            <span className="text-sm font-medium text-foreground block">{loc.name}</span>
-                            {loc.display && (
-                              <span className="text-xs text-muted-foreground block truncate">{loc.display}</span>
+                      {locationResults.map((loc) => {
+                        const selected = isPendingSelected(loc);
+                        return (
+                          <button
+                            key={`${loc.type}-${loc.id}`}
+                            onClick={() => handleLocationSelect(loc)}
+                            className={`w-full text-left px-3 py-2 rounded-xl transition-colors flex items-start gap-2 cursor-pointer ${
+                              selected
+                                ? "bg-primary/10 text-primary"
+                                : "hover:bg-secondary/50"
+                            }`}
+                          >
+                            {selected ? (
+                              <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            ) : (
+                              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                             )}
-                          </div>
-                        </button>
-                      ))}
+                            <div className="min-w-0">
+                              <span className={`text-sm font-medium block ${selected ? "text-primary" : "text-foreground"}`}>
+                                {loc.name}
+                              </span>
+                              {loc.display && (
+                                <span className="text-xs text-muted-foreground block truncate">
+                                  {loc.display}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  ) : locationSearch.length >= 2 && !locationSelected ? (
+                  ) : locationSearch.length >= 2 ? (
                     <div className="px-2 py-3 text-sm text-muted-foreground">
                       No se encontraron ubicaciones
                     </div>
                   ) : locationSearch.length > 0 && locationSearch.length < 2 ? (
                     <div className="px-2 py-3 text-xs text-muted-foreground">
-                      Escribí al menos 2 caracteres para buscar
+                      Escribi al menos 2 caracteres para buscar
                     </div>
                   ) : null}
                 </div>
@@ -521,6 +556,29 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </FilterSection>
+
+            {/* Tipo de dueño */}
+            <FilterSection title="Tipo de dueño">
+              <div className="flex gap-2">
+                {([
+                  { value: "" as const, label: "Todos" },
+                  { value: "inmobiliaria" as const, label: "Inmobiliaria" },
+                  { value: "dueno" as const, label: "Dueño directo" },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setOwnerType(opt.value)}
+                    className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                      ownerType === opt.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </FilterSection>
 

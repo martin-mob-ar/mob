@@ -41,9 +41,10 @@ const ambientesOptions = [
 interface HeaderProps {
   hideSearch?: boolean;
   sticky?: boolean;
+  landingCta?: string;
 }
 
-const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
+const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) => {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
@@ -203,6 +204,34 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
     });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isHome]);
+
+  // Landing CTA scroll detection — change button color when scrolled past hero
+  const [scrolledPastHero, setScrolledPastHero] = useState(false);
+
+  useEffect(() => {
+    if (!landingCta) return;
+    const handleScroll = () => {
+      const hero = document.querySelector('.landing-hero');
+      if (hero) {
+        const rect = hero.getBoundingClientRect();
+        setScrolledPastHero(rect.bottom < 80);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [landingCta]);
+
+  const handleLandingCTA = () => {
+    if (isAuthenticated) {
+      router.push("/perfil");
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.set("redirect", "/perfil");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    openAuthModal();
+  };
 
   // Close header location dropdown on outside click
   useEffect(() => {
@@ -469,9 +498,20 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
               </div>
             ) : isAuthenticated ? (
               <>
-                <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
-                  Publicar mi propiedad
-                </Button>
+                {landingCta ? (
+                  <Button
+                    variant={scrolledPastHero ? "default" : "ghost"}
+                    onClick={handleLandingCTA}
+                    className="rounded-full px-6 font-bold transition-colors duration-300 gap-2"
+                  >
+                    {landingCta}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
+                    Publicar mi propiedad
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -525,13 +565,24 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
               </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowPublishModal(true)}
-                  className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
-                >
-                  Publicar gratis
-                </Button>
+                {landingCta ? (
+                  <Button
+                    variant={scrolledPastHero ? "default" : "ghost"}
+                    onClick={handleLandingCTA}
+                    className="rounded-full px-6 font-bold transition-colors duration-300 gap-2"
+                  >
+                    {landingCta}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowPublishModal(true)}
+                    className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    Publicar gratis
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={openAuthModal}
@@ -584,10 +635,10 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
                       </div>
 
                       <Button
-                        onClick={() => { setMobileMenuOpen(false); window.location.href = '/subir-propiedad'; }}
+                        onClick={() => { setMobileMenuOpen(false); if (landingCta) { router.push("/perfil"); } else { window.location.href = '/subir-propiedad'; } }}
                         className="w-full rounded-full h-12 font-bold text-base"
                       >
-                        Publicar mi propiedad
+                        {landingCta || "Publicar mi propiedad"}
                       </Button>
 
                       {/* CTA de verificación mobile */}
@@ -642,16 +693,16 @@ const Header = ({ hideSearch = false, sticky = true }: HeaderProps) => {
                       </div>
                       <Button
                         className="w-full rounded-full h-12 font-bold text-base"
-                        onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
+                        onClick={() => { setMobileMenuOpen(false); landingCta ? handleLandingCTA() : openAuthModal(); }}
                       >
-                        Iniciar sesión
+                        {landingCta || "Iniciar sesión"}
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={handlePublishClick}
+                        onClick={landingCta ? () => { setMobileMenuOpen(false); openAuthModal(); } : handlePublishClick}
                         className="w-full rounded-full h-12 font-medium"
                       >
-                        Publicar gratis
+                        {landingCta ? "Iniciar sesión" : "Publicar gratis"}
                       </Button>
                     </>
                   )}

@@ -44,16 +44,16 @@ const Index = ({ properties, latestPosts }: IndexProps) => {
       {/* Propuesta MOB */}
       <WhyMob />
 
-      {/* Latest Blog Posts */}
-      {latestPosts && latestPosts.length > 0 && (
-        <LatestPosts posts={latestPosts} />
-      )}
-
       {/* Dual CTA - Propietarios & Inmobiliarias */}
       <DualCTA />
 
       {/* Explore Rentals Section */}
       <ExploreRentals />
+
+      {/* Latest Blog Posts */}
+      {latestPosts && latestPosts.length > 0 && (
+        <LatestPosts posts={latestPosts} />
+      )}
 
       <Footer />
     </div>;

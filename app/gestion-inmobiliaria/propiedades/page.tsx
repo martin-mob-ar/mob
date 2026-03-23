@@ -15,7 +15,7 @@ export default async function GestionInmobiliariaPropiedadesPage() {
         .from("properties_read")
         .select("*")
         .eq("user_id", user.id)
-        .eq("tokko", true)
+        .not("tokko_id", "is", null)
         .order("property_created_at", { ascending: false });
 
       if (data && data.length > 0) {

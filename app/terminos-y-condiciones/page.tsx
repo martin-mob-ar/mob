@@ -724,6 +724,42 @@ export default function TerminosPage() {
                 Toda controversia derivada de su interpretación, validez, ejecución o cumplimiento será sometida a la jurisdicción de los tribunales ordinarios con competencia en la Ciudad Autónoma de Buenos Aires, salvo disposición legal imperativa en contrario.
               </p>
             </section>
+
+            {/* 22. CONDUCTA DE LOS USUARIOS Y ACTOS DE TERCEROS */}
+            <section>
+              <h2 className="font-display text-lg font-semibold text-foreground mb-3">
+                22. Conducta de los Usuarios y actos de terceros
+              </h2>
+              <div className="space-y-4">
+                <p className="leading-relaxed">
+                  Los Usuarios reconocen y aceptan que Mob es una plataforma tecnológica que facilita herramientas digitales para la interacción entre personas interesadas en procesos vinculados con alquileres, pero no controla ni supervisa de manera permanente la conducta de los Usuarios fuera de la Plataforma.
+                </p>
+                <p className="leading-relaxed">
+                  En consecuencia, Mob no será responsable por los actos, omisiones, conductas, declaraciones, comportamientos o acciones de los Usuarios, incluyendo, sin limitación:
+                </p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>conductas ilícitas o delictivas;</li>
+                  <li>fraudes;</li>
+                  <li>engaños;</li>
+                  <li>daños a personas o bienes;</li>
+                  <li>conflictos personales o comerciales;</li>
+                  <li>incumplimientos contractuales;</li>
+                  <li>o cualquier otro hecho ocurrido entre Usuarios dentro o fuera de la Plataforma.</li>
+                </ul>
+                <p className="leading-relaxed">
+                  Toda interacción, visita, encuentro, negociación, firma de contrato o relación que los Usuarios decidan realizar entre sí se lleva a cabo bajo su exclusiva responsabilidad y riesgo.
+                </p>
+                <p className="leading-relaxed">
+                  Los Usuarios aceptan que Mob no tiene control sobre el comportamiento futuro de los Usuarios, ni puede garantizar la buena fe, solvencia, honestidad, seguridad o legalidad de sus acciones.
+                </p>
+                <p className="leading-relaxed">
+                  En consecuencia, Mob no será responsable por daños personales, daños materiales, perjuicios económicos, actos ilícitos o hechos delictivos que pudieran producirse entre Usuarios, aun cuando dichos Usuarios hayan tomado contacto inicialmente a través de la Plataforma.
+                </p>
+                <p className="leading-relaxed">
+                  Se recomienda a los Usuarios adoptar las medidas de precaución razonables al interactuar con terceros, realizar visitas a inmuebles o celebrar acuerdos.
+                </p>
+              </div>
+            </section>
           </div>
         </main>
       </div>

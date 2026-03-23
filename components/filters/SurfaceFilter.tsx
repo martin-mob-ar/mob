@@ -55,7 +55,7 @@ const SurfaceFilter = () => {
   const [open, setOpen] = useState(false);
   const { filters, setFilters } = useSearchFilters();
   const [surfaceType, setSurfaceType] = useState<"cubierta" | "total">(
-    (filters.surfaceType as "cubierta" | "total") || "total"
+    (filters.surfaceType as "cubierta" | "total") || "cubierta"
   );
   const [minSurface, setMinSurface] = useState(filters.minSurface);
   const [maxSurface, setMaxSurface] = useState(filters.maxSurface);
@@ -64,7 +64,7 @@ const SurfaceFilter = () => {
   useEffect(() => {
     setMinSurface(filters.minSurface);
     setMaxSurface(filters.maxSurface);
-    setSurfaceType((filters.surfaceType as "cubierta" | "total") || "total");
+    setSurfaceType((filters.surfaceType as "cubierta" | "total") || "cubierta");
   }, [filters.minSurface, filters.maxSurface, filters.surfaceType]);
 
   const handleApply = () => {
@@ -85,9 +85,9 @@ const SurfaceFilter = () => {
   const handleClear = () => {
     setMinSurface("");
     setMaxSurface("");
-    setSurfaceType("total");
-    if (filters.minSurface || filters.maxSurface || filters.surfaceType !== "total") {
-      setFilters({ minSurface: "", maxSurface: "", surfaceType: "total" });
+    setSurfaceType("cubierta");
+    if (filters.minSurface || filters.maxSurface || filters.surfaceType !== "cubierta") {
+      setFilters({ minSurface: "", maxSurface: "", surfaceType: "cubierta" });
     }
   };
 

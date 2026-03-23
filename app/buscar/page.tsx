@@ -12,6 +12,7 @@ export default async function BuscarPage() {
     const { data, count } = await supabase
       .from("properties_read")
       .select("*", { count: "exact" })
+      .eq("owner_verified", true)
       .order("property_created_at", { ascending: false })
       .range(0, 19);
 
