@@ -423,8 +423,8 @@ export default function PhotoUploader({
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <div className="text-center space-y-1">
-        <h1 className="font-display text-3xl font-bold">Fotos</h1>
+      <div className="space-y-1">
+        <h1 className="font-display text-xl sm:text-3xl font-bold">Fotos</h1>
         <p className="text-muted-foreground text-sm">
           Mínimo {MIN_WIDTH}x{MIN_HEIGHT}px · JPEG, PNG o WebP · Hasta 15MB
         </p>

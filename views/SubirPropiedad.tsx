@@ -213,11 +213,37 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
     if (!draftData) return;
     setDraftPropertyId(draftData.id);
     draftPropertyIdRef.current = draftData.id;
-    // Map old 10-step draft_step to new 9-step flow (step 3 map confirmation removed)
-    const rawStep = draftData.draft_step ?? 2;
-    const mappedStep = rawStep <= 2 ? rawStep : rawStep === 3 ? 2 : Math.min(rawStep - 1, TOTAL_STEPS);
-    setCurrentStep(mappedStep);
-    maxStepReachedRef.current = mappedStep;
+    // Compute the first incomplete step from draft data
+    {
+      const draftExtra = draftData.extra_attributes?.draft ?? {};
+      let targetStep = 2;
+      const hasStep2 = draftData.type_id && draftData.location_id && draftData.address
+        && ((draftData.type_id !== 2 && draftData.type_id !== 13) || (draftData.floor && draftData.apartment_door));
+      if (hasStep2) {
+        targetStep = 3;
+        const hasStep3 = draftData.age != null && draftData.roofed_surface && draftData.total_surface;
+        if (hasStep3) {
+          targetStep = 4;
+          const hasStep4 = draftExtra.precioMensual && (draftExtra.expensasIncluidas || draftExtra.expensas) && draftExtra.duracionContrato != null;
+          if (hasStep4) {
+            targetStep = 5;
+            const hasStep5 = draftData.tokko_property_photo?.length >= 5;
+            if (hasStep5) {
+              targetStep = 7; // Step 6 (description) is optional
+              const hasStep7 = draftData.available_date && (draftExtra.noPuedeDefinirHorarios || (draftData.visit_days?.length > 0));
+              if (hasStep7) {
+                targetStep = 8;
+                if (draftExtra.selectedPlan) {
+                  targetStep = 9;
+                }
+              }
+            }
+          }
+        }
+      }
+      setCurrentStep(targetStep);
+      maxStepReachedRef.current = targetStep;
+    }
     if (draftData.type_id) setTypeId(draftData.type_id);
     if (draftData.address) {
       setAddress(draftData.address);
@@ -864,7 +890,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                     typeName && locationName
                       ? `${typeName} en ${locationName}`
                       : typeName || draft.address || "Nueva propiedad";
-                  const step = draft.draft_step ?? 2;
+                  const rawStep = draft.draft_step ?? 2;
+                  const step = rawStep <= 2 ? rawStep : rawStep === 3 ? 2 : Math.min(rawStep - 1, TOTAL_STEPS);
                   const updatedAt = draft.updated_at
                     ? new Date(draft.updated_at).toLocaleDateString("es-AR")
                     : null;
@@ -1669,10 +1696,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           <div className="max-w-5xl mx-auto space-y-6">
             <div>
               <h1 className="font-display text-xl sm:text-3xl font-bold">Elegí tu plan</h1>
+              {showErrors && !selectedPlan && (
+                <p className="text-sm text-red-500 mt-2">Seleccioná un plan para continuar</p>
+              )}
             </div>
-            {showErrors && !selectedPlan && (
-              <p className="text-sm text-red-500">Seleccioná un plan para continuar</p>
-            )}
             <PlanSelector selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} variant="wizard" />
           </div>
         );

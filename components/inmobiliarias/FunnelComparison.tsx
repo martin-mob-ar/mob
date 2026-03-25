@@ -4,8 +4,6 @@ import { motion, useInView, useMotionValue, useTransform, useScroll } from "fram
 import { useRef, useState, useCallback } from "react";
 import { Search, Hourglass, FolderOpen, Clock, ShieldCheck, CalendarCheck, Lock, FileSignature } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 
 const traditionalSteps = [
   { count: 100, label: "Consultas", desc: "Recibís cualquier tipo de lead, sin información del posible inquilino.", mobileDesc: "Recibís cualquier lead sin información", icon: Search },
@@ -256,7 +254,7 @@ const FunnelComparison = () => {
   return (
     <section
       ref={sectionRef}
-      className="py-16 md:py-20 relative overflow-hidden"
+      className="py-20 md:py-[60px] relative overflow-hidden"
       onMouseMove={handleMouseMove}
     >
       {!isMobile && (
@@ -424,19 +422,6 @@ const FunnelComparison = () => {
           </div>
         )}
 
-        {/* CTA Button */}
-        <div className="text-center mt-12">
-          <Button
-            size="lg"
-            className="rounded-full px-8 py-6 text-base font-semibold"
-            asChild
-          >
-            <a href="https://tally.so/r/5Bk4y6" target="_blank" rel="noopener noreferrer">
-              Suma tu inmobiliaria gratis
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
-          </Button>
-        </div>
       </div>
     </section>
   );

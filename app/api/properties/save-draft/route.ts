@@ -159,12 +159,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // Batch upsert photos using unique index on (property_id, storage_path)
+    // Sync photos: delete existing + insert current (same pattern as tags above)
     if (Array.isArray(photos) && photos.length > 0) {
       const validPhotos = (photos as { publicUrl: string; storagePath: string; order: number; isCover: boolean }[])
         .filter(p => p.storagePath);
 
       if (validPhotos.length > 0) {
+        await supabaseAdmin
+          .from('tokko_property_photo')
+          .delete()
+          .eq('property_id', propertyId);
+
         const photoRows = validPhotos.map(photo => ({
           property_id: propertyId,
           image: photo.publicUrl,
@@ -176,17 +181,13 @@ export async function POST(request: Request) {
           is_blueprint: false,
         }));
 
-        await supabaseAdmin
+        const { error: photoError } = await supabaseAdmin
           .from('tokko_property_photo')
-          .upsert(photoRows, { onConflict: 'property_id,storage_path' });
+          .insert(photoRows);
 
-        // Remove photos no longer in the list
-        const currentPaths = validPhotos.map(p => p.storagePath);
-        await supabaseAdmin
-          .from('tokko_property_photo')
-          .delete()
-          .eq('property_id', propertyId)
-          .not('storage_path', 'in', `(${currentPaths.map(p => `"${p}"`).join(',')})`);
+        if (photoError) {
+          console.error('[save-draft] Photo insert error:', photoError);
+        }
       }
     }
 

@@ -14,6 +14,7 @@ export interface PlanSelectorProps {
   onSelectPlan: (plan: PlanType) => void;
   variant?: "default" | "wizard";
   showSelectButtons?: boolean;
+  showCostNote?: boolean;
 }
 
 // Pricing data (shared source of truth)
@@ -127,7 +128,7 @@ const MobilePlanCard = ({
 
       <div className={cn("mb-6 pb-6 border-b", isWizard ? "border-border" : "border-border/50")}>
         <div className={cn("uppercase tracking-wider mb-1", isWizard ? "text-xs font-semibold text-foreground/80" : "text-xs text-muted-foreground")}>Costo de plataforma</div>
-        <div className={cn(isWizard ? "text-base font-semibold text-foreground" : "text-sm text-muted-foreground")}>{pricingCost[plan]}</div>
+        <div className={cn("font-bold", isWizard ? "text-base text-foreground" : "text-sm text-foreground")}>{pricingCost[plan]}</div>
       </div>
 
       <div className="space-y-1 mb-6">
@@ -205,7 +206,7 @@ const MobilePlanCard = ({
   );
 };
 
-export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", showSelectButtons = true }: PlanSelectorProps) => {
+export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", showSelectButtons = true, showCostNote = true }: PlanSelectorProps) => {
   const isWizard = variant === "wizard";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -230,9 +231,12 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
           "relative rounded-xl border overflow-hidden",
           isWizard ? "bg-white border-border" : "bg-white border-border/40"
         )}>
-          {/* Highlighted column background for Experiencia mob */}
+          {/* Highlighted column background for selected plan */}
           <div className={cn(
-            "absolute right-0 top-0 bottom-0 w-1/4 border-l pointer-events-none rounded-tr-xl",
+            "absolute top-0 bottom-0 w-1/4 border-l pointer-events-none",
+            (!selectedPlan || selectedPlan === "experiencia") && "left-3/4 rounded-tr-xl",
+            selectedPlan === "basico" && "left-1/4 border-r",
+            selectedPlan === "acompanado" && "left-2/4 border-r",
             isWizard ? "bg-primary/[0.06] border-primary/30" : "bg-primary/[0.04] border-primary/20"
           )} />
 
@@ -270,11 +274,8 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
           <div className="relative">
             {pricingSections.map((section, sectionIdx) => (
               <div key={sectionIdx}>
-                <div className={cn(
-                  "grid grid-cols-[1fr_1fr_1fr_1fr]",
-                  isWizard ? "bg-muted/60" : "bg-muted/40"
-                )}>
-                  <div className={cn(isWizard ? "px-5 py-2" : "px-3 py-1")}>
+                <div className="grid grid-cols-[1fr_1fr_1fr_1fr]">
+                  <div className={cn(isWizard ? "px-5 py-2 bg-muted/60" : "px-3 py-1 bg-muted/40")}>
                     <span className={cn(
                       "font-bold uppercase tracking-wider",
                       isWizard ? "text-xs text-foreground/90" : "text-[10px] text-foreground/70"
@@ -282,7 +283,16 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                       {section.title}
                     </span>
                   </div>
-                  <div /><div /><div />
+                  {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
+                    <div
+                      key={plan}
+                      className={cn(
+                        selectedPlan === plan
+                          ? "bg-primary/10"
+                          : isWizard ? "bg-muted/60" : "bg-muted/40"
+                      )}
+                    />
+                  ))}
                 </div>
                 {section.rows.map((row, rowIdx) => (
                   <div
@@ -346,19 +356,20 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
             {/* Cost row */}
             <div className={cn(
               "grid grid-cols-[1fr_1fr_1fr_1fr] border-t",
-              isWizard ? "border-border bg-muted/40" : "border-border/30 bg-muted/20"
+              isWizard ? "border-border" : "border-border/30"
             )}>
-              <div className={cn("flex items-center", isWizard ? "px-5 py-3" : "px-3 py-2")}>
+              <div className={cn("flex items-center", isWizard ? "px-5 py-3 bg-muted/40" : "px-3 py-2 bg-muted/20")}>
                 <span className={cn(
                   "font-medium text-foreground",
                   isWizard ? "text-sm" : "text-xs"
                 )}>Costo de plataforma</span>
               </div>
               {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
-                <div key={plan} className={cn("flex items-center justify-center", isWizard ? "px-5 py-3" : "px-3 py-2")}>
+                <div key={plan} className={cn("flex items-center justify-center", isWizard ? "px-5 py-3" : "px-3 py-2", selectedPlan === plan ? "bg-primary/10" : isWizard ? "bg-muted/40" : "bg-muted/20")}>
                   <span className={cn(
+                    "font-bold",
                     isWizard ? "text-sm" : "text-xs",
-                    selectedPlan === plan ? "text-primary font-semibold" : (isWizard ? "text-foreground/70 font-medium" : "text-muted-foreground")
+                    selectedPlan === plan ? "text-primary" : (isWizard ? "text-foreground/70" : "text-foreground")
                   )}>
                     {pricingCost[plan]}
                   </span>
@@ -396,18 +407,20 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
           </div>
         )}
 
-        <div className="text-center mt-6 space-y-1">
-          <p className={cn(
-            "font-semibold text-foreground",
-            isWizard ? "text-base" : "text-sm"
-          )}>
-            El costo se cobra únicamente cuando el alquiler se concreta.
-          </p>
-          <p className={cn(
-            "font-medium text-muted-foreground",
-            isWizard ? "text-sm" : "text-sm"
-          )}>No hay costos iniciales.</p>
-        </div>
+        {showCostNote && (
+          <div className="text-center mt-6 space-y-1">
+            <p className={cn(
+              "font-semibold text-foreground",
+              isWizard ? "text-base" : "text-sm"
+            )}>
+              El costo se cobra únicamente cuando el alquiler se concreta.
+            </p>
+            <p className={cn(
+              "font-medium text-muted-foreground",
+              isWizard ? "text-sm" : "text-sm"
+            )}>No hay costos iniciales.</p>
+          </div>
+        )}
       </div>
 
       {/* Mobile: Stacked cards */}
@@ -440,9 +453,11 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
           toggleSection={toggleSection}
           isWizard={isWizard}
         />
-        <p className="text-center text-base font-medium text-foreground pt-4">
-          El costo se cobra únicamente cuando el alquiler se concreta.
-        </p>
+        {showCostNote && (
+          <p className="text-center text-base font-medium text-foreground pt-4">
+            El costo se cobra únicamente cuando el alquiler se concreta.
+          </p>
+        )}
       </div>
     </div>
     </TooltipProvider>

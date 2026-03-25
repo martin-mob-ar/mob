@@ -464,7 +464,35 @@ const LandingPropietarios = () => {
             </p>
           </motion.div>
 
-          <PlanSelector selectedPlan={null} onSelectPlan={() => handleCTA()} showSelectButtons={false} />
+          <PlanSelector selectedPlan={null} onSelectPlan={() => handleCTA()} showSelectButtons={false} showCostNote={false} />
+
+          {/* Plan CTA buttons */}
+          <div className="hidden lg:grid grid-cols-[1fr_1fr_1fr_1fr] mt-6 max-w-5xl mx-auto">
+            <div />
+            {[
+              { label: "Elegir básico", variant: "outline" as const },
+              { label: "Elegir acompañado", variant: "outline" as const },
+              { label: "Quiero gestión completa", variant: "default" as const },
+            ].map((plan) => (
+              <div key={plan.label} className="px-2 flex justify-center">
+                <Button
+                  variant={plan.variant}
+                  size="lg"
+                  className="rounded-full w-full"
+                  onClick={() => router.push("/subir-propiedad")}
+                >
+                  {plan.label}
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-6 space-y-1">
+            <p className="text-sm font-semibold text-foreground">
+              El costo se cobra únicamente cuando el alquiler se concreta.
+            </p>
+            <p className="text-sm font-medium text-muted-foreground">No hay costos iniciales.</p>
+          </div>
         </div>
       </section>
 

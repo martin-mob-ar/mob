@@ -76,6 +76,7 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
 
   return (
     <SubirPropiedad
+      key={draftData?.id ?? editData?.id ?? "new"}
       userId={user.id}
       draftData={draftData}
       editData={editData}
