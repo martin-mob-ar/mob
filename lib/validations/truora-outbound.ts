@@ -7,6 +7,7 @@ export const truoraOutboundSchema = z.object({
   propertyId: z.string().optional(),
   date: z.string().optional(),
   time: z.string().optional(),
+  accountType: z.number().nullable().optional(),
 });
 
 export type TruoraOutboundPayload = z.infer<typeof truoraOutboundSchema>;
