@@ -17,6 +17,7 @@ export async function sendOutbound(params: SendOutboundParams): Promise<Record<s
   body.append('outbound_id', params.outboundId);
   body.append('phone_number', params.phone);
   body.append('flow_id', params.flowId);
+  body.append('user_authorized', 'true');
 
   for (const [key, value] of Object.entries(params.variables)) {
     body.append(`var.${key}`, value);
