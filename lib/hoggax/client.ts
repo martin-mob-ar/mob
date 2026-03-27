@@ -65,23 +65,23 @@ export interface HoggaxQualifyResponse {
 }
 
 export function buildQualifyRequest(payload: TruoraWebhookPayload): HoggaxQualifyRequest {
-  const employmentId = mapEmploymentSituationId(payload.situacion_laboral);
+  const employmentId = mapEmploymentSituationId(payload.employment_situation_id);
 
   const request: HoggaxQualifyRequest = {
     document_type_id: 1, // DNI
-    document_value: payload.dni,
-    gender_id: mapGenderId(payload.genero),
+    document_value: payload.document_value,
+    gender_id: mapGenderId(payload.gender_id),
     employment_situation_id: employmentId,
   };
 
   // Add antiquity if the employment type requires it
-  if (!NO_ANTIQUITY_TYPES.has(employmentId) && payload.antiguedad) {
-    request.antiquity_id = mapAntiquityId(payload.antiguedad);
+  if (!NO_ANTIQUITY_TYPES.has(employmentId) && payload.antiquity_id) {
+    request.antiquity_id = mapAntiquityId(payload.antiquity_id);
   }
 
   // Add monthly income if the employment type requires it
-  if (!NO_INCOME_TYPES.has(employmentId) && payload.ingresos_mensuales != null) {
-    request.monthly_income = payload.ingresos_mensuales;
+  if (!NO_INCOME_TYPES.has(employmentId) && payload.monthly_income != null) {
+    request.monthly_income = payload.monthly_income;
   }
 
   return request;

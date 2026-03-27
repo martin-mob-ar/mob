@@ -75,11 +75,11 @@ export async function POST(request: Request) {
         flow_name: 'verificacion_para_agendar_visita',
         hoggax_max_rent_plus_expenses: hoggaxMaxRent,
         hoggax_approved: hoggaxApproved,
-        dni: payload.dni,
-        genero: payload.genero,
-        situacion_laboral: payload.situacion_laboral,
-        antiguedad: payload.antiguedad ?? null,
-        ingresos_mensuales: payload.ingresos_mensuales ?? null,
+        dni: payload.document_value,
+        genero: payload.gender_id,
+        situacion_laboral: payload.employment_situation_id,
+        antiguedad: payload.antiquity_id ?? null,
+        ingresos_mensuales: payload.monthly_income ?? null,
         hoggax_raw_response: hoggaxRawResponse,
       });
 
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     const userUpdate: Record<string, unknown> = {
       hoggax_max_rent_plus_expenses: hoggaxMaxRent,
       hoggax_approved: hoggaxApproved,
-      dni: payload.dni,
+      dni: payload.document_value,
     };
 
     // Set last_verification_date only when approved
