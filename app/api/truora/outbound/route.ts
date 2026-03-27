@@ -4,7 +4,9 @@ import { truoraOutboundSchema } from '@/lib/validations/truora-outbound';
 import { sendOutbound } from '@/lib/truora/outbound';
 
 const TRUORA_OUTBOUND_ID = process.env.TRUORA_OUTBOUND_ID ?? '';
+const TRUORA_OUTBOUND_ID_NO_PROPERTY = process.env.TRUORA_OUTBOUND_ID_NO_PROPERTY ?? '';
 const TRUORA_FLOW_ID = process.env.TRUORA_FLOW_ID ?? '';
+const TRUORA_FLOW_ID_NO_PROPERTY = process.env.TRUORA_FLOW_ID_NO_PROPERTY ?? '';
 
 // Format number with dot separators, no currency symbol (template adds its own $)
 function formatPrice(price: number | null): string {
@@ -89,8 +91,8 @@ export async function POST(request: Request) {
 
     const result = await sendOutbound({
       phone: phoneDigits,
-      outboundId: TRUORA_OUTBOUND_ID,
-      flowId: TRUORA_FLOW_ID,
+      outboundId: propertyId ? TRUORA_OUTBOUND_ID : TRUORA_OUTBOUND_ID_NO_PROPERTY,
+      flowId: propertyId ? TRUORA_FLOW_ID : TRUORA_FLOW_ID_NO_PROPERTY,
       variables,
     });
 
