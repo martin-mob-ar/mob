@@ -22,15 +22,15 @@ export const truoraWebhookSchema = z.object({
     .nullable()
     .optional(),
   monthly_income: z
-    .union([z.number().int(), z.string().transform((v) => parseInt(v, 10))])
+    .union([z.number().int(), z.string().transform((v) => parseInt(v.replace(/\./g, ''), 10))])
     .nullable()
     .optional(),
   rent: z
-    .union([z.number(), z.string().transform((v) => parseInt(v, 10))])
+    .union([z.number(), z.string().transform((v) => parseInt(v.replace(/\./g, ''), 10))])
     .nullable()
     .optional(),
   expenses: z
-    .union([z.number(), z.string().transform((v) => parseInt(v, 10))])
+    .union([z.number(), z.string().transform((v) => parseInt(v.replace(/\./g, ''), 10))])
     .nullable()
     .optional(),
 });
