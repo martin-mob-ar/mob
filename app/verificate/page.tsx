@@ -95,6 +95,7 @@ export default function VerificatePage() {
           propertyId,
           date,
           time,
+          accountType: user?.accountType,
         }),
       }).catch(() => {}); // Don't block UX on failure
 

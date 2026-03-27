@@ -24,14 +24,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const { phone, country_code, name, propertyId, date, time } = parsed.data;
+    const { phone, country_code, name, propertyId, date, time, accountType } = parsed.data;
 
     // Build the phone number for Truora (digits only, with country code)
     const phoneDigits = country_code.replace(/[^0-9]/g, '') + phone.replace(/[^0-9]/g, '');
 
     // Build variables for the Truora template
     // Variable names must match the outbound template placeholders
+    const ACCOUNT_TYPE_LABELS: Record<number, string> = {
+      1: 'inquilino',
+      2: 'dueño directo',
+    };
+
     const variables: Record<string, string> = { nombre_usuario: name };
+
+    if (accountType != null && ACCOUNT_TYPE_LABELS[accountType]) {
+      variables.tipo_usuario = ACCOUNT_TYPE_LABELS[accountType];
+    }
 
     if (date) {
       // Convert yyyy-MM-dd to dd/MM/yyyy
