@@ -53,8 +53,8 @@ export async function POST(request: Request) {
     let hoggaxRawResponse: Record<string, unknown> | null = null;
 
     try {
-      const { response } = await qualify(payload);
-      hoggaxRawResponse = response as Record<string, unknown>;
+      const { response, rawResponse } = await qualify(payload);
+      hoggaxRawResponse = rawResponse;
       hoggaxApproved = response.approved ?? null;
       hoggaxMaxRent = typeof response.max_rent_plus_expenses === 'number'
         ? response.max_rent_plus_expenses
