@@ -67,6 +67,12 @@ export async function POST(request: Request) {
       };
     }
 
+    // --- Extract reason_code and message from raw response ---
+    const reasonCode = hoggaxRawResponse && 'body' in hoggaxRawResponse
+      ? (hoggaxRawResponse.body as Record<string, unknown>)?.reason_code as string | null ?? null
+      : null;
+    const hoggaxMessage = hoggaxRawResponse?.message as string | null ?? null;
+
     // --- Insert into verificaciones_hoggax ---
     const { error: insertError } = await supabaseAdmin
       .from('verificaciones_hoggax')
@@ -81,6 +87,8 @@ export async function POST(request: Request) {
         antiguedad: payload.antiquity_id ?? null,
         ingresos_mensuales: payload.monthly_income ?? null,
         hoggax_raw_response: hoggaxRawResponse,
+        reason_code: reasonCode,
+        message: hoggaxMessage,
       });
 
     if (insertError) {
@@ -117,9 +125,6 @@ export async function POST(request: Request) {
       userId,
       hoggax_approved: hoggaxApproved,
       hoggax_max_rent_plus_expenses: hoggaxMaxRent,
-      ...(hoggaxApproved === false && hoggaxRawResponse && 'body' in hoggaxRawResponse
-        ? { reason_code: (hoggaxRawResponse.body as Record<string, unknown>)?.reason_code ?? null }
-        : {}),
     });
   } catch (error) {
     console.error('[TruoraWebhook] Unexpected error:', error);
