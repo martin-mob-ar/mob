@@ -184,7 +184,7 @@ export default function VerificatePage() {
           {/* Heading */}
           <div className="space-y-3">
             <h1 className="font-display text-3xl font-bold text-foreground">
-              Verificate como inquilino calificado
+              Verificate como {user?.accountType === 2 ? 'propietario' : 'inquilino'} calificado
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Completá tu verificación para poder{" "}
