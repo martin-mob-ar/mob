@@ -117,6 +117,7 @@ export async function POST(request: Request) {
       userId,
       hoggax_approved: hoggaxApproved,
       hoggax_max_rent_plus_expenses: hoggaxMaxRent,
+      hoggax_raw: hoggaxRawResponse,
     });
   } catch (error) {
     console.error('[TruoraWebhook] Unexpected error:', error);
