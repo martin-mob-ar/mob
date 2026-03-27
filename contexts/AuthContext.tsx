@@ -319,9 +319,21 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
       // Client-side signout clears local Supabase session state
       await supabase.auth.signOut();
     } finally {
-      // Always clear state and redirect, even if signOut errored
+      // Always clear state, even if signOut errored
       setUser(null);
-      window.location.href = "/";
+      // Stay on current page unless it requires authentication
+      const path = window.location.pathname;
+      const isProtected =
+        path.startsWith("/gestion") ||
+        path.startsWith("/perfil") ||
+        path.startsWith("/subir-propiedad") ||
+        path.startsWith("/mis-busquedas") ||
+        path.startsWith("/verificate");
+      if (isProtected) {
+        window.location.href = "/";
+      } else {
+        window.location.reload();
+      }
     }
   }, [supabase]);
 

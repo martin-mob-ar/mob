@@ -263,8 +263,9 @@ export default function ProfileSection({
     );
   }
 
-  // ── Inmobiliaria: no tokko key yet — show setup form ────────────────────
-  if (isInmobiliaria && !hasTokkoHash && syncStatus !== "syncing" && syncStatus !== "done") {
+  // ── Inmobiliaria: no tokko key yet OR initial sync never completed — show setup form ──
+  const initialSyncIncomplete = hasTokkoHash && !tokkoLastSyncAt;
+  if (isInmobiliaria && (!hasTokkoHash || initialSyncIncomplete) && syncStatus !== "syncing" && syncStatus !== "done") {
     return (
       <div className="max-w-md mx-auto">
         {/* Icon + title */}
@@ -325,7 +326,7 @@ export default function ProfileSection({
         <div className="border-t border-border my-6" />
 
         <a
-          href="https://wa.me/2236000055"
+          href="https://wa.me/5492236000055"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -429,143 +430,7 @@ export default function ProfileSection({
     isInquilino && lastVerificationDate !== null && !isExpired;
   const duenioVerified = isDuenioDirecto && lastVerificationDate !== null;
 
-  // ── Inquilino: not verified — show conversion block ──────────────────────
-  if (isInquilino && !inquilinoVerified) {
-    return (
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm mb-3">
-          <Zap className="h-4 w-4" />
-          Verificate para publicar
-        </div>
-        <p className="text-muted-foreground text-sm mb-6">
-          Completás tu perfil una sola vez y validamos tu identidad e ingresos.
-          Quedás preaprobado para aplicar a cualquier alquiler dentro de mob.
-        </p>
 
-        {/* Benefits list */}
-        <div className="space-y-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <Clock className="h-4 w-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              Verificate en menos de 2 minutos
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-4 w-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              Accedé a garantía 50% OFF con aprobación instantánea
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              Agendá visitas y reservá online
-            </span>
-          </div>
-        </div>
-
-        {/* Primary CTA */}
-        <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2" disabled>
-          <Shield className="h-5 w-5" />
-          Verificar mi perfil
-        </Button>
-
-        <div className="border-t border-border my-5" />
-
-        {/* Secondary CTA */}
-        <Link href="/buscar">
-          <Button
-            variant="outline"
-            className="h-13 w-full rounded-full font-semibold text-base gap-2"
-          >
-            <Search className="h-5 w-5" />
-            Buscar propiedades
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
-  // ── Dueño directo: not verified — show conversion block ─────────────────
-  if (isDuenioDirecto && !duenioVerified) {
-    return (
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm mb-3">
-          <Zap className="h-4 w-4" />
-          Verificate para publicar
-        </div>
-        <p className="text-muted-foreground text-sm mb-6">
-          Completás tu perfil una sola vez y validamos tu identidad. Quedás
-          habilitado para publicar tus propiedades en mob de forma gratuita.
-        </p>
-
-        {/* Benefits list */}
-        <div className="space-y-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <Clock className="h-4 w-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              Verificate en menos de 2 minutos
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <Home className="h-4 w-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              Publicá tu propiedad gratis
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-4 w-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              Recibí consultas de inquilinos verificados
-            </span>
-          </div>
-        </div>
-
-        {/* Primary CTA */}
-        <Button className="h-13 w-full rounded-full bg-blue-600 hover:bg-blue-700 font-semibold text-base gap-2" disabled>
-          <Shield className="h-5 w-5" />
-          Verificar mi perfil
-        </Button>
-
-        <div className="border-t border-border my-5" />
-
-        {/* Secondary CTA — disabled with tooltip */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="block w-full cursor-not-allowed">
-                <Button
-                  variant="outline"
-                  className="h-13 w-full rounded-full font-semibold text-base gap-2 pointer-events-none opacity-60"
-                  tabIndex={-1}
-                >
-                  <Home className="h-5 w-5" />
-                  Publica gratis
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              Verificate para poder publicar
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    );
-  }
 
   // ── Verification badge for verified users who need re-verification ────────
   const verificationBadge = (() => {
@@ -598,9 +463,13 @@ export default function ProfileSection({
   })();
 
   // ── Normal profile form (all types, including inmobiliaria post-sync) ────
+  const needsVerification =
+    (isInquilino && !inquilinoVerified) ||
+    (isDuenioDirecto && !duenioVerified);
+
   return (
-    <div>
-      <div className="mb-4">
+    <div className="space-y-5">
+      <div>
         <h1 className="font-display text-2xl font-bold text-foreground">
           Mi perfil
         </h1>
@@ -608,7 +477,80 @@ export default function ProfileSection({
           Editá tu información personal
         </p>
       </div>
+
       {verificationBadge}
+
+      {/* Verification banner */}
+      {needsVerification && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+            {/* Left: text + benefits */}
+            <div className="flex-1 min-w-0 space-y-3">
+              <div>
+                <div className="flex items-center gap-2 text-blue-700 font-semibold text-sm mb-1">
+                  <Zap className="h-4 w-4" />
+                  Verificate para publicar
+                </div>
+                <p className="text-sm text-blue-900/70">
+                  {isInquilino
+                    ? "Validamos tu identidad e ingresos una sola vez. Quedás preaprobado para cualquier alquiler."
+                    : "Validamos tu identidad una sola vez. Quedás habilitado para publicar gratis en mob."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700">
+                  <Clock className="h-3.5 w-3.5" />
+                  2 minutos
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700">
+                  {isInquilino ? (
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  ) : (
+                    <Home className="h-3.5 w-3.5" />
+                  )}
+                  {isInquilino ? "Garantía 50% OFF" : "Publicá gratis"}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700">
+                  {isInquilino ? (
+                    <CalendarDays className="h-3.5 w-3.5" />
+                  ) : (
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  )}
+                  {isInquilino
+                    ? "Visitas y reservas online"
+                    : "Inquilinos verificados"}
+                </span>
+              </div>
+            </div>
+
+            {/* Right: CTA */}
+            <div className="flex flex-col gap-2 sm:shrink-0">
+              <Link href="/verificate">
+                <Button
+                  className="h-10 rounded-full bg-blue-600 hover:bg-blue-700 font-semibold gap-2 px-5"
+                >
+                  <Shield className="h-4 w-4" />
+                  Verificar mi perfil
+                </Button>
+              </Link>
+              {isInquilino && (
+                <Link href="/buscar">
+                  <Button
+                    variant="ghost"
+                    className="h-9 w-full rounded-full text-sm font-medium text-blue-700 hover:bg-blue-100 gap-1.5"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    Buscar propiedades
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile form card */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <ProfileForm profile={profile} accountType={accountType} />
 

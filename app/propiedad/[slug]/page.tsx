@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server-component";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
 import { transformPropertyRead } from "@/lib/transforms/property";
 import PropertyDetail from "@/views/PropertyDetail";
 import { permanentRedirect, notFound } from "next/navigation";
@@ -26,7 +27,7 @@ function extractPropertyId(slugOrId: string): number | null {
 async function fetchUnavailableProperty(propertyId: number) {
   const { data } = await supabaseAdmin
     .from("properties")
-    .select(`id, user_id, tokko, status, description, address, publication_title,
+    .select(`id, user_id, tokko, tokko_id, status, description, address, publication_title,
       geo_lat, geo_long, room_amount, bathroom_amount, suite_amount,
       parking_lot_amount, total_surface, roofed_surface, age, slug, company_id, contact_phone,
       type_id, location_id,
@@ -46,7 +47,7 @@ function mapRawToPropertyData(raw: any) {
   return {
     property_id: raw.id,
     user_id: raw.user_id,
-    tokko: raw.tokko,
+    tokko_id: raw.tokko_id,
     description: raw.description,
     address: raw.address,
     title: raw.publication_title,
@@ -252,9 +253,48 @@ export default async function PropiedadDetailPage({
 
   let propertyData: any;
   let isUnavailable = false;
+  let isPendingVerification = false;
 
   if (activePropertyData) {
-    propertyData = activePropertyData;
+    // Check if property is from an unverified owner
+    if (activePropertyData.owner_verified === false) {
+      // Determine if the current viewer is the owner
+      const authUser = await getAuthUser();
+      let isOwner = false;
+      if (authUser) {
+        const { data: publicUser } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("auth_id", authUser.id)
+          .single();
+        isOwner = publicUser?.id === activePropertyData.user_id;
+      }
+
+      if (isOwner) {
+        // Owner sees full property + verification prompt
+        propertyData = activePropertyData;
+        isPendingVerification = true;
+      } else {
+        // Non-owner sees "no disponible" (same as paused properties)
+        propertyData = {
+          ...activePropertyData,
+          currency: null,
+          price: null,
+          expenses: null,
+          valor_total_primary: null,
+          cover_photo_url: null,
+          cover_photo_thumb: null,
+          tag_names_type_1: null,
+          tag_names_type_2: null,
+          tag_names_type_3: null,
+          mob_plan: "basico",
+          operacion_status: null,
+        };
+        isUnavailable = true;
+      }
+    } else {
+      propertyData = activePropertyData;
+    }
   } else {
     // Fallback: check if property exists but is paused/deleted
     const rawProperty = await fetchUnavailableProperty(propertyId);
@@ -277,7 +317,7 @@ export default async function PropiedadDetailPage({
   let publisherName: string | null = null;
   let publisherLogo: string | null = null;
   // isTokko = true only when synced from Tokko AND has a company (not a dueño directo)
-  const isTokko = propertyData.tokko === true && !!propertyData.company_name;
+  const isTokko = propertyData.tokko_id != null && !!propertyData.company_name;
   let locationFull: string | null = null;
   let geoLat: number | null = null;
   let geoLong: number | null = null;
@@ -355,6 +395,51 @@ export default async function PropiedadDetailPage({
   // Determine publisher type: company → inmobiliaria, else propietario
   const isInmobiliaria = !!propertyData.company_name;
 
+  // Fetch extra property fields not in properties_read (suite_amount, roofed_surface, visit data)
+  let suiteAmount: number | null = null;
+  let roofedSurface: number | null = null;
+  let visitDays: string[] | null = null;
+  let visitHours: string[] | null = null;
+
+  if (!isUnavailable) {
+    const { data: extraFields } = await supabaseAdmin
+      .from("properties")
+      .select("suite_amount, roofed_surface, visit_days, visit_hours")
+      .eq("id", propertyId)
+      .single();
+
+    if (extraFields) {
+      suiteAmount = extraFields.suite_amount ?? null;
+      roofedSurface = extraFields.roofed_surface ? Number(extraFields.roofed_surface) : null;
+      visitDays = extraFields.visit_days ?? null;
+      visitHours = extraFields.visit_hours ?? null;
+    }
+  } else {
+    // For unavailable properties, these were already fetched in mapRawToPropertyData
+    suiteAmount = propertyData.suite_amount ?? null;
+    roofedSurface = propertyData.roofed_surface ? Number(propertyData.roofed_surface) : null;
+  }
+
+  // Fetch contract fields from operaciones (if operacion exists)
+  let ipcAdjustment: string | null = null;
+  let contractDuration: number | null = null;
+  const operacionId = propertyData.operacion_id;
+  if (operacionId) {
+    const { data: opData } = await supabaseAdmin
+      .from("operaciones")
+      .select("ipc_adjustment, duration_months")
+      .eq("id", operacionId)
+      .single();
+
+    if (opData) {
+      ipcAdjustment = opData.ipc_adjustment ?? null;
+      contractDuration = opData.duration_months ?? null;
+    }
+  }
+
+  // Publication date from properties_read
+  const publicationDate: string | null = propertyData.property_created_at ?? null;
+
   return (
     <PropertyDetail
       property={property}
@@ -374,6 +459,15 @@ export default async function PropiedadDetailPage({
       propertyPlan={propertyPlan}
       isInmobiliaria={isInmobiliaria}
       isUnavailable={isUnavailable}
+      isPendingVerification={isPendingVerification}
+      suiteAmount={suiteAmount}
+      roofedSurface={roofedSurface}
+      ipcAdjustment={ipcAdjustment}
+      publicationDate={publicationDate}
+      visitDays={visitDays}
+      visitHours={visitHours}
+      ownerAccountType={propertyData.owner_account_type ?? null}
+      contractDuration={contractDuration}
     />
   );
 }

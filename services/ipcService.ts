@@ -136,10 +136,11 @@ function generateSampleData(): IPCDataPoint[] {
     2023: [6.0, 6.6, 7.7, 8.4, 7.8, 6.0, 6.3, 12.4, 12.7, 8.3, 12.8, 25.5],
     2024: [20.6, 13.2, 11.0, 8.8, 4.2, 4.6, 4.0, 4.2, 3.5, 2.7, 2.4, 2.7],
     2025: [2.2, 2.4, 3.7, 2.8, 1.5, 1.6, 1.9, 1.9, 2.1, 2.3, 2.5, 2.8],
+    2026: [2.9, 2.9],
   };
   const data: IPCDataPoint[] = [];
   for (const year of Object.keys(rates).map(Number)) {
-    for (let m = 0; m < 12; m++) {
+    for (let m = 0; m < rates[year].length; m++) {
       data.push({
         month: `${year}-${String(m + 1).padStart(2, "0")}`,
         rate: rates[year][m],

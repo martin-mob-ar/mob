@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/supabase/auth';
+import { deletePhoto } from '@/lib/storage/gcs';
 
 export async function POST(
   _request: Request,
@@ -27,6 +28,29 @@ export async function POST(
 
   if (!publicUser) {
     return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+  }
+
+  // Clean up photos from GCS and DB before soft-deleting
+  const { data: photos } = await supabaseAdmin
+    .from('tokko_property_photo')
+    .select('id, storage_path')
+    .eq('property_id', id);
+
+  if (photos && photos.length > 0) {
+    // Delete files from GCS (non-blocking, best-effort)
+    await Promise.all(
+      photos
+        .filter(p => p.storage_path)
+        .map(p => deletePhoto(p.storage_path!).catch(err =>
+          console.error('[property/delete] GCS delete failed:', p.storage_path, err)
+        ))
+    );
+
+    // Hard-delete photo rows (property is being discarded)
+    await supabaseAdmin
+      .from('tokko_property_photo')
+      .delete()
+      .eq('property_id', id);
   }
 
   // Soft-delete: set deleted_at + status = 0 (ownership enforced via user_id filter).

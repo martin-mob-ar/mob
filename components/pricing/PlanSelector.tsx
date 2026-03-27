@@ -12,6 +12,9 @@ export type PlanType = "basico" | "acompanado" | "experiencia";
 export interface PlanSelectorProps {
   selectedPlan: PlanType | null;
   onSelectPlan: (plan: PlanType) => void;
+  variant?: "default" | "wizard";
+  showSelectButtons?: boolean;
+  showCostNote?: boolean;
 }
 
 // Pricing data (shared source of truth)
@@ -63,16 +66,20 @@ const MobilePlanCard = ({
   plan,
   isRecommended,
   isSelected,
+  hasSelection,
   onSelectPlan,
   openSections,
   toggleSection,
+  isWizard,
 }: {
   plan: PlanType;
   isRecommended?: boolean;
   isSelected: boolean;
+  hasSelection: boolean;
   onSelectPlan: (p: PlanType) => void;
   openSections: Record<string, boolean>;
   toggleSection: (key: string) => void;
+  isWizard?: boolean;
 }) => {
   const planNames: Record<PlanType, React.ReactNode> = {
     basico: "Básico",
@@ -119,9 +126,9 @@ const MobilePlanCard = ({
         <p className="text-sm text-muted-foreground">{planDescriptions[plan]}</p>
       </div>
 
-      <div className="mb-6 pb-6 border-b border-border/50">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Costo de plataforma</div>
-        <div className="text-sm text-muted-foreground">{pricingCost[plan]}</div>
+      <div className={cn("mb-6 pb-6 border-b", isWizard ? "border-border" : "border-border/50")}>
+        <div className={cn("uppercase tracking-wider mb-1", isWizard ? "text-xs font-semibold text-foreground/80" : "text-xs text-muted-foreground")}>Costo de plataforma</div>
+        <div className={cn("font-bold", isWizard ? "text-base text-foreground" : "text-sm text-foreground")}>{pricingCost[plan]}</div>
       </div>
 
       <div className="space-y-1 mb-6">
@@ -132,7 +139,10 @@ const MobilePlanCard = ({
             onOpenChange={() => toggleSection(`${plan}-${section.title}`)}
           >
             <CollapsibleTrigger className="flex items-center justify-between w-full py-2.5 text-left group">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-foreground/70 group-hover:text-foreground transition-colors">
+              <span className={cn(
+                "font-bold uppercase tracking-wider group-hover:text-foreground transition-colors",
+                isWizard ? "text-xs text-foreground/90" : "text-[11px] text-foreground/70"
+              )}>
                 {section.title}
               </span>
               <ChevronDown
@@ -150,12 +160,12 @@ const MobilePlanCard = ({
                   return (
                     <div key={rowIdx} className="flex items-start gap-3">
                       {isEmpty ? (
-                        <Minus className="h-4 w-4 text-muted-foreground/30 mt-0.5 flex-shrink-0" />
+                        <Minus className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isWizard ? "text-muted-foreground/50" : "text-muted-foreground/30")} />
                       ) : (
                         <Check className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isSelected || isRecommended ? "text-primary" : "text-muted-foreground")} />
                       )}
                       <div>
-                        <div className={cn("text-xs flex items-center gap-1", isEmpty ? "text-muted-foreground/50" : "text-muted-foreground")}>
+                        <div className={cn("flex items-center gap-1", isWizard ? "text-sm text-muted-foreground" : "text-xs", isEmpty ? (isWizard ? "text-muted-foreground/60" : "text-muted-foreground/50") : (isWizard ? "text-foreground/70" : "text-muted-foreground"))}>
                           {row.feature}
                           {row.tooltip && (
                             <Tooltip>
@@ -167,7 +177,7 @@ const MobilePlanCard = ({
                           )}
                         </div>
                         {!isEmpty && (
-                          <div className={cn("text-sm", isSelected || isRecommended ? "text-foreground font-medium" : "text-foreground")}>
+                          <div className={cn(isWizard ? "text-base" : "text-sm", isSelected || isRecommended ? "text-foreground font-medium" : "text-foreground")}>
                             {value}
                           </div>
                         )}
@@ -182,7 +192,7 @@ const MobilePlanCard = ({
       </div>
 
       <Button
-        variant={isSelected ? "default" : "outline"}
+        variant={isSelected || (isRecommended && !hasSelection) ? "default" : "outline"}
         size="lg"
         className={cn(
           "w-full rounded-full",
@@ -196,7 +206,8 @@ const MobilePlanCard = ({
   );
 };
 
-export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) => {
+export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", showSelectButtons = true, showCostNote = true }: PlanSelectorProps) => {
+  const isWizard = variant === "wizard";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     (["basico", "acompanado", "experiencia"] as PlanType[]).forEach((plan) => {
@@ -216,27 +227,44 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
     <div className="max-w-5xl mx-auto">
       {/* Desktop: Compact comparative table */}
       <div className="hidden lg:block">
-        <div className="relative bg-white rounded-xl border border-border/40 overflow-hidden">
-          {/* Highlighted column background for Experiencia mob */}
-          <div className="absolute right-0 top-0 bottom-0 w-1/4 bg-primary/[0.04] border-l border-primary/20 pointer-events-none rounded-tr-xl" />
+        <div className={cn(
+          "relative rounded-xl border overflow-hidden",
+          isWizard ? "bg-white border-border" : "bg-white border-border/40"
+        )}>
+          {/* Highlighted column background for selected plan */}
+          <div className={cn(
+            "absolute top-0 bottom-0 w-1/4 border-l pointer-events-none",
+            (!selectedPlan || selectedPlan === "experiencia") && "left-3/4 rounded-tr-xl",
+            selectedPlan === "basico" && "left-1/4 border-r",
+            selectedPlan === "acompanado" && "left-2/4 border-r",
+            isWizard ? "bg-primary/[0.06] border-primary/30" : "bg-primary/[0.04] border-primary/20"
+          )} />
 
           {/* Header row */}
-          <div className="grid grid-cols-[1fr_1fr_1fr_1fr] border-b border-border/30 relative">
-            <div className="px-3 py-2" />
+          <div className={cn(
+            "grid grid-cols-[1fr_1fr_1fr_1fr] border-b relative",
+            isWizard ? "border-border" : "border-border/30"
+          )}>
+            <div className={cn(isWizard ? "px-5 py-4" : "px-3 py-2")} />
             {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
               <div
                 key={plan}
                 className={cn(
-                  "px-3 py-2 text-center cursor-pointer transition-colors hover:bg-primary/5",
+                  "text-center cursor-pointer transition-colors hover:bg-primary/5",
+                  isWizard ? "px-5 py-4" : "px-3 py-2",
                   selectedPlan === plan && "bg-primary/10"
                 )}
                 onClick={() => onSelectPlan(plan)}
               >
-                <span className={cn("text-sm font-semibold", selectedPlan === plan ? "text-primary" : "text-foreground")}>
+                <span className={cn(
+                  "font-semibold",
+                  isWizard ? "text-base" : "text-sm",
+                  selectedPlan === plan ? "text-primary" : "text-foreground"
+                )}>
                   {plan === "basico" ? "Básico" : plan === "acompanado" ? "Acompañado" : <>Experiencia <span className="font-ubuntu text-primary">mob</span></>}
                 </span>
                 {selectedPlan === plan && (
-                  <div className="text-[10px] text-primary font-medium mt-0.5">✓ Seleccionado</div>
+                  <div className={cn("text-primary font-medium mt-0.5", isWizard ? "text-xs" : "text-[10px]")}>✓ Seleccionado</div>
                 )}
               </div>
             ))}
@@ -246,21 +274,41 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
           <div className="relative">
             {pricingSections.map((section, sectionIdx) => (
               <div key={sectionIdx}>
-                <div className="grid grid-cols-[1fr_1fr_1fr_1fr] bg-muted/40">
-                  <div className="px-3 py-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/70">
+                <div className="grid grid-cols-[1fr_1fr_1fr_1fr]">
+                  <div className={cn(isWizard ? "px-5 py-2 bg-muted/60" : "px-3 py-1 bg-muted/40")}>
+                    <span className={cn(
+                      "font-bold uppercase tracking-wider",
+                      isWizard ? "text-xs text-foreground/90" : "text-[10px] text-foreground/70"
+                    )}>
                       {section.title}
                     </span>
                   </div>
-                  <div /><div /><div />
+                  {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
+                    <div
+                      key={plan}
+                      className={cn(
+                        selectedPlan === plan
+                          ? "bg-primary/10"
+                          : isWizard ? "bg-muted/60" : "bg-muted/40"
+                      )}
+                    />
+                  ))}
                 </div>
                 {section.rows.map((row, rowIdx) => (
                   <div
                     key={rowIdx}
-                    className={cn("grid grid-cols-[1fr_1fr_1fr_1fr]", rowIdx < section.rows.length - 1 && "border-b border-border/10")}
+                    className={cn(
+                      "grid grid-cols-[1fr_1fr_1fr_1fr]",
+                      rowIdx < section.rows.length - 1 && (isWizard ? "border-b border-border/30" : "border-b border-border/10")
+                    )}
                   >
-                    <div className="px-3 py-1.5 flex items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground">{row.feature}</span>
+                    <div className={cn(
+                      "flex items-center gap-1.5",
+                      isWizard ? "px-5 py-3" : "px-3 py-1.5"
+                    )}>
+                      <span className={cn(
+                        isWizard ? "text-sm text-foreground/80" : "text-xs text-muted-foreground"
+                      )}>{row.feature}</span>
                       {row.tooltip && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -273,15 +321,28 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
                     {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
                       <div
                         key={plan}
-                        className={cn("px-3 py-1.5 flex items-center justify-center cursor-pointer transition-colors hover:bg-primary/5", selectedPlan === plan && "bg-primary/5")}
+                        className={cn(
+                          "flex items-center justify-center cursor-pointer transition-colors hover:bg-primary/5",
+                          isWizard ? "px-5 py-3" : "px-3 py-1.5",
+                          selectedPlan === plan && "bg-primary/5"
+                        )}
                         onClick={() => onSelectPlan(plan)}
                       >
                         {row[plan] === "—" ? (
-                          <span className="text-muted-foreground/25 text-xs">—</span>
+                          <span className={cn(
+                            isWizard ? "text-muted-foreground/50 text-sm" : "text-muted-foreground/25 text-xs"
+                          )}>—</span>
                         ) : row[plan] === "Incluido" || row[plan] === "Incluida" ? (
-                          <Check className={cn("h-3.5 w-3.5", selectedPlan === plan ? "text-primary" : plan === "experiencia" ? "text-primary" : "text-muted-foreground/60")} />
+                          <Check className={cn(
+                            isWizard ? "h-4 w-4" : "h-3.5 w-3.5",
+                            selectedPlan === plan ? "text-primary" : plan === "experiencia" ? "text-primary" : (isWizard ? "text-muted-foreground" : "text-muted-foreground/60")
+                          )} />
                         ) : (
-                          <span className={cn("text-xs text-center", selectedPlan === plan ? "text-foreground font-semibold" : plan === "experiencia" ? "text-foreground font-semibold" : "text-muted-foreground")}>
+                          <span className={cn(
+                            "text-center",
+                            isWizard ? "text-sm" : "text-xs",
+                            selectedPlan === plan ? "text-foreground font-semibold" : plan === "experiencia" ? "text-foreground font-semibold" : (isWizard ? "text-foreground/80" : "text-muted-foreground")
+                          )}>
                             {row[plan]}
                           </span>
                         )}
@@ -293,13 +354,23 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
             ))}
 
             {/* Cost row */}
-            <div className="grid grid-cols-[1fr_1fr_1fr_1fr] border-t border-border/30 bg-muted/20">
-              <div className="px-3 py-2 flex items-center">
-                <span className="text-xs font-medium text-foreground">Costo de plataforma</span>
+            <div className={cn(
+              "grid grid-cols-[1fr_1fr_1fr_1fr] border-t",
+              isWizard ? "border-border" : "border-border/30"
+            )}>
+              <div className={cn("flex items-center", isWizard ? "px-5 py-3 bg-muted/40" : "px-3 py-2 bg-muted/20")}>
+                <span className={cn(
+                  "font-medium text-foreground",
+                  isWizard ? "text-sm" : "text-xs"
+                )}>Costo de plataforma</span>
               </div>
               {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
-                <div key={plan} className="px-3 py-2 flex items-center justify-center">
-                  <span className={cn("text-xs", selectedPlan === plan ? "text-primary font-semibold" : "text-muted-foreground")}>
+                <div key={plan} className={cn("flex items-center justify-center", isWizard ? "px-5 py-3" : "px-3 py-2", selectedPlan === plan ? "bg-primary/10" : isWizard ? "bg-muted/40" : "bg-muted/20")}>
+                  <span className={cn(
+                    "font-bold",
+                    isWizard ? "text-sm" : "text-xs",
+                    selectedPlan === plan ? "text-primary" : (isWizard ? "text-foreground/70" : "text-foreground")
+                  )}>
                     {pricingCost[plan]}
                   </span>
                 </div>
@@ -309,37 +380,47 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
         </div>
 
         {/* Desktop plan select buttons */}
-        <div className="grid grid-cols-[1fr_1fr_1fr_1fr] mt-6">
-          <div />
-          {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
-            <div key={plan} className="px-2 flex justify-center">
-              <Button
-                variant={selectedPlan === plan ? "default" : "outline"}
-                size="lg"
-                className={cn(
-                  "rounded-full w-full",
-                  selectedPlan === plan && "ring-2 ring-offset-2 ring-primary"
-                )}
-                onClick={() => onSelectPlan(plan)}
-              >
-                {selectedPlan === plan
-                  ? "✓ Seleccionado"
-                  : plan === "basico"
-                  ? "Elegir básico"
-                  : plan === "acompanado"
-                  ? "Elegir acompañado"
-                  : "Quiero gestión completa"}
-              </Button>
-            </div>
-          ))}
-        </div>
+        {showSelectButtons && (
+          <div className="grid grid-cols-[1fr_1fr_1fr_1fr] mt-6">
+            <div />
+            {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
+              <div key={plan} className="px-2 flex justify-center">
+                <Button
+                  variant={selectedPlan === plan || (!selectedPlan && plan === "experiencia") ? "default" : "outline"}
+                  size="lg"
+                  className={cn(
+                    "rounded-full w-full",
+                    selectedPlan === plan && "ring-2 ring-offset-2 ring-primary"
+                  )}
+                  onClick={() => onSelectPlan(plan)}
+                >
+                  {selectedPlan === plan
+                    ? "✓ Seleccionado"
+                    : plan === "basico"
+                    ? "Elegir básico"
+                    : plan === "acompanado"
+                    ? "Elegir acompañado"
+                    : "Quiero gestión completa"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <div className="text-center mt-6 space-y-1">
-          <p className="text-sm font-semibold text-foreground">
-            El costo se cobra únicamente cuando el alquiler se concreta.
-          </p>
-          <p className="text-sm font-medium text-muted-foreground">No hay costos iniciales.</p>
-        </div>
+        {showCostNote && (
+          <div className="text-center mt-6 space-y-1">
+            <p className={cn(
+              "font-semibold text-foreground",
+              isWizard ? "text-base" : "text-sm"
+            )}>
+              El costo se cobra únicamente cuando el alquiler se concreta.
+            </p>
+            <p className={cn(
+              "font-medium text-muted-foreground",
+              isWizard ? "text-sm" : "text-sm"
+            )}>No hay costos iniciales.</p>
+          </div>
+        )}
       </div>
 
       {/* Mobile: Stacked cards */}
@@ -348,27 +429,35 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan }: PlanSelectorProps) 
           plan="experiencia"
           isRecommended
           isSelected={selectedPlan === "experiencia"}
+          hasSelection={selectedPlan !== null}
           onSelectPlan={onSelectPlan}
           openSections={openSections}
           toggleSection={toggleSection}
+          isWizard={isWizard}
         />
         <MobilePlanCard
           plan="acompanado"
           isSelected={selectedPlan === "acompanado"}
+          hasSelection={selectedPlan !== null}
           onSelectPlan={onSelectPlan}
           openSections={openSections}
           toggleSection={toggleSection}
+          isWizard={isWizard}
         />
         <MobilePlanCard
           plan="basico"
           isSelected={selectedPlan === "basico"}
+          hasSelection={selectedPlan !== null}
           onSelectPlan={onSelectPlan}
           openSections={openSections}
           toggleSection={toggleSection}
+          isWizard={isWizard}
         />
-        <p className="text-center text-base font-medium text-foreground pt-4">
-          El costo se cobra únicamente cuando el alquiler se concreta.
-        </p>
+        {showCostNote && (
+          <p className="text-center text-base font-medium text-foreground pt-4">
+            El costo se cobra únicamente cuando el alquiler se concreta.
+          </p>
+        )}
       </div>
     </div>
     </TooltipProvider>

@@ -14,7 +14,8 @@ export default async function LoginPage({
   const isProtected =
     redirectTo?.startsWith("/gestion") ||
     redirectTo?.startsWith("/gestion-inmobiliaria") ||
-    redirectTo?.startsWith("/perfil");
+    redirectTo?.startsWith("/perfil") ||
+    redirectTo?.startsWith("/verificate");
 
   if (isProtected) {
     redirect(`/?auth=open&redirect=${encodeURIComponent(redirectTo!)}`);

@@ -17,21 +17,17 @@ const PriceFilter = () => {
   const { filters, setFilters } = useSearchFilters();
   const { rate: usdRate } = useExchangeRate();
   const [priceType, setPriceType] = useState<"total" | "alquiler">(filters.priceType || "total");
-  const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
+  const [currency, setCurrency] = useState<"ARS" | "USD">(filters.currency || "ARS");
   const [minPrice, setMinPrice] = useState(filters.minPrice);
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice);
 
   // Sync local state when filters change externally
   useEffect(() => {
-    if (currency === "ARS") {
-      setMinPrice(filters.minPrice);
-      setMaxPrice(filters.maxPrice);
-    } else if (usdRate) {
-      // Context stores ARS; convert to local USD display
-      setMinPrice(filters.minPrice ? String(Math.round(parseFloat(filters.minPrice) / usdRate)) : "");
-      setMaxPrice(filters.maxPrice ? String(Math.round(parseFloat(filters.maxPrice) / usdRate)) : "");
-    }
-  }, [filters.minPrice, filters.maxPrice]); // eslint-disable-line react-hooks/exhaustive-deps
+    setCurrency(filters.currency || "ARS");
+    setPriceType(filters.priceType || "total");
+    setMinPrice(filters.minPrice);
+    setMaxPrice(filters.maxPrice);
+  }, [filters.minPrice, filters.maxPrice, filters.currency, filters.priceType]);
 
   // Auto-convert values when switching currency
   const handleCurrencySwitch = (newCurrency: "ARS" | "USD") => {
@@ -53,26 +49,33 @@ const PriceFilter = () => {
   };
 
   const handleApply = () => {
-    // Convert to ARS for the search (DB stores ARS)
     let min = minPrice;
     let max = maxPrice;
-    if (currency === "USD" && usdRate) {
-      if (min) min = String(Math.round(parseFloat(min) * usdRate));
-      if (max) max = String(Math.round(parseFloat(max) * usdRate));
-    }
     // Auto-swap if min > max
     if (min && max && parseInt(min) > parseInt(max)) {
       [min, max] = [max, min];
     }
-    if (min !== filters.minPrice || max !== filters.maxPrice || priceType !== filters.priceType) {
-      setFilters({ minPrice: min, maxPrice: max, priceType });
+    if (min !== filters.minPrice || max !== filters.maxPrice || priceType !== filters.priceType || currency !== filters.currency) {
+      setFilters({ minPrice: min, maxPrice: max, priceType, currency });
     }
     setOpen(false);
   };
 
+  const handleClear = () => {
+    setMinPrice("");
+    setMaxPrice("");
+    setCurrency("ARS");
+    setPriceType("total");
+    setFilters({ minPrice: "", maxPrice: "", priceType: "total", currency: "ARS" });
+    setOpen(false);
+  };
+
+  const hasActiveFilter = filters.minPrice || filters.maxPrice;
+
   const getDisplayText = () => {
     if (filters.minPrice || filters.maxPrice) {
-      const sym = currency === "USD" ? "USD" : "$";
+      const displayCurrency = filters.currency || "ARS";
+      const sym = displayCurrency === "USD" ? "USD " : "$";
       const fmt = (v: string) => {
         const n = Number(v);
         if (n >= 1_000_000_000) return `${sym}${(n / 1_000_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}B`;
@@ -80,9 +83,9 @@ const PriceFilter = () => {
         if (n >= 1_000) return `${sym}${(n / 1_000).toLocaleString("es-AR", { maximumFractionDigits: 0 })}K`;
         return `${sym}${n.toLocaleString("es-AR")}`;
       };
-      if (minPrice && maxPrice) return `${fmt(minPrice)} - ${fmt(maxPrice)}`;
-      if (minPrice) return `Desde ${fmt(minPrice)}`;
-      if (maxPrice) return `Hasta ${fmt(maxPrice)}`;
+      if (filters.minPrice && filters.maxPrice) return `${fmt(filters.minPrice)} - ${fmt(filters.maxPrice)}`;
+      if (filters.minPrice) return `Desde ${fmt(filters.minPrice)}`;
+      if (filters.maxPrice) return `Hasta ${fmt(filters.maxPrice)}`;
     }
     return "Precio";
   };
@@ -176,13 +179,24 @@ const PriceFilter = () => {
             </div>
           </div>
 
-          {/* CTA */}
-          <Button
-            onClick={handleApply}
-            className="w-full rounded-full h-10 font-medium"
-          >
-            Actualizar resultados
-          </Button>
+          {/* Actions */}
+          <div className="flex gap-3">
+            {hasActiveFilter && (
+              <Button
+                variant="outline"
+                onClick={handleClear}
+                className="rounded-full h-10 font-medium px-5"
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              onClick={handleApply}
+              className="flex-1 rounded-full h-10 font-medium"
+            >
+              Actualizar resultados
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

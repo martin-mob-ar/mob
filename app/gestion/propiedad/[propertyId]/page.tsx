@@ -39,7 +39,6 @@ export default async function GestionPropertyDetailPage({
         currentTenant={mockData.currentTenant}
         currentOperation={mockData.currentOperation}
         mockMode
-        tokko={mockData.tokko}
         tokkoId={mockData.tokkoId}
         userEmail={email}
       />
@@ -78,7 +77,7 @@ export default async function GestionPropertyDetailPage({
     // Fallback: check for paused property (status=1) in properties table
     const { data: pausedProp } = await supabaseAdmin
       .from("properties")
-      .select(`id, user_id, tokko, status, description, address, publication_title,
+      .select(`id, user_id, tokko, tokko_id, status, description, address, publication_title,
         geo_lat, geo_long, room_amount, bathroom_amount, suite_amount, total_surface,
         roofed_surface, parking_lot_amount, age, slug, contact_phone, company_id, created_at, updated_at,
         tokko_property_type!type_id(id, name),
@@ -116,7 +115,7 @@ export default async function GestionPropertyDetailPage({
     property = {
       property_id: pausedProp.id,
       user_id: pausedProp.user_id,
-      tokko: pausedProp.tokko,
+      tokko_id: pausedProp.tokko_id,
       description: pausedProp.description,
       address: pausedProp.address,
       title: pausedProp.publication_title,
@@ -149,14 +148,6 @@ export default async function GestionPropertyDetailPage({
       property_updated_at: pausedProp.updated_at,
     };
   }
-
-  // Fetch tokko source info (tokko_id not in properties_read)
-  const { data: propertySource } = await supabaseAdmin
-    .from("properties")
-    .select("tokko, tokko_id")
-    .eq("id", Number(propertyId))
-    .eq("user_id", publicUser.id)
-    .single();
 
   // Fetch ALL operations for this property (history)
   const { data: operations } = await supabaseAdmin
@@ -204,8 +195,7 @@ export default async function GestionPropertyDetailPage({
       operations={operationHistory}
       currentTenant={currentTenant}
       currentOperation={currentOp}
-      tokko={propertySource?.tokko ?? false}
-      tokkoId={propertySource?.tokko_id ?? null}
+      tokkoId={property.tokko_id ?? null}
       userEmail={publicUser.email}
       propertyStatus={propertyStatus}
     />

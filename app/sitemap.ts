@@ -60,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data: properties } = await supabase
       .from("properties_read")
       .select("slug, property_updated_at")
+      .eq("owner_verified", true)
       .not("slug", "is", null);
 
     if (properties) {

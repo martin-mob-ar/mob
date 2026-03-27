@@ -251,7 +251,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
                         </div>
                       ) : (
                         <span className="text-[10px] text-muted-foreground mt-0.5 block">
-                          USD {rentUsd.toLocaleString("es-AR")} Alq · ${property.expensas!.toLocaleString("es-AR")} Exp
+                          USD {rentUsd.toLocaleString("es-AR")} Alq + ${property.expensas!.toLocaleString("es-AR")} Exp
                         </span>
                       )
                     ) : (

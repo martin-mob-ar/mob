@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const location = searchParams.get("location");
   const locationId = searchParams.get("locationId");
   const stateId = searchParams.get("stateId");
+  const currency = searchParams.get("currency") || "ARS"; // "ARS" | "USD"
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
   const minRooms = searchParams.get("minRooms");     // dormitorios → suite_amount
@@ -17,12 +18,13 @@ export async function GET(request: NextRequest) {
   const parking = searchParams.get("parking");
   const minSurface = searchParams.get("minSurface");
   const maxSurface = searchParams.get("maxSurface");
-  const surfaceType = searchParams.get("surfaceType") || "total"; // "total" | "cubierta"
+  const surfaceType = searchParams.get("surfaceType") || "cubierta"; // "total" | "cubierta"
   const propertyType = searchParams.get("propertyType"); // "inmobiliaria" | "dueno"
   const propertyTypeNames = searchParams.get("propertyTypeNames"); // comma-separated: "Apartment,House"
   const tagIds = searchParams.get("tagIds"); // comma-separated tag IDs
   const maxAge = searchParams.get("maxAge"); // max property age (0 = a estrenar)
   const priceType = searchParams.get("priceType") || "total"; // "total" | "alquiler"
+  const ownerType = searchParams.get("ownerType"); // "dueno" | "inmobiliaria"
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
@@ -30,7 +32,8 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from("properties_read")
-    .select("*", { count: "exact" });
+    .select("*", { count: "exact" })
+    .eq("owner_verified", true);
 
   // Apply location filter - stateId for state-level, locationId for location-level
   if (stateId) {
@@ -46,24 +49,51 @@ export async function GET(request: NextRequest) {
       query = query.eq("state_name", state.name);
     }
   } else if (locationId) {
-    const locId = parseInt(locationId);
-    // Get the selected location's depth to decide if we need to include children
-    const { data: loc } = await supabaseAdmin
-      .from("tokko_location")
-      .select("id, depth")
-      .eq("id", locId)
-      .single();
+    // Support comma-separated locationIds for multi-select
+    const locIds = locationId.split(",").map((id) => parseInt(id.trim())).filter((id) => !isNaN(id));
 
-    if (loc && loc.depth <= 3) {
-      // For depth 3 (partido/departamento), include the location itself + all direct children
-      const { data: children } = await supabaseAdmin
+    if (locIds.length === 1) {
+      const locId = locIds[0];
+      // Get the selected location's depth to decide if we need to include children
+      const { data: loc } = await supabaseAdmin
         .from("tokko_location")
-        .select("id")
-        .eq("parent_location_id", locId);
-      const ids = [locId, ...(children?.map((c) => c.id) || [])];
-      query = query.in("location_id", ids);
-    } else {
-      query = query.eq("location_id", locId);
+        .select("id, depth")
+        .eq("id", locId)
+        .single();
+
+      if (loc && loc.depth <= 3) {
+        // For depth 3 (partido/departamento), include the location itself + all direct children
+        const { data: children } = await supabaseAdmin
+          .from("tokko_location")
+          .select("id")
+          .eq("parent_location_id", locId);
+        const ids = [locId, ...(children?.map((c) => c.id) || [])];
+        query = query.in("location_id", ids);
+      } else {
+        query = query.eq("location_id", locId);
+      }
+    } else if (locIds.length > 1) {
+      // Multiple locations selected — collect all IDs including children for shallow locations
+      const allIds: number[] = [];
+      for (const locId of locIds) {
+        const { data: loc } = await supabaseAdmin
+          .from("tokko_location")
+          .select("id, depth")
+          .eq("id", locId)
+          .single();
+
+        if (loc && loc.depth <= 3) {
+          const { data: children } = await supabaseAdmin
+            .from("tokko_location")
+            .select("id")
+            .eq("parent_location_id", locId);
+          allIds.push(locId, ...(children?.map((c) => c.id) || []));
+        } else {
+          allIds.push(locId);
+        }
+      }
+      const uniqueIds = [...new Set(allIds)];
+      query = query.in("location_id", uniqueIds);
     }
   } else if (location) {
     query = query.or(
@@ -72,38 +102,43 @@ export async function GET(request: NextRequest) {
   }
 
   if (minPrice || maxPrice) {
-    if (priceType === "alquiler") {
-      // Alquiler: filter on raw `price` column (no expenses) using current exchange rate.
-      // The frontend always sends values in ARS, so we derive the USD equivalent at query time
-      // to correctly compare against properties stored in either currency.
+    // Fetch exchange rate if needed (prices may come in USD)
+    let rate = 1;
+    if (currency === "USD" || priceType === "alquiler") {
       const { data: rateRow } = await supabaseAdmin
         .from("exchange_rates")
         .select("rate")
         .eq("currency_pair", "USD_ARS")
         .single();
-      const rate = rateRow?.rate ?? 1;
+      rate = rateRow?.rate ?? 1;
+    }
 
-      if (minPrice) {
-        const minArs = parseInt(minPrice);
+    // Convert filter values to ARS if user sent USD
+    const minArs = minPrice ? (currency === "USD" ? Math.round(parseInt(minPrice) * rate) : parseInt(minPrice)) : null;
+    const maxArs = maxPrice ? (currency === "USD" ? Math.round(parseInt(maxPrice) * rate) : parseInt(maxPrice)) : null;
+
+    if (priceType === "alquiler") {
+      // Alquiler: filter on raw `price` column (no expenses).
+      // Derive both ARS and USD equivalents to match properties stored in either currency.
+      if (minArs !== null) {
         const minUsd = Math.round(minArs / rate);
         query = query.or(
           `and(currency.eq.ARS,price.gte.${minArs}),and(currency.eq.USD,price.gte.${minUsd})`
         );
       }
-      if (maxPrice) {
-        const maxArs = parseInt(maxPrice);
+      if (maxArs !== null) {
         const maxUsd = Math.round(maxArs / rate);
         query = query.or(
           `and(currency.eq.ARS,price.lte.${maxArs}),and(currency.eq.USD,price.lte.${maxUsd})`
         );
       }
     } else {
-      // Precio total: valor_total_primary = (price in ARS) + expenses, refreshed on rate updates
-      if (minPrice) {
-        query = query.gte("valor_total_primary", parseInt(minPrice));
+      // Precio total: valor_total_primary is always in ARS
+      if (minArs !== null) {
+        query = query.gte("valor_total_primary", minArs);
       }
-      if (maxPrice) {
-        query = query.lte("valor_total_primary", parseInt(maxPrice));
+      if (maxArs !== null) {
+        query = query.lte("valor_total_primary", maxArs);
       }
     }
   }
@@ -142,9 +177,9 @@ export async function GET(request: NextRequest) {
   }
 
   if (propertyType === "inmobiliaria") {
-    query = query.eq("tokko", true);
+    query = query.not("tokko_id", "is", null);
   } else if (propertyType === "dueno") {
-    query = query.eq("tokko", false);
+    query = query.is("tokko_id", null);
   }
 
   if (propertyTypeNames) {
@@ -152,6 +187,15 @@ export async function GET(request: NextRequest) {
     if (names.length > 0) {
       query = query.in("property_type_name", names);
     }
+  }
+
+  // Filter by owner type (tipo de dueño)
+  if (ownerType === "dueno") {
+    // Dueño directo: account_type 1 (inquilino) and 2 (dueño directo)
+    query = query.in("owner_account_type", [1, 2]);
+  } else if (ownerType === "inmobiliaria") {
+    // Inmobiliaria: account_type 3 (inmobiliaria) and 4 (red inmobiliaria)
+    query = query.in("owner_account_type", [3, 4]);
   }
 
   // Filter by age (antiguedad)

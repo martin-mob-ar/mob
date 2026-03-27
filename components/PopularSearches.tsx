@@ -7,6 +7,7 @@ const popularSearches = [
   { label: "dueño directo", href: "/buscar?propertyType=dueno" },
   { label: "alquiler en palermo", href: "/buscar?location=Palermo&locationId=24728" },
   { label: "alquiler en CABA", href: `/buscar?location=${encodeURIComponent("Capital Federal")}&stateId=146` },
+  { label: "alquileres sin garantía", href: "/buscar?ownerType=dueno" },
 ];
 
 interface PopularSearchesProps {

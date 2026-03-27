@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { syncTokkoData } from '@/lib/sync/service';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { syncTokkoData, triggerSyncContinuation } from '@/lib/sync/service';
 
 export const maxDuration = 300; // 5 minutes for large syncs
 
@@ -53,9 +53,22 @@ export async function POST(request: NextRequest) {
       companiesSynced: result.companiesSynced,
       locationsSynced: result.locationsSynced,
       errorCount: result.errors.length,
+      needsChain: result.needsChain ?? false,
     });
     if (result.errors.length > 0) {
       console.warn('[Tokko Sync API] Sync had errors:', result.errors);
+    }
+
+    // If the sync needs to continue, fire the chain call INLINE (before response)
+    // so it's sent regardless of whether after() runs — on localhost, after() won't
+    // fire for self-chained requests because the client disconnects after 10s.
+    // after() is kept as a safety net to ensure Vercel keeps the container alive
+    // long enough for the fetch to complete.
+    if (result.needsChain && result.chainParams) {
+      const { apiKey: chainKey, authId: chainAuthId, authEmail: chainAuthEmail } = result.chainParams;
+      const chainPromise = triggerSyncContinuation(chainKey, chainAuthId, chainAuthEmail);
+      after(() => chainPromise);
+      console.log('[Tokko Sync API] Self-chain fired inline + after() safety net');
     }
 
     return NextResponse.json({

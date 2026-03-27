@@ -88,6 +88,15 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       if (!publicUser || publicUser.account_type === null) {
+        // If redirect destination is /verificate, auto-set as inquilino
+        if (next.startsWith("/verificate")) {
+          await supabaseAdmin
+            .from("users")
+            .update({ account_type: 1 })
+            .eq("id", publicUserId);
+          return NextResponse.redirect(`${origin}${next}`);
+        }
+
         // New user — redirect to account type selection
         const separator = next.includes("?") ? "&" : "?";
         return NextResponse.redirect(

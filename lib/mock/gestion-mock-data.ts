@@ -300,7 +300,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8001,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5002",
@@ -319,7 +319,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8002,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5003",
@@ -338,7 +338,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8003,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5004",
@@ -357,7 +357,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8004,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5005",
@@ -376,7 +376,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: null,
     plan: "experiencia",
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5006",
@@ -395,7 +395,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: null,
     plan: "acompanado",
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5007",
@@ -414,7 +414,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8005,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5008",
@@ -433,7 +433,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8006,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5009",
@@ -452,7 +452,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8007,
     plan: "basico",
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
   {
     id: "5010",
@@ -471,7 +471,7 @@ export const mockOwnerProperties: OwnerProperty[] = [
     operacionId: 8008,
     plan: null,
     propertyStatus: 2,
-    tokko: false,
+    tokkoId: null,
   },
 ];
 
@@ -1047,10 +1047,9 @@ export function getMockPropertyDetail(propertyId: string) {
   const operations = mockOperationHistories[propertyId] || [];
   const currentOperation = mockCurrentOperations[propertyId] || null;
   const currentTenant = mockTenants[propertyId] || null;
-  const tokko: boolean = property.tokko ?? false;
   const tokkoId: number | null = property.tokko_id ?? null;
 
-  return { property, operations, currentOperation, currentTenant, tokko, tokkoId };
+  return { property, operations, currentOperation, currentTenant, tokkoId };
 }
 
 // ─── Tenant rental detail mock data ─────────────────────────────────

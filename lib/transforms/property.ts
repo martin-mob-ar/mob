@@ -16,7 +16,7 @@ export function transformPropertyRead(row: any): Property {
     rentPrice: row.price || 0,
     expensas: row.expenses || 0,
     currency: row.currency || "ARS",
-    type: row.tokko ? "inmobiliaria" : "dueno",
+    type: row.tokko_id != null ? "inmobiliaria" : "dueno",
     rooms: row.room_amount || undefined,
     surface: row.total_surface ? Number(row.total_surface) : undefined,
     bathrooms: row.bathroom_amount || undefined,
@@ -24,7 +24,7 @@ export function transformPropertyRead(row: any): Property {
     age: row.age != null ? row.age : null,
     verified: true,
     propertyType: row.property_type_name || undefined,
-    publisherType: derivePublisherType(!!row.tokko, row.company_name, row.mob_plan),
+    publisherType: derivePublisherType(row.tokko_id != null, row.company_name, row.mob_plan),
   };
 }
 
@@ -120,7 +120,7 @@ export interface OwnerProperty {
   operacionId: number | null;
   plan: string | null;
   propertyStatus: number; // 0=deleted, 1=paused, 2=active
-  tokko: boolean;
+  tokkoId: number | null;
 }
 
 export interface OperationHistoryEntry {
@@ -207,7 +207,7 @@ export function transformToOwnerProperty(
     operacionId: row.operacion_id || null,
     plan: plan || null,
     propertyStatus: row.property_status ?? 2,
-    tokko: row.tokko ?? false,
+    tokkoId: row.tokko_id ?? null,
   };
 }
 
@@ -245,7 +245,7 @@ export function transformToOwnerPropertyFromRaw(
     operacionId: operacion?.id || null,
     plan: plan || null,
     propertyStatus: row.status,
-    tokko: row.tokko ?? false,
+    tokkoId: row.tokko_id ?? null,
   };
 }
 

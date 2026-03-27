@@ -27,8 +27,9 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
         center,
         zoom: 16,
         disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: "greedy",
+        zoomControl: false,
+        gestureHandling: "none",
+        scrollwheel: false,
         styles: [
           { featureType: "poi", stylers: [{ visibility: "off" }] },
           { featureType: "transit", stylers: [{ visibility: "off" }] },

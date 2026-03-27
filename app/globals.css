@@ -37,6 +37,9 @@
     --mob-blue: 227 100% 66%;
     --mob-blue-light: 227 100% 95%;
     --mob-blue-hover: 227 100% 58%;
+
+    /* Dark navy for guarantee section */
+    --warm-navy: 222 47% 11%;
     
     /* Semantic colors */
     --background: 0 0% 100%;
@@ -160,6 +163,14 @@
   input[type="number"] {
     -moz-appearance: textfield;
   }
+
+  /* Date input: left-align text (iOS centers by default) and hide native calendar icon */
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;
+  }
 }
 
 @layer components {
@@ -223,6 +234,10 @@
 @layer utilities {
   .text-gradient-mob {
     @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  .bg-warm-navy {
+    background-color: hsl(var(--warm-navy));
   }
 
   .font-display {

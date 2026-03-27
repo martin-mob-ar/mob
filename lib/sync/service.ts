@@ -16,6 +16,10 @@ export interface SyncResult {
   companiesSynced: number;
   locationsSynced: number;
   errors: string[];
+  /** When true, the caller must trigger a self-chain continuation via after() */
+  needsChain?: boolean;
+  /** Parameters needed for the chain call (only set when needsChain=true) */
+  chainParams?: { apiKey: string; authId: string; authEmail: string };
 }
 
 /**
@@ -225,6 +229,7 @@ async function syncCompanyProperties(
   companyKey: string,
   companyName: string,
   options?: { maxProperties?: number; prefetchedProperties?: TokkoProperty[] },
+  timeGuard?: { hasTime: () => boolean; elapsed: () => number },
 ): Promise<{ propertiesSynced: number; errors: string[] }> {
   const errors: string[] = [];
 
@@ -257,6 +262,12 @@ async function syncCompanyProperties(
   let totalSynced = 0;
 
   for (let i = 0; i < properties.length; i += PROPERTY_BATCH_SIZE) {
+    // Check time before starting a batch (network syncs pass timeGuard)
+    if (timeGuard && !timeGuard.hasTime()) {
+      console.warn(`[Tokko Sync] Time expired during property sync for "${companyName}" at batch ${Math.floor(i / PROPERTY_BATCH_SIZE) + 1}, ${totalSynced} synced so far (${timeGuard.elapsed()}ms elapsed)`);
+      break;
+    }
+
     const batch = properties.slice(i, i + PROPERTY_BATCH_SIZE);
     const batchNumber = Math.floor(i / PROPERTY_BATCH_SIZE) + 1;
     const totalBatches = Math.ceil(properties.length / PROPERTY_BATCH_SIZE);
@@ -455,30 +466,45 @@ async function clearSyncProgress(userId: string): Promise<void> {
 }
 
 /**
- * Fire-and-forget self-chain: POST to /api/tokko/sync with resume=true.
- * Retries up to 2 times on failure.
+ * Self-chain: POST to /api/tokko/sync with resume=true.
+ * Uses AbortSignal.timeout — we only need the request to reach Vercel's
+ * infrastructure (a few seconds), not wait for the full 300s response.
+ *
+ * Called from route handler via after() for reliability.
  */
-function triggerSyncContinuation(apiKey: string, authId: string, authEmail: string): void {
+export async function triggerSyncContinuation(apiKey: string, authId: string, authEmail: string): Promise<void> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const url = `${appUrl}/api/tokko/sync`;
 
-  async function attempt(retries: number) {
-    try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, authId, authEmail, resume: true }),
-      });
-    } catch (err) {
-      if (retries > 0) {
-        await new Promise(r => setTimeout(r, 2000));
-        return attempt(retries - 1);
+  console.log(`[Tokko Sync] Triggering self-chain continuation to ${url}`);
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey, authId, authEmail, resume: true }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    console.log('[Tokko Sync] Self-chain request accepted');
+  } catch (err) {
+    // TimeoutError/AbortError is expected — request already reached Vercel
+    if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+      console.log('[Tokko Sync] Self-chain request sent (timed out waiting for response, which is expected)');
+    } else {
+      console.error('[Tokko Sync] Self-chain request failed, retrying once:', err);
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey, authId, authEmail, resume: true }),
+          signal: AbortSignal.timeout(10_000),
+        });
+        console.log('[Tokko Sync] Self-chain retry succeeded');
+      } catch (retryErr) {
+        console.error('[Tokko Sync] Self-chain retry also failed:', retryErr);
       }
-      console.error('[Tokko Sync] Self-chain failed after retries:', err);
     }
   }
-
-  attempt(2).catch(() => {});
 }
 
 /**
@@ -506,8 +532,11 @@ async function discoverNetworkChunk(
   let pagesSinceSave = 0;
 
   while (timeGuard.hasTime()) {
-    console.log(`[Tokko Sync] Discovery page (offset: ${offset}, limit: ${limit})`);
+    const timeRemaining = Math.round((250_000 - timeGuard.elapsed()) / 1000);
+    console.log(`[Tokko Sync] Discovery page (offset: ${offset}, limit: ${limit}, ~${timeRemaining}s remaining)`);
+    const pageStart = Date.now();
     const response = await client.fetchPropertyPage(offset, limit);
+    console.log(`[Tokko Sync] Discovery page fetched in ${Date.now() - pageStart}ms, ${response.objects.length} results`);
 
     // First page gives us the total count
     if (progress.discovery.totalCount === null) {
@@ -682,6 +711,7 @@ async function syncCompaniesChunk(
 
     // Check time budget before starting a company (each can take 10-30s)
     if (!timeGuard.hasTime()) {
+      console.log(`[Tokko Sync] Time budget exhausted before company "${company.name}" (${timeGuard.elapsed()}ms elapsed, ${synced.size}/${companies.length} done)`);
       return false;
     }
 
@@ -700,7 +730,7 @@ async function syncCompaniesChunk(
         `Sincronizando "${company.name}" (${synced.size + 1}/${companies.length}, ${progress.syncing.propertiesSynced} propiedades)...`
       );
 
-      const result = await syncCompanyProperties(userId, companyId, company.key, company.name);
+      const result = await syncCompanyProperties(userId, companyId, company.key, company.name, undefined, timeGuard);
       progress.syncing.propertiesSynced += result.propertiesSynced;
       progress.syncing.errors.push(...result.errors);
 
@@ -714,6 +744,12 @@ async function syncCompaniesChunk(
     progress.syncing.companiesSynced.push(company.name);
     synced.add(company.name);
     await saveSyncProgress(userId, progress);
+
+    // Heartbeat: refresh sync_started_at so status endpoint doesn't false-recover
+    await supabaseAdmin
+      .from('users')
+      .update({ sync_started_at: new Date().toISOString() })
+      .eq('id', userId);
   }
 
   return true;
@@ -727,6 +763,13 @@ async function finalizeSync(
   userId: string,
   progress: SyncProgress,
 ): Promise<void> {
+  // Refresh sync_started_at so the status endpoint doesn't trigger recovery
+  // while we're finalizing (rebuild can take several seconds for large accounts)
+  await supabaseAdmin
+    .from('users')
+    .update({ sync_started_at: new Date().toISOString() })
+    .eq('id', userId);
+
   // Re-enable triggers
   if (progress.syncing.triggersDisabled) {
     console.log('[Tokko Sync] Re-enabling listing triggers...');
@@ -737,7 +780,15 @@ async function finalizeSync(
   // Rebuild listings
   console.log('[Tokko Sync] Rebuilding property listings for user...');
   await updateSyncStatus(apiKeyHash, 'syncing', 'Reconstruyendo listados...');
-  await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
+  const { data: rebuildCount, error: rebuildErr } = await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
+  if (rebuildErr) {
+    console.error('[Tokko Sync] Rebuild failed, retrying:', rebuildErr.message);
+    // Retry once — the first call may fail if triggers were being re-enabled concurrently
+    const { data: retryCount } = await supabaseAdmin.rpc('rebuild_user_property_listings', { p_user_id: userId });
+    console.log(`[Tokko Sync] Rebuild retry result: ${retryCount ?? 'unknown'} listings`);
+  } else {
+    console.log(`[Tokko Sync] Rebuilt ${rebuildCount ?? 'unknown'} listings`);
+  }
 
   // Update final status
   await updateSyncStatus(apiKeyHash, 'done', null, progress.syncing.propertiesSynced);
@@ -829,8 +880,7 @@ async function syncNetworkAccountResumable(
 
       if (!discoveryComplete) {
         console.log(`[Tokko Sync] Discovery paused at offset ${progress.discovery.offset}/${progress.discovery.totalCount}. Chaining...`);
-        triggerSyncContinuation(apiKey, authId, authEmail);
-        return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [] };
+        return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [], needsChain: true, chainParams: { apiKey, authId, authEmail } };
       }
 
       if (progress.discovery.companies.length === 0) {
@@ -847,9 +897,8 @@ async function syncNetworkAccountResumable(
     // Phase: Companies
     if (progress.phase === 'companies') {
       if (!timeGuard.hasTime()) {
-        console.log('[Tokko Sync] No time for companies phase. Chaining...');
-        triggerSyncContinuation(apiKey, authId, authEmail);
-        return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [] };
+        console.log(`[Tokko Sync] No time for companies phase (${timeGuard.elapsed()}ms elapsed). Chaining...`);
+        return { userId, propertiesSynced: 0, companiesSynced: 0, locationsSynced: 0, errors: [], needsChain: true, chainParams: { apiKey, authId, authEmail } };
       }
 
       await processCompaniesPhase(apiKeyHash, userId, progress);
@@ -862,14 +911,15 @@ async function syncNetworkAccountResumable(
       const syncComplete = await syncCompaniesChunk(apiKeyHash, userId, progress, timeGuard);
 
       if (!syncComplete) {
-        console.log(`[Tokko Sync] Syncing paused (${progress.syncing.companiesSynced.length}/${progress.discovery.companies.length} companies done). Chaining...`);
-        triggerSyncContinuation(apiKey, authId, authEmail);
+        console.log(`[Tokko Sync] Syncing paused (${progress.syncing.companiesSynced.length}/${progress.discovery.companies.length} companies done, ${timeGuard.elapsed()}ms elapsed). Chaining...`);
         return {
           userId,
           propertiesSynced: progress.syncing.propertiesSynced,
           companiesSynced: progress.syncing.companiesSynced.length,
           locationsSynced: 0,
           errors: progress.syncing.errors,
+          needsChain: true,
+          chainParams: { apiKey, authId, authEmail },
         };
       }
 

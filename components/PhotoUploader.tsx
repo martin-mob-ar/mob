@@ -45,6 +45,7 @@ interface PhotoUploaderProps {
   propertyId?: number; // For editing existing properties — uploads go directly to {propertyId}/
   photos: UploadedPhoto[];
   onChange: (photos: UploadedPhoto[]) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
 interface UploadingFile {
@@ -207,8 +208,21 @@ export default function PhotoUploader({
   propertyId,
   photos,
   onChange,
+  onUploadingChange,
 }: PhotoUploaderProps) {
-  const [uploading, setUploading] = useState<UploadingFile[]>([]);
+  const [uploading, _setUploading] = useState<UploadingFile[]>([]);
+  const setUploading: typeof _setUploading = useCallback(
+    (action) => {
+      _setUploading((prev) => {
+        const next = typeof action === "function" ? action(prev) : action;
+        const wasBusy = prev.length > 0;
+        const isBusy = next.length > 0;
+        if (wasBusy !== isBusy) onUploadingChange?.(isBusy);
+        return next;
+      });
+    },
+    [onUploadingChange],
+  );
   const [errors, setErrors] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -423,8 +437,8 @@ export default function PhotoUploader({
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <div className="text-center space-y-1">
-        <h1 className="font-display text-3xl font-bold">Fotos</h1>
+      <div className="space-y-1">
+        <h1 className="font-display text-xl sm:text-3xl font-bold">Fotos</h1>
         <p className="text-muted-foreground text-sm">
           Mínimo {MIN_WIDTH}x{MIN_HEIGHT}px · JPEG, PNG o WebP · Hasta 15MB
         </p>

@@ -15,6 +15,31 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, telefono, telefono_country_code, dni } = body;
 
+    // Check phone uniqueness before updating
+    if (telefono) {
+      const countryCode = telefono_country_code || '+54';
+      const { data: currentUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single();
+
+      const { data: existing } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('telefono', telefono)
+        .eq('telefono_country_code', countryCode)
+        .neq('id', currentUser?.id ?? '')
+        .maybeSingle();
+
+      if (existing) {
+        return NextResponse.json(
+          { error: 'Este teléfono ya está registrado por otro usuario' },
+          { status: 409 }
+        );
+      }
+    }
+
     // Update public.users row
     const updateData: Record<string, string | null> = {};
     if (name !== undefined) updateData.name = name || null;

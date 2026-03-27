@@ -5,11 +5,20 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Property } from "@/components/PropertyCard";
 import { transformPropertyReadList } from "@/lib/transforms/property";
 
+export interface SelectedLocation {
+  id: number;
+  name: string;
+  display?: string;
+  type: "location" | "state";
+}
+
 export interface SearchFilters {
   location: string;
   locationId: string;
   stateId: string;
+  selectedLocations: SelectedLocation[];
   priceType: "total" | "alquiler";
+  currency: "ARS" | "USD";
   minPrice: string;
   maxPrice: string;
   minRooms: string;   // dormitorios min → suite_amount
@@ -27,6 +36,7 @@ export interface SearchFilters {
   maxAge: string;      // max property age (0 = a estrenar)
   availabilityFilter: "" | "immediate" | "next-month" | "custom";
   availabilityDate: string;
+  ownerType: "" | "dueno" | "inmobiliaria";
   sort: string;
 }
 
@@ -50,7 +60,9 @@ const defaultFilters: SearchFilters = {
   location: "",
   locationId: "",
   stateId: "",
+  selectedLocations: [],
   priceType: "total",
+  currency: "ARS",
   minPrice: "",
   maxPrice: "",
   minRooms: "",
@@ -61,13 +73,14 @@ const defaultFilters: SearchFilters = {
   parking: "",
   minSurface: "",
   maxSurface: "",
-  surfaceType: "total",
+  surfaceType: "cubierta",
   propertyType: "",
   propertyTypeNames: [],
   tagIds: [],
   maxAge: "",
   availabilityFilter: "",
   availabilityDate: "",
+  ownerType: "",
   sort: "recent",
 };
 
@@ -91,6 +104,7 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   const locationId = searchParams.get("locationId");
   const stateId = searchParams.get("stateId");
   const priceType = searchParams.get("priceType");
+  const currency = searchParams.get("currency");
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
   const minRooms = searchParams.get("minRooms");
@@ -110,7 +124,27 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   if (location) updates.location = location;
   if (locationId) updates.locationId = locationId;
   if (stateId) updates.stateId = stateId;
+  // Reconstruct selectedLocations from URL params
+  const locationNames = searchParams.get("locationNames");
+  if (locationId && locationNames) {
+    const ids = locationId.split(",").filter(Boolean);
+    const names = locationNames.split(",").filter(Boolean);
+    if (ids.length === names.length) {
+      updates.selectedLocations = ids.map((id, i) => ({
+        id: parseInt(id),
+        name: names[i],
+        type: "location" as const,
+      }));
+    }
+  } else if (stateId && location) {
+    updates.selectedLocations = [{
+      id: parseInt(stateId),
+      name: location,
+      type: "state" as const,
+    }];
+  }
   if (priceType) updates.priceType = priceType as "total" | "alquiler";
+  if (currency === "USD") updates.currency = "USD";
   if (minPrice) updates.minPrice = minPrice;
   if (maxPrice) updates.maxPrice = maxPrice;
   if (minRooms) updates.minRooms = minRooms;
@@ -129,6 +163,8 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   const availabilityDate = searchParams.get("availabilityDate");
   if (availabilityFilter) updates.availabilityFilter = availabilityFilter as "" | "immediate" | "next-month" | "custom";
   if (availabilityDate) updates.availabilityDate = availabilityDate;
+  const ownerType = searchParams.get("ownerType");
+  if (ownerType) updates.ownerType = ownerType as "" | "dueno" | "inmobiliaria";
   if (sort) updates.sort = sort;
 
   return updates;
@@ -201,7 +237,11 @@ export function SearchFiltersProvider({
     if (f.location) params.set("location", f.location);
     if (f.locationId) params.set("locationId", f.locationId);
     if (f.stateId) params.set("stateId", f.stateId);
+    if (f.selectedLocations.length > 0) {
+      params.set("locationNames", f.selectedLocations.map((l) => l.name).join(","));
+    }
     if (f.priceType && f.priceType !== "total") params.set("priceType", f.priceType);
+    if (f.currency && f.currency !== "ARS") params.set("currency", f.currency);
     if (f.minPrice) params.set("minPrice", f.minPrice);
     if (f.maxPrice) params.set("maxPrice", f.maxPrice);
     if (f.minRooms) params.set("minRooms", f.minRooms);
@@ -212,13 +252,14 @@ export function SearchFiltersProvider({
     if (f.parking) params.set("parking", f.parking);
     if (f.minSurface) params.set("minSurface", f.minSurface);
     if (f.maxSurface) params.set("maxSurface", f.maxSurface);
-    if (f.surfaceType && f.surfaceType !== "total") params.set("surfaceType", f.surfaceType);
+    if (f.surfaceType && f.surfaceType !== "cubierta") params.set("surfaceType", f.surfaceType);
     if (f.propertyType) params.set("propertyType", f.propertyType);
     if (f.propertyTypeNames.length > 0) params.set("propertyTypeNames", f.propertyTypeNames.join(","));
     if (f.tagIds.length > 0) params.set("tagIds", f.tagIds.join(","));
     if (f.maxAge) params.set("maxAge", f.maxAge);
     if (f.availabilityFilter) params.set("availabilityFilter", f.availabilityFilter);
     if (f.availabilityDate) params.set("availabilityDate", f.availabilityDate);
+    if (f.ownerType) params.set("ownerType", f.ownerType);
     if (f.sort && f.sort !== "recent") params.set("sort", f.sort);
     return params;
   }, []);

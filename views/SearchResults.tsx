@@ -14,6 +14,7 @@ import PropertyTypeFilter from "@/components/filters/PropertyTypeFilter";
 import RoomsFilter from "@/components/filters/RoomsFilter";
 import ParkingFilter from "@/components/filters/ParkingFilter";
 import SurfaceFilter from "@/components/filters/SurfaceFilter";
+import OwnerTypeFilter from "@/components/filters/OwnerTypeFilter";
 import MoreFiltersPanel from "@/components/filters/MoreFiltersPanel";
 import Footer from "@/components/Footer";
 import ExploreRentals from "@/components/ExploreRentals";
@@ -172,6 +173,7 @@ const SearchResultsInner = () => {
     filters.parking,
     filters.minSurface || filters.maxSurface,
     filters.propertyType,
+    filters.ownerType,
   ].filter(Boolean).length;
 
   // Mobile Layout
@@ -225,7 +227,7 @@ const SearchResultsInner = () => {
           {isLoading ? (
             <PropertyGridSkeleton count={4} mobile />
           ) : enrichedResults.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {enrichedResults.map((property, index) => (
                 <PropertyCard
                   key={`${property.id}-${index}`}
@@ -272,6 +274,7 @@ const SearchResultsInner = () => {
             <PriceFilter />
             <PropertyTypeFilter />
             <RoomsFilter />
+            <OwnerTypeFilter />
             <ParkingFilter />
             <SurfaceFilter />
 

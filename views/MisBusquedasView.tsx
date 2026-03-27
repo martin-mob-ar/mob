@@ -23,7 +23,7 @@ type PropertySnippet = {
   suite_amount: number | null;
   bathroom_amount: number | null;
   contact_phone: string | null;
-  tokko: boolean | null;
+  tokko_id: number | null;
 };
 
 type FavoritoItem = {
@@ -166,7 +166,7 @@ function FavoritoCard({ item }: { item: FavoritoItem }) {
 
 function ConsultaCard({ item }: { item: ConsultaItem }) {
   const href = getPropertyUrl(item.property.slug, item.propertyId);
-  const contactPhone = item.property.tokko ? item.property.contact_phone : null;
+  const contactPhone = item.property.tokko_id ? item.property.contact_phone : null;
 
   return (
     <div className="bg-background rounded-xl p-3 shadow-sm border border-border/50 space-y-2">

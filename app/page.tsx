@@ -14,6 +14,7 @@ export default async function IndexPage() {
     const { data } = await supabase
       .from("properties_read")
       .select("*")
+      .eq("owner_verified", true)
       .order("property_created_at", { ascending: false })
       .limit(12);
 

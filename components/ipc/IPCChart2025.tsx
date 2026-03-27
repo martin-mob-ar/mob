@@ -9,16 +9,17 @@ interface ChartPoint {
 }
 
 export default function IPCChart2025() {
+  const currentYear = new Date().getFullYear();
   const [data, setData] = useState<ChartPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const result = await fetchIPCData("2025-01", "2025-12");
+        const result = await fetchIPCData(`${currentYear}-01`, `${currentYear}-12`);
         setData(
           result.data.map((d) => ({
-            label: parseMonthShort(d.month).replace(" 2025", ""),
+            label: parseMonthShort(d.month).replace(` ${currentYear}`, ""),
             rate: d.rate,
           }))
         );
@@ -29,7 +30,7 @@ export default function IPCChart2025() {
       }
     }
     load();
-  }, []);
+  }, [currentYear]);
 
   if (loading) {
     return (
@@ -40,14 +41,14 @@ export default function IPCChart2025() {
   }
 
   if (data.length === 0) {
-    return <p className="text-sm text-muted-foreground">No se pudieron cargar los datos de IPC 2025.</p>;
+    return <p className="text-sm text-muted-foreground">No se pudieron cargar los datos de IPC {currentYear}.</p>;
   }
 
   const maxRate = Math.max(...data.map((d) => d.rate));
 
   return (
     <section className="mt-8">
-      <h3 className="text-lg font-bold font-display mb-4">IPC mensual 2025</h3>
+      <h3 className="text-lg font-bold font-display mb-4">IPC mensual {currentYear}</h3>
       <div className="w-full h-72 -mx-2 sm:mx-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 20, right: 4, left: -20, bottom: 0 }}>

@@ -64,15 +64,16 @@ export default async function MisBusquedasPage() {
     suite_amount: number | null;
     bathroom_amount: number | null;
     contact_phone: string | null;
-    tokko: boolean | null;
+    tokko_id: number | null;
   }> = {};
 
   if (allPropertyIds.length > 0) {
     const { data: properties } = await supabaseAdmin
       .from("properties_read")
       .select(
-        "property_id, slug, address, location_name, price, secondary_price, expenses, currency, cover_photo_url, room_amount, suite_amount, bathroom_amount, contact_phone, tokko"
+        "property_id, slug, address, location_name, price, secondary_price, expenses, currency, cover_photo_url, room_amount, suite_amount, bathroom_amount, contact_phone, tokko_id"
       )
+      .eq("owner_verified", true)
       .in("property_id", allPropertyIds);
 
     if (properties) {
