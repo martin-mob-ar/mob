@@ -73,6 +73,20 @@ export async function POST(request: Request) {
       : null;
     const hoggaxMessage = hoggaxRawResponse?.message as string | null ?? null;
 
+    // --- Calculate property_rent_plus_expenses and case ---
+    const rent = payload.rent ?? null;
+    const expenses = payload.expenses ?? null;
+    const propertyRentPlusExpenses = rent != null || expenses != null
+      ? (rent ?? 0) + (expenses ?? 0)
+      : null;
+
+    let verificationCase: number | null = null;
+    if (hoggaxApproved === true && hoggaxMaxRent != null && propertyRentPlusExpenses != null) {
+      verificationCase = hoggaxMaxRent >= propertyRentPlusExpenses ? 1 : 2;
+    } else if (hoggaxApproved === false) {
+      verificationCase = 3;
+    }
+
     // --- Insert into verificaciones_hoggax ---
     const { error: insertError } = await supabaseAdmin
       .from('verificaciones_hoggax')
@@ -89,6 +103,8 @@ export async function POST(request: Request) {
         hoggax_raw_response: hoggaxRawResponse,
         reason_code: reasonCode,
         message: hoggaxMessage,
+        property_rent_plus_expenses: propertyRentPlusExpenses,
+        case: verificationCase,
       });
 
     if (insertError) {
@@ -125,6 +141,8 @@ export async function POST(request: Request) {
       userId,
       hoggax_approved: hoggaxApproved,
       hoggax_max_rent_plus_expenses: hoggaxMaxRent,
+      property_rent_plus_expenses: propertyRentPlusExpenses,
+      case: verificationCase,
     });
   } catch (error) {
     console.error('[TruoraWebhook] Unexpected error:', error);

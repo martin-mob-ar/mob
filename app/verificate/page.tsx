@@ -84,12 +84,19 @@ export default function VerificatePage() {
       // Refresh auth context to pick up new name/phone
       await refreshUser();
 
-      // TODO: Trigger truora outbound API here.
-      // The outbound message should vary depending on whether the user
-      // came from a property (propertyId is set) or navigated directly.
-      // Available context for the truora call:
-      //   propertyId, date, time (from query params)
-      //   values.phone, values.country_code (from form)
+      // Fire-and-forget: trigger Truora outbound WhatsApp
+      fetch("/api/truora/outbound", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: values.phone,
+          country_code: values.country_code,
+          name: values.name,
+          propertyId,
+          date,
+          time,
+        }),
+      }).catch(() => {}); // Don't block UX on failure
 
       setSubmitted(true);
     } catch (error) {

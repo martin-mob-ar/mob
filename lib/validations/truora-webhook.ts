@@ -25,8 +25,14 @@ export const truoraWebhookSchema = z.object({
     .union([z.number().int(), z.string().transform((v) => parseInt(v, 10))])
     .nullable()
     .optional(),
-  rent: z.unknown().optional(),     // ignored
-  expenses: z.unknown().optional(), // ignored
+  rent: z
+    .union([z.number(), z.string().transform((v) => parseInt(v, 10))])
+    .nullable()
+    .optional(),
+  expenses: z
+    .union([z.number(), z.string().transform((v) => parseInt(v, 10))])
+    .nullable()
+    .optional(),
 });
 
 export type TruoraWebhookPayload = z.infer<typeof truoraWebhookSchema>;
