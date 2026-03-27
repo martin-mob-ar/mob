@@ -327,7 +327,8 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
         path.startsWith("/gestion") ||
         path.startsWith("/perfil") ||
         path.startsWith("/subir-propiedad") ||
-        path.startsWith("/mis-busquedas");
+        path.startsWith("/mis-busquedas") ||
+        path.startsWith("/verificate");
       if (isProtected) {
         window.location.href = "/";
       } else {

@@ -263,8 +263,9 @@ export default function ProfileSection({
     );
   }
 
-  // ── Inmobiliaria: no tokko key yet — show setup form ────────────────────
-  if (isInmobiliaria && !hasTokkoHash && syncStatus !== "syncing" && syncStatus !== "done") {
+  // ── Inmobiliaria: no tokko key yet OR initial sync never completed — show setup form ──
+  const initialSyncIncomplete = hasTokkoHash && !tokkoLastSyncAt;
+  if (isInmobiliaria && (!hasTokkoHash || initialSyncIncomplete) && syncStatus !== "syncing" && syncStatus !== "done") {
     return (
       <div className="max-w-md mx-auto">
         {/* Icon + title */}
@@ -525,13 +526,14 @@ export default function ProfileSection({
 
             {/* Right: CTA */}
             <div className="flex flex-col gap-2 sm:shrink-0">
-              <Button
-                className="h-10 rounded-full bg-blue-600 hover:bg-blue-700 font-semibold gap-2 px-5"
-                disabled
-              >
-                <Shield className="h-4 w-4" />
-                Verificar mi perfil
-              </Button>
+              <Link href="/verificate">
+                <Button
+                  className="h-10 rounded-full bg-blue-600 hover:bg-blue-700 font-semibold gap-2 px-5"
+                >
+                  <Shield className="h-4 w-4" />
+                  Verificar mi perfil
+                </Button>
+              </Link>
               {isInquilino && (
                 <Link href="/buscar">
                   <Button

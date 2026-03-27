@@ -527,7 +527,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                     <DropdownMenuSeparator />
-                    {isVerified && (
+                    {isVerified ? (
                       <>
                         <div className="p-3">
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
@@ -540,6 +540,22 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                             </div>
                           </div>
                         </div>
+                        <DropdownMenuSeparator />
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/verificate" className="block p-3">
+                          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors">
+                            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                              <BadgeCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground">No verificado</p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400">Verificá tu perfil</p>
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                          </div>
+                        </Link>
                         <DropdownMenuSeparator />
                       </>
                     )}
@@ -642,7 +658,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                       </Button>
 
                       {/* CTA de verificación mobile */}
-                      {isVerified && (
+                      {isVerified ? (
                         <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
                           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <BadgeCheck className="h-5 w-5 text-primary" />
@@ -652,6 +668,17 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                             <p className="text-xs text-muted-foreground">Validación por Mob</p>
                           </div>
                         </div>
+                      ) : (
+                        <Link href="/verificate" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors">
+                          <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                            <BadgeCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground">No verificado</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400">Verificá tu perfil</p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        </Link>
                       )}
 
                       <Button

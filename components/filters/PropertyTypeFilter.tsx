@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, House } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -41,6 +41,7 @@ const PropertyTypeFilter = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border hover:border-primary/30 transition-colors bg-background">
+          <House className="h-4 w-4" />
           <span className="text-sm font-medium">{getLabel()}</span>
           <ChevronDown className="h-4 w-4" />
         </button>

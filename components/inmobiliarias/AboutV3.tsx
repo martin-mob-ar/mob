@@ -11,7 +11,7 @@ const founders = [
     credentials: ["Lic. en Negocios Digitales - UdeSA", "Ex Cofundador de Roomix.ai"],
     email: "inaki@mob.ar",
     linkedin: "https://www.linkedin.com/in/inaki-valencia/",
-    whatsapp: "https://wa.me/+5492236000055",
+    whatsapp: "https://wa.me/5492236000055",
   },
   {
     name: "Martin Quijano",

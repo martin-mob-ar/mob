@@ -222,7 +222,7 @@ const LandingPropietarios = () => {
           <div className="max-w-5xl mx-auto">
             {/* Desktop horizontal */}
             <div className="hidden md:block relative">
-              <div className="absolute top-[56px] left-[80px] right-[80px] h-[2px] bg-border z-0">
+              <div className="absolute top-[35px] left-[80px] right-[80px] h-[2px] bg-border z-0">
                 <motion.div
                   className="h-full bg-primary/30 origin-left"
                   initial={{ scaleX: 0 }}
@@ -479,7 +479,7 @@ const LandingPropietarios = () => {
                   variant={plan.variant}
                   size="lg"
                   className="rounded-full w-full"
-                  onClick={() => router.push("/subir-propiedad")}
+                  onClick={handleCTA}
                 >
                   {plan.label}
                 </Button>

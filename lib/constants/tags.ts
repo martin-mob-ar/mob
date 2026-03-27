@@ -34,16 +34,6 @@ export const TAG_SECTIONS: TagSection[] = [
     ],
   },
   {
-    title: "Electrodomésticos",
-    tags: [
-      { id: 2141, label: "Cocina" },
-      { id: 1826, label: "Anafe" },
-      { id: 1662, label: "Heladera" },
-      { id: 1654, label: "Lavarropas" },
-      { id: 1660, label: "Microondas" },
-    ],
-  },
-  {
     title: "Ambientes especiales",
     tags: [
       { id: 20, label: "Lavadero" },

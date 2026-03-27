@@ -227,7 +227,7 @@ const SearchResultsInner = () => {
           {isLoading ? (
             <PropertyGridSkeleton count={4} mobile />
           ) : enrichedResults.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {enrichedResults.map((property, index) => (
                 <PropertyCard
                   key={`${property.id}-${index}`}

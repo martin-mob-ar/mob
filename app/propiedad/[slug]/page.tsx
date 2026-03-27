@@ -395,20 +395,24 @@ export default async function PropiedadDetailPage({
   // Determine publisher type: company → inmobiliaria, else propietario
   const isInmobiliaria = !!propertyData.company_name;
 
-  // Fetch extra property fields not in properties_read (suite_amount, roofed_surface)
+  // Fetch extra property fields not in properties_read (suite_amount, roofed_surface, visit data)
   let suiteAmount: number | null = null;
   let roofedSurface: number | null = null;
+  let visitDays: string[] | null = null;
+  let visitHours: string[] | null = null;
 
   if (!isUnavailable) {
     const { data: extraFields } = await supabaseAdmin
       .from("properties")
-      .select("suite_amount, roofed_surface")
+      .select("suite_amount, roofed_surface, visit_days, visit_hours")
       .eq("id", propertyId)
       .single();
 
     if (extraFields) {
       suiteAmount = extraFields.suite_amount ?? null;
       roofedSurface = extraFields.roofed_surface ? Number(extraFields.roofed_surface) : null;
+      visitDays = extraFields.visit_days ?? null;
+      visitHours = extraFields.visit_hours ?? null;
     }
   } else {
     // For unavailable properties, these were already fetched in mapRawToPropertyData
@@ -416,18 +420,20 @@ export default async function PropiedadDetailPage({
     roofedSurface = propertyData.roofed_surface ? Number(propertyData.roofed_surface) : null;
   }
 
-  // Fetch IPC adjustment from operaciones (if operacion exists)
+  // Fetch contract fields from operaciones (if operacion exists)
   let ipcAdjustment: string | null = null;
+  let contractDuration: number | null = null;
   const operacionId = propertyData.operacion_id;
   if (operacionId) {
     const { data: opData } = await supabaseAdmin
       .from("operaciones")
-      .select("ipc_adjustment")
+      .select("ipc_adjustment, duration_months")
       .eq("id", operacionId)
       .single();
 
     if (opData) {
       ipcAdjustment = opData.ipc_adjustment ?? null;
+      contractDuration = opData.duration_months ?? null;
     }
   }
 
@@ -458,6 +464,10 @@ export default async function PropiedadDetailPage({
       roofedSurface={roofedSurface}
       ipcAdjustment={ipcAdjustment}
       publicationDate={publicationDate}
+      visitDays={visitDays}
+      visitHours={visitHours}
+      ownerAccountType={propertyData.owner_account_type ?? null}
+      contractDuration={contractDuration}
     />
   );
 }

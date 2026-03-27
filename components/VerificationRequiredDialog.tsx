@@ -47,7 +47,7 @@ export default function VerificationRequiredDialog() {
             onClick={() => setOpen(false)}
             className="rounded-full text-muted-foreground"
           >
-            Lo hago después
+            Ahora no (propiedad no visible hasta verificarse)
           </Button>
         </div>
       </DialogContent>

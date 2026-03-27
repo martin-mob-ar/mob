@@ -68,7 +68,7 @@ const HowItWorksV3 = () => {
         {!isMobile && (
           <div className="relative max-w-6xl mx-auto">
             {/* Connecting line */}
-            <div className="absolute top-[52px] left-[60px] right-[60px] h-[2px] bg-border z-0">
+            <div className="absolute top-[35px] left-[60px] right-[60px] h-[2px] bg-border z-0">
               <motion.div
                 className="h-full bg-primary/40 origin-left"
                 initial={{ scaleX: 0 }}

@@ -3,7 +3,9 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
-const CTAV3 = ({ onCTA }: { onCTA: () => void }) => {
+const tallyUrl = "https://tally.so/r/5Bk4y6";
+
+const CTAV3 = () => {
   return (
     <section className="py-12">
       <div className="container">
@@ -22,24 +24,15 @@ const CTAV3 = ({ onCTA }: { onCTA: () => void }) => {
             Menos operación manual. Mejores leads. Más cierres.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              size="lg"
-              className="rounded-full px-10 py-6 text-base font-semibold"
-              onClick={onCTA}
-            >
+          <Button
+            size="lg"
+            className="rounded-full px-10 py-6 text-base font-semibold"
+            asChild
+          >
+            <a href={tallyUrl} target="_blank" rel="noopener noreferrer">
               Sumá tu inmobiliaria gratis
-            </Button>
-            <Button
-              variant="ghost"
-              className="text-primary hover:text-primary/80"
-              onClick={() => {
-                document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              Ver cómo funciona
-            </Button>
-          </div>
+            </a>
+          </Button>
         </motion.div>
       </div>
     </section>

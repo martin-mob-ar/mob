@@ -53,9 +53,9 @@ const TOTAL_STEPS = 9;
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places"];
 
 const propertyTypes = [
-  { id: 2, label: "Departamento" },
-  { id: 3, label: "Casa" },
-  { id: 13, label: "PH" },
+  { id: 2, label: "Departamento", icon: "/icons/property-types/depto.png" },
+  { id: 3, label: "Casa", icon: "/icons/property-types/casa.png" },
+  { id: 13, label: "PH", icon: "/icons/property-types/ph.png" },
 ];
 
 const disposiciones = ["Frente", "Contrafrente", "Lateral", "Interior"];
@@ -173,6 +173,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
 
   // Step 5: Fotos y descripción
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [descripcion, setDescripcion] = useState("");
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
 
@@ -1049,12 +1050,19 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                     key={type.id}
                     onClick={() => { setTypeId(type.id); setShowErrors(false); }}
                     className={cn(
-                      "py-3 sm:py-4 px-1.5 sm:px-6 rounded-xl border-2 text-[11px] sm:text-sm font-semibold transition-all truncate min-w-0",
+                      "flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-1.5 sm:px-6 rounded-xl border-2 text-[11px] sm:text-sm font-semibold transition-all min-w-0",
                       typeId === type.id
                         ? "border-primary bg-accent text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50"
                     )}
                   >
+                    <Image
+                      src={type.icon}
+                      alt={type.label}
+                      width={80}
+                      height={80}
+                      className="w-14 h-14 sm:w-20 sm:h-20 object-contain"
+                    />
                     {type.label.toUpperCase()}
                   </button>
                 ))}
@@ -1503,6 +1511,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
             <PhotoUploader
               photos={uploadedPhotos}
               onChange={setUploadedPhotos}
+              onUploadingChange={setIsUploadingPhotos}
               propertyId={draftPropertyId ?? undefined}
             />
             {showErrors && uploadedPhotos.length < 5 && (
@@ -1939,7 +1948,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               )}
             </Button>
           ) : (
-            <Button onClick={handleNext} disabled={isSaving && !draftPropertyIdRef.current} className="rounded-full px-10 h-12">
+            <Button onClick={handleNext} disabled={(isSaving && !draftPropertyIdRef.current) || (currentStep === 5 && isUploadingPhotos)} className="rounded-full px-10 h-12">
               {isSaving && !draftPropertyIdRef.current ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

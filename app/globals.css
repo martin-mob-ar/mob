@@ -163,6 +163,14 @@
   input[type="number"] {
     -moz-appearance: textfield;
   }
+
+  /* Date input: left-align text (iOS centers by default) and hide native calendar icon */
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;
+  }
 }
 
 @layer components {

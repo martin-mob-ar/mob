@@ -30,6 +30,7 @@ import {
 import PropertyMap from "@/components/PropertyMap";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import LeadForm from "@/components/LeadForm";
+import VisitLeadForm from "@/components/VisitLeadForm";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import {
   DropdownMenu,
@@ -65,6 +66,10 @@ interface PropertyDetailProps {
   roofedSurface?: number | null;
   ipcAdjustment?: string | null;
   publicationDate?: string | null;
+  visitDays?: string[] | null;
+  visitHours?: string[] | null;
+  ownerAccountType?: number | null;
+  contractDuration?: number | null;
 }
 
 function formatDescription(text: string): string {
@@ -74,7 +79,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -83,6 +88,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
   const isCurrentUserOwner = !!user?.publicUserId && user.publicUserId === ownerId;
   const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
+
+  // Show schedule picker for properties from inquilinos/dueños directos with availability configured
+  const showSchedulePicker =
+    !isInmobiliaria &&
+    (ownerAccountType === 1 || ownerAccountType === 2) &&
+    !!visitDays && visitDays.length > 0 &&
+    !!visitHours && visitHours.length > 0;
 
   const handleFavoriteClick = () => {
     if (propPropertyId) toggleFavorite(propPropertyId);
@@ -520,6 +532,28 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
       {/* Desktop Gallery */}
       <div className="hidden md:block max-w-6xl mx-auto px-6 py-6">
+        {/* Verification Banner - Desktop */}
+        {showVerificationBanner && (
+          <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+            <Shield className="h-5 w-5 text-amber-600 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium text-amber-800 text-sm">
+                Tu propiedad no es visible en las búsquedas
+              </p>
+              <p className="text-amber-700 text-sm mt-0.5">
+                Verificá tu identidad para que otros usuarios puedan encontrarla.
+              </p>
+            </div>
+            <Link
+              href="/verificate"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            >
+              Verificar
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
+
         {/* Title - Desktop */}
         <div className="mb-4">
           <div className="flex items-center gap-3">
@@ -598,16 +632,25 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
       {/* Verification Banner - Mobile */}
       {showVerificationBanner && (
-        <div className="md:hidden mx-4 mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-          <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium text-amber-800 text-sm">
-              Tu propiedad no es visible en las búsquedas
-            </p>
-            <p className="text-amber-700 text-sm mt-1">
-              Verificá tu identidad para que otros usuarios puedan encontrarla.
-            </p>
+        <div className="md:hidden mx-4 mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium text-amber-800 text-sm">
+                Tu propiedad no es visible en las búsquedas
+              </p>
+              <p className="text-amber-700 text-sm mt-0.5">
+                Verificá tu identidad para que otros usuarios puedan encontrarla.
+              </p>
+            </div>
           </div>
+          <Link
+            href="/verificate"
+            className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+          >
+            Verificar mi identidad
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
       )}
 
@@ -721,15 +764,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             )}
           </div>
 
-          {ipcAdjustment && (
-            <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-secondary/50 rounded-xl">
-              <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                Actualización por IPC: <span className="font-semibold text-foreground">{ipcAdjustment}</span>
-              </p>
-            </div>
-          )}
-
           <AnimateHeight show={!leadFormType}>
             <div className="space-y-2 mt-5">
               <Button
@@ -752,15 +786,25 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           <AnimateHeight show={!!leadFormType}>
             <div className="mt-3 pt-3 border-t border-border">
               {leadFormType && propPropertyId && (
-                <LeadForm
-                  type={leadFormType}
-                  propertyId={propPropertyId}
-                  propertyAddress={property?.address || ""}
-                  onClose={() => setLeadFormType(null)}
-                  inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
-                  propertyPlan={propertyPlan}
-                  isInmobiliaria={isInmobiliaria}
-                />
+                leadFormType === "visita" && showSchedulePicker && visitDays && visitHours ? (
+                  <VisitLeadForm
+                    propertyId={propPropertyId}
+                    propertyAddress={property?.address || ""}
+                    visitDays={visitDays}
+                    visitHours={visitHours}
+                    onClose={() => setLeadFormType(null)}
+                  />
+                ) : (
+                  <LeadForm
+                    type={leadFormType}
+                    propertyId={propPropertyId}
+                    propertyAddress={property?.address || ""}
+                    onClose={() => setLeadFormType(null)}
+                    inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
+                    propertyPlan={propertyPlan}
+                    isInmobiliaria={isInmobiliaria}
+                  />
+                )
               )}
             </div>
           </AnimateHeight>
@@ -824,6 +868,57 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               {property.address}, {locationSuffix}
             </p>
             <PropertyMap lat={geoLat} lng={geoLong} className="aspect-[16/10]" />
+          </div>
+        )}
+
+        {/* Contrato Section */}
+        {(ipcAdjustment || contractDuration) && (
+          <div className="px-4 py-5 border-b border-border">
+            <h2 className="font-display text-lg font-bold text-foreground mb-3">
+              Contrato
+            </h2>
+            <div className="space-y-3">
+              {contractDuration && (
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Duración</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {contractDuration >= 12 && contractDuration % 12 === 0
+                        ? `${contractDuration / 12} ${contractDuration / 12 === 1 ? "año" : "años"}`
+                        : `${contractDuration} meses`}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {ipcAdjustment && (
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Settings2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      Ajuste por
+                      <InfoTooltip text="El Índice de Precios al Consumidor (IPC) permite ajustar el alquiler periódicamente según la inflación publicada por el INDEC." size={13} />
+                    </p>
+                    <p className="text-sm font-medium text-foreground">IPC</p>
+                  </div>
+                </div>
+              )}
+              {ipcAdjustment && (
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Actualización</p>
+                    <p className="text-sm font-medium text-foreground capitalize">{ipcAdjustment}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -995,20 +1090,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
 
       {/* Desktop Layout */}
       <main className="hidden md:block max-w-6xl mx-auto px-6 pb-6">
-        {/* Verification Banner - Desktop */}
-        {showVerificationBanner && (
-          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-            <Shield className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium text-amber-800 text-sm">
-                Tu propiedad no es visible en las búsquedas
-              </p>
-              <p className="text-amber-700 text-sm mt-1">
-                Verificá tu identidad para que otros usuarios puedan encontrarla.
-              </p>
-            </div>
-          </div>
-        )}
         <div className="grid grid-cols-3 gap-10">
           {/* Left Column - Details */}
           <div className="col-span-2 space-y-6">
@@ -1073,6 +1154,60 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     {property.address}, {locationSuffix}
                   </h2>
                   <PropertyMap lat={geoLat} lng={geoLong} className="aspect-video" />
+                </div>
+              </>
+            )}
+
+            {/* Contrato */}
+            {(ipcAdjustment || contractDuration) && (
+              <>
+                <hr className="border-border" />
+                <div>
+                  <h2 className="font-display text-lg font-bold text-foreground mb-3">
+                    Contrato
+                  </h2>
+                  <div className="flex gap-8">
+                    {contractDuration && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Duración</p>
+                          <p className="text-sm font-medium text-foreground">
+                            {contractDuration >= 12 && contractDuration % 12 === 0
+                              ? `${contractDuration / 12} ${contractDuration / 12 === 1 ? "año" : "años"}`
+                              : `${contractDuration} meses`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {ipcAdjustment && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Settings2 className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            Ajuste por
+                            <InfoTooltip text="El Índice de Precios al Consumidor (IPC) permite ajustar el alquiler periódicamente según la inflación publicada por el INDEC." size={13} />
+                          </p>
+                          <p className="text-sm font-medium text-foreground">IPC</p>
+                        </div>
+                      </div>
+                    )}
+                    {ipcAdjustment && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Actualización</p>
+                          <p className="text-sm font-medium text-foreground capitalize">{ipcAdjustment}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -1174,15 +1309,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   );
                 })()}
 
-                {ipcAdjustment && (
-                  <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-secondary/50 rounded-xl">
-                    <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    <p className="text-xs text-muted-foreground">
-                      Actualización por IPC: <span className="font-semibold text-foreground">{ipcAdjustment}</span>
-                    </p>
-                  </div>
-                )}
-
                 <AnimateHeight show={!leadFormType}>
                   <div className="space-y-2 mt-5">
                     <Button
@@ -1205,15 +1331,25 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <AnimateHeight show={!!leadFormType}>
                   <div className="mt-3 pt-3 border-t border-border">
                     {leadFormType && propPropertyId && (
-                      <LeadForm
-                        type={leadFormType}
-                        propertyId={propPropertyId}
-                        propertyAddress={property?.address || ""}
-                        onClose={() => setLeadFormType(null)}
-                        inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
-                        propertyPlan={propertyPlan}
-                        isInmobiliaria={isInmobiliaria}
-                      />
+                      leadFormType === "visita" && showSchedulePicker && visitDays && visitHours ? (
+                        <VisitLeadForm
+                          propertyId={propPropertyId}
+                          propertyAddress={property?.address || ""}
+                          visitDays={visitDays}
+                          visitHours={visitHours}
+                          onClose={() => setLeadFormType(null)}
+                        />
+                      ) : (
+                        <LeadForm
+                          type={leadFormType}
+                          propertyId={propPropertyId}
+                          propertyAddress={property?.address || ""}
+                          onClose={() => setLeadFormType(null)}
+                          inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
+                          propertyPlan={propertyPlan}
+                          isInmobiliaria={isInmobiliaria}
+                        />
+                      )
                     )}
                   </div>
                 </AnimateHeight>

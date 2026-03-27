@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, KeyRound } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -19,9 +19,10 @@ const OwnerTypeFilter = () => {
   const [open, setOpen] = useState(false);
   const { filters, setFilter } = useSearchFilters();
 
-  const currentLabel =
-    ownerTypeOptions.find((o) => o.value === filters.ownerType)?.label ||
-    "Tipo de dueño";
+  const selectedOption = ownerTypeOptions.find(
+    (o) => o.value === filters.ownerType && o.value !== ""
+  );
+  const currentLabel = selectedOption?.label || "Anunciante";
 
   const handleSelect = (value: "" | "dueno" | "inmobiliaria") => {
     setFilter("ownerType", value);
@@ -32,6 +33,7 @@ const OwnerTypeFilter = () => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border hover:border-primary/30 transition-colors bg-background">
+          <KeyRound className="h-4 w-4" />
           <span className="text-sm font-medium">{currentLabel}</span>
           <ChevronDown className="h-4 w-4" />
         </button>

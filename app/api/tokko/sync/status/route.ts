@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id);
 
     const recoveredCount = count || 0;
+    const hasProgress = !!user.sync_progress;
     const recoveredStatus = recoveredCount > 0 ? 'done' : 'error';
     const recoveredMessage = recoveredCount > 0
       ? null
@@ -64,7 +65,11 @@ export async function GET(request: NextRequest) {
         sync_message: recoveredMessage,
         sync_properties_count: recoveredCount,
         sync_started_at: null,
-        sync_progress: null, // Clear stale progress on recovery
+        // Keep progress when sync timed out mid-chain with 0 properties —
+        // allows retry to resume from last checkpoint instead of starting over.
+        // Clear progress when some properties made it (partial success) or when
+        // there was no progress at all (nothing to resume).
+        ...(recoveredCount > 0 || !hasProgress ? { sync_progress: null } : {}),
       })
       .eq('id', user.id);
 

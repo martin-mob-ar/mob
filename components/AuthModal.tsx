@@ -201,19 +201,29 @@ const AuthModal = () => {
           await applyGuestContactToProfile();
           // Claim guest leads
           fetch("/api/leads/claim", { method: "POST" }).catch(() => {});
-          // Auto-infer account type from landing page
-          const inferredType = pathname === "/propietarios" ? 2 : pathname === "/inmobiliarias" ? 3 : null;
+          // Auto-infer account type from landing page or redirect destination
+          // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
+          const redirectTo = searchParams.get("redirect")
+            || new URLSearchParams(window.location.search).get("redirect");
+          const inferredType = pathname === "/propietarios" ? 2
+            : pathname === "/inmobiliarias" ? 3
+            : redirectTo?.startsWith("/verificate") ? 1
+            : null;
           if (inferredType) {
-            await fetch("/api/users/account-type", {
+            // Close modal and navigate first, then set account type in background.
+            // This prevents the modal from staying open if subsequent calls fail.
+            closeAuthModal();
+            resetForm();
+            router.push(redirectTo || "/perfil");
+            router.refresh();
+            // Fire-and-forget: set account type + refresh user in background
+            fetch("/api/users/account-type", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ account_type: inferredType }),
-            });
-            await refreshUser();
-            closeAuthModal();
-            resetForm();
-            router.push("/perfil");
-            router.refresh();
+            })
+              .then(() => refreshUser())
+              .catch(() => {});
           } else {
             setStep("select-account-type");
           }
@@ -298,7 +308,10 @@ const AuthModal = () => {
   };
 
   const handleGoogleLogin = () => {
-    const redirectTo = searchParams.get("redirect") || pathname;
+    // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
+    const redirectTo = searchParams.get("redirect")
+      || new URLSearchParams(window.location.search).get("redirect")
+      || pathname;
     const state = encodeURIComponent(redirectTo);
     const redirectUri = `${window.location.origin}/api/auth/callback/google`;
 

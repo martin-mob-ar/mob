@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
 import Header from "@/components/Header";
-import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
@@ -26,23 +24,10 @@ const heroFeatures = [
   "Descuento de 50% en garantía para los inquilinos",
 ];
 
+const whatsappUrl = "https://wa.me/5492236000055";
+const tallyUrl = "https://tally.so/r/5Bk4y6";
+
 const LandingInmobiliarias = () => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { isAuthenticated, openAuthModal } = useAuth();
-
-  const handleCTA = () => {
-    if (isAuthenticated) {
-      router.push("/perfil");
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    params.set("redirect", "/perfil");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    openAuthModal();
-  };
-
-  const whatsappUrl = "https://wa.me/5492236000055";
 
   return (
     <div className="min-h-screen bg-background overflow-x-clip">
@@ -90,17 +75,21 @@ const LandingInmobiliarias = () => {
                 <Button
                   size="lg"
                   className="rounded-full px-8 py-6 text-base font-semibold"
-                  onClick={handleCTA}
+                  asChild
                 >
-                  Sumá tu inmobiliaria gratis
+                  <a href={tallyUrl} target="_blank" rel="noopener noreferrer">
+                    Sumá tu inmobiliaria gratis
+                  </a>
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
                   className="rounded-full px-8 py-6 text-base"
-                  onClick={() => window.open(whatsappUrl, "_blank")}
+                  asChild
                 >
-                  Hablar con un asesor
+                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                    Hablar con un asesor
+                  </a>
                 </Button>
               </motion.div>
             </motion.div>
@@ -136,7 +125,7 @@ const LandingInmobiliarias = () => {
 
       <IntegrationV3 />
 
-      <CTAV3 onCTA={handleCTA} />
+      <CTAV3 />
 
       <AboutV3 />
 
