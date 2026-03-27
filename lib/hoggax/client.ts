@@ -89,7 +89,7 @@ export function buildQualifyRequest(payload: TruoraWebhookPayload): HoggaxQualif
 
 export async function qualify(
   payload: TruoraWebhookPayload
-): Promise<{ request: HoggaxQualifyRequest; response: HoggaxQualifyResponse }> {
+): Promise<{ request: HoggaxQualifyRequest; response: HoggaxQualifyResponse; rawResponse: Record<string, unknown> }> {
   if (!HOGGAX_API_URL) {
     throw new Error('HOGGAX_API_URL no configurada');
   }
@@ -107,12 +107,17 @@ export async function qualify(
 
   const responseBody = await res.json();
 
-  if (!res.ok) {
+  // Hoggax returns 422 for rejections (e.g. SCORE_TOO_LOW) — this is a valid
+  // business response, not an error.  Extract the nested body when present.
+  if (!res.ok && res.status !== 422) {
     console.error('[Hoggax] API error:', res.status, responseBody);
     throw new Error(
       `Hoggax API error ${res.status}: ${JSON.stringify(responseBody)}`
     );
   }
 
-  return { request, response: responseBody as HoggaxQualifyResponse };
+  // For 422, the actual result lives inside responseBody.body
+  const result = responseBody.body ?? responseBody;
+
+  return { request, response: result as HoggaxQualifyResponse, rawResponse: responseBody };
 }
