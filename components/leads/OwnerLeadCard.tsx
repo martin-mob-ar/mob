@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InterestedParty } from "@/data/interestedParties";
-import { leadStageConfig } from "@/contexts/MockUserContext";
+import { leadStageConfig } from "@/lib/lead-stages";
 import { 
   User, 
   CheckCircle2, 

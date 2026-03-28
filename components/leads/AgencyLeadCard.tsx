@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InterestedParty } from "@/data/interestedParties";
-import { leadStageConfig, LeadStage } from "@/contexts/MockUserContext";
+import { leadStageConfig, LeadStage } from "@/lib/lead-stages";
 import ContactModal from "./ContactModal";
 import ReminderModal from "./ReminderModal";
 import { 

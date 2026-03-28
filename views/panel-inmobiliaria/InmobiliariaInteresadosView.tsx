@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { agencyInterestedParties } from "@/data/interestedParties";
-import { leadStageConfig } from "@/contexts/MockUserContext";
+import { leadStageConfig } from "@/lib/lead-stages";
 import AgencyLeadCard from "@/components/leads/AgencyLeadCard";
 import ContextualAlert from "@/components/leads/ContextualAlert";
 
