@@ -66,7 +66,7 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
       requester_country_code: requesterCountryCode ?? null,
       owner_user_id: property.user_id,
       status: 'pending',
-      whatsapp_state: 'owner_viewing_details',
+      whatsapp_state: 'owner_responding',
     })
     .select('id')
     .single();
