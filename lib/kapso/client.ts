@@ -3,11 +3,16 @@ const KEY = process.env.KAPSO_API_KEY ?? '';
 const PHONE = process.env.KAPSO_PHONE_NUMBER_ID ?? '';
 const GRAPH = process.env.META_GRAPH_VERSION ?? 'v24.0';
 
+// Button IDs used in interactive messages (within 24h window)
 export const BTN = {
   CONFIRM: 'confirm_visita',
   SUGGEST: 'suggest_date',
   REJECT: 'reject_visita',
+  VIEW: 'view_details',
 } as const;
+
+// Static notification template (no variables — approved by Meta without WABA verification)
+const TEMPLATE_NOTIFICATION = 'mob_notificacion_visita';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -50,6 +55,7 @@ async function sendWhatsApp(to: string, payload: object): Promise<void> {
   }
 }
 
+/** Interactive button message — use WITHIN the 24h reply window */
 async function sendButtonMessage(
   to: string,
   body: string,
@@ -77,77 +83,95 @@ export async function sendTextMessage(to: string, text: string): Promise<void> {
   });
 }
 
-async function sendTemplateWithButtons(
-  to: string,
-  templateName: string,
-  headerParams: string[],
-  bodyParams: string[],
-): Promise<void> {
-  const components: object[] = [];
-
-  if (headerParams.length > 0) {
-    components.push({
-      type: 'header',
-      parameters: headerParams.map((v) => ({ type: 'text', text: v })),
-    });
-  }
-
-  if (bodyParams.length > 0) {
-    components.push({
-      type: 'body',
-      parameters: bodyParams.map((v) => ({ type: 'text', text: v })),
-    });
-  }
-
-  // Quick reply buttons (no parameters needed — button text is fixed in template)
-  components.push(
-    { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: BTN.CONFIRM }] },
-    { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: BTN.SUGGEST }] },
-    { type: 'button', sub_type: 'quick_reply', index: '2', parameters: [{ type: 'payload', payload: BTN.REJECT }] },
-  );
-
+/**
+ * Send the static notification template (no variables).
+ * Used for ALL first-contact outbound messages (owner + inquilino).
+ * Opens the conversation — party must tap "Ver detalles" to continue.
+ */
+async function sendNotificationTemplate(to: string): Promise<void> {
   await sendWhatsApp(to, {
     type: 'template',
     template: {
-      name: templateName,
+      name: TEMPLATE_NOTIFICATION,
       language: { code: 'es_AR' },
-      components,
+      components: [
+        {
+          type: 'button',
+          sub_type: 'quick_reply',
+          index: '0',
+          parameters: [{ type: 'payload', payload: BTN.VIEW }],
+        },
+      ],
     },
   });
 }
 
+/** The 3-button action message sent AFTER "Ver detalles" tap (within 24h window) */
+async function sendActionButtons(
+  to: string,
+  text: string,
+): Promise<void> {
+  await sendButtonMessage(to, text, [
+    { id: BTN.CONFIRM, title: 'Confirmar visita' },
+    { id: BTN.SUGGEST, title: 'Sugerir otra fecha' },
+    { id: BTN.REJECT, title: 'Rechazar' },
+  ]);
+}
+
 // ─── High-level exported functions ───────────────────────────────────────────
 
-/** Owner: first contact — new visita request (template with 3 buttons) */
-export async function sendOwnerNewVisitaRequest(params: {
+/**
+ * Owner: first contact — new visita request.
+ * Sends the static notification template to open the conversation.
+ * After owner taps "Ver detalles", the webhook calls sendOwnerVisitaDetails().
+ */
+export async function sendOwnerNewVisitaRequest(ownerPhone: string): Promise<void> {
+  await sendNotificationTemplate(ownerPhone);
+}
+
+/**
+ * Owner: send visita details + action buttons (within 24h window).
+ * Called by webhook when owner taps "Ver detalles".
+ */
+export async function sendOwnerVisitaDetails(params: {
   ownerPhone: string;
-  ownerName: string;
   address: string;
   dayLabel: string;
   time: string;
 }): Promise<void> {
-  await sendTemplateWithButtons(
+  await sendTextMessage(
     params.ownerPhone,
-    'mob_solicitud_visita_owner',
-    [],
-    [params.ownerName, params.address, params.dayLabel, params.time],
+    `Solicitud de visita para tu propiedad en ${params.address}:\n\n🗓️ ${params.dayLabel}\n⏰ ${params.time}`,
+  );
+  await sendActionButtons(
+    params.ownerPhone,
+    '¿Qué querés hacer?',
   );
 }
 
-/** Owner: inquilino sent a counter-proposal (template with 3 buttons) */
-export async function sendOwnerCounterProposal(params: {
+/**
+ * Owner: inquilino counter-proposed a new date.
+ * Sends notification template — owner taps "Ver detalles" to see the new proposal.
+ */
+export async function sendOwnerCounterProposal(ownerPhone: string): Promise<void> {
+  await sendNotificationTemplate(ownerPhone);
+}
+
+/**
+ * Owner: send counter-proposal details + action buttons (within 24h window).
+ * Called by webhook when owner taps "Ver detalles" after a counter-proposal.
+ */
+export async function sendOwnerCounterProposalDetails(params: {
   ownerPhone: string;
-  ownerName: string;
   address: string;
   dayLabel: string;
   time: string;
 }): Promise<void> {
-  await sendTemplateWithButtons(
+  await sendTextMessage(
     params.ownerPhone,
-    'mob_contrapropuesta_owner',
-    [],
-    [params.ownerName, params.dayLabel, params.time],
+    `El inquilino no puede en la fecha que seleccionaste.\nSugirió esta fecha para ${params.address}:\n\n🗓️ ${params.dayLabel}\n⏰ ${params.time}`,
   );
+  await sendActionButtons(params.ownerPhone, '¿Qué querés hacer?');
 }
 
 /** Owner: visita confirmed — thank you message */
@@ -187,26 +211,42 @@ export async function sendOwnerRejectionByInquilino(params: {
 
 /** Owner: prompt for a new date/time */
 export async function sendOwnerDatePrompt(ownerPhone: string): Promise<void> {
-  await sendTextMessage(
-    ownerPhone,
-    'Ok, cuándo podes? Decime día y horario (ej: 15/04 14:00)',
-  );
+  await sendTextMessage(ownerPhone, 'Ok, cuándo podes? Decime día y horario (ej: 15/04 14:00)');
 }
 
 /** Owner: their suggestion was forwarded to inquilino */
 export async function sendOwnerSuggestionSent(ownerPhone: string): Promise<void> {
-  await sendTextMessage(
-    ownerPhone,
-    'Ok, muchas gracias. ya enviamos tu propuesta al inquilino, te confirmaremos luego!',
-  );
+  await sendTextMessage(ownerPhone, 'Ok, muchas gracias. ya enviamos tu propuesta al inquilino, te confirmaremos luego!');
 }
 
 /** Owner: they rejected the visit */
 export async function sendOwnerRejectionAck(ownerPhone: string): Promise<void> {
+  await sendTextMessage(ownerPhone, 'Ok, lamentamos que rechaces este inquilino calificado. Cuando haya otro te contactaremos!');
+}
+
+/**
+ * Inquilino: owner counter-proposed a new date.
+ * Sends notification template — inquilino taps "Ver detalles" to see the proposal.
+ */
+export async function sendInquilinoCounterProposal(inquilinoPhone: string): Promise<void> {
+  await sendNotificationTemplate(inquilinoPhone);
+}
+
+/**
+ * Inquilino: send counter-proposal details + action buttons (within 24h window).
+ * Called by webhook when inquilino taps "Ver detalles" after a counter-proposal.
+ */
+export async function sendInquilinoCounterProposalDetails(params: {
+  inquilinoPhone: string;
+  address: string;
+  dayLabel: string;
+  time: string;
+}): Promise<void> {
   await sendTextMessage(
-    ownerPhone,
-    'Ok, lamentamos que rechaces este inquilino calificado. Cuando haya otro te contactaremos!',
+    params.inquilinoPhone,
+    `El propietario no puede en la fecha que seleccionaste.\nSugirió esta fecha para ${params.address}:\n\n🗓️ ${params.dayLabel}\n⏰ ${params.time}`,
   );
+  await sendActionButtons(params.inquilinoPhone, '¿Qué querés hacer?');
 }
 
 /** Inquilino: visita confirmed by owner */
@@ -227,10 +267,7 @@ export async function sendInquilinoConfirmation(params: {
 export async function sendInquilinoConfirmationAck(params: {
   inquilinoPhone: string;
 }): Promise<void> {
-  await sendTextMessage(
-    params.inquilinoPhone,
-    'Ok, ya enviamos tu confirmación al propietario. Suerte en la visita!',
-  );
+  await sendTextMessage(params.inquilinoPhone, 'Ok, ya enviamos tu confirmación al propietario. Suerte en la visita!');
 }
 
 /** Inquilino: visita rejected by owner */
@@ -248,40 +285,15 @@ export async function sendInquilinoRejected(params: {
 export async function sendInquilinoRejectionAck(params: {
   inquilinoPhone: string;
 }): Promise<void> {
-  await sendTextMessage(
-    params.inquilinoPhone,
-    'Ok, lamentamos que rechaces este horario. Podés seguir buscando propiedades en mob.ar',
-  );
-}
-
-/** Inquilino: owner sent a counter-proposal (template with 3 buttons) */
-export async function sendInquilinoCounterProposal(params: {
-  inquilinoPhone: string;
-  inquilinoName: string;
-  address: string;
-  dayLabel: string;
-  time: string;
-}): Promise<void> {
-  await sendTemplateWithButtons(
-    params.inquilinoPhone,
-    'mob_contrapropuesta_inquilino',
-    [],
-    [params.inquilinoName, params.dayLabel, params.time],
-  );
+  await sendTextMessage(params.inquilinoPhone, 'Ok, lamentamos que rechaces este horario. Podés seguir buscando propiedades en mob.ar');
 }
 
 /** Inquilino: prompt for a new date/time */
 export async function sendInquilinoDatePrompt(inquilinoPhone: string): Promise<void> {
-  await sendTextMessage(
-    inquilinoPhone,
-    'Ok, cuándo podes? Decime día y horario (ej: 15/04 14:00)',
-  );
+  await sendTextMessage(inquilinoPhone, 'Ok, cuándo podes? Decime día y horario (ej: 15/04 14:00)');
 }
 
 /** Inquilino: their suggestion was forwarded to owner */
 export async function sendInquilinoSuggestionSent(inquilinoPhone: string): Promise<void> {
-  await sendTextMessage(
-    inquilinoPhone,
-    'Ok, enviamos tu propuesta al propietario, te confirmaremos',
-  );
+  await sendTextMessage(inquilinoPhone, 'Ok, enviamos tu propuesta al propietario, te confirmaremos');
 }

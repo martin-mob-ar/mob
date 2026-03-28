@@ -1,0 +1,22 @@
+{
+  "name": "mob_contrapropuesta_owner",
+  "category": "UTILITY",
+  "language": "es_AR",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Hola {{1}}, cómo estás? El inquilino no puede en la fecha que seleccionaste.\nSugirió esta fecha: 🗓️ {{2}}\n⏰ {{3}}",
+      "example": {
+        "body_text": [["Juan", "Martes 15 de abril", "14:00"]]
+      }
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        { "type": "QUICK_REPLY", "text": "Confirmar visita" },
+        { "type": "QUICK_REPLY", "text": "Sugerir otra fecha" },
+        { "type": "QUICK_REPLY", "text": "Rechazar" }
+      ]
+    }
+  ]
+}
