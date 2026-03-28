@@ -29,6 +29,7 @@ export default function VisitLeadForm({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const isVerified = !!user?.isVerified;
 
@@ -41,7 +42,7 @@ export default function VisitLeadForm({
     return `/verificate?${params.toString()}`;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedDate || !selectedTime) return;
 
     if (!isAuthenticated) {
@@ -61,9 +62,31 @@ export default function VisitLeadForm({
       return;
     }
 
-    // Logged in + verified: placeholder for truora outbound
-    // TODO: Call truora outbound API to schedule visit
-    setSubmitted(true);
+    // Logged in + verified: create visita directly
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/visitas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId,
+          proposedDate: format(selectedDate, "yyyy-MM-dd"),
+          proposedTime: selectedTime,
+          name: user!.name ?? "",
+          email: user!.email ?? "",
+          phone: user!.phone ?? undefined,
+          country_code: user!.phoneCountryCode ?? "+54",
+          submitterUserId: user!.publicUserId,
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        console.error("[VisitLeadForm] POST /api/visitas failed:", await res.text());
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Post-submission state (verified users)
@@ -124,11 +147,11 @@ export default function VisitLeadForm({
       <Button
         type="button"
         onClick={handleSubmit}
-        disabled={!isFormComplete}
+        disabled={!isFormComplete || submitting}
         className="w-full h-10 rounded-xl font-semibold text-sm"
       >
         <Calendar className="h-4 w-4 mr-2" />
-        Agendar visita
+        {submitting ? "Enviando..." : "Agendar visita"}
       </Button>
     </div>
   );

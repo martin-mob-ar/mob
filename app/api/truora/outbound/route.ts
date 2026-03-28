@@ -48,9 +48,11 @@ export async function POST(request: Request) {
       // Convert yyyy-MM-dd to dd/MM/yyyy
       const [y, m, d] = date.split('-');
       variables.dia_visita = `${d}/${m}/${y}`;
+      variables.raw_date = date; // yyyy-MM-dd for Truora flow passthrough
     }
     if (time) {
       variables.hora_visita = time;
+      variables.raw_time = time; // HH:mm for Truora flow passthrough
     }
 
     // Fetch property data if propertyId is provided
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (property) {
+        variables.property_id = String(propertyId); // for Truora flow passthrough to visita-confirmed
         if (property.address) {
           variables.direccion_propiedad = property.address;
         }
