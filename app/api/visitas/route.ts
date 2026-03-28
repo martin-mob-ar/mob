@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { visitaApiSchema } from '@/lib/validations/visita';
 import { createVisita } from '@/lib/visitas/create';
-import { sendOwnerNewVisitaRequest, toKapsoPhone, formatVisitDateTime } from '@/lib/kapso/client';
+import { sendOwnerNewVisitaRequest, toKapsoPhone } from '@/lib/kapso/client';
 
 export async function POST(request: Request) {
   try {
@@ -40,14 +40,8 @@ export async function POST(request: Request) {
     // Fire-and-forget Kapso notification to owner
     if (result.ownerPhone) {
       const ownerKapsoPhone = toKapsoPhone(result.ownerCountryCode ?? '', result.ownerPhone);
-      const { dayLabel, time } = formatVisitDateTime(proposedDate, proposedTime);
-      sendOwnerNewVisitaRequest({
-        ownerPhone: ownerKapsoPhone,
-        ownerName: result.ownerName ?? 'Propietario',
-        address: result.propertyAddress ?? '',
-        dayLabel,
-        time,
-      }).catch((err) => console.error('[Visitas] Kapso notify failed:', err));
+      sendOwnerNewVisitaRequest(ownerKapsoPhone)
+        .catch((err) => console.error('[Visitas] Kapso notify failed:', err));
     }
 
     return NextResponse.json({ success: true, visitaId: result.visitaId });

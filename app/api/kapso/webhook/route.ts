@@ -6,6 +6,8 @@ import {
   toKapsoPhone,
   formatVisitDateTime,
   sendTextMessage,
+  sendOwnerVisitaDetails,
+  sendOwnerCounterProposalDetails,
   sendOwnerConfirmationThankYou,
   sendOwnerRejectionAck,
   sendOwnerDatePrompt,
@@ -13,11 +15,12 @@ import {
   sendOwnerCounterProposal,
   sendOwnerInquilinoAccepted,
   sendOwnerRejectionByInquilino,
+  sendInquilinoCounterProposal,
+  sendInquilinoCounterProposalDetails,
   sendInquilinoConfirmation,
   sendInquilinoRejected,
   sendInquilinoConfirmationAck,
   sendInquilinoRejectionAck,
-  sendInquilinoCounterProposal,
   sendInquilinoDatePrompt,
   sendInquilinoSuggestionSent,
 } from '@/lib/kapso/client';
@@ -118,7 +121,6 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
   // Resolve owner/inquilino phones for messaging
   const ownerData = visita.owners as unknown as { name: string; telefono: string; telefono_country_code: string } | null;
   const ownerPhone = ownerData ? toKapsoPhone(ownerData.telefono_country_code ?? '', ownerData.telefono) : null;
-  const ownerName = ownerData?.name ?? 'Propietario';
 
   const inquilinoPhone = visita.requester_phone
     ? toKapsoPhone(visita.requester_country_code ?? '', visita.requester_phone)
@@ -138,6 +140,50 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
       .eq('id', pendingProposalId)
       .single();
     return data;
+  }
+
+  // ── State: owner_viewing_details ─────────────────────────────────────────────
+  // Owner tapped "Ver detalles" on the notification template
+  if (state === 'owner_viewing_details' && senderIsOwner) {
+    const buttonId = msg.interactive?.button_reply?.id;
+    if (buttonId !== BTN.VIEW) return; // ignore anything else
+
+    const proposal = await getPendingProposal();
+    if (!proposal) return;
+
+    const { dayLabel, time } = formatVisitDateTime(proposal.proposed_date, proposal.proposed_time);
+
+    await supabaseAdmin
+      .from('visitas')
+      .update({ whatsapp_state: 'owner_responding' })
+      .eq('id', visita.id);
+
+    if (ownerPhone) {
+      await sendOwnerVisitaDetails({ ownerPhone, address, dayLabel, time });
+    }
+    return;
+  }
+
+  // ── State: owner_viewing_counter ─────────────────────────────────────────────
+  // Owner tapped "Ver detalles" on a counter-proposal notification
+  if (state === 'owner_viewing_counter' && senderIsOwner) {
+    const buttonId = msg.interactive?.button_reply?.id;
+    if (buttonId !== BTN.VIEW) return;
+
+    const proposal = await getPendingProposal();
+    if (!proposal) return;
+
+    const { dayLabel, time } = formatVisitDateTime(proposal.proposed_date, proposal.proposed_time);
+
+    await supabaseAdmin
+      .from('visitas')
+      .update({ whatsapp_state: 'owner_responding' })
+      .eq('id', visita.id);
+
+    if (ownerPhone) {
+      await sendOwnerCounterProposalDetails({ ownerPhone, address, dayLabel, time });
+    }
+    return;
   }
 
   // ── State: owner_responding ──────────────────────────────────────────────────
@@ -207,7 +253,6 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
 
     const { date, time } = parsed;
 
-    // Supersede current proposal
     if (pendingProposalId) {
       await supabaseAdmin
         .from('visita_proposals')
@@ -215,7 +260,6 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
         .eq('id', pendingProposalId);
     }
 
-    // Insert new proposal from owner
     const { data: newProposal } = await supabaseAdmin
       .from('visita_proposals')
       .insert({
@@ -231,21 +275,56 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     await supabaseAdmin
       .from('visitas')
       .update({
-        whatsapp_state: 'requester_responding',
+        whatsapp_state: 'requester_viewing_counter',
         whatsapp_pending_proposal_id: newProposal?.id ?? null,
       })
       .eq('id', visita.id);
 
-    const { dayLabel, time: fTime } = formatVisitDateTime(date, time);
     if (ownerPhone) await sendOwnerSuggestionSent(ownerPhone);
+    if (inquilinoPhone) await sendInquilinoCounterProposal(inquilinoPhone);
+    return;
+  }
+
+  // ── State: requester_viewing_details ─────────────────────────────────────────
+  // Inquilino tapped "Ver detalles" on the initial notification
+  if (state === 'requester_viewing_details' && !senderIsOwner) {
+    const buttonId = msg.interactive?.button_reply?.id;
+    if (buttonId !== BTN.VIEW) return;
+
+    const proposal = await getPendingProposal();
+    if (!proposal) return;
+
+    const { dayLabel, time } = formatVisitDateTime(proposal.proposed_date, proposal.proposed_time);
+
+    await supabaseAdmin
+      .from('visitas')
+      .update({ whatsapp_state: 'requester_responding' })
+      .eq('id', visita.id);
+
     if (inquilinoPhone) {
-      await sendInquilinoCounterProposal({
-        inquilinoPhone,
-        inquilinoName,
-        address,
-        dayLabel,
-        time: fTime,
-      });
+      await sendInquilinoCounterProposalDetails({ inquilinoPhone, address, dayLabel, time });
+    }
+    return;
+  }
+
+  // ── State: requester_viewing_counter ─────────────────────────────────────────
+  // Inquilino tapped "Ver detalles" on a counter-proposal notification
+  if (state === 'requester_viewing_counter' && !senderIsOwner) {
+    const buttonId = msg.interactive?.button_reply?.id;
+    if (buttonId !== BTN.VIEW) return;
+
+    const proposal = await getPendingProposal();
+    if (!proposal) return;
+
+    const { dayLabel, time } = formatVisitDateTime(proposal.proposed_date, proposal.proposed_time);
+
+    await supabaseAdmin
+      .from('visitas')
+      .update({ whatsapp_state: 'requester_responding' })
+      .eq('id', visita.id);
+
+    if (inquilinoPhone) {
+      await sendInquilinoCounterProposalDetails({ inquilinoPhone, address, dayLabel, time });
     }
     return;
   }
@@ -337,22 +416,13 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     await supabaseAdmin
       .from('visitas')
       .update({
-        whatsapp_state: 'owner_responding',
+        whatsapp_state: 'owner_viewing_counter',
         whatsapp_pending_proposal_id: newProposal?.id ?? null,
       })
       .eq('id', visita.id);
 
-    const { dayLabel, time: fTime } = formatVisitDateTime(date, time);
     if (inquilinoPhone) await sendInquilinoSuggestionSent(inquilinoPhone);
-    if (ownerPhone) {
-      await sendOwnerCounterProposal({
-        ownerPhone,
-        ownerName,
-        address,
-        dayLabel,
-        time: fTime,
-      });
-    }
+    if (ownerPhone) await sendOwnerCounterProposal(ownerPhone);
     return;
   }
 
@@ -362,7 +432,6 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
-  // 1. Verify HMAC-SHA256 signature
   const rawBody = await request.text();
   const sig = request.headers.get('x-webhook-signature') ?? '';
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraVisitaConfirmedSchema } from '@/lib/validations/truora-visita-confirmed';
 import { createVisita } from '@/lib/visitas/create';
-import { sendOwnerNewVisitaRequest, toKapsoPhone, formatVisitDateTime } from '@/lib/kapso/client';
+import { sendOwnerNewVisitaRequest, toKapsoPhone } from '@/lib/kapso/client';
 
 export async function POST(request: Request) {
   try {
@@ -73,14 +73,8 @@ export async function POST(request: Request) {
     // Fire-and-forget Kapso notification to owner
     if (result.ownerPhone) {
       const ownerKapsoPhone = toKapsoPhone(result.ownerCountryCode ?? '', result.ownerPhone);
-      const { dayLabel, time } = formatVisitDateTime(visit_date, visit_time);
-      sendOwnerNewVisitaRequest({
-        ownerPhone: ownerKapsoPhone,
-        ownerName: result.ownerName ?? 'Propietario',
-        address: result.propertyAddress ?? '',
-        dayLabel,
-        time,
-      }).catch((err) => console.error('[VisitaConfirmed] Kapso notify failed:', err));
+      sendOwnerNewVisitaRequest(ownerKapsoPhone)
+        .catch((err) => console.error('[VisitaConfirmed] Kapso notify failed:', err));
     } else {
       console.warn(`[VisitaConfirmed] Owner has no phone for visita ${result.visitaId}`);
     }

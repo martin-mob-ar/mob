@@ -1,0 +1,19 @@
+{
+  "name": "mob_solicitud_visita_owner",
+  "category": "UTILITY",
+  "language": "es_AR",
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Hola {{1}}!\nRecibiste una solicitud de visita de un inquilino calificado, para visitar tu propiedad en {{2}}:\n\n🗓️ {{3}}\n⏰ {{4}}"
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        { "type": "QUICK_REPLY", "text": "Confirmar visita" },
+        { "type": "QUICK_REPLY", "text": "Sugerir otra fecha" },
+        { "type": "QUICK_REPLY", "text": "Rechazar" }
+      ]
+    }
+  ]
+}
