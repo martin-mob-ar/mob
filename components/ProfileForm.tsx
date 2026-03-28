@@ -47,8 +47,20 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [savedValues, setSavedValues] = useState({
+    name: profile.name || "",
+    phoneCountryCode: profile.telefono_country_code || "+54",
+    phone: profile.telefono || "",
+    dni: profile.dni || "",
+  });
 
   const showDni = accountType === 1 || accountType === 2;
+
+  const isDirty =
+    name !== savedValues.name ||
+    phoneCountryCode !== savedValues.phoneCountryCode ||
+    phone !== savedValues.phone ||
+    (showDni && dni !== savedValues.dni);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +87,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
       }
 
       setSaved(true);
+      setSavedValues({ name, phoneCountryCode, phone, dni });
       setTimeout(() => setSaved(false), 3000);
       // Refresh auth context in background — don't block save feedback
       refreshUser().catch(() => {});
@@ -170,7 +183,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
       <Button
         type="submit"
         className="h-10 rounded-lg font-semibold"
-        disabled={loading}
+        disabled={loading || !isDirty}
       >
         {loading ? "Guardando..." : "Guardar cambios"}
       </Button>
