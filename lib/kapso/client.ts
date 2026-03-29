@@ -11,9 +11,17 @@ export const BTN = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Strip everything but digits — Kapso expects "5491140462010" format */
+/**
+ * Format a phone for Kapso — Kapso expects "5491140462010" format.
+ * Argentine mobile numbers need a '9' inserted after the country code (54).
+ */
 export function toKapsoPhone(countryCode: string, phone: string): string {
-  return (countryCode + phone).replace(/[^0-9]/g, '');
+  const codeDigits = countryCode.replace(/[^0-9]/g, '');
+  const phoneDigits = phone.replace(/[^0-9]/g, '');
+  if (codeDigits === '54' && !phoneDigits.startsWith('9')) {
+    return codeDigits + '9' + phoneDigits;
+  }
+  return codeDigits + phoneDigits;
 }
 
 /**
