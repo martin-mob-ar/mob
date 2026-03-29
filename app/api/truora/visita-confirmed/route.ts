@@ -33,8 +33,11 @@ export async function POST(request: Request) {
     if (users) {
       const match = users.find((u) => {
         const codeDigits = (u.telefono_country_code || '').replace(/[^0-9]/g, '');
-        const full = codeDigits + (u.telefono || '');
-        return full === cleanPhone || u.telefono === cleanPhone;
+        const phone = u.telefono || '';
+        const full = codeDigits + phone;
+        // Also try with '9' inserted after country code (Argentina WhatsApp mobile prefix)
+        const fullWithMobile9 = codeDigits + '9' + phone;
+        return full === cleanPhone || fullWithMobile9 === cleanPhone || phone === cleanPhone;
       });
       if (match) {
         userId = match.id;
