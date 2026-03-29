@@ -30,15 +30,19 @@ export async function POST(request: Request) {
         .eq('auth_id', authUser.id)
         .single();
 
+      // For +54 numbers, check both with and without leading '9' to prevent duplicates
+      const phonesToCheck = countryCode === '+54'
+        ? [normalizedPhone, '9' + normalizedPhone]
+        : [normalizedPhone];
+
       const { data: existing } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('telefono', normalizedPhone)
+        .in('telefono', phonesToCheck)
         .eq('telefono_country_code', countryCode)
-        .neq('id', currentUser?.id ?? '')
-        .maybeSingle();
+        .neq('id', currentUser?.id ?? '');
 
-      if (existing) {
+      if (existing && existing.length > 0) {
         return NextResponse.json(
           { error: 'Este teléfono ya está registrado por otro usuario' },
           { status: 409 }
