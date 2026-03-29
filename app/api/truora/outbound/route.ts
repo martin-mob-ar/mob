@@ -29,7 +29,12 @@ export async function POST(request: Request) {
     const { phone, country_code, name, propertyId, date, time, accountType } = parsed.data;
 
     // Build the phone number for Truora (digits only, with country code)
-    const phoneDigits = country_code.replace(/[^0-9]/g, '') + phone.replace(/[^0-9]/g, '');
+    // Argentine mobile numbers need '9' after country code for WhatsApp
+    const codeDigits = country_code.replace(/[^0-9]/g, '');
+    const rawPhone = phone.replace(/[^0-9]/g, '');
+    const phoneDigits = codeDigits === '54' && !rawPhone.startsWith('9')
+      ? codeDigits + '9' + rawPhone
+      : codeDigits + rawPhone;
 
     // Build variables for the Truora template
     // Variable names must match the outbound template placeholders
