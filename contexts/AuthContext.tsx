@@ -106,6 +106,7 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
 
   // Resolve auth user → public users row (id + name).
   // Retries up to 3 times when result is null (handles DB trigger delay for new signups).
+  // Each attempt has a 5s timeout to prevent hanging indefinitely on network issues.
   const resolvePublicUser = useCallback(
     async (
       authId: string,
@@ -113,11 +114,15 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
       delayMs = 500
     ): Promise<PublicUser | null> => {
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const { data } = await supabase
+        const queryPromise = supabase
           .from("users")
           .select("id, name, telefono, telefono_country_code, last_verification_date, account_type")
           .eq("auth_id", authId)
           .maybeSingle();
+        const timeoutPromise = new Promise<{ data: null }>((resolve) =>
+          setTimeout(() => resolve({ data: null }), 5000)
+        );
+        const { data } = await Promise.race([queryPromise, timeoutPromise]);
         if (data) return data;
         // Only retry if there are attempts left
         if (attempt < maxAttempts - 1) {

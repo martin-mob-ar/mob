@@ -112,7 +112,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
     shareCloseTimer.current = setTimeout(() => setShareOpen(false), 150);
   };
 
-  const getShareUrl = () => `https://mob.ar/propiedad/${slug}`;
+  const getShareUrl = () => `https://mob.ar/propiedad/${propPropertyId}`;
 
   const getShareTitle = () => {
     if (propProperty) {
