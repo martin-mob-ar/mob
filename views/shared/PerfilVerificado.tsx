@@ -2,7 +2,6 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useMockUser } from "@/contexts/MockUserContext";
 import ReservationLayout from "@/components/reservation/ReservationLayout";
 import { 
   BadgeCheck, 
@@ -21,13 +20,6 @@ const PerfilVerificado = () => {
   const pathname = usePathname();
   const isVisitaFlow = pathname.includes("/visita/");
   const isStandaloneFlow = pathname.startsWith("/verificacion/");
-  const { setIsVerified } = useMockUser();
-
-  // Mark user as verified when reaching this screen in standalone flow
-  if (isStandaloneFlow) {
-    setIsVerified(true);
-  }
-
   const handleContinue = () => {
     if (isStandaloneFlow) {
       router.push("/");

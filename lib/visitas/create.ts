@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { sendOwnerNewVisitaRequest, toKapsoPhone, formatVisitDateTime } from '@/lib/kapso/client';
 
 export interface CreateVisitaParams {
   propertyId: number;
@@ -107,7 +108,7 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     .eq('id', property.user_id)
     .single();
 
-  return {
+  const result: CreateVisitaResult = {
     visitaId: visita.id,
     ownerUserId: property.user_id,
     ownerName: owner?.name ?? null,
@@ -115,4 +116,21 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     ownerCountryCode: owner?.telefono_country_code ?? null,
     propertyAddress: property.address ?? null,
   };
+
+  // 7. Fire-and-forget Kapso notification to owner
+  if (result.ownerPhone) {
+    const ownerKapsoPhone = toKapsoPhone(result.ownerCountryCode ?? '', result.ownerPhone);
+    const { dayLabel, time: formattedTime } = formatVisitDateTime(proposedDate, proposedTime);
+    sendOwnerNewVisitaRequest({
+      ownerPhone: ownerKapsoPhone,
+      ownerName: result.ownerName ?? 'Propietario',
+      address: result.propertyAddress ?? '',
+      dayLabel,
+      time: formattedTime,
+    }).catch((err) => console.error('[createVisita] Kapso notify failed:', err));
+  } else {
+    console.warn(`[createVisita] Owner has no phone, skipping Kapso notify for visita ${result.visitaId}`);
+  }
+
+  return result;
 }

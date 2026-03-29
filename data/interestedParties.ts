@@ -1,4 +1,4 @@
-import { LeadStage } from "@/contexts/MockUserContext";
+import { LeadStage } from "@/lib/lead-stages";
 
 export interface InterestedParty {
   id: string;

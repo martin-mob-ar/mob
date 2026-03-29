@@ -7,7 +7,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { InitialAuthUser } from "@/contexts/AuthContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
-import { MockUserProvider } from "@/contexts/MockUserContext";
 import { ReservationProvider } from "@/contexts/ReservationContext";
 import { VisitaProvider } from "@/contexts/VisitaContext";
 import AuthModal from "@/components/AuthModal";
@@ -46,7 +45,6 @@ export function Providers({ children, initialUser }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider initialUser={initialUser}>
         <FavoritesProvider>
-        <MockUserProvider>
           <ReservationProvider>
             <VisitaProvider>
               <TooltipProvider>
@@ -60,7 +58,6 @@ export function Providers({ children, initialUser }: ProvidersProps) {
               </TooltipProvider>
             </VisitaProvider>
           </ReservationProvider>
-        </MockUserProvider>
         </FavoritesProvider>
       </AuthProvider>
     </QueryClientProvider>

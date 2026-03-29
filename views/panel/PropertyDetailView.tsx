@@ -47,7 +47,7 @@ import {
   mockConsultasByProperty,
   type MockConsulta,
 } from "@/lib/mock/gestion-mock-data";
-import type { LeadStage } from "@/contexts/MockUserContext";
+import type { LeadStage } from "@/lib/lead-stages";
 
 // ─── Config ──────────────────────────────────────────────────────────
 

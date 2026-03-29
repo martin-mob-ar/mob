@@ -1,4 +1,4 @@
-import { LeadStage, leadStageConfig } from "@/contexts/MockUserContext";
+import { LeadStage, leadStageConfig } from "@/lib/lead-stages";
 
 interface LeadStageBadgeProps {
   stage: LeadStage;

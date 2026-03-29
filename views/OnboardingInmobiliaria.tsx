@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMockUser, leadStageConfig, LeadStage } from "@/contexts/MockUserContext";
 import { 
   ArrowRight,
   ChevronLeft,
@@ -56,7 +55,6 @@ const OnboardingInmobiliaria = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isCompleted, setIsCompleted] = useState(false);
-  const { setIsAgencyOnboarded } = useMockUser();
   const router = useRouter();
 
   const totalSteps = 6;
@@ -78,7 +76,6 @@ const OnboardingInmobiliaria = () => {
   };
 
   const handleComplete = () => {
-    setIsAgencyOnboarded(true);
     setIsCompleted(true);
   };
 

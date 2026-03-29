@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMockUser } from "@/contexts/MockUserContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,7 +53,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
     logout,
     openAuthModal
   } = useAuth();
-  const { isVerified } = useMockUser();
+  const isVerified = user?.isVerified ?? false;
   const pathname = usePathname();
   const isHome = pathname === "/";
 

@@ -3,7 +3,7 @@ import type {
   OwnerProperty,
   OperationHistoryEntry,
 } from "@/lib/transforms/property";
-import type { LeadStage } from "@/contexts/MockUserContext";
+import type { LeadStage } from "@/lib/lead-stages";
 
 // ─── Mock consultas (leads) per property ────────────────────────────
 
