@@ -15,8 +15,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, telefono, telefono_country_code, dni } = body;
 
+    // Normalize Argentine phone: strip leading '9' mobile prefix so we store consistently
+    let normalizedPhone = telefono;
+    if (telefono && (telefono_country_code || '+54') === '+54') {
+      normalizedPhone = telefono.replace(/^9/, '');
+    }
+
     // Check phone uniqueness before updating
-    if (telefono) {
+    if (normalizedPhone) {
       const countryCode = telefono_country_code || '+54';
       const { data: currentUser } = await supabaseAdmin
         .from('users')
@@ -27,7 +33,7 @@ export async function POST(request: Request) {
       const { data: existing } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('telefono', telefono)
+        .eq('telefono', normalizedPhone)
         .eq('telefono_country_code', countryCode)
         .neq('id', currentUser?.id ?? '')
         .maybeSingle();
@@ -43,7 +49,7 @@ export async function POST(request: Request) {
     // Update public.users row
     const updateData: Record<string, string | null> = {};
     if (name !== undefined) updateData.name = name || null;
-    if (telefono !== undefined) updateData.telefono = telefono || null;
+    if (telefono !== undefined) updateData.telefono = normalizedPhone || null;
     if (telefono_country_code !== undefined) updateData.telefono_country_code = telefono_country_code || null;
     if (dni !== undefined) updateData.dni = dni || null;
 
