@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe, ShieldCheck, BadgeCheck, CalendarCheck, FileSignature } from "lucide-react";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 /**
  * Simple pill badges like inspo hero/3.png — icon + single text.
@@ -60,7 +61,7 @@ const HeroBadges = () => {
               }}
             >
               <badge.icon className="h-4 w-4 text-primary shrink-0" strokeWidth={1.8} />
-              {badge.text}
+              {badge.text === "Garantía 50% off" ? <GarantiaTooltip>{badge.text}</GarantiaTooltip> : badge.text}
             </div>
           </div>
         ))}
@@ -74,7 +75,7 @@ const HeroBadges = () => {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background border border-border/60 shadow-sm text-xs font-medium text-foreground whitespace-nowrap"
           >
             <badge.icon className="h-3.5 w-3.5 text-primary" />
-            {badge.text}
+            {badge.text === "Garantía 50% off" ? <GarantiaTooltip>{badge.text}</GarantiaTooltip> : badge.text}
           </div>
         ))}
       </div>

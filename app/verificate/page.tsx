@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { MessageCircle, Search, PenLine } from "lucide-react";
 import Header from "@/components/Header";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import {
   Form,
   FormField,
@@ -184,7 +185,7 @@ export default function VerificatePage() {
           {/* Heading */}
           <div className="space-y-3">
             <h1 className="font-display text-3xl font-bold text-foreground">
-              Verificate como {user?.accountType === 2 ? 'propietario' : 'inquilino'} calificado
+              Verificate como {user?.accountType === 2 ? 'propietario verificado' : 'inquilino calificado'}
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Completá tu verificación para poder{" "}
@@ -192,9 +193,9 @@ export default function VerificatePage() {
                 agendar tu visita
               </span>{" "}
               y acceder a una{" "}
-              <span className="font-semibold text-foreground">
+              <GarantiaTooltip className="font-semibold text-foreground underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help">
                 garantía con 50% de descuento
-              </span>
+              </GarantiaTooltip>
               .
             </p>
             <p className="text-sm text-muted-foreground">

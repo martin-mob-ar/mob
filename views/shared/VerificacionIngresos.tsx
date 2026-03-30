@@ -18,6 +18,7 @@ import {
   Shield,
   Percent
 } from "lucide-react";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 const VerificacionIngresos = () => {
   const router = useRouter();
@@ -145,7 +146,7 @@ const VerificacionIngresos = () => {
               {/* Hoggax benefit hint */}
               <div className="flex items-center justify-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
                 <Percent className="h-4 w-4 text-primary" />
-                <span className="text-sm text-primary font-medium">50% OFF en garantía Hoggax</span>
+                <span className="text-sm text-primary font-medium"><GarantiaTooltip>50% OFF en garantía Hoggax</GarantiaTooltip></span>
               </div>
 
               <p className="text-xs text-center text-muted-foreground">

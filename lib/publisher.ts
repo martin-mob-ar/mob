@@ -57,13 +57,15 @@ const COMPACT_LABELS: Partial<Record<PublisherType, string>> = {
   "dueno-verificado": "Dueño",
 };
 
+const GARANTIA_DISCLAIMER = "\n(Exclusivo propiedades experiencia mob e inmobiliarias asociadas)";
+
 const TOOLTIPS: Record<PublisherType, string> = {
   "inmobiliaria-red":
-    "Inmobiliaria asociada a la red de Hoggax. Accedés a una garantía 50% off",
+    "Inmobiliaria asociada a la red de Hoggax. Accedés a una garantía 50% off" + GARANTIA_DISCLAIMER,
   "inmobiliaria-normal":
-    "Asociada a mob para ofrecerte agendar vista online, reservar y acceder a garantía al 50% off",
+    "Asociada a mob para ofrecerte agendar vista online, reservar y acceder a garantía al 50% off" + GARANTIA_DISCLAIMER,
   "dueno-verificado":
-    "Dueño verificado por mob.\nAccedés a agendar vista online, reservar y acceder a garantía al 50% off",
+    "Dueño verificado por mob.\nAccedés a agendar vista online, reservar y acceder a garantía al 50% off" + GARANTIA_DISCLAIMER,
   "dueno-directo":
     "Este dueño no cuenta con un plan en mob. No accederás a los beneficios de nuestra plataforma.",
 };

@@ -3,6 +3,7 @@
 import { Search, Fingerprint, Shield, Users, Zap, Building2, CheckCircle, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useInView } from "@/hooks/useInView";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 const BentoGrid = () => {
   const { ref, inView } = useInView({ threshold: 0.1 });
@@ -62,7 +63,7 @@ const BentoGrid = () => {
                 </li>
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                  Accedé a garantía 50% off
+                  <GarantiaTooltip>Accedé a garantía 50% off</GarantiaTooltip>
                 </li>
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
@@ -130,7 +131,7 @@ const BentoGrid = () => {
               </span>
               <h3 className="font-display font-bold text-lg">Garantía digital</h3>
               <p className="text-sm text-primary-foreground/80 mt-0.5">
-                Accedé a 50% off en una garantía digital con aprobación instantánea
+                <GarantiaTooltip>Accedé a 50% off en una garantía digital con aprobación instantánea</GarantiaTooltip>
               </p>
             </div>
           </div>
@@ -210,7 +211,7 @@ const BentoGrid = () => {
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                Accedé a garantía 50% off
+                <GarantiaTooltip>Accedé a garantía 50% off</GarantiaTooltip>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />
@@ -255,7 +256,7 @@ const BentoGrid = () => {
             </span>
             <h3 className="font-display font-bold text-lg">Garantía digital</h3>
             <p className="text-sm text-primary-foreground/80 mt-1">
-              Accedé a 50% off en una garantía digital con aprobación instantánea
+              <GarantiaTooltip>Accedé a 50% off en una garantía digital con aprobación instantánea</GarantiaTooltip>
             </p>
           </div>
 

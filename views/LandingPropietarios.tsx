@@ -13,6 +13,7 @@ import {
   MessageCircle, ScanFace,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import { motion } from "framer-motion";
 import {
   Accordion,
@@ -410,7 +411,7 @@ const LandingPropietarios = () => {
               },
               {
                 icon: Award,
-                title: "Garantía 50% off",
+                title: <GarantiaTooltip>Garantía 50% off</GarantiaTooltip>,
                 desc: "Tu inquilino puede acceder a garantía a mitad de precio, lo que hace más atractivo tu alquiler.",
               },
               {
@@ -420,7 +421,7 @@ const LandingPropietarios = () => {
               },
             ].map((col, i) => (
               <motion.div
-                key={col.title}
+                key={i}
                 className="text-center md:text-left"
                 initial="hidden"
                 whileInView="visible"

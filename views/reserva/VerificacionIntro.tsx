@@ -14,6 +14,7 @@ import {
   User,
   Wallet
 } from "lucide-react";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 const VerificacionIntro = () => {
   const router = useRouter();
@@ -34,7 +35,7 @@ const VerificacionIntro = () => {
   const benefits = [
     {
       icon: Percent,
-      text: "50% OFF en la garantía Hoggax"
+      text: <GarantiaTooltip>50% OFF en la garantía Hoggax</GarantiaTooltip>
     },
     {
       icon: Building2,

@@ -17,11 +17,12 @@ import IntegrationV3 from "@/components/inmobiliarias/IntegrationV3";
 import CTAV3 from "@/components/inmobiliarias/CTAV3";
 import AboutV3 from "@/components/inmobiliarias/AboutV3";
 import FAQV3 from "@/components/inmobiliarias/FAQV3";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
-const heroFeatures = [
+const heroFeatures: React.ReactNode[] = [
   "Recibí solo interesados calificados",
   "Garantía de alquiler aprobada por Hoggax",
-  "Descuento de 50% en garantía para los inquilinos",
+  <><GarantiaTooltip>Descuento de 50% en garantía</GarantiaTooltip> para los inquilinos</>,
 ];
 
 const whatsappUrl = "https://wa.me/5492236000055";
@@ -54,7 +55,7 @@ const LandingInmobiliarias = () => {
               <div className="space-y-3">
                 {heroFeatures.map((feature, i) => (
                   <motion.div
-                    key={feature}
+                    key={i}
                     className="flex items-center gap-3"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}

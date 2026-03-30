@@ -3,10 +3,11 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2 } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2, Compass, Clock } from "lucide-react";
 import type { PublisherType } from "@/lib/publisher";
 import { getPublisherBadgeConfig } from "@/lib/publisher";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import {
   Popover,
   PopoverAnchor,
@@ -70,6 +71,7 @@ interface PropertyDetailProps {
   visitHours?: string[] | null;
   ownerAccountType?: number | null;
   contractDuration?: number | null;
+  orientation?: string | null;
 }
 
 function formatDescription(text: string): string {
@@ -79,7 +81,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -161,6 +163,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showGallery, setShowGallery] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [preloadedIndices, setPreloadedIndices] = useState<Set<number>>(new Set());
   const [badgeTooltipOpen, setBadgeTooltipOpen] = useState(false);
   const [publisherTooltipOpen, setPublisherTooltipOpen] = useState(false);
 
@@ -174,6 +177,19 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         mockProperties[3]?.image,
         mockProperties[4]?.image,
       ].filter(Boolean);
+
+  // Preload adjacent gallery images so navigation feels instant
+  useEffect(() => {
+    setPreloadedIndices((prev) => {
+      const next = new Set(prev);
+      const len = galleryImages.length;
+      for (let offset = -2; offset <= 2; offset++) {
+        next.add(((galleryIndex + offset) % len + len) % len);
+      }
+      if (next.size === prev.size) return prev;
+      return next;
+    });
+  }, [galleryIndex, galleryImages.length]);
 
   const scrollPrev = useCallback(() => {
     carouselApi?.scrollPrev();
@@ -227,25 +243,25 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleGalleryPrev = () => {
+  const handleGalleryPrev = useCallback(() => {
     setGalleryIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-  };
+  }, [galleryImages.length]);
 
-  const handleGalleryNext = () => {
+  const handleGalleryNext = useCallback(() => {
     setGalleryIndex((prev) => (prev + 1) % galleryImages.length);
-  };
+  }, [galleryImages.length]);
 
   // Handle keyboard navigation for gallery
   useEffect(() => {
+    if (!showGallery) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!showGallery) return;
       if (e.key === 'ArrowLeft') handleGalleryPrev();
       if (e.key === 'ArrowRight') handleGalleryNext();
       if (e.key === 'Escape') setShowGallery(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showGallery]);
+  }, [showGallery, handleGalleryPrev, handleGalleryNext]);
 
   // Lock body scroll when gallery is open
   useEffect(() => {
@@ -316,9 +332,9 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <ChevronLeft className="h-6 w-6 text-foreground" />
             </button>
 
-            {/* Image container with swipe support */}
-            <div 
-              className="max-w-[90vw] max-h-[60vh] flex items-center justify-center mt-12"
+            {/* Image container with swipe support — preloads adjacent images */}
+            <div
+              className="relative max-w-[90vw] max-h-[60vh] flex items-center justify-center mt-12"
               onClick={(e) => e.stopPropagation()}
               onTouchStart={(e) => {
                 const touchStartX = e.touches[0].clientX;
@@ -334,15 +350,27 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 document.addEventListener('touchend', handleTouchEnd);
               }}
             >
-              <Image
-                src={galleryImages[galleryIndex]}
-                alt={`Vista ${galleryIndex + 1}`}
-                width={1200}
-                height={900}
-                sizes="90vw"
-                className="max-w-full max-h-[60vh] object-contain select-none rounded-xl"
-                draggable={false}
-              />
+              {galleryImages.map((img, index) => {
+                if (!preloadedIndices.has(index)) return null;
+                const isCurrent = index === galleryIndex;
+                return (
+                  <Image
+                    key={index}
+                    src={img}
+                    alt={`Vista ${index + 1}`}
+                    width={1200}
+                    height={900}
+                    sizes="90vw"
+                    className={`max-w-full max-h-[60vh] object-contain select-none rounded-xl transition-opacity duration-200 ${
+                      isCurrent
+                        ? "relative opacity-100"
+                        : "absolute inset-0 m-auto opacity-0 pointer-events-none"
+                    }`}
+                    priority={isCurrent}
+                    draggable={false}
+                  />
+                );
+              })}
             </div>
 
             {/* Next arrow */}
@@ -810,37 +838,48 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
           </AnimateHeight>
           </>)}
 
-          {/* Quick Stats - Below CTAs */}
-          {(() => {
-            const mobileStats: { Icon: typeof Home; label: string }[] = [];
-            if (property.rooms != null) mobileStats.push({ Icon: Home, label: `${property.rooms} amb` });
-            if (suiteAmount != null) mobileStats.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dorm' : 'dorms'}` });
-            if (property.surface != null) mobileStats.push({ Icon: Square, label: `${property.surface} m²` });
-            if (roofedSurface != null) mobileStats.push({ Icon: Square, label: `${roofedSurface} m² cub` });
-            if (property.bathrooms != null) mobileStats.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
-            if (property.parking != null && property.parking > 0) mobileStats.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
-            return (
-              <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border/50">
-                {mobileStats.map((stat, index) => (
-                  <div key={index} className="flex items-center gap-1.5">
-                    <div className="h-6 w-6 rounded-xl border border-border flex items-center justify-center">
-                      <stat.Icon className="h-3 w-3 text-muted-foreground" strokeWidth={1.5} />
-                    </div>
-                    <span className="text-xs font-semibold text-foreground">
-                      {stat.label}
-                    </span>
+        </div>
+
+        {/* Características */}
+        {(() => {
+          const chars: { Icon: typeof Home; label: string }[] = [];
+          if (property.surface != null) chars.push({ Icon: Square, label: `${property.surface} m² totales` });
+          if (roofedSurface != null) chars.push({ Icon: Square, label: `${roofedSurface} m² cubiertos` });
+          if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
+          if (suiteAmount != null) chars.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dormitorio' : 'dormitorios'}` });
+          if (property.bathrooms != null) chars.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
+          if (property.parking != null) {
+            if (property.parking > 0) chars.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
+            else chars.push({ Icon: Car, label: 'Sin cochera' });
+          }
+          if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
+          if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
+          if (publicationDate) {
+            const days = Math.floor((Date.now() - new Date(publicationDate).getTime()) / 86400000);
+            chars.push({ Icon: Clock, label: days === 0 ? "Publicado hoy" : days === 1 ? "Publicado hace 1 día" : `Publicado hace ${days} días` });
+          }
+          return chars.length > 0 ? (
+            <div className="px-4 py-5 border-b border-border">
+              <h2 className="font-display text-lg font-bold text-foreground mb-4">
+                Características
+              </h2>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                {chars.map((char, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <char.Icon className="h-5 w-5 text-muted-foreground flex-shrink-0" strokeWidth={1.5} />
+                    <span className="text-sm text-foreground">{char.label}</span>
                   </div>
                 ))}
               </div>
-            );
-          })()}
-        </div>
+            </div>
+          ) : null;
+        })()}
 
         {/* About Section */}
         {description && (
           <div className="px-4 py-5 border-b border-border">
             <h2 className="font-display text-lg font-bold text-foreground mb-3">
-              Sobre esta propiedad
+              Descripción
             </h2>
             <p className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap ${!showFullDescription ? "line-clamp-4" : ""}`}>
               {formatDescription(description)}
@@ -975,8 +1014,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <BadgeCheck className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base text-foreground">Garantía con 50% off</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span> para cualquier alquiler.</p>
+                  <p className="font-semibold text-base text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
                 </div>
               </div>
             </div>
@@ -1093,29 +1132,37 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         <div className="grid grid-cols-3 gap-10">
           {/* Left Column - Details */}
           <div className="col-span-2 space-y-6">
-            {/* Quick Stats */}
+            {/* Características */}
             {(() => {
-              const dStats: { label: string; value: string }[] = [];
-              if (property.rooms != null) dStats.push({ label: "Ambientes", value: `${property.rooms}` });
-              if (suiteAmount != null) dStats.push({ label: "Dormitorios", value: `${suiteAmount}` });
-              if (property.surface != null) dStats.push({ label: "Sup. total", value: `${property.surface} m²` });
-              if (roofedSurface != null) dStats.push({ label: "Sup. cubierta", value: `${roofedSurface} m²` });
-              if (property.bathrooms != null) dStats.push({ label: "Baños", value: `${property.bathrooms}` });
-              if (property.parking != null && property.parking > 0) dStats.push({ label: "Cocheras", value: `${property.parking}` });
-              dStats.push({ label: "Antigüedad", value: propAge === 0 ? "A estrenar" : propAge != null ? `${propAge} ${propAge === 1 ? "Año" : "Años"}` : "–" });
-              const cols = Math.min(dStats.length, 7);
+              const chars: { Icon: typeof Home; label: string }[] = [];
+              if (property.surface != null) chars.push({ Icon: Square, label: `${property.surface} m² totales` });
+              if (roofedSurface != null) chars.push({ Icon: Square, label: `${roofedSurface} m² cubiertos` });
+              if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
+              if (suiteAmount != null) chars.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dormitorio' : 'dormitorios'}` });
+              if (property.bathrooms != null) chars.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
+              if (property.parking != null) {
+                if (property.parking > 0) chars.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
+                else chars.push({ Icon: Car, label: 'Sin cochera' });
+              }
+              if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
+              if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
+              if (publicationDate) {
+                const days = Math.floor((Date.now() - new Date(publicationDate).getTime()) / 86400000);
+                chars.push({ Icon: Clock, label: days === 0 ? "Publicado hoy" : days === 1 ? "Publicado hace 1 día" : `Publicado hace ${days} días` });
+              }
               return (
-                <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-                  {dStats.map((stat) => (
-                    <div key={stat.label}>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                        {stat.label}
-                      </p>
-                      <p className="font-display font-semibold text-foreground text-sm mt-0.5">
-                        {stat.value}
-                      </p>
-                    </div>
-                  ))}
+                <div>
+                  <h2 className="font-display text-lg font-bold text-foreground mb-4">
+                    Características
+                  </h2>
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                    {chars.map((char, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <char.Icon className="h-5 w-5 text-muted-foreground flex-shrink-0" strokeWidth={1.5} />
+                        <span className="text-sm text-foreground">{char.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })()}
@@ -1126,7 +1173,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <hr className="border-border" />
                 <div>
                   <h2 className="font-display text-lg font-bold text-foreground mb-3">
-                    Sobre esta propiedad
+                    Descripción
                   </h2>
                   <p className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap ${!showFullDescription ? "line-clamp-4" : ""}`}>
                     {formatDescription(description)}
@@ -1374,8 +1421,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 <div className="flex gap-2.5">
                   <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-xs text-foreground">Garantía con 50% off</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span> para cualquier alquiler.</p>
+                    <p className="font-medium text-xs text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
+                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
                   </div>
                 </div>
                 

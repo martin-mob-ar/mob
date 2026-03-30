@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import {
   Loader2,
   RefreshCw,
@@ -509,7 +510,7 @@ export default function ProfileSection({
                   ) : (
                     <Home className="h-3.5 w-3.5" />
                   )}
-                  {isInquilino ? "Garantía 50% OFF" : "Publicá gratis"}
+                  {isInquilino ? <GarantiaTooltip>Garantía 50% OFF</GarantiaTooltip> : "Publicá gratis"}
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700">
                   {isInquilino ? (

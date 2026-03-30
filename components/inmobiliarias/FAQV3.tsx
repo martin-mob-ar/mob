@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 const faqs = [
   {
@@ -18,7 +19,7 @@ const faqs = [
   },
   {
     q: "¿Cómo se integra la garantía?",
-    a: "Dentro del mismo flujo. Si el interesado necesita garantía, Mob le ofrece acceso a Hoggax con 50% de descuento, sin salir del proceso.",
+    a: <>Dentro del mismo flujo. Si el interesado necesita garantía, Mob le ofrece acceso a Hoggax con <GarantiaTooltip>50% de descuento</GarantiaTooltip>, sin salir del proceso.</>,
   },
   {
     q: "¿Puedo seguir usando Tokko?",
