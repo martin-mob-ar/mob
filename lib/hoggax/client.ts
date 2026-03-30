@@ -68,8 +68,6 @@ export interface HoggaxQualifyRequest {
   employment_situation_id: number;
   antiquity_id?: number;
   monthly_income?: number;
-  rent?: number;
-  expenses?: number;
 }
 
 export interface HoggaxQualifyResponse {
@@ -98,14 +96,6 @@ export function buildQualifyRequest(payload: TruoraWebhookPayload): HoggaxQualif
   // Add monthly income if the employment type requires it
   if (!NO_INCOME_TYPES.has(employmentId) && payload.monthly_income != null) {
     request.monthly_income = payload.monthly_income;
-  }
-
-  // Add rent and expenses for capacity evaluation (RCI)
-  if (payload.rent != null) {
-    request.rent = payload.rent;
-  }
-  if (payload.expenses != null) {
-    request.expenses = payload.expenses;
   }
 
   return request;
