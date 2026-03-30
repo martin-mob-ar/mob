@@ -14,6 +14,7 @@ import {
   CreditCard,
   Home
 } from "lucide-react";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 const PerfilVerificado = () => {
   const router = useRouter();
@@ -77,7 +78,7 @@ const PerfilVerificado = () => {
                 <Shield className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-foreground">50% OFF en garantía</p>
+                <p className="font-medium text-foreground"><GarantiaTooltip>50% OFF en garantía</GarantiaTooltip></p>
                 <p className="text-sm text-muted-foreground">Accedés al mejor precio</p>
               </div>
             </div>

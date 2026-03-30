@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { MessageCircle, Send, ScanFace, ShieldCheck, UserCheck, PenTool } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 const steps = [
   {
@@ -27,7 +28,7 @@ const steps = [
     num: 4,
     icon: ShieldCheck,
     title: "Calificamos al Lead",
-    desc: "Acceso a garantía digital con 50% de descuento",
+    desc: <>Acceso a garantía digital con <GarantiaTooltip>50% de descuento</GarantiaTooltip></>,
   },
   {
     num: 5,

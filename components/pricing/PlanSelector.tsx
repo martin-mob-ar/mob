@@ -25,7 +25,7 @@ export const pricingSections = [
       { feature: "Promoción", basico: "Publicación básica", acompanado: "Publicación destacada", experiencia: "Destacada + redes", tooltip: "" },
       { feature: "Fotos", basico: "Subí tus fotos", acompanado: "Subí tus fotos", experiencia: "Fotógrafo profesional", tooltip: "" },
       { feature: "Precio sugerido", basico: "—", acompanado: "—", experiencia: "Incluido", tooltip: "" },
-      { feature: "Verificación", basico: "Propietario", acompanado: "Propietario", experiencia: "Propietario + propiedad", tooltip: "" },
+      { feature: "Verificación", basico: "Propietario", acompanado: "Propietario", experiencia: "Propietario + propiedad", tooltip: "", experienciaTooltip: "Le destacamos al inquilino que tu propiedad fue verificada" },
       { feature: "Aviso mejorado con IA", basico: "Incluido", acompanado: "Incluido", experiencia: "Incluido", tooltip: "" },
     ],
   },
@@ -33,23 +33,23 @@ export const pricingSections = [
     title: "Gestión",
     rows: [
       { feature: "Interesados", basico: "—", acompanado: "Verificados y calificados", experiencia: "Verificados y calificados", tooltip: "" },
-      { feature: "Visitas", basico: "—", acompanado: "Gestión de disponibilidad", experiencia: "Coordinación y seguimiento", tooltip: "" },
+      { feature: "Visitas", basico: "—", acompanado: "Coordinación y seguimiento", experiencia: "Coordinación y seguimiento", tooltip: "" },
     ],
   },
   {
     title: "Legal",
     rows: [
-      { feature: "Contrato", basico: "—", acompanado: "Confección", experiencia: "Confección", tooltip: "" },
+      { feature: "Contrato", basico: "—", acompanado: "Plantilla", experiencia: "Confección", tooltip: "" },
       { feature: "Firma electrónica", basico: "—", acompanado: "Incluida", experiencia: "Incluida", tooltip: "" },
-      { feature: "Garantía para tu inquilino", basico: "Descuento 20%", acompanado: "Descuento 30%", experiencia: "Descuento 50%", tooltip: "" },
+      { feature: "Garantía para tu inquilino", basico: "Descuento 20%", acompanado: "Descuento 30%", experiencia: "Descuento 50%", tooltip: "", experienciaTooltip: "Exclusivo propiedades experiencia mob e inmobiliarias asociadas" },
     ],
   },
 ];
 
 export const pricingCost: Record<PlanType, string> = {
   basico: "$0",
-  acompanado: "$100",
-  experiencia: "Medio mes",
+  acompanado: "USD 99",
+  experiencia: "USD 299",
 };
 
 const CellContent = ({ value, isHighlighted = false }: { value: string; isHighlighted?: boolean }) => {
@@ -177,8 +177,16 @@ const MobilePlanCard = ({
                           )}
                         </div>
                         {!isEmpty && (
-                          <div className={cn(isWizard ? "text-base" : "text-sm", isSelected || isRecommended ? "text-foreground font-medium" : "text-foreground")}>
+                          <div className={cn("inline-flex items-center gap-1", isWizard ? "text-base" : "text-sm", isSelected || isRecommended ? "text-foreground font-medium" : "text-foreground")}>
                             {value}
+                            {plan === "experiencia" && (row as Record<string, string>).experienciaTooltip && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[220px] text-xs">{(row as Record<string, string>).experienciaTooltip}</TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         )}
                       </div>
@@ -318,7 +326,9 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                         </Tooltip>
                       )}
                     </div>
-                    {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => (
+                    {(["basico", "acompanado", "experiencia"] as PlanType[]).map((plan) => {
+                      const cellTooltip = plan === "experiencia" && (row as Record<string, string>).experienciaTooltip;
+                      return (
                       <div
                         key={plan}
                         className={cn(
@@ -339,15 +349,24 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                           )} />
                         ) : (
                           <span className={cn(
-                            "text-center",
+                            "text-center inline-flex items-center gap-1",
                             isWizard ? "text-sm" : "text-xs",
                             selectedPlan === plan ? "text-foreground font-semibold" : plan === "experiencia" ? "text-foreground font-semibold" : (isWizard ? "text-foreground/80" : "text-muted-foreground")
                           )}>
                             {row[plan]}
+                            {cellTooltip && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[220px] text-xs">{cellTooltip}</TooltipContent>
+                              </Tooltip>
+                            )}
                           </span>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ))}
               </div>

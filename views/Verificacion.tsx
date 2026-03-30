@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Clock
 } from "lucide-react";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 const mobLogo = "/assets/mob-logo-new.png";
 
 const Verificacion = () => {
@@ -25,7 +26,7 @@ const Verificacion = () => {
   };
 
   const benefits = [
-    { icon: Percent, text: "50% OFF en la garantía Hoggax" },
+    { icon: Percent, text: <GarantiaTooltip>50% OFF en la garantía Hoggax</GarantiaTooltip> },
     { icon: Building2, text: <>Válido en todos los alquileres de <span className="font-ubuntu">mob</span></> },
     { icon: BadgeCheck, text: "Calificás ante +1000 inmobiliarias" },
     { icon: RefreshCw, text: "Te verificás una sola vez y listo" },

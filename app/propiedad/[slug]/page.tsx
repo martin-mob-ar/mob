@@ -400,11 +400,12 @@ export default async function PropiedadDetailPage({
   let roofedSurface: number | null = null;
   let visitDays: string[] | null = null;
   let visitHours: string[] | null = null;
+  let orientation: string | null = null;
 
   if (!isUnavailable) {
     const { data: extraFields } = await supabaseAdmin
       .from("properties")
-      .select("suite_amount, roofed_surface, visit_days, visit_hours")
+      .select("suite_amount, roofed_surface, visit_days, visit_hours, orientation")
       .eq("id", propertyId)
       .single();
 
@@ -413,6 +414,7 @@ export default async function PropiedadDetailPage({
       roofedSurface = extraFields.roofed_surface ? Number(extraFields.roofed_surface) : null;
       visitDays = extraFields.visit_days ?? null;
       visitHours = extraFields.visit_hours ?? null;
+      orientation = extraFields.orientation ?? null;
     }
   } else {
     // For unavailable properties, these were already fetched in mapRawToPropertyData
@@ -468,6 +470,7 @@ export default async function PropiedadDetailPage({
       visitHours={visitHours}
       ownerAccountType={propertyData.owner_account_type ?? null}
       contractDuration={contractDuration}
+      orientation={orientation}
     />
   );
 }
