@@ -4,9 +4,15 @@ const HOGGAX_API_URL = process.env.HOGGAX_API_URL;
 
 // --- Mapping: Truora text → Hoggax IDs ---
 
+const DOCUMENT_TYPE_MAP: Record<string, number> = {
+  'DNI': 1,
+  'Pasaporte': 2,
+};
+
 const GENDER_MAP: Record<string, number> = {
-  'Masculino': 1,
-  'Femenino': 2,
+  'Femenino': 1,
+  'Masculino': 2,
+  'Otro': 3,
 };
 
 const EMPLOYMENT_SITUATION_MAP: Record<string, number> = {
@@ -28,6 +34,12 @@ const ANTIQUITY_MAP: Record<string, number> = {
 const NO_ANTIQUITY_TYPES = new Set([1, 2]); // Estudiante, Jubilado
 // Employment types that do NOT require income
 const NO_INCOME_TYPES = new Set([1]); // Estudiante
+
+export function mapDocumentTypeId(docType: string): number {
+  const id = DOCUMENT_TYPE_MAP[docType];
+  if (!id) throw new Error(`Tipo de documento no reconocido: ${docType}`);
+  return id;
+}
 
 export function mapGenderId(genero: string): number {
   const id = GENDER_MAP[genero];
@@ -56,6 +68,8 @@ export interface HoggaxQualifyRequest {
   employment_situation_id: number;
   antiquity_id?: number;
   monthly_income?: number;
+  rent?: number;
+  expenses?: number;
 }
 
 export interface HoggaxQualifyResponse {
@@ -68,7 +82,9 @@ export function buildQualifyRequest(payload: TruoraWebhookPayload): HoggaxQualif
   const employmentId = mapEmploymentSituationId(payload.employment_situation_id);
 
   const request: HoggaxQualifyRequest = {
-    document_type_id: 1, // DNI
+    document_type_id: payload.document_type_id
+      ? mapDocumentTypeId(String(payload.document_type_id))
+      : 1, // default DNI
     document_value: payload.document_value,
     gender_id: mapGenderId(payload.gender_id),
     employment_situation_id: employmentId,
@@ -82,6 +98,14 @@ export function buildQualifyRequest(payload: TruoraWebhookPayload): HoggaxQualif
   // Add monthly income if the employment type requires it
   if (!NO_INCOME_TYPES.has(employmentId) && payload.monthly_income != null) {
     request.monthly_income = payload.monthly_income;
+  }
+
+  // Add rent and expenses for capacity evaluation (RCI)
+  if (payload.rent != null) {
+    request.rent = payload.rent;
+  }
+  if (payload.expenses != null) {
+    request.expenses = payload.expenses;
   }
 
   return request;

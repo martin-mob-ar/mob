@@ -5,11 +5,11 @@ import { z } from 'zod';
 export const truoraWebhookSchema = z.object({
   phone: z.string().min(6, 'Teléfono requerido'),
   document_value: z.string().min(6, 'DNI requerido'),
-  document_type_id: z.unknown().optional(), // ignored, always DNI
+  document_type_id: z.string().optional(), // "DNI" or "Pasaporte"
   gender_id: z
     .string()
     .transform((v) => v.replace(/[()]/g, '').trim()) // normalize "Femenino)" → "Femenino"
-    .pipe(z.enum(['Masculino', 'Femenino'])),
+    .pipe(z.enum(['Masculino', 'Femenino', 'Otro'])),
   employment_situation_id: z.enum([
     'Relación de dependencia',
     'Monotributista',
