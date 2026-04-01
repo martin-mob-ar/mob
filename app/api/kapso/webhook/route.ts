@@ -100,9 +100,8 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
 
   if (users) {
     const match = users.find((u) => {
-      const codeDigits = (u.telefono_country_code || '').replace(/[^0-9]/g, '');
-      const full = codeDigits + (u.telefono || '');
-      return full === cleanPhone || u.telefono === cleanPhone;
+      const normalized = toKapsoPhone(u.telefono_country_code ?? '', u.telefono ?? '');
+      return normalized === cleanPhone;
     });
     if (match) {
       userId = match.id;
