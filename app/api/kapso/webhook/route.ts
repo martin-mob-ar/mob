@@ -563,10 +563,12 @@ export async function POST(request: Request) {
   // Legacy/meta payload: { messages: [{from: "...", ...}] }
   if (body.message && body.conversation) {
     // Kapso v2 format — single message with conversation metadata
-    const senderPhone = body.conversation.phone_number?.replace(/[^0-9]/g, '') ?? '';
+    // NOTE: conversation.phone_number is the BUSINESS number, NOT the sender.
+    // The sender's phone is in message.from.
+    const senderPhone = (body.message.from ?? '').replace(/[^0-9]/g, '');
     const msg: KapsoMessage = {
-      from: senderPhone,
       ...body.message,
+      from: senderPhone,
     };
     if (senderPhone) {
       await handleIncomingMessage(senderPhone, msg).catch(async (err) => {
