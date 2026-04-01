@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: "¿Cómo funciona la firma del contrato?",
-    a: "100% online. El interesado firma digitalmente desde su celular. Sin presencia física, sin papeles.",
+    a: "100% online. El interesado firma electrónicamente desde su celular. Sin presencia física, sin papeles.",
   },
 ];
 

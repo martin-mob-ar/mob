@@ -1,21 +1,38 @@
 "use client";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState, useCallback } from "react";
+import { Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const GARANTIA_TOOLTIP_TEXT = "Exclusivo propiedades experiencia mob e inmobiliarias asociadas";
 
 export function GarantiaTooltip({ children, className }: { children: React.ReactNode; className?: string }) {
+  const [open, setOpen] = useState(false);
+
+  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(true);
+  }, []);
+
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(false);
+  }, []);
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className={className ?? "underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help"}>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <span
+          className={className ?? "inline-flex items-center gap-1 cursor-help"}
+          onPointerEnter={handlePointerEnter}
+          onPointerLeave={handlePointerLeave}
+        >
           {children}
+          <Info className="h-3 w-3 text-muted-foreground/50 flex-shrink-0" />
         </span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-[240px]">
-        <p className="text-xs">{GARANTIA_TOOLTIP_TEXT}</p>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto max-w-[240px] px-3 py-2" side="top" sideOffset={6}>
+        <p className="text-xs text-muted-foreground">{GARANTIA_TOOLTIP_TEXT}</p>
+      </PopoverContent>
+    </Popover>
   );
 }
 

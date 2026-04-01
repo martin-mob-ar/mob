@@ -18,6 +18,7 @@ export function transformPropertyRead(row: any): Property {
     currency: row.currency || "ARS",
     type: row.tokko_id != null ? "inmobiliaria" : "dueno",
     rooms: row.room_amount || undefined,
+    dormitorios: row.suite_amount || undefined,
     surface: row.total_surface ? Number(row.total_surface) : undefined,
     bathrooms: row.bathroom_amount || undefined,
     parking: row.parking_lot_amount || undefined,
