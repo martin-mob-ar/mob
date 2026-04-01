@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const payload = parsed.data;
-    const documentVerified = payload.status === 'success';
+    const documentVerified = payload.status === 'success' || payload.status === 'approved';
 
     // --- Look up user by phone ---
     const user = await findUserByPhone(payload.phone);
