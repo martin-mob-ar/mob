@@ -27,6 +27,7 @@ export interface Property {
   currency?: string;
   type: "inmobiliaria" | "dueno";
   rooms?: number;
+  dormitorios?: number;
   surface?: number;
   bathrooms?: number;
   parking?: number;
@@ -297,10 +298,10 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
           </div>
           
           <div className="text-[10px] text-muted-foreground mt-auto pt-1.5 truncate min-w-0">
-            {property.rooms !== undefined ? (
+            {property.dormitorios !== undefined || property.rooms !== undefined ? (
               <>
-                <span>{property.rooms} dorm</span>
-                {property.bathrooms !== undefined && <span> · {property.bathrooms} baño</span>}
+                {property.dormitorios !== undefined && <span>{property.dormitorios} dorm</span>}
+                {property.bathrooms !== undefined && <span>{property.dormitorios !== undefined ? ' · ' : ''}{property.bathrooms} baño</span>}
                 {property.parking !== undefined && property.parking > 0 && <span> · {property.parking} coch</span>}
                 {property.surface !== undefined && <span> · {property.surface} m²</span>}
               </>

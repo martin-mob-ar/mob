@@ -20,6 +20,8 @@ import {
   sendInquilinoRejectionAck,
   sendInquilinoDatePrompt,
   sendInquilinoSuggestionSent,
+  sendPostVisitAdvanceAck,
+  sendPostVisitDeclineAck,
 } from '@/lib/kapso/client';
 
 const KAPSO_WEBHOOK_SECRET = process.env.KAPSO_WEBHOOK_SECRET ?? '';
@@ -29,14 +31,29 @@ const KAPSO_WEBHOOK_SECRET = process.env.KAPSO_WEBHOOK_SECRET ?? '';
 /**
  * Parses "15/04 14:00" or "15/04/2026 14:00" from free text.
  * Returns { date: 'yyyy-MM-dd', time: 'HH:mm' } or null if no match.
+ * Time is rounded to the nearest :00 or :30.
  */
 function parseDateTime(text: string): { date: string; time: string } | null {
   const match = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-]\d{2,4})?[^\d]+(\d{1,2})[:\.](\d{2})/);
   if (!match) return null;
   const [, d, m, h, min] = match;
+  let hour = parseInt(h, 10);
+  const minute = parseInt(min, 10);
+
+  // Round to nearest :00 or :30
+  let roundedMin: number;
+  if (minute < 15) {
+    roundedMin = 0;
+  } else if (minute < 45) {
+    roundedMin = 30;
+  } else {
+    roundedMin = 0;
+    hour += 1;
+  }
+
   const year = new Date().getFullYear();
   const date = `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-  const time = `${h.padStart(2, '0')}:${min}`;
+  const time = `${String(hour).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
   return { date, time };
 }
 
@@ -85,29 +102,62 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     return;
   }
 
-  // 2. Find active visita for this user (owner or requester)
-  const { data: visita } = await supabaseAdmin
+  // 2. Find active visita for this user
+  // First check for reminder/post-visit context (accepted visitas with wa_context set)
+  const visitaColumns = `
+    id, status, whatsapp_state, whatsapp_pending_proposal_id,
+    owner_user_id, requester_user_id,
+    requester_name, requester_phone, requester_country_code,
+    confirmed_date, confirmed_time,
+    owner_wa_context, requester_wa_context,
+    owner_feedback, requester_feedback,
+    properties:property_id ( address ),
+    owners:owner_user_id ( name, telefono, telefono_country_code )
+  `;
+
+  // Try context-based visita first (reminder/postvisit)
+  const { data: contextVisita } = await supabaseAdmin
     .from('visitas')
-    .select(`
-      id, status, whatsapp_state, whatsapp_pending_proposal_id,
-      owner_user_id, requester_user_id,
-      requester_name, requester_phone, requester_country_code,
-      properties:property_id ( address ),
-      owners:owner_user_id ( name, telefono, telefono_country_code )
-    `)
-    .in('status', ['pending'])
-    .or(`requester_user_id.eq.${userId},owner_user_id.eq.${userId}`)
+    .select(visitaColumns)
+    .or(`owner_user_id.eq.${userId},requester_user_id.eq.${userId}`)
+    .or('owner_wa_context.not.is.null,requester_wa_context.not.is.null')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (!visita || !visita.whatsapp_state) {
+  // Check if sender actually has context on this visita
+  let visita = contextVisita;
+  if (visita) {
+    const isOwner = visita.owner_user_id === userId;
+    const myContext = isOwner ? visita.owner_wa_context : visita.requester_wa_context;
+    if (!myContext) {
+      // This user doesn't have context, fall through to negotiation lookup
+      visita = null;
+    }
+  }
+
+  // Fall through: find pending negotiation visita
+  if (!visita) {
+    const { data: negotiationVisita } = await supabaseAdmin
+      .from('visitas')
+      .select(visitaColumns)
+      .eq('status', 'pending')
+      .not('whatsapp_state', 'is', null)
+      .or(`requester_user_id.eq.${userId},owner_user_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    visita = negotiationVisita;
+  }
+
+  if (!visita) {
     console.log(`[KapsoWebhook] No active visita for user ${userId}`);
     return;
   }
 
   const senderIsOwner = visita.owner_user_id === userId;
-  const state = visita.whatsapp_state as string;
+  const myContext = senderIsOwner ? visita.owner_wa_context : visita.requester_wa_context;
+  const state = visita.whatsapp_state as string | null;
 
   // Resolve owner/inquilino phones for messaging
   const ownerData = visita.owners as unknown as { name: string; telefono: string; telefono_country_code: string } | null;
@@ -132,6 +182,120 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
       .eq('id', pendingProposalId)
       .single();
     return data;
+  }
+
+  // ── Context: reminder ───────────────────────────────────────────────────────
+  if (myContext === 'reminder') {
+    const buttonId = msg.interactive?.button_reply?.id;
+    if (!buttonId) return; // ignore non-button messages during reminder
+
+    // Race condition: if visita was re-negotiated, ignore stale reminder
+    if (visita.status === 'pending') {
+      const contextCol = senderIsOwner ? 'owner_wa_context' : 'requester_wa_context';
+      await supabaseAdmin.from('visitas').update({ [contextCol]: null }).eq('id', visita.id);
+      console.log(`[KapsoWebhook] Stale reminder for visita ${visita.id}, clearing`);
+      return;
+    }
+
+    const { dayLabel, time } = formatVisitDateTime(visita.confirmed_date!, visita.confirmed_time!);
+
+    if (buttonId === BTN.CONFIRM) {
+      const contextCol = senderIsOwner ? 'owner_wa_context' : 'requester_wa_context';
+      await supabaseAdmin.from('visitas').update({ [contextCol]: null }).eq('id', visita.id);
+
+      if (senderIsOwner && ownerPhone) {
+        await sendTextMessage(ownerPhone, `Genial, te esperamos con el inquilino el ${dayLabel} a las ${time}!`);
+      } else if (!senderIsOwner && inquilinoPhone) {
+        await sendTextMessage(inquilinoPhone, `Perfecto, te esperamos el ${dayLabel} a las ${time}! Suerte en tu futura casa.`);
+      }
+
+    } else if (buttonId === BTN.REJECT) {
+      await supabaseAdmin
+        .from('visitas')
+        .update({
+          status: 'cancelled',
+          owner_wa_context: null,
+          requester_wa_context: null,
+        })
+        .eq('id', visita.id);
+
+      if (senderIsOwner) {
+        if (ownerPhone) await sendTextMessage(ownerPhone, 'Ok, la visita fue cancelada. Le avisamos al inquilino.');
+        if (inquilinoPhone) await sendTextMessage(inquilinoPhone, `Lamentablemente el propietario canceló la visita del ${dayLabel} a las ${time}. Te invitamos a seguir buscando en mob.ar`);
+      } else {
+        if (inquilinoPhone) await sendTextMessage(inquilinoPhone, 'Ok, la visita fue cancelada. Le avisamos al propietario.');
+        if (ownerPhone) await sendTextMessage(ownerPhone, `Lamentablemente el inquilino canceló la visita del ${dayLabel} a las ${time}. Cuando haya otro interesado te contactaremos!`);
+      }
+
+    } else if (buttonId === BTN.SUGGEST) {
+      const wsState = senderIsOwner ? 'owner_collecting_datetime' : 'requester_collecting_datetime';
+      await supabaseAdmin
+        .from('visitas')
+        .update({
+          status: 'pending',
+          whatsapp_state: wsState,
+          confirmed_date: null,
+          confirmed_time: null,
+          owner_wa_context: null,
+          requester_wa_context: null,
+          // Reset reminder flags so new date gets fresh reminders
+          reminder_24h_sent_at: null,
+          reminder_2h_sent_at: null,
+        })
+        .eq('id', visita.id);
+
+      if (senderIsOwner && ownerPhone) {
+        await sendOwnerDatePrompt(ownerPhone);
+      } else if (!senderIsOwner && inquilinoPhone) {
+        await sendInquilinoDatePrompt(inquilinoPhone);
+      }
+    }
+    return;
+  }
+
+  // ── Context: postvisit ────────────────────────────────────────────────────
+  if (myContext === 'postvisit') {
+    const buttonId = msg.interactive?.button_reply?.id;
+    if (!buttonId) return;
+
+    const feedbackCol = senderIsOwner ? 'owner_feedback' : 'requester_feedback';
+    const contextCol = senderIsOwner ? 'owner_wa_context' : 'requester_wa_context';
+    const senderPhone = senderIsOwner ? ownerPhone : inquilinoPhone;
+
+    if (buttonId === BTN.ADVANCE) {
+      await supabaseAdmin
+        .from('visitas')
+        .update({ [feedbackCol]: 'advance', [contextCol]: null })
+        .eq('id', visita.id);
+      if (senderPhone) await sendPostVisitAdvanceAck(senderPhone);
+    } else if (buttonId === BTN.DECLINE) {
+      await supabaseAdmin
+        .from('visitas')
+        .update({ [feedbackCol]: 'decline', [contextCol]: null })
+        .eq('id', visita.id);
+      if (senderPhone) await sendPostVisitDeclineAck(senderPhone);
+    }
+
+    // Check if both feedbacks are in → mark completed
+    const { data: updated } = await supabaseAdmin
+      .from('visitas')
+      .select('owner_feedback, requester_feedback')
+      .eq('id', visita.id)
+      .single();
+
+    if (updated?.owner_feedback && updated?.requester_feedback) {
+      await supabaseAdmin
+        .from('visitas')
+        .update({ status: 'completed' })
+        .eq('id', visita.id);
+    }
+    return;
+  }
+
+  // ── Negotiation state machine (status='pending') ──────────────────────────
+  if (!state) {
+    console.log(`[KapsoWebhook] No active state for user ${userId} on visita ${visita.id}`);
+    return;
   }
 
   // ── State: owner_responding ──────────────────────────────────────────────────

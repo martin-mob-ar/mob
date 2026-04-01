@@ -5,7 +5,6 @@ import { CalendarCheck, ShieldCheck, Globe } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import HeroCards from "@/components/HeroCards";
 import HeroBadges from "@/components/HeroBadges";
-import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 
 /** Hardcoded mobile hero card — purely decorative, not clickable. */
 const MobileHeroCard = () => {
@@ -95,7 +94,7 @@ const HeroSection = () => {
                       style={{ animationDuration: "3.2s" }}
                     >
                       <ShieldCheck className="h-3.5 w-3.5 text-primary" strokeWidth={1.8} />
-                      <GarantiaTooltip>Garantía 50% off</GarantiaTooltip>
+                      Garantía 50% off
                     </div>
                   </div>
 

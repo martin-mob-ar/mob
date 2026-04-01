@@ -1015,7 +1015,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 </div>
                 <div>
                   <p className="font-semibold text-base text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
                 </div>
               </div>
             </div>
@@ -1422,7 +1422,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-xs text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
-                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
                   </div>
                 </div>
                 

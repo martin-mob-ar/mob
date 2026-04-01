@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { MessageCircle, Search, PenLine } from "lucide-react";
+import { MessageCircle, Search, PenLine, Home } from "lucide-react";
 import Header from "@/components/Header";
 import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import {
@@ -163,13 +163,23 @@ export default function VerificatePage() {
                 </Button>
               )}
 
-              <Button
-                onClick={() => router.push("/buscar")}
-                className="w-full h-12 rounded-xl text-sm font-semibold"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Seguir explorando propiedades
-              </Button>
+              {user?.accountType === 2 ? (
+                <Button
+                  onClick={() => router.push("/gestion-inmobiliaria/propiedades")}
+                  className="w-full h-12 rounded-xl text-sm font-semibold"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Ir a mis propiedades
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => router.push("/buscar")}
+                  className="w-full h-12 rounded-xl text-sm font-semibold"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Seguir explorando propiedades
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -187,17 +197,27 @@ export default function VerificatePage() {
             <h1 className="font-display text-3xl font-bold text-foreground">
               Verificate como {user?.accountType === 2 ? 'propietario verificado' : 'inquilino calificado'}
             </h1>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Completá tu verificación para poder{" "}
-              <span className="font-semibold text-foreground">
-                agendar tu visita
-              </span>{" "}
-              y acceder a una{" "}
-              <GarantiaTooltip className="font-semibold text-foreground underline decoration-dotted decoration-current/40 underline-offset-2 cursor-help">
-                garantía con 50% de descuento
-              </GarantiaTooltip>
-              .
-            </p>
+            {user?.accountType === 2 ? (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Completá tu verificación para que tus inquilinos puedan{" "}
+                <span className="font-semibold text-foreground">
+                  confiar en vos
+                </span>{" "}
+                y agilizar el proceso de alquiler.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Completá tu verificación para poder{" "}
+                <span className="font-semibold text-foreground">
+                  agendar tu visita
+                </span>{" "}
+                y acceder a una{" "}
+                <GarantiaTooltip className="font-semibold text-foreground cursor-help">
+                  garantía con 50% de descuento
+                </GarantiaTooltip>
+                .
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               Toma 2 minutos, te mandamos un WhatsApp, respondés tus datos y
               listo!

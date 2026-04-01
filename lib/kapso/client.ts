@@ -7,6 +7,8 @@ export const BTN = {
   CONFIRM: 'confirm_visita',
   SUGGEST: 'suggest_date',
   REJECT: 'reject_visita',
+  ADVANCE: 'advance_visita',
+  DECLINE: 'decline_visita',
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -261,4 +263,104 @@ export async function sendInquilinoDatePrompt(inquilinoPhone: string): Promise<v
 /** Inquilino: their suggestion was forwarded to owner */
 export async function sendInquilinoSuggestionSent(inquilinoPhone: string): Promise<void> {
   await sendTextMessage(inquilinoPhone, 'Ok, enviamos tu propuesta al propietario, te confirmaremos');
+}
+
+// ─── Reminder & post-visit functions ─────────────────────────────────────────
+
+/**
+ * Send a template with 2 quick-reply buttons (Quiero avanzar / No quiero avanzar).
+ */
+async function sendPostVisitTemplate(
+  to: string,
+  templateName: string,
+  bodyParams: string[],
+): Promise<void> {
+  const components: object[] = [];
+
+  if (bodyParams.length > 0) {
+    components.push({
+      type: 'body',
+      parameters: bodyParams.map((v) => ({ type: 'text', text: v })),
+    });
+  }
+
+  components.push(
+    { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: BTN.ADVANCE }] },
+    { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: BTN.DECLINE }] },
+  );
+
+  await sendWhatsApp(to, {
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: 'es_AR' },
+      components,
+    },
+  });
+}
+
+/** Owner: reminder before visit */
+export async function sendOwnerReminder(params: {
+  ownerPhone: string;
+  ownerName: string;
+  address: string;
+  dayLabel: string;
+  time: string;
+}): Promise<void> {
+  await sendTemplateWithButtons(
+    params.ownerPhone,
+    'mob_recordatorio_visita_owner',
+    [params.ownerName, params.address, params.dayLabel, params.time],
+  );
+}
+
+/** Inquilino: reminder before visit */
+export async function sendInquilinoReminder(params: {
+  inquilinoPhone: string;
+  inquilinoName: string;
+  address: string;
+  dayLabel: string;
+  time: string;
+}): Promise<void> {
+  await sendTemplateWithButtons(
+    params.inquilinoPhone,
+    'mob_recordatorio_visita_inquilino',
+    [params.inquilinoName, params.address, params.dayLabel, params.time],
+  );
+}
+
+/** Owner: post-visit feedback */
+export async function sendOwnerPostVisitFeedback(params: {
+  ownerPhone: string;
+  ownerName: string;
+  address: string;
+}): Promise<void> {
+  await sendPostVisitTemplate(
+    params.ownerPhone,
+    'mob_postvisita_feedback',
+    [params.ownerName, params.address],
+  );
+}
+
+/** Inquilino: post-visit feedback */
+export async function sendInquilinoPostVisitFeedback(params: {
+  inquilinoPhone: string;
+  inquilinoName: string;
+  address: string;
+}): Promise<void> {
+  await sendPostVisitTemplate(
+    params.inquilinoPhone,
+    'mob_postvisita_feedback',
+    [params.inquilinoName, params.address],
+  );
+}
+
+/** Post-visit: user wants to advance — ack */
+export async function sendPostVisitAdvanceAck(phone: string): Promise<void> {
+  await sendTextMessage(phone, 'Gracias por tu respuesta! Te contactaremos pronto para coordinar los próximos pasos.');
+}
+
+/** Post-visit: user doesn't want to advance — ack */
+export async function sendPostVisitDeclineAck(phone: string): Promise<void> {
+  await sendTextMessage(phone, 'Gracias por tu respuesta. Te invitamos a seguir buscando propiedades en mob.ar');
 }

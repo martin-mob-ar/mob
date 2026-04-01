@@ -55,13 +55,17 @@ function parseVisitHourEntry(entry: string) {
   return { dayId: match[1], start: match[2], end: match[3] };
 }
 
-/** Generate 1-hour increment time slots between start and end (exclusive of end) */
+/** Generate 30-minute increment time slots between start and end (exclusive of end) */
 function generateTimeSlots(start: string, end: string): string[] {
-  const [startH] = start.split(":").map(Number);
-  const [endH] = end.split(":").map(Number);
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
   const slots: string[] = [];
-  for (let h = startH; h < endH; h++) {
-    slots.push(`${h.toString().padStart(2, "0")}:00`);
+  for (let m = startMinutes; m < endMinutes; m += 30) {
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    slots.push(`${h.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`);
   }
   return slots;
 }

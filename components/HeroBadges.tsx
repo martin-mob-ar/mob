@@ -1,7 +1,9 @@
 "use client";
 
-import { Globe, ShieldCheck, BadgeCheck, CalendarCheck, FileSignature } from "lucide-react";
-import { GarantiaTooltip } from "@/components/GarantiaTooltip";
+import { useState } from "react";
+import { Globe, ShieldCheck, BadgeCheck, CalendarCheck, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { GARANTIA_TOOLTIP_TEXT } from "@/components/GarantiaTooltip";
 
 /**
  * Simple pill badges like inspo hero/3.png — icon + single text.
@@ -40,6 +42,8 @@ const badges = [
 ];
 
 const HeroBadges = () => {
+  const [garantiaOpen, setGarantiaOpen] = useState(false);
+
   return (
     <>
       {/* Desktop: Floating pill badges */}
@@ -61,7 +65,7 @@ const HeroBadges = () => {
               }}
             >
               <badge.icon className="h-4 w-4 text-primary shrink-0" strokeWidth={1.8} />
-              {badge.text === "Garantía 50% off" ? <GarantiaTooltip>{badge.text}</GarantiaTooltip> : badge.text}
+              {badge.text}
             </div>
           </div>
         ))}
@@ -69,15 +73,33 @@ const HeroBadges = () => {
 
       {/* Mobile: Horizontal wrap row */}
       <div className="md:hidden flex gap-2 flex-wrap justify-center">
-        {badges.map((badge) => (
-          <div
-            key={badge.text}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background border border-border/60 shadow-sm text-xs font-medium text-foreground whitespace-nowrap"
-          >
-            <badge.icon className="h-3.5 w-3.5 text-primary" />
-            {badge.text === "Garantía 50% off" ? <GarantiaTooltip>{badge.text}</GarantiaTooltip> : badge.text}
-          </div>
-        ))}
+        {badges.map((badge) =>
+          badge.text === "Garantía 50% off" ? (
+            <Popover key={badge.text} open={garantiaOpen} onOpenChange={setGarantiaOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background border border-border/60 shadow-sm text-xs font-medium text-foreground whitespace-nowrap"
+                >
+                  <badge.icon className="h-3.5 w-3.5 text-primary" />
+                  {badge.text}
+                  <Info className="h-3 w-3 text-muted-foreground/50 flex-shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto max-w-[240px] px-3 py-2" side="bottom">
+                <p className="text-xs text-muted-foreground">{GARANTIA_TOOLTIP_TEXT}</p>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <div
+              key={badge.text}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background border border-border/60 shadow-sm text-xs font-medium text-foreground whitespace-nowrap"
+            >
+              <badge.icon className="h-3.5 w-3.5 text-primary" />
+              {badge.text}
+            </div>
+          )
+        )}
       </div>
     </>
   );
