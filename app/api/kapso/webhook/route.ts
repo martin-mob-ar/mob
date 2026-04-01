@@ -37,16 +37,19 @@ function roundToSlot(hour: number, minute: number): { hour: number; minute: numb
   return { hour: hour + 1, minute: 0 };
 }
 
+type ParseResult = { date: string; time: string } | 'bad_minutes' | null;
+
 /** Fast regex pass for exact formats like "15/04 14:00" or "15/04/2026 14:00". */
-function parseDateTimeRegex(text: string): { date: string; time: string } | null {
+function parseDateTimeRegex(text: string): ParseResult {
   const match = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-]\d{2,4})?[^\d]+(\d{1,2})[:\.](\d{2})/);
   if (!match) return null;
   const [, d, m, h, min] = match;
-  const { hour, minute } = roundToSlot(parseInt(h, 10), parseInt(min, 10));
+  const rawMinute = parseInt(min, 10);
+  if (rawMinute !== 0 && rawMinute !== 30) return 'bad_minutes';
   const year = new Date().getFullYear();
   return {
     date: `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`,
-    time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    time: `${String(parseInt(h, 10)).padStart(2, '0')}:${String(rawMinute).padStart(2, '0')}`,
   };
 }
 
@@ -102,10 +105,12 @@ Si sí contiene fecha y hora, respondé SOLO con JSON (sin markdown):
 
 /**
  * Parse date/time from user text: tries fast regex first, then AI fallback.
- * Returns { date: 'yyyy-MM-dd', time: 'HH:mm' } or null.
+ * Returns { date, time }, 'bad_minutes' (user typed non-:00/:30), or null.
  */
-async function parseDateTime(text: string): Promise<{ date: string; time: string } | null> {
-  return parseDateTimeRegex(text) ?? (await parseDateTimeAI(text));
+async function parseDateTime(text: string): Promise<ParseResult> {
+  const regex = parseDateTimeRegex(text);
+  if (regex) return regex; // includes 'bad_minutes'
+  return (await parseDateTimeAI(text));
 }
 
 // ─── Incoming message types ───────────────────────────────────────────────────
@@ -425,6 +430,12 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     if (msg.type !== 'text' || !msg.text?.body) return;
 
     const parsed = await parseDateTime(msg.text.body);
+    if (parsed === 'bad_minutes') {
+      if (ownerPhone) {
+        await sendTextMessage(ownerPhone, 'Solo se pueden agendar visitas en punto (:00) o y media (:30). Probá de nuevo, por ejemplo: 15/04 14:00 o 15/04 14:30.');
+      }
+      return;
+    }
     if (!parsed) {
       if (ownerPhone) {
         await sendTextMessage(ownerPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30, el viernes a la tarde. Solo horarios en punto o y media.');
@@ -527,6 +538,12 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     if (msg.type !== 'text' || !msg.text?.body) return;
 
     const parsed = await parseDateTime(msg.text.body);
+    if (parsed === 'bad_minutes') {
+      if (inquilinoPhone) {
+        await sendTextMessage(inquilinoPhone, 'Solo se pueden agendar visitas en punto (:00) o y media (:30). Probá de nuevo, por ejemplo: 15/04 14:00 o 15/04 14:30.');
+      }
+      return;
+    }
     if (!parsed) {
       if (inquilinoPhone) {
         await sendTextMessage(inquilinoPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30, el viernes a la tarde. Solo horarios en punto o y media.');
