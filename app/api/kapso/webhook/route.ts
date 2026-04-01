@@ -66,17 +66,29 @@ interface KapsoButtonReply {
 
 interface KapsoMessage {
   from: string;
-  type: 'text' | 'interactive';
+  type: 'text' | 'interactive' | 'button';
   text?: { body: string };
   interactive?: {
     type: 'button_reply';
     button_reply: KapsoButtonReply;
+  };
+  button?: {
+    text: string;
+    payload: string;
   };
 }
 
 // ─── State machine ────────────────────────────────────────────────────────────
 
 async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Promise<void> {
+  // Normalize template quick_reply buttons (type: "button") into interactive format
+  if (msg.type === 'button' && msg.button?.payload) {
+    msg.type = 'interactive';
+    msg.interactive = {
+      type: 'button_reply',
+      button_reply: { id: msg.button.payload, title: msg.button.text },
+    };
+  }
   // 1. Look up user by phone
   const cleanPhone = senderPhone.replace(/[^0-9]/g, '');
   const { data: users } = await supabaseAdmin
