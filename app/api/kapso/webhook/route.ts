@@ -90,7 +90,13 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     };
   }
   // 1. Look up user by phone
-  const cleanPhone = senderPhone.replace(/[^0-9]/g, '');
+  // Kapso sends Argentine numbers WITHOUT the mobile '9' (e.g. 541140462010),
+  // so we strip the '9' from both sides to normalise comparison.
+  const rawPhone = senderPhone.replace(/[^0-9]/g, '');
+  const cleanPhone = rawPhone.startsWith('549') && rawPhone.length > 10
+    ? '54' + rawPhone.slice(3)
+    : rawPhone;
+
   const { data: users } = await supabaseAdmin
     .from('users')
     .select('id, name, telefono, telefono_country_code')
@@ -100,8 +106,9 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
 
   if (users) {
     const match = users.find((u) => {
-      const normalized = toKapsoPhone(u.telefono_country_code ?? '', u.telefono ?? '');
-      return normalized === cleanPhone;
+      const codeDigits = (u.telefono_country_code || '').replace(/[^0-9]/g, '');
+      const full = codeDigits + (u.telefono || '');
+      return full === cleanPhone;
     });
     if (match) {
       userId = match.id;
