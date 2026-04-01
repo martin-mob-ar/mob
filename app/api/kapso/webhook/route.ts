@@ -535,19 +535,39 @@ export async function POST(request: Request) {
     }
   }
 
-  let body: { messages?: KapsoMessage[] };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any;
   try {
     body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const messages = body.messages ?? [];
-  for (const msg of messages) {
-    if (!msg.from) continue;
-    await handleIncomingMessage(msg.from, msg).catch((err) =>
-      console.error(`[KapsoWebhook] Error handling message from ${msg.from}:`, err),
-    );
+  // Kapso v2 payload: { message: {...}, conversation: { phone_number: "..." }, ... }
+  // Legacy/meta payload: { messages: [{from: "...", ...}] }
+  if (body.message && body.conversation) {
+    // Kapso v2 format — single message with conversation metadata
+    const senderPhone = body.conversation.phone_number?.replace(/[^0-9]/g, '') ?? '';
+    const msg: KapsoMessage = {
+      from: senderPhone,
+      ...body.message,
+    };
+    if (senderPhone) {
+      await handleIncomingMessage(senderPhone, msg).catch((err) =>
+        console.error(`[KapsoWebhook] Error handling message from ${senderPhone}:`, err),
+      );
+    }
+  } else if (body.messages) {
+    // Legacy format — array of messages
+    const messages: KapsoMessage[] = body.messages;
+    for (const msg of messages) {
+      if (!msg.from) continue;
+      await handleIncomingMessage(msg.from, msg).catch((err) =>
+        console.error(`[KapsoWebhook] Error handling message from ${msg.from}:`, err),
+      );
+    }
+  } else {
+    console.log('[KapsoWebhook] Unknown payload format:', JSON.stringify(body).slice(0, 500));
   }
 
   return NextResponse.json({ ok: true });
