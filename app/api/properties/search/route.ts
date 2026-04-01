@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge"); // max property age (0 = a estrenar)
   const priceType = searchParams.get("priceType") || "total"; // "total" | "alquiler"
   const ownerType = searchParams.get("ownerType"); // "dueno" | "inmobiliaria"
+  const tier = searchParams.get("tier"); // "free" = inmobiliarias + plan basico
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
@@ -189,8 +190,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Filter by tier (free = inmobiliarias + plan basico)
+  if (tier === "free") {
+    // Inmobiliarias (account_type 3,4) OR plan basico properties
+    query = query.or("owner_account_type.in.(3,4),mob_plan.eq.basico");
+  }
   // Filter by owner type (tipo de dueño)
-  if (ownerType === "dueno") {
+  else if (ownerType === "dueno") {
     // Dueño directo: account_type 1 (inquilino) and 2 (dueño directo)
     query = query.in("owner_account_type", [1, 2]);
   } else if (ownerType === "inmobiliaria") {
