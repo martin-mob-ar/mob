@@ -543,6 +543,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // ── DEBUG: log raw payload to DB for troubleshooting ──
+  const debugLog = async (branch: string, senderPhone?: string, userId?: string, visitaId?: number, error?: string) => {
+    try {
+      await supabaseAdmin.from('webhook_debug_log').insert({
+        raw_payload: body,
+        matched_branch: branch,
+        sender_phone: senderPhone ?? null,
+        user_id: userId ?? null,
+        visita_id: visitaId ?? null,
+        error: error ?? null,
+      });
+    } catch (e) {
+      console.error('[KapsoWebhook] Debug log insert failed:', e);
+    }
+  };
+
   // Kapso v2 payload: { message: {...}, conversation: { phone_number: "..." }, ... }
   // Legacy/meta payload: { messages: [{from: "...", ...}] }
   if (body.message && body.conversation) {
@@ -553,20 +569,29 @@ export async function POST(request: Request) {
       ...body.message,
     };
     if (senderPhone) {
-      await handleIncomingMessage(senderPhone, msg).catch((err) =>
-        console.error(`[KapsoWebhook] Error handling message from ${senderPhone}:`, err),
-      );
+      await handleIncomingMessage(senderPhone, msg).catch(async (err) => {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await debugLog('v2-error', senderPhone, undefined, undefined, errMsg);
+        console.error(`[KapsoWebhook] Error handling message from ${senderPhone}:`, err);
+      });
+      await debugLog('v2', senderPhone);
+    } else {
+      await debugLog('v2-no-phone');
     }
   } else if (body.messages) {
     // Legacy format — array of messages
     const messages: KapsoMessage[] = body.messages;
     for (const msg of messages) {
       if (!msg.from) continue;
-      await handleIncomingMessage(msg.from, msg).catch((err) =>
-        console.error(`[KapsoWebhook] Error handling message from ${msg.from}:`, err),
-      );
+      await handleIncomingMessage(msg.from, msg).catch(async (err) => {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await debugLog('legacy-error', msg.from, undefined, undefined, errMsg);
+        console.error(`[KapsoWebhook] Error handling message from ${msg.from}:`, err);
+      });
+      await debugLog('legacy', msg.from);
     }
   } else {
+    await debugLog('unknown');
     console.log('[KapsoWebhook] Unknown payload format:', JSON.stringify(body).slice(0, 500));
   }
 
