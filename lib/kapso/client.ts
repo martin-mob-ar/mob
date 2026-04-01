@@ -52,7 +52,7 @@ async function sendWhatsApp(to: string, payload: object): Promise<void> {
       'Content-Type': 'application/json',
       'X-API-Key': KEY,
     },
-    body: JSON.stringify({ to, ...payload }),
+    body: JSON.stringify({ messaging_product: 'whatsapp', to, ...payload }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
