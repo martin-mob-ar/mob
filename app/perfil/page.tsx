@@ -24,7 +24,7 @@ export default async function PerfilPage() {
   const [profileResult, publicUserResult] = await Promise.all([
     supabaseAdmin
       .from("users")
-      .select("name, email, telefono, telefono_country_code, dni, account_type, tokko_api_hash, tokko_api_key_enc, sync_status, tokko_last_sync_at, last_verification_date")
+      .select("name, email, telefono, telefono_country_code, dni, account_type, tokko_api_hash, tokko_api_key_enc, sync_status, tokko_last_sync_at, hoggax_last_verification_date, truora_last_verification_date")
       .eq("auth_id", authUser.id)
       .single(),
     supabaseAdmin
@@ -242,7 +242,7 @@ export default async function PerfilPage() {
         tokkoLastSyncAt={profile.tokko_last_sync_at ?? null}
         tokkoKeyPreview={tokkoKeyPreview}
         tokkoApiHash={profile.tokko_api_hash ?? null}
-        lastVerificationDate={profile.last_verification_date ?? null}
+        lastVerificationDate={profile.truora_last_verification_date ?? null}
         authId={authUser.id}
         authEmail={authUser.email!}
       />

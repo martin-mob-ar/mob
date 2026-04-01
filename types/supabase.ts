@@ -1186,8 +1186,10 @@ export type Database = {
           created_at: string
           dni: string | null
           email: string
+          hoggax_approved: boolean | null
+          hoggax_last_verification_date: string | null
+          hoggax_max_rent_plus_expenses: number | null
           id: string
-          last_verification_date: string | null
           logo: string | null
           name: string | null
           sync_message: string | null
@@ -1202,6 +1204,8 @@ export type Database = {
           tokko_api_key_enc: string | null
           tokko_email: string | null
           tokko_last_sync_at: string | null
+          truora_document_verified: boolean | null
+          truora_last_verification_date: string | null
           updated_at: string
         }
         Insert: {
@@ -1210,8 +1214,10 @@ export type Database = {
           created_at?: string
           dni?: string | null
           email: string
+          hoggax_approved?: boolean | null
+          hoggax_last_verification_date?: string | null
+          hoggax_max_rent_plus_expenses?: number | null
           id?: string
-          last_verification_date?: string | null
           logo?: string | null
           name?: string | null
           sync_message?: string | null
@@ -1226,6 +1232,8 @@ export type Database = {
           tokko_api_key_enc?: string | null
           tokko_email?: string | null
           tokko_last_sync_at?: string | null
+          truora_document_verified?: boolean | null
+          truora_last_verification_date?: string | null
           updated_at?: string
         }
         Update: {
@@ -1234,8 +1242,10 @@ export type Database = {
           created_at?: string
           dni?: string | null
           email?: string
+          hoggax_approved?: boolean | null
+          hoggax_last_verification_date?: string | null
+          hoggax_max_rent_plus_expenses?: number | null
           id?: string
-          last_verification_date?: string | null
           logo?: string | null
           name?: string | null
           sync_message?: string | null
@@ -1250,6 +1260,8 @@ export type Database = {
           tokko_api_key_enc?: string | null
           tokko_email?: string | null
           tokko_last_sync_at?: string | null
+          truora_document_verified?: boolean | null
+          truora_last_verification_date?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1258,6 +1270,285 @@ export type Database = {
             columns: ["account_type"]
             isOneToOne: false
             referencedRelation: "account_type"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verificaciones_hoggax: {
+        Row: {
+          antiguedad: string | null
+          case: number | null
+          created_at: string
+          dni: string | null
+          flow_name: string
+          genero: string | null
+          hoggax_approved: boolean | null
+          hoggax_max_rent_plus_expenses: number | null
+          hoggax_raw_response: Json | null
+          id: string
+          ingresos_mensuales: number | null
+          message: string | null
+          property_rent_plus_expenses: number | null
+          reason_code: string | null
+          situacion_laboral: string | null
+          user_id: string
+        }
+        Insert: {
+          antiguedad?: string | null
+          case?: number | null
+          created_at?: string
+          dni?: string | null
+          flow_name: string
+          genero?: string | null
+          hoggax_approved?: boolean | null
+          hoggax_max_rent_plus_expenses?: number | null
+          hoggax_raw_response?: Json | null
+          id?: string
+          ingresos_mensuales?: number | null
+          message?: string | null
+          property_rent_plus_expenses?: number | null
+          reason_code?: string | null
+          situacion_laboral?: string | null
+          user_id: string
+        }
+        Update: {
+          antiguedad?: string | null
+          case?: number | null
+          created_at?: string
+          dni?: string | null
+          flow_name?: string
+          genero?: string | null
+          hoggax_approved?: boolean | null
+          hoggax_max_rent_plus_expenses?: number | null
+          hoggax_raw_response?: Json | null
+          id?: string
+          ingresos_mensuales?: number | null
+          message?: string | null
+          property_rent_plus_expenses?: number | null
+          reason_code?: string | null
+          situacion_laboral?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verificaciones_hoggax_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verificaciones_truora: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          document_number: string | null
+          document_type: string | null
+          flow_name: string
+          gender: string | null
+          id: string
+          last_name: string | null
+          name: string | null
+          raw_response: Json | null
+          status: string | null
+          truora_document_verified: boolean | null
+          user_id: string
+          validation_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          flow_name: string
+          gender?: string | null
+          id?: string
+          last_name?: string | null
+          name?: string | null
+          raw_response?: Json | null
+          status?: string | null
+          truora_document_verified?: boolean | null
+          user_id: string
+          validation_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          flow_name?: string
+          gender?: string | null
+          id?: string
+          last_name?: string | null
+          name?: string | null
+          raw_response?: Json | null
+          status?: string | null
+          truora_document_verified?: boolean | null
+          user_id?: string
+          validation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verificaciones_truora_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visita_proposals: {
+        Row: {
+          created_at: string
+          id: number
+          message: string | null
+          proposed_by: string
+          proposed_date: string
+          proposed_time: string
+          status: string
+          visita_id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          message?: string | null
+          proposed_by: string
+          proposed_date: string
+          proposed_time: string
+          status?: string
+          visita_id: number
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          message?: string | null
+          proposed_by?: string
+          proposed_date?: string
+          proposed_time?: string
+          status?: string
+          visita_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visita_proposals_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitas: {
+        Row: {
+          confirmed_date: string | null
+          confirmed_time: string | null
+          created_at: string
+          id: number
+          operacion_id: number | null
+          owner_feedback: string | null
+          owner_user_id: string
+          owner_wa_context: string | null
+          postvisit_sent_at: string | null
+          property_id: number
+          reminder_24h_sent_at: string | null
+          reminder_2h_sent_at: string | null
+          requester_country_code: string | null
+          requester_email: string
+          requester_feedback: string | null
+          requester_name: string
+          requester_phone: string | null
+          requester_user_id: string | null
+          requester_wa_context: string | null
+          status: string
+          updated_at: string
+          whatsapp_pending_proposal_id: number | null
+          whatsapp_state: string | null
+        }
+        Insert: {
+          confirmed_date?: string | null
+          confirmed_time?: string | null
+          created_at?: string
+          id?: never
+          operacion_id?: number | null
+          owner_feedback?: string | null
+          owner_user_id: string
+          owner_wa_context?: string | null
+          postvisit_sent_at?: string | null
+          property_id: number
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
+          requester_country_code?: string | null
+          requester_email: string
+          requester_feedback?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          requester_user_id?: string | null
+          requester_wa_context?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp_pending_proposal_id?: number | null
+          whatsapp_state?: string | null
+        }
+        Update: {
+          confirmed_date?: string | null
+          confirmed_time?: string | null
+          created_at?: string
+          id?: never
+          operacion_id?: number | null
+          owner_feedback?: string | null
+          owner_user_id?: string
+          owner_wa_context?: string | null
+          postvisit_sent_at?: string | null
+          property_id?: number
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
+          requester_country_code?: string | null
+          requester_email?: string
+          requester_feedback?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          requester_user_id?: string | null
+          requester_wa_context?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp_pending_proposal_id?: number | null
+          whatsapp_state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_operacion_id_fkey"
+            columns: ["operacion_id"]
+            isOneToOne: false
+            referencedRelation: "operaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_requester_user_id_fkey"
+            columns: ["requester_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_whatsapp_pending_proposal_id_fkey"
+            columns: ["whatsapp_pending_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "visita_proposals"
             referencedColumns: ["id"]
           },
         ]

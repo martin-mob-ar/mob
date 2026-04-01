@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraVisitaConfirmedSchema } from '@/lib/validations/truora-visita-confirmed';
 import { createVisita } from '@/lib/visitas/create';
+import { findUserByPhone } from '@/lib/truora/find-user-by-phone';
 
 export async function POST(request: Request) {
   try {
@@ -16,39 +16,10 @@ export async function POST(request: Request) {
 
     const { phone, property_id, visit_date, visit_time } = parsed.data;
 
-    // Look up user by phone (strip to digits, match country_code + telefono)
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    // Look up user by phone
+    const user = await findUserByPhone(phone);
 
-    const { data: users } = await supabaseAdmin
-      .from('users')
-      .select('id, name, email, telefono, telefono_country_code')
-      .not('telefono', 'is', null);
-
-    let userId: string | null = null;
-    let userName: string | null = null;
-    let userEmail: string | null = null;
-    let userPhone: string | null = null;
-    let userCountryCode: string | null = null;
-
-    if (users) {
-      const match = users.find((u) => {
-        const codeDigits = (u.telefono_country_code || '').replace(/[^0-9]/g, '');
-        const phone = u.telefono || '';
-        const full = codeDigits + phone;
-        // Also try with '9' inserted after country code (Argentina WhatsApp mobile prefix)
-        const fullWithMobile9 = codeDigits + '9' + phone;
-        return full === cleanPhone || fullWithMobile9 === cleanPhone || phone === cleanPhone;
-      });
-      if (match) {
-        userId = match.id;
-        userName = match.name;
-        userEmail = match.email;
-        userPhone = match.telefono;
-        userCountryCode = match.telefono_country_code;
-      }
-    }
-
-    if (!userId) {
+    if (!user) {
       console.error(`[VisitaConfirmed] User not found for phone: ${phone}`);
       // Return success=false with 200 so Truora doesn't break
       return NextResponse.json({ success: false, error: 'Usuario no encontrado' });
@@ -65,11 +36,11 @@ export async function POST(request: Request) {
       propertyId,
       proposedDate: visit_date,
       proposedTime: visit_time,
-      requesterUserId: userId,
-      requesterName: userName ?? '',
-      requesterEmail: userEmail,
-      requesterPhone: userPhone,
-      requesterCountryCode: userCountryCode ?? undefined,
+      requesterUserId: user.id,
+      requesterName: user.name ?? '',
+      requesterEmail: user.email,
+      requesterPhone: user.telefono,
+      requesterCountryCode: user.telefono_country_code ?? undefined,
     });
 
     return NextResponse.json({ success: true, visitaId: result.visitaId });

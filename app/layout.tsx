@@ -41,7 +41,7 @@ export default async function RootLayout({
   if (authUser) {
     const { data: publicUser } = await supabaseAdmin
       .from("users")
-      .select("id, name, telefono, telefono_country_code, last_verification_date, account_type")
+      .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type")
       .eq("auth_id", authUser.id)
       .maybeSingle();
 
@@ -60,7 +60,7 @@ export default async function RootLayout({
         : (authUser.user_metadata?.isOwner ?? false),
       accountType: publicUser?.account_type ?? null,
       publicUserId: publicUser?.id ?? null,
-      isVerified: !!publicUser?.last_verification_date,
+      isVerified: !!publicUser?.hoggax_last_verification_date && !!publicUser?.truora_last_verification_date,
     };
   }
 

@@ -64,15 +64,15 @@ export async function POST(request: Request) {
       .eq('id', property.user_id)
       .single();
 
-    // Determine if the submitter (inquilino) is verified
+    // Determine if the submitter (inquilino) is verified (requires both Hoggax + Truora)
     let inquilinoVerified = false;
     if (submitterUserId) {
       const { data: submitter } = await supabaseAdmin
         .from('users')
-        .select('last_verification_date')
+        .select('hoggax_last_verification_date, truora_last_verification_date')
         .eq('id', submitterUserId)
         .single();
-      inquilinoVerified = !!submitter?.last_verification_date;
+      inquilinoVerified = !!submitter?.hoggax_last_verification_date && !!submitter?.truora_last_verification_date;
     }
 
     // Get mob plan from the property's latest operacion
