@@ -543,32 +543,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // ── DEBUG: log to DB for troubleshooting (temporary) ──
+  const debugLog = async (branch: string, senderPhone?: string, error?: string) => {
+    try {
+      await supabaseAdmin.from('webhook_debug_log').insert({
+        raw_payload: body,
+        matched_branch: branch,
+        sender_phone: senderPhone ?? null,
+        error: error ?? null,
+      });
+    } catch { /* ignore debug failures */ }
+  };
+
   // Kapso v2 payload: { message: {...}, conversation: { phone_number: "..." }, ... }
   // Legacy/meta payload: { messages: [{from: "...", ...}] }
   if (body.message && body.conversation) {
     // Kapso v2 format — single message with conversation metadata
-    // NOTE: conversation.phone_number is the BUSINESS number, NOT the sender.
-    // The sender's phone is in message.from.
-    const senderPhone = (body.message.from ?? '').replace(/[^0-9]/g, '');
+    // Try message.from first (Meta Cloud API field), fall back to conversation.phone_number
+    const rawFrom = body.message.from ?? body.conversation.phone_number ?? '';
+    const senderPhone = String(rawFrom).replace(/[^0-9]/g, '');
     const msg: KapsoMessage = {
-      ...body.message,
       from: senderPhone,
+      ...body.message,
     };
     if (senderPhone) {
-      await handleIncomingMessage(senderPhone, msg).catch((err) =>
-        console.error(`[KapsoWebhook] Error handling message from ${senderPhone}:`, err),
-      );
+      await handleIncomingMessage(senderPhone, msg).catch(async (err) => {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await debugLog('v2-error', senderPhone, errMsg);
+        console.error(`[KapsoWebhook] Error handling message from ${senderPhone}:`, err);
+      });
+      await debugLog('v2-ok', senderPhone);
+    } else {
+      await debugLog('v2-no-phone');
     }
   } else if (body.messages) {
     // Legacy format — array of messages
     const messages: KapsoMessage[] = body.messages;
     for (const msg of messages) {
       if (!msg.from) continue;
-      await handleIncomingMessage(msg.from, msg).catch((err) =>
-        console.error(`[KapsoWebhook] Error handling message from ${msg.from}:`, err),
-      );
+      await handleIncomingMessage(msg.from, msg).catch(async (err) => {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await debugLog('legacy-error', msg.from, errMsg);
+        console.error(`[KapsoWebhook] Error handling message from ${msg.from}:`, err);
+      });
     }
   } else {
+    await debugLog('unknown-format');
     console.log('[KapsoWebhook] Unknown payload format:', JSON.stringify(body).slice(0, 500));
   }
 
