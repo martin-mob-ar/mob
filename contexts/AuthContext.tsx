@@ -33,7 +33,8 @@ type PublicUser = {
   name: string | null;
   telefono: string | null;
   telefono_country_code: string | null;
-  last_verification_date: string | null;
+  hoggax_last_verification_date: string | null;
+  truora_last_verification_date: string | null;
   account_type: number | null;
 };
 
@@ -75,7 +76,7 @@ function mapSupabaseUser(
       : (supabaseUser.user_metadata?.isOwner ?? false),
     accountType: publicUser?.account_type ?? null,
     publicUserId: publicUser?.id ?? null,
-    isVerified: !!publicUser?.last_verification_date,
+    isVerified: !!publicUser?.hoggax_last_verification_date && !!publicUser?.truora_last_verification_date,
   };
 }
 
@@ -116,7 +117,7 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const queryPromise = supabase
           .from("users")
-          .select("id, name, telefono, telefono_country_code, last_verification_date, account_type")
+          .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type")
           .eq("auth_id", authId)
           .maybeSingle();
         const timeoutPromise = new Promise<{ data: null }>((resolve) =>

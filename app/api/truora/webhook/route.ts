@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraWebhookSchema } from '@/lib/validations/truora-webhook';
 import { qualify } from '@/lib/hoggax/client';
+import { findUserByPhone } from '@/lib/truora/find-user-by-phone';
 
 export async function POST(request: Request) {
   try {
@@ -18,36 +19,16 @@ export async function POST(request: Request) {
     const payload = parsed.data;
 
     // --- Look up user by phone ---
-    // Strip everything except digits from the incoming phone
-    const cleanPhone = payload.phone.replace(/[^0-9]/g, '');
+    const user = await findUserByPhone(payload.phone);
 
-    // Fetch all users with a phone number and match in-memory
-    // (handles multiple formats: digits-only, with country code, etc.)
-    const { data: users } = await supabaseAdmin
-      .from('users')
-      .select('id, telefono_country_code, telefono')
-      .not('telefono', 'is', null);
-
-    let userId: string | null = null;
-
-    if (users) {
-      const match = users.find((u) => {
-        const codeDigits = (u.telefono_country_code || '').replace(/[^0-9]/g, '');
-        const phone = u.telefono || '';
-        const full = codeDigits + phone;
-        // Also try with '9' inserted after country code (Argentina WhatsApp mobile prefix)
-        const fullWithMobile9 = codeDigits + '9' + phone;
-        return full === cleanPhone || fullWithMobile9 === cleanPhone || phone === cleanPhone;
-      });
-      userId = match?.id ?? null;
-    }
-
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Usuario no encontrado para el teléfono proporcionado' },
         { status: 404 }
       );
     }
+
+    const userId = user.id;
 
     // --- Call Hoggax Calificación API ---
     let hoggaxApproved: boolean | null = null;
@@ -120,9 +101,9 @@ export async function POST(request: Request) {
       dni: payload.document_value,
     };
 
-    // Set last_verification_date only when approved
+    // Set hoggax_last_verification_date only when approved
     if (hoggaxApproved === true) {
-      userUpdate.last_verification_date = new Date().toISOString();
+      userUpdate.hoggax_last_verification_date = new Date().toISOString();
     }
 
     const { error: updateError } = await supabaseAdmin
