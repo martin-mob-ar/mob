@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
+import { generateText } from 'ai';
+import { gateway } from '@ai-sdk/gateway';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import {
   BTN,
@@ -28,33 +30,82 @@ const KAPSO_WEBHOOK_SECRET = process.env.KAPSO_WEBHOOK_SECRET ?? '';
 
 // ─── Date/time parsing ────────────────────────────────────────────────────────
 
-/**
- * Parses "15/04 14:00" or "15/04/2026 14:00" from free text.
- * Returns { date: 'yyyy-MM-dd', time: 'HH:mm' } or null if no match.
- * Time is rounded to the nearest :00 or :30.
- */
-function parseDateTime(text: string): { date: string; time: string } | null {
+/** Round minutes to nearest :00 or :30 slot, return { hour, minute }. */
+function roundToSlot(hour: number, minute: number): { hour: number; minute: number } {
+  if (minute < 15) return { hour, minute: 0 };
+  if (minute < 45) return { hour, minute: 30 };
+  return { hour: hour + 1, minute: 0 };
+}
+
+/** Fast regex pass for exact formats like "15/04 14:00" or "15/04/2026 14:00". */
+function parseDateTimeRegex(text: string): { date: string; time: string } | null {
   const match = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-]\d{2,4})?[^\d]+(\d{1,2})[:\.](\d{2})/);
   if (!match) return null;
   const [, d, m, h, min] = match;
-  let hour = parseInt(h, 10);
-  const minute = parseInt(min, 10);
-
-  // Round to nearest :00 or :30
-  let roundedMin: number;
-  if (minute < 15) {
-    roundedMin = 0;
-  } else if (minute < 45) {
-    roundedMin = 30;
-  } else {
-    roundedMin = 0;
-    hour += 1;
-  }
-
+  const { hour, minute } = roundToSlot(parseInt(h, 10), parseInt(min, 10));
   const year = new Date().getFullYear();
-  const date = `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-  const time = `${String(hour).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
-  return { date, time };
+  return {
+    date: `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`,
+    time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+  };
+}
+
+/** AI fallback: extract date/time from natural language Spanish using Gemini. */
+async function parseDateTimeAI(text: string): Promise<{ date: string; time: string } | null> {
+  const now = new Date();
+  const buenosAires = now.toLocaleDateString('es-AR', {
+    timeZone: 'America/Buenos_Aires',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  try {
+    const { text: response } = await generateText({
+      model: gateway('google/gemini-2.5-flash'),
+      prompt: `Hoy es ${buenosAires}.
+
+Extraé la fecha y hora de este mensaje de WhatsApp sobre una visita a una propiedad:
+"${text}"
+
+Solo se permiten horarios en punto (:00) o y media (:30). Redondeá al más cercano.
+Si el mensaje no contiene una fecha/hora válida, respondé exactamente: null
+
+Si sí contiene fecha y hora, respondé SOLO con JSON (sin markdown):
+{"day":DD,"month":MM,"year":YYYY,"hour":HH,"minute":MM}`,
+      temperature: 0,
+      maxOutputTokens: 100,
+      providerOptions: {
+        google: { thinkingConfig: { thinkingBudget: 0 } },
+      },
+    });
+
+    const cleaned = response.trim();
+    if (cleaned === 'null' || !cleaned.startsWith('{')) return null;
+
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.day || !parsed.month || !parsed.hour === undefined) return null;
+
+    const year = parsed.year ?? now.getFullYear();
+    const { hour, minute } = roundToSlot(parsed.hour, parsed.minute ?? 0);
+
+    return {
+      date: `${year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`,
+      time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    };
+  } catch (err) {
+    console.error('[KapsoWebhook] AI date parsing failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Parse date/time from user text: tries fast regex first, then AI fallback.
+ * Returns { date: 'yyyy-MM-dd', time: 'HH:mm' } or null.
+ */
+async function parseDateTime(text: string): Promise<{ date: string; time: string } | null> {
+  return parseDateTimeRegex(text) ?? (await parseDateTimeAI(text));
 }
 
 // ─── Incoming message types ───────────────────────────────────────────────────
@@ -373,10 +424,10 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
   if (state === 'owner_collecting_datetime' && senderIsOwner) {
     if (msg.type !== 'text' || !msg.text?.body) return;
 
-    const parsed = parseDateTime(msg.text.body);
+    const parsed = await parseDateTime(msg.text.body);
     if (!parsed) {
       if (ownerPhone) {
-        await sendTextMessage(ownerPhone, 'No entendí la fecha, probá con el formato: 15/04 14:00');
+        await sendTextMessage(ownerPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30, el viernes a la tarde. Solo horarios en punto o y media.');
       }
       return;
     }
@@ -475,9 +526,11 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
   if (state === 'requester_collecting_datetime' && !senderIsOwner) {
     if (msg.type !== 'text' || !msg.text?.body) return;
 
-    const parsed = parseDateTime(msg.text.body);
+    const parsed = await parseDateTime(msg.text.body);
     if (!parsed) {
-      if (inquilinoPhone) await sendInquilinoDatePrompt(inquilinoPhone);
+      if (inquilinoPhone) {
+        await sendTextMessage(inquilinoPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30, el viernes a la tarde. Solo horarios en punto o y media.');
+      }
       return;
     }
 
