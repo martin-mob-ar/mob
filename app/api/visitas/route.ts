@@ -38,10 +38,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, visitaId: result.visitaId });
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error interno';
+    const isConflict = message.includes('visita confirmada');
     console.error('[Visitas] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
-      { status: 500 }
+      { error: message },
+      { status: isConflict ? 409 : 500 }
     );
   }
 }

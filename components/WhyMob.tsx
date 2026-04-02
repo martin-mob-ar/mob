@@ -304,7 +304,7 @@ const WhyMob = () => {
                     className={`font-display font-bold mb-1 tracking-tight transition-all duration-500 ${section.titleAlign}`}
                     style={{
                       fontSize: "clamp(1.1rem, 2vw, 1.5rem)",
-                      color: isActive ? MOB_BLUE : "#64748b",
+                      color: isActive ? MOB_BLUE : "#475569",
                       display: "inline-block",
                     }}
                   >
@@ -313,7 +313,7 @@ const WhyMob = () => {
                   <p
                     className="font-medium mt-2 transition-all duration-500"
                     style={{
-                      color: isActive ? "#374151" : "#64748b",
+                      color: isActive ? "#374151" : "#475569",
                       fontSize: "clamp(0.8rem, 1.3vw, 0.95rem)",
                     }}
                   >
@@ -322,7 +322,7 @@ const WhyMob = () => {
                   <p
                     className="leading-relaxed mt-2 transition-all duration-500"
                     style={{
-                      color: isActive ? "#374151" : "#94a3b8",
+                      color: isActive ? "#374151" : "#64748b",
                       fontSize: "clamp(0.7rem, 1.1vw, 0.85rem)",
                     }}
                   >

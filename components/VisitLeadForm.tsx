@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeft, Calendar, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,8 +30,19 @@ export default function VisitLeadForm({
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<{ date: string; time: string }[]>([]);
 
   const isVerified = !!user?.isVerified;
+
+  // Fetch booked slots for this property
+  useEffect(() => {
+    fetch(`/api/visitas/booked-slots?propertyId=${propertyId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.slots) setBookedSlots(data.slots);
+      })
+      .catch((err) => console.error("[VisitLeadForm] Failed to fetch booked slots:", err));
+  }, [propertyId]);
 
   /** Build /verificate URL with query params for the selected visit */
   const buildVerificateUrl = () => {
@@ -99,7 +110,7 @@ export default function VisitLeadForm({
         <div>
           <p className="font-semibold text-sm">¡Solicitud de visita enviada!</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Te avisaremos cuando el propietario confirme o proponga otro horario.
+            Te avisaremos por WhatsApp cuando el propietario confirme o proponga otro horario.
           </p>
         </div>
         <Button
@@ -141,6 +152,7 @@ export default function VisitLeadForm({
         selectedTime={selectedTime}
         onDateSelect={setSelectedDate}
         onTimeSelect={setSelectedTime}
+        bookedSlots={bookedSlots}
       />
 
       {/* Submit */}

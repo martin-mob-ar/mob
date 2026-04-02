@@ -7,6 +7,7 @@ const founders = [
   {
     name: "Inaki Valencia",
     role: "Cofundador",
+    photo: "/assets/propietarios/foto_perfil.png",
     bio: "Vengo de familia inmobiliaria, donde trabajé a los 16 años",
     credentials: ["Lic. en Negocios Digitales - UdeSA", "Ex Cofundador de Roomix.ai"],
     email: "inaki@mob.ar",
@@ -16,6 +17,7 @@ const founders = [
   {
     name: "Martin Quijano",
     role: "Cofundador",
+    photo: "/assets/propietarios/foto_perfil_martin.png",
     bio: "Programo desde los 15. También vengo de familia inmobiliaria",
     credentials: ["Lic. en Negocios Digitales - UdeSA", "Ex Cofundador de Tuni.com.ar"],
     email: "martin@mob.ar",
@@ -61,7 +63,7 @@ const AboutV3 = () => {
             >
               <div className="rounded-[1.25rem] overflow-hidden bg-accent/40 mb-3 shadow-sm">
                 <Image
-                  src="/assets/propietarios/foto_perfil.png"
+                  src={founder.photo}
                   alt={founder.name}
                   width={400}
                   height={405}

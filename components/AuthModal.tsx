@@ -73,7 +73,9 @@ const AuthModal = () => {
       } else if (isAuthenticated) {
         // Already logged in — clean auth/redirect params from URL
         const params = new URLSearchParams(searchParams.toString());
-        const redirectTo = params.get("redirect");
+        // Fallback to window.location — useSearchParams() may lag behind router.replace()
+        const redirectTo = params.get("redirect")
+          || new URLSearchParams(window.location.search).get("redirect");
         params.delete("auth");
         params.delete("redirect");
         const newQuery = params.toString();
@@ -178,7 +180,9 @@ const AuthModal = () => {
       // Login flow
       try {
         await login(email, password);
-        const redirectTo = searchParams.get("redirect");
+        // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
+        const redirectTo = searchParams.get("redirect")
+          || new URLSearchParams(window.location.search).get("redirect");
         if (redirectTo) {
           closeAuthModal();
           resetForm();
@@ -248,7 +252,9 @@ const AuthModal = () => {
       });
       // Refresh AuthContext so isOwner and accountType reflect the new value
       await refreshUser();
-      const redirectTo = searchParams.get("redirect");
+      // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
+      const redirectTo = searchParams.get("redirect")
+        || new URLSearchParams(window.location.search).get("redirect");
       if (redirectTo) {
         closeAuthModal();
         resetForm();
@@ -266,7 +272,9 @@ const AuthModal = () => {
   const handleSkipAccountType = async () => {
     // Refresh AuthContext to pick up any DB changes from signup
     await refreshUser();
-    const redirectTo = searchParams.get("redirect");
+    // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
+    const redirectTo = searchParams.get("redirect")
+      || new URLSearchParams(window.location.search).get("redirect");
     if (redirectTo) {
       closeAuthModal();
       resetForm();

@@ -16,6 +16,7 @@ import { useLocationSearch, LocationResult } from "@/hooks/useLocationSearch";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/client";
 const mobLogo = "/assets/mob-logo-new.png";
 
@@ -514,10 +515,21 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
+                      className="h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
                       aria-label="Menú de usuario"
                     >
-                      {(user?.name || user?.email)?.charAt(0).toUpperCase() ?? "U"}
+                      <Avatar className="h-9 w-9">
+                        {user?.avatarUrl && (
+                          <AvatarImage
+                            src={user.avatarUrl}
+                            alt={user.name || "Avatar"}
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                          {(user?.name || user?.email)?.charAt(0).toUpperCase() ?? "U"}
+                        </AvatarFallback>
+                      </Avatar>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64 bg-background">
@@ -589,6 +601,29 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                     {landingCta}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
+                ) : hideSearch || (isHome && !showHeaderSearch) ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
+                      asChild
+                    >
+                      <Link href="/propietarios">
+                        <Home className="h-4 w-4" />
+                        Soy propietario
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
+                      asChild
+                    >
+                      <Link href="/inmobiliarias">
+                        <Building2 className="h-4 w-4" />
+                        Soy inmobiliaria
+                      </Link>
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     variant="ghost"
@@ -640,9 +675,18 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                     <>
                       {/* User identity card */}
                       <div className="flex items-center gap-3 px-4 py-3 bg-secondary/30 rounded-xl">
-                        <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
-                          {(user?.name || user?.email)?.charAt(0).toUpperCase() ?? "U"}
-                        </div>
+                        <Avatar className="h-10 w-10 shrink-0">
+                          {user?.avatarUrl && (
+                            <AvatarImage
+                              src={user.avatarUrl}
+                              alt={user.name || "Avatar"}
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                            {(user?.name || user?.email)?.charAt(0).toUpperCase() ?? "U"}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
@@ -723,13 +767,40 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                       >
                         {landingCta || "Iniciar sesión"}
                       </Button>
-                      <Button
-                        variant="outline"
-                        onClick={landingCta ? () => { setMobileMenuOpen(false); openAuthModal(); } : handlePublishClick}
-                        className="w-full rounded-full h-12 font-medium"
-                      >
-                        {landingCta ? "Iniciar sesión" : "Publicar gratis"}
-                      </Button>
+                      {landingCta ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
+                          className="w-full rounded-full h-12 font-medium"
+                        >
+                          Iniciar sesión
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
+                            asChild
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Link href="/propietarios">
+                              <Home className="h-4 w-4" />
+                              Soy propietario
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
+                            asChild
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Link href="/inmobiliarias">
+                              <Building2 className="h-4 w-4" />
+                              Soy inmobiliaria
+                            </Link>
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

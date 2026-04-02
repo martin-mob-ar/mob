@@ -47,7 +47,7 @@ export function AnimateHeight({
       )}
       onTransitionEnd={handleTransitionEnd}
     >
-      <div className={overflowHidden ? "overflow-hidden" : ""}>
+      <div className={overflowHidden ? "overflow-hidden min-w-0" : "min-w-0"}>
         {children}
       </div>
     </div>

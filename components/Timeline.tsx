@@ -384,7 +384,7 @@ const Timeline = () => {
 
                       {/* Description — fades up last */}
                       <p
-                        className="text-gray-500 text-sm leading-relaxed"
+                        className="text-gray-600 text-sm leading-relaxed"
                         style={{
                           opacity: isVisible ? 1 : 0,
                           transform: isVisible

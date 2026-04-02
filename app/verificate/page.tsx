@@ -294,7 +294,7 @@ export default function VerificatePage() {
                             inputMode="numeric"
                             placeholder="(11) 0000-0000"
                             autoComplete="tel-national"
-                            className="h-12 rounded-xl text-sm"
+                            className="h-12 rounded-xl"
                             {...field}
                             onChange={(e) => {
                               const cleaned = e.target.value.replace(

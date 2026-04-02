@@ -228,6 +228,10 @@ export default function PhotoUploader({
   const [activeId, setActiveId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Shared ref so concurrent processFiles calls always read the latest photos
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+
   // Stable temp folder for this wizard session — photos land here before the
   // property is created. The create API moves them to {propertyId}/ afterwards.
   const tempFolderRef = useRef(`tmp/${crypto.randomUUID().slice(0, 8)}`);
@@ -247,8 +251,6 @@ export default function PhotoUploader({
   const processFiles = useCallback(
     async (files: FileList | File[]) => {
       const fileArr = Array.from(files);
-      // Use a local accumulator to avoid stale closure when uploading multiple files
-      let accumulated = [...photos];
 
       for (const file of fileArr) {
         if (!isAllowedImage(file)) {
@@ -276,7 +278,8 @@ export default function PhotoUploader({
         ]);
 
         try {
-          const order = accumulated.length;
+          // Always read from ref to get latest photos (safe across concurrent calls)
+          const order = photosRef.current.length;
           // Derive content type from extension when browser doesn't detect it
           let contentType = file.type;
           if (!contentType || !ALLOWED_TYPES.includes(contentType)) {
@@ -322,11 +325,13 @@ export default function PhotoUploader({
             storagePath,
             publicUrl,
             order,
-            isCover: accumulated.length === 0,
+            isCover: photosRef.current.length === 0,
           };
 
-          accumulated = [...accumulated, newPhoto];
-          onChange(accumulated);
+          // Update ref immediately so the next iteration (or concurrent call) sees it
+          const updated = [...photosRef.current, newPhoto];
+          photosRef.current = updated;
+          onChange(updated);
           setUploading((prev) => prev.filter((u) => u.id !== uploadId));
           URL.revokeObjectURL(preview);
         } catch (err) {
@@ -344,7 +349,7 @@ export default function PhotoUploader({
         }
       }
     },
-    [photos, propertyId, onChange, tempFolderRef]
+    [propertyId, onChange, setUploading, tempFolderRef]
   );
 
   const handleDrop = useCallback(
@@ -551,7 +556,7 @@ export default function PhotoUploader({
                       <img
                         src={item.preview}
                         alt="Subiendo..."
-                        className="w-full h-full object-cover"
+                        className="block w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
                         {item.error ? (

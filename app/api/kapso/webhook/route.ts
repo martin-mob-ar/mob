@@ -28,6 +28,98 @@ import {
 
 const KAPSO_WEBHOOK_SECRET = process.env.KAPSO_WEBHOOK_SECRET ?? '';
 
+// ─── Slot conflict helpers ────────────────────────────────────────────────────
+
+/** Check if an accepted visita already exists at this property+date+time. */
+async function checkSlotConflict(propertyId: number, date: string, time: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('visitas')
+    .select('id')
+    .eq('property_id', propertyId)
+    .eq('status', 'accepted')
+    .eq('confirmed_date', date)
+    .eq('confirmed_time', time)
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
+/** Map Spanish day IDs to JS getDay() numbers */
+const DAY_ID_TO_JS: Record<string, number> = {
+  domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6,
+};
+const JS_TO_DAY_ID: Record<number, string> = {};
+for (const [id, num] of Object.entries(DAY_ID_TO_JS)) JS_TO_DAY_ID[num] = id;
+
+/** Generate 30-minute increment time slots between start and end (exclusive). */
+function generateTimeSlots(start: string, end: string): string[] {
+  const [sH, sM] = start.split(':').map(Number);
+  const [eH, eM] = end.split(':').map(Number);
+  const slots: string[] = [];
+  for (let m = sH * 60 + sM; m < eH * 60 + eM; m += 30) {
+    slots.push(`${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`);
+  }
+  return slots;
+}
+
+/**
+ * Find nearby available time slots for a property on a given date.
+ * Returns up to 3 slots closest to the requested time.
+ */
+async function findNearbyAvailableSlots(
+  propertyId: number,
+  date: string,
+  time: string,
+): Promise<string[]> {
+  // Fetch property's visit_hours
+  const { data: prop } = await supabaseAdmin
+    .from('properties')
+    .select('visit_hours')
+    .eq('id', propertyId)
+    .single();
+
+  if (!prop?.visit_hours) return [];
+
+  // Determine day name from date string
+  const dateObj = new Date(date + 'T12:00:00');
+  const dayId = JS_TO_DAY_ID[dateObj.getDay()];
+  if (!dayId) return [];
+
+  // Find hours entry for this day
+  const hourEntry = (prop.visit_hours as string[]).find((e) => e.startsWith(dayId + ' '));
+  if (!hourEntry) return [];
+
+  const match = hourEntry.match(/^\w+\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+  if (!match) return [];
+
+  const allSlots = generateTimeSlots(match[1], match[2]);
+
+  // Fetch already-booked slots for this date
+  const { data: booked } = await supabaseAdmin
+    .from('visitas')
+    .select('confirmed_time')
+    .eq('property_id', propertyId)
+    .eq('status', 'accepted')
+    .eq('confirmed_date', date)
+    .not('confirmed_time', 'is', null);
+
+  const bookedSet = new Set((booked ?? []).map((v) => v.confirmed_time!));
+  const available = allSlots.filter((s) => !bookedSet.has(s));
+
+  if (available.length === 0) return [];
+
+  // Sort by proximity to the requested time
+  const [reqH, reqM] = time.split(':').map(Number);
+  const reqMinutes = reqH * 60 + reqM;
+  available.sort((a, b) => {
+    const [aH, aM] = a.split(':').map(Number);
+    const [bH, bM] = b.split(':').map(Number);
+    return Math.abs(aH * 60 + aM - reqMinutes) - Math.abs(bH * 60 + bM - reqMinutes);
+  });
+
+  return available.slice(0, 3);
+}
+
 // ─── Date/time parsing ────────────────────────────────────────────────────────
 
 /** Round minutes to nearest :00 or :30 slot, return { hour, minute }. */
@@ -179,7 +271,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
   // 2. Find active visita for this user
   // First check for reminder/post-visit context (accepted visitas with wa_context set)
   const visitaColumns = `
-    id, status, whatsapp_state, whatsapp_pending_proposal_id,
+    id, property_id, status, whatsapp_state, whatsapp_pending_proposal_id,
     owner_user_id, requester_user_id,
     requester_name, requester_phone, requester_country_code,
     confirmed_date, confirmed_time,
@@ -380,6 +472,23 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
       const proposal = await getPendingProposal();
       if (!proposal) return;
 
+      // Check for double-booking before confirming
+      const conflict = await checkSlotConflict(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+      if (conflict) {
+        const nearby = await findNearbyAvailableSlots(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+        const nearbyText = nearby.length > 0
+          ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
+          : '';
+        await supabaseAdmin
+          .from('visitas')
+          .update({ whatsapp_state: 'owner_collecting_datetime' })
+          .eq('id', visita.id);
+        if (ownerPhone) {
+          await sendTextMessage(ownerPhone, `Ese horario ya fue reservado por otra visita.${nearbyText} Escribí la nueva fecha y hora para la visita (ej: 15/04 14:00).`);
+        }
+        return;
+      }
+
       const { dayLabel, time } = formatVisitDateTime(proposal.proposed_date, proposal.proposed_time);
 
       await supabaseAdmin
@@ -444,6 +553,20 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     }
 
     const { date, time } = parsed;
+
+    // Check for double-booking before creating proposal
+    const conflict = await checkSlotConflict(visita.property_id, date, time);
+    if (conflict) {
+      const nearby = await findNearbyAvailableSlots(visita.property_id, date, time);
+      const nearbyText = nearby.length > 0
+        ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
+        : '';
+      if (ownerPhone) {
+        await sendTextMessage(ownerPhone, `Ese horario ya fue reservado por otra visita.${nearbyText} Probá con otro horario.`);
+      }
+      return;
+    }
+
     const { dayLabel, time: formattedTime } = formatVisitDateTime(date, time);
 
     if (pendingProposalId) {
@@ -487,6 +610,23 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     if (buttonId === BTN.CONFIRM) {
       const proposal = await getPendingProposal();
       if (!proposal) return;
+
+      // Check for double-booking before confirming
+      const conflict = await checkSlotConflict(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+      if (conflict) {
+        const nearby = await findNearbyAvailableSlots(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+        const nearbyText = nearby.length > 0
+          ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
+          : '';
+        await supabaseAdmin
+          .from('visitas')
+          .update({ whatsapp_state: 'requester_collecting_datetime' })
+          .eq('id', visita.id);
+        if (inquilinoPhone) {
+          await sendTextMessage(inquilinoPhone, `Ese horario ya fue reservado por otra visita.${nearbyText} Escribí la nueva fecha y hora para la visita (ej: 15/04 14:00).`);
+        }
+        return;
+      }
 
       const { dayLabel, time } = formatVisitDateTime(proposal.proposed_date, proposal.proposed_time);
 
@@ -552,6 +692,20 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     }
 
     const { date, time } = parsed;
+
+    // Check for double-booking before creating proposal
+    const conflict = await checkSlotConflict(visita.property_id, date, time);
+    if (conflict) {
+      const nearby = await findNearbyAvailableSlots(visita.property_id, date, time);
+      const nearbyText = nearby.length > 0
+        ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
+        : '';
+      if (inquilinoPhone) {
+        await sendTextMessage(inquilinoPhone, `Ese horario ya fue reservado por otra visita.${nearbyText} Probá con otro horario.`);
+      }
+      return;
+    }
+
     const { dayLabel, time: formattedTime } = formatVisitDateTime(date, time);
 
     if (pendingProposalId) {

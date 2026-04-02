@@ -32,12 +32,17 @@ for (const [id, num] of Object.entries(DAY_ID_TO_JS)) {
   JS_TO_DAY_ID[num] = id;
 }
 
-// Sizing constants for dynamic item count calculation
-const ARROW_WIDTH = 24; // h-6 w-6
-const STRIP_GAP = 4;    // gap-1 between arrows and grid
-const ITEM_GAP = 6;     // gap-1.5 between items
+// Sizing constants for dynamic item count calculation (desktop paged mode)
+const ARROW_WIDTH = 24;
+const STRIP_GAP = 4;
+const ITEM_GAP = 6;
 const DAY_MIN_WIDTH = 58;
 const TIME_MIN_WIDTH = 68;
+
+interface BookedSlot {
+  date: string; // yyyy-MM-dd
+  time: string; // HH:mm
+}
 
 interface VisitSchedulePickerProps {
   visitDays: string[];
@@ -46,6 +51,7 @@ interface VisitSchedulePickerProps {
   selectedTime: string | null;
   onDateSelect: (date: Date) => void;
   onTimeSelect: (time: string) => void;
+  bookedSlots?: BookedSlot[];
 }
 
 /** Parse "lunes 08:00-20:00" → { dayId: "lunes", start: "08:00", end: "20:00" } */
@@ -78,14 +84,14 @@ function formatTime12h(time: string): string {
   return `${hour12.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}${suffix}`;
 }
 
-/** Calculate how many items fit in available width */
+/** Calculate how many items fit in available width (desktop paged mode) */
 function calcVisibleCount(containerWidth: number, minItemWidth: number): number {
-  if (containerWidth <= 0) return 4; // SSR / initial fallback
+  if (containerWidth <= 0) return 4;
   const available = containerWidth - ARROW_WIDTH * 2 - STRIP_GAP * 2;
   return Math.max(2, Math.floor((available + ITEM_GAP) / (minItemWidth + ITEM_GAP)));
 }
 
-// Slide animation for strip pages navigating left/right
+// Slide animation for strip pages navigating left/right (desktop)
 const stripVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 24 : -24,
@@ -101,6 +107,36 @@ const stripVariants = {
   }),
 };
 
+/** Shared day button styling */
+function dayButtonClasses(isSelected: boolean) {
+  return cn(
+    "flex flex-col items-center justify-center py-2 rounded-xl border-2 text-center",
+    "transition-colors duration-200",
+    isSelected
+      ? "border-primary bg-primary/5"
+      : "border-border hover:border-muted-foreground/40"
+  );
+}
+
+/** Shared time button styling */
+function timeButtonClasses(isSelected: boolean) {
+  return cn(
+    "py-2 rounded-xl border-2 text-xs font-medium whitespace-nowrap",
+    "transition-colors duration-200",
+    isSelected
+      ? "border-primary bg-primary/5 text-foreground"
+      : "border-border hover:border-muted-foreground/40 text-muted-foreground"
+  );
+}
+
+/** Format a Date as yyyy-MM-dd */
+function toDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function VisitSchedulePicker({
   visitDays,
   visitHours,
@@ -108,8 +144,12 @@ export default function VisitSchedulePicker({
   selectedTime,
   onDateSelect,
   onTimeSelect,
+  bookedSlots = [],
 }: VisitSchedulePickerProps) {
   const { ref: containerRef, width: containerWidth } = useContainerWidth();
+  const timeScrollRef = useRef<HTMLDivElement>(null);
+
+  // Desktop paged state
   const [dayOffset, setDayOffset] = useState(0);
   const [timeOffset, setTimeOffset] = useState(0);
   const [dayDirection, setDayDirection] = useState(0);
@@ -117,7 +157,7 @@ export default function VisitSchedulePicker({
   const prevDayOffset = useRef(0);
   const prevTimeOffset = useRef(0);
 
-  // Dynamic visible counts based on container width
+  // Dynamic visible counts for desktop paged mode
   const visibleDays = calcVisibleCount(containerWidth, DAY_MIN_WIDTH);
   const visibleTimes = calcVisibleCount(containerWidth, TIME_MIN_WIDTH);
 
@@ -168,15 +208,28 @@ export default function VisitSchedulePicker({
     }
   }, [availableDates, selectedDate, onDateSelect]);
 
-  // Time slots for the selected date
+  // Build a Set of booked time strings for the selected date for fast lookup
+  const bookedTimesForDate = useMemo(() => {
+    if (!selectedDate || bookedSlots.length === 0) return new Set<string>();
+    const dateStr = toDateString(selectedDate);
+    const set = new Set<string>();
+    for (const slot of bookedSlots) {
+      if (slot.date === dateStr) set.add(slot.time);
+    }
+    return set;
+  }, [selectedDate, bookedSlots]);
+
+  // Time slots for the selected date (excluding booked slots)
   const timeSlots = useMemo(() => {
     if (!selectedDate) return [];
     const dayId = JS_TO_DAY_ID[selectedDate.getDay()];
     if (!dayId) return [];
     const hours = hoursMap[dayId];
     if (!hours) return [];
-    return generateTimeSlots(hours.start, hours.end);
-  }, [selectedDate, hoursMap]);
+    const all = generateTimeSlots(hours.start, hours.end);
+    if (bookedTimesForDate.size === 0) return all;
+    return all.filter((t) => !bookedTimesForDate.has(t));
+  }, [selectedDate, hoursMap, bookedTimesForDate]);
 
   // Reset time offset and selected time when date changes
   const handleDateSelect = useCallback(
@@ -184,11 +237,12 @@ export default function VisitSchedulePicker({
       onDateSelect(date);
       onTimeSelect("");
       setTimeOffset(0);
+      timeScrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
     },
     [onDateSelect, onTimeSelect]
   );
 
-  // Clamp offsets when visible count changes (e.g. on resize)
+  // Clamp desktop offsets when visible count changes (e.g. on resize)
   useEffect(() => {
     setDayOffset((o) => Math.min(o, Math.max(0, availableDates.length - visibleDays)));
   }, [visibleDays, availableDates.length]);
@@ -197,7 +251,7 @@ export default function VisitSchedulePicker({
     setTimeOffset((o) => Math.min(o, Math.max(0, timeSlots.length - visibleTimes)));
   }, [visibleTimes, timeSlots.length]);
 
-  // Day strip navigation with direction tracking
+  // Desktop day strip navigation
   const handleDayNav = (dir: "prev" | "next") => {
     const d = dir === "next" ? 1 : -1;
     setDayDirection(d);
@@ -209,7 +263,7 @@ export default function VisitSchedulePicker({
     );
   };
 
-  // Time strip navigation with direction tracking
+  // Desktop time strip navigation
   const handleTimeNav = (dir: "prev" | "next") => {
     const d = dir === "next" ? 1 : -1;
     setTimeDirection(d);
@@ -221,7 +275,7 @@ export default function VisitSchedulePicker({
     );
   };
 
-  // Visible windows
+  // Desktop visible windows
   const visibleDateSlice = availableDates.slice(dayOffset, dayOffset + visibleDays);
   const canScrollDaysPrev = dayOffset > 0;
   const canScrollDaysNext = dayOffset + visibleDays < availableDates.length;
@@ -247,11 +301,36 @@ export default function VisitSchedulePicker({
   const timePageKey = `times-${timeOffset}-${selectedDate?.toISOString() ?? "none"}`;
 
   return (
-    <div ref={containerRef} className="space-y-3">
+    <div ref={containerRef} className="space-y-3 overflow-hidden">
       <p className="font-semibold text-sm">Seleccioná la fecha y hora</p>
 
-      {/* Day strip */}
-      <div className="flex items-center gap-1">
+      {/* ── Day strip: mobile = scrollable, desktop = paged ── */}
+
+      {/* Mobile: scrollable */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1 md:hidden">
+        {availableDates.map((date) => {
+          const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+          return (
+            <button
+              key={date.toISOString()}
+              type="button"
+              onClick={() => handleDateSelect(date)}
+              className={cn(dayButtonClasses(isSelected), "px-3 shrink-0 snap-start")}
+            >
+              <span className={cn("text-[11px] font-medium leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
+                {JS_DAY_ABBR[date.getDay()]}
+              </span>
+              <span className="text-lg font-bold leading-tight text-foreground">{date.getDate()}</span>
+              <span className={cn("text-[11px] leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
+                {MONTH_ABBR[date.getMonth()]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop: paged with arrows */}
+      <div className="hidden md:flex items-center gap-1">
         <motion.button
           type="button"
           onClick={() => handleDayNav("prev")}
@@ -285,32 +364,14 @@ export default function VisitSchedulePicker({
                     onClick={() => handleDateSelect(date)}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: i * 0.04,
-                      duration: 0.2,
-                      ease: "easeOut",
-                    }}
-                    className={cn(
-                      "flex flex-col items-center justify-center py-2 rounded-xl border-2 text-center min-w-0",
-                      "transition-colors duration-200",
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/40"
-                    )}
+                    transition={{ delay: i * 0.04, duration: 0.2, ease: "easeOut" }}
+                    className={cn(dayButtonClasses(isSelected), "min-w-0")}
                   >
-                    <span className={cn(
-                      "text-[11px] font-medium leading-none",
-                      isSelected ? "text-primary" : "text-muted-foreground"
-                    )}>
+                    <span className={cn("text-[11px] font-medium leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
                       {JS_DAY_ABBR[date.getDay()]}
                     </span>
-                    <span className="text-lg font-bold leading-tight text-foreground">
-                      {date.getDate()}
-                    </span>
-                    <span className={cn(
-                      "text-[11px] leading-none",
-                      isSelected ? "text-primary" : "text-muted-foreground"
-                    )}>
+                    <span className="text-lg font-bold leading-tight text-foreground">{date.getDate()}</span>
+                    <span className={cn("text-[11px] leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
                       {MONTH_ABBR[date.getMonth()]}
                     </span>
                   </motion.button>
@@ -332,83 +393,97 @@ export default function VisitSchedulePicker({
         </motion.button>
       </div>
 
-      {/* Time strip — slides in when time slots become available */}
-      <AnimatePresence mode="popLayout">
-        {timeSlots.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="flex items-center gap-1"
+      {/* ── Time strip: mobile = scrollable, desktop = paged ── */}
+
+      {timeSlots.length > 0 && (
+        <>
+          {/* Mobile: scrollable */}
+          <div
+            ref={timeScrollRef}
+            className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1 md:hidden"
           >
-            <motion.button
-              type="button"
-              onClick={() => handleTimeNav("prev")}
-              disabled={!canScrollTimesPrev}
-              whileTap={canScrollTimesPrev ? { scale: 0.85 } : undefined}
-              className="h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default shrink-0 transition-colors"
-              aria-label="Horarios anteriores"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </motion.button>
-
-            <div className="flex-1 overflow-hidden">
-              <AnimatePresence mode="popLayout" initial={false} custom={timeDirection}>
-                <motion.div
-                  key={timePageKey}
-                  custom={timeDirection}
-                  variants={stripVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="grid gap-1.5"
-                  style={{ gridTemplateColumns: `repeat(${visibleTimeSlice.length}, minmax(0, 1fr))` }}
+            {timeSlots.map((time) => {
+              const isSelected = selectedTime === time;
+              return (
+                <button
+                  key={time}
+                  type="button"
+                  onClick={() => onTimeSelect(time)}
+                  className={cn(timeButtonClasses(isSelected), "px-3 shrink-0 snap-start")}
                 >
-                  {visibleTimeSlice.map((time, i) => {
-                    const isSelected = selectedTime === time;
-                    return (
-                      <motion.button
-                        key={time}
-                        type="button"
-                        onClick={() => onTimeSelect(time)}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: i * 0.04,
-                          duration: 0.2,
-                          ease: "easeOut",
-                        }}
-                        className={cn(
-                          "py-2 rounded-xl border-2 text-xs font-medium min-w-0 truncate",
-                          "transition-colors duration-200",
-                          isSelected
-                            ? "border-primary bg-primary/5 text-foreground"
-                            : "border-border hover:border-muted-foreground/40 text-muted-foreground"
-                        )}
-                      >
-                        {formatTime12h(time)}
-                      </motion.button>
-                    );
-                  })}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                  {formatTime12h(time)}
+                </button>
+              );
+            })}
+          </div>
 
-            <motion.button
-              type="button"
-              onClick={() => handleTimeNav("next")}
-              disabled={!canScrollTimesNext}
-              whileTap={canScrollTimesNext ? { scale: 0.85 } : undefined}
-              className="h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default shrink-0 transition-colors"
-              aria-label="Horarios siguientes"
+          {/* Desktop: paged with arrows */}
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="hidden md:flex items-center gap-1"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <motion.button
+                type="button"
+                onClick={() => handleTimeNav("prev")}
+                disabled={!canScrollTimesPrev}
+                whileTap={canScrollTimesPrev ? { scale: 0.85 } : undefined}
+                className="h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default shrink-0 transition-colors"
+                aria-label="Horarios anteriores"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </motion.button>
+
+              <div className="flex-1 overflow-hidden">
+                <AnimatePresence mode="popLayout" initial={false} custom={timeDirection}>
+                  <motion.div
+                    key={timePageKey}
+                    custom={timeDirection}
+                    variants={stripVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className="grid gap-1.5"
+                    style={{ gridTemplateColumns: `repeat(${visibleTimeSlice.length}, minmax(0, 1fr))` }}
+                  >
+                    {visibleTimeSlice.map((time, i) => {
+                      const isSelected = selectedTime === time;
+                      return (
+                        <motion.button
+                          key={time}
+                          type="button"
+                          onClick={() => onTimeSelect(time)}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.04, duration: 0.2, ease: "easeOut" }}
+                          className={cn(timeButtonClasses(isSelected), "min-w-0 truncate")}
+                        >
+                          {formatTime12h(time)}
+                        </motion.button>
+                      );
+                    })}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <motion.button
+                type="button"
+                onClick={() => handleTimeNav("next")}
+                disabled={!canScrollTimesNext}
+                whileTap={canScrollTimesNext ? { scale: 0.85 } : undefined}
+                className="h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default shrink-0 transition-colors"
+                aria-label="Horarios siguientes"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </motion.button>
+            </motion.div>
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }
