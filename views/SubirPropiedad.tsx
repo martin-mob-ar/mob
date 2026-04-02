@@ -825,6 +825,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           return;
         }
 
+        toast("Te vamos a contactar para coordinar con el fotógrafo", {
+          duration: 8000,
+        });
         router.push(`/propiedad/${result.id}`);
       }
     } catch (err) {
@@ -1514,6 +1517,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
               onUploadingChange={setIsUploadingPhotos}
               propertyId={draftPropertyId ?? undefined}
             />
+            <p className="text-sm text-muted-foreground">
+              Si elegís <em>experiencia <span className="font-ubuntu text-primary">mob</span></em>, luego mandamos al fotógrafo y cambiamos las fotos.
+            </p>
             {showErrors && uploadedPhotos.length < 5 && (
               <p className="text-sm text-red-500">Necesitás al menos 5 fotos</p>
             )}
@@ -1806,7 +1812,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   <div className="flex gap-2 overflow-x-auto">
                     {uploadedPhotos.slice(0, 5).map((photo, i) => (
                       <div key={photo.storagePath} className={cn("relative shrink-0 w-16 h-12 rounded-xl overflow-hidden border", photo.isCover ? "border-primary" : "border-border")}>
-                        <img src={photo.publicUrl} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                        <img src={photo.publicUrl} alt={`Foto ${i + 1}`} className="block w-full h-full object-cover" />
                       </div>
                     ))}
                     {uploadedPhotos.length > 5 && (

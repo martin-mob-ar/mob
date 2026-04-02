@@ -843,21 +843,21 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         {/* Características */}
         {(() => {
           const chars: { Icon: typeof Home; label: string }[] = [];
-          if (property.surface != null) chars.push({ Icon: Square, label: `${property.surface} m² totales` });
-          if (roofedSurface != null) chars.push({ Icon: Square, label: `${roofedSurface} m² cubiertos` });
-          if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
           if (suiteAmount != null) chars.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dormitorio' : 'dormitorios'}` });
+          if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
           if (property.bathrooms != null) chars.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
           if (property.parking != null) {
             if (property.parking > 0) chars.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
             else chars.push({ Icon: Car, label: 'Sin cochera' });
           }
-          if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
-          if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
+          if (property.surface != null) chars.push({ Icon: Square, label: `${property.surface} m² totales` });
+          if (roofedSurface != null) chars.push({ Icon: Square, label: `${roofedSurface} m² cubiertos` });
           if (publicationDate) {
             const days = Math.floor((Date.now() - new Date(publicationDate).getTime()) / 86400000);
             chars.push({ Icon: Clock, label: days === 0 ? "Publicado hoy" : days === 1 ? "Publicado hace 1 día" : `Publicado hace ${days} días` });
           }
+          if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
+          if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
           return chars.length > 0 ? (
             <div className="px-4 py-5 border-b border-border">
               <h2 className="font-display text-lg font-bold text-foreground mb-4">
@@ -1135,21 +1135,21 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             {/* Características */}
             {(() => {
               const chars: { Icon: typeof Home; label: string }[] = [];
-              if (property.surface != null) chars.push({ Icon: Square, label: `${property.surface} m² totales` });
-              if (roofedSurface != null) chars.push({ Icon: Square, label: `${roofedSurface} m² cubiertos` });
-              if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
               if (suiteAmount != null) chars.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dormitorio' : 'dormitorios'}` });
+              if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
               if (property.bathrooms != null) chars.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
               if (property.parking != null) {
                 if (property.parking > 0) chars.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
                 else chars.push({ Icon: Car, label: 'Sin cochera' });
               }
-              if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
-              if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
+              if (property.surface != null) chars.push({ Icon: Square, label: `${property.surface} m² totales` });
+              if (roofedSurface != null) chars.push({ Icon: Square, label: `${roofedSurface} m² cubiertos` });
               if (publicationDate) {
                 const days = Math.floor((Date.now() - new Date(publicationDate).getTime()) / 86400000);
                 chars.push({ Icon: Clock, label: days === 0 ? "Publicado hoy" : days === 1 ? "Publicado hace 1 día" : `Publicado hace ${days} días` });
               }
+              if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
+              if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
               return (
                 <div>
                   <h2 className="font-display text-lg font-bold text-foreground mb-4">

@@ -130,7 +130,7 @@ const BentoGrid = () => {
                 Garantía mob
               </span>
               <h3 className="font-display font-bold text-lg">Garantía digital</h3>
-              <p className="text-sm text-primary-foreground/80 mt-0.5">
+              <p className="text-sm text-primary-foreground/90 mt-0.5">
                 <GarantiaTooltip>Accedé a 50% off en una garantía digital con aprobación instantánea</GarantiaTooltip>
               </p>
             </div>
@@ -148,7 +148,7 @@ const BentoGrid = () => {
               Experiencia completa
             </span>
             <h3 className="relative font-display font-bold text-2xl">100%<br />Online</h3>
-            <p className="relative text-sm text-background/60 mt-2">
+            <p className="relative text-sm text-background/75 mt-2">
               Desde la búsqueda hasta la firma del contrato, todo sin salir de la plataforma.
             </p>
           </div>
@@ -255,7 +255,7 @@ const BentoGrid = () => {
               Garantía mob
             </span>
             <h3 className="font-display font-bold text-lg">Garantía digital</h3>
-            <p className="text-sm text-primary-foreground/80 mt-1">
+            <p className="text-sm text-primary-foreground/90 mt-1">
               <GarantiaTooltip>Accedé a 50% off en una garantía digital con aprobación instantánea</GarantiaTooltip>
             </p>
           </div>
@@ -268,7 +268,7 @@ const BentoGrid = () => {
               Experiencia completa
             </span>
             <h3 className="relative font-display font-bold text-xl">100% Online</h3>
-            <p className="relative text-sm text-background/60 mt-1">
+            <p className="relative text-sm text-background/75 mt-1">
               Desde la búsqueda hasta la firma, todo en la plataforma.
             </p>
           </div>

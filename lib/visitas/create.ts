@@ -44,7 +44,22 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     throw new Error(`Property ${propertyId} not found`);
   }
 
-  // 2. Fetch active operacion for this property
+  // 2. Check for existing accepted visita at the same date+time
+  const { data: conflict } = await supabaseAdmin
+    .from('visitas')
+    .select('id')
+    .eq('property_id', propertyId)
+    .eq('status', 'accepted')
+    .eq('confirmed_date', proposedDate)
+    .eq('confirmed_time', proposedTime)
+    .limit(1)
+    .maybeSingle();
+
+  if (conflict) {
+    throw new Error('Ya hay una visita confirmada en ese horario');
+  }
+
+  // 3. Fetch active operacion for this property
   const { data: operacion } = await supabaseAdmin
     .from('operaciones')
     .select('id')
@@ -54,7 +69,7 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     .limit(1)
     .maybeSingle();
 
-  // 3. Insert visita
+  // 4. Insert visita
   const { data: visita, error: visitaError } = await supabaseAdmin
     .from('visitas')
     .insert({
@@ -76,7 +91,7 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     throw new Error(`Failed to create visita: ${visitaError?.message}`);
   }
 
-  // 4. Insert first proposal (requester proposes the date/time)
+  // 5. Insert first proposal (requester proposes the date/time)
   const { data: proposal, error: proposalError } = await supabaseAdmin
     .from('visita_proposals')
     .insert({
@@ -95,13 +110,13 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     throw new Error(`Failed to create visita_proposal: ${proposalError?.message}`);
   }
 
-  // 5. Update visita with pending_proposal_id
+  // 6. Update visita with pending_proposal_id
   await supabaseAdmin
     .from('visitas')
     .update({ whatsapp_pending_proposal_id: proposal.id })
     .eq('id', visita.id);
 
-  // 6. Fetch owner details
+  // 7. Fetch owner details
   const { data: owner } = await supabaseAdmin
     .from('users')
     .select('name, telefono, telefono_country_code')
@@ -117,7 +132,7 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     propertyAddress: property.address ?? null,
   };
 
-  // 7. Fire-and-forget Kapso notification to owner
+  // 8. Fire-and-forget Kapso notification to owner
   if (result.ownerPhone) {
     const ownerKapsoPhone = toKapsoPhone(result.ownerCountryCode ?? '', result.ownerPhone);
     const { dayLabel, time: formattedTime } = formatVisitDateTime(proposedDate, proposedTime);

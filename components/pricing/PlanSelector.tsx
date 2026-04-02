@@ -53,7 +53,7 @@ export const pricingCost: Record<PlanType, string> = {
 };
 
 const CellContent = ({ value, isHighlighted = false }: { value: string; isHighlighted?: boolean }) => {
-  if (value === "—") return <Minus className="h-4 w-4 text-muted-foreground/40 mx-auto" />;
+  if (value === "—") return <Minus className="h-4 w-4 text-muted-foreground/60 mx-auto" />;
   return (
     <span className={cn("text-sm leading-relaxed", isHighlighted ? "text-foreground font-medium" : "text-muted-foreground")}>
       {value}
@@ -160,17 +160,17 @@ const MobilePlanCard = ({
                   return (
                     <div key={rowIdx} className="flex items-start gap-3">
                       {isEmpty ? (
-                        <Minus className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isWizard ? "text-muted-foreground/50" : "text-muted-foreground/30")} />
+                        <Minus className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isWizard ? "text-muted-foreground/60" : "text-muted-foreground/50")} />
                       ) : (
                         <Check className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isSelected || isRecommended ? "text-primary" : "text-muted-foreground")} />
                       )}
                       <div>
-                        <div className={cn("flex items-center gap-1", isWizard ? "text-sm text-muted-foreground" : "text-xs", isEmpty ? (isWizard ? "text-muted-foreground/60" : "text-muted-foreground/50") : (isWizard ? "text-foreground/70" : "text-muted-foreground"))}>
+                        <div className={cn("flex items-center gap-1", isWizard ? "text-sm text-muted-foreground" : "text-xs", isEmpty ? (isWizard ? "text-muted-foreground/70" : "text-muted-foreground/60") : (isWizard ? "text-foreground/80" : "text-muted-foreground"))}>
                           {row.feature}
                           {row.tooltip && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+                                <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
                               </TooltipTrigger>
                               <TooltipContent className="max-w-[220px] text-xs">{row.tooltip}</TooltipContent>
                             </Tooltip>
@@ -182,7 +182,7 @@ const MobilePlanCard = ({
                             {plan === "experiencia" && (row as Record<string, string>).experienciaTooltip && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+                                  <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-[220px] text-xs">{(row as Record<string, string>).experienciaTooltip}</TooltipContent>
                               </Tooltip>
@@ -286,7 +286,7 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                   <div className={cn(isWizard ? "px-5 py-2 bg-muted/60" : "px-3 py-1 bg-muted/40")}>
                     <span className={cn(
                       "font-bold uppercase tracking-wider",
-                      isWizard ? "text-xs text-foreground/90" : "text-[10px] text-foreground/70"
+                      isWizard ? "text-xs text-foreground/90" : "text-[10px] text-foreground/80"
                     )}>
                       {section.title}
                     </span>
@@ -320,7 +320,7 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                       {row.tooltip && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+                            <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-[220px] text-xs">{row.tooltip}</TooltipContent>
                         </Tooltip>
@@ -340,12 +340,12 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                       >
                         {row[plan] === "—" ? (
                           <span className={cn(
-                            isWizard ? "text-muted-foreground/50 text-sm" : "text-muted-foreground/25 text-xs"
+                            isWizard ? "text-muted-foreground/60 text-sm" : "text-muted-foreground/50 text-xs"
                           )}>—</span>
                         ) : row[plan] === "Incluido" || row[plan] === "Incluida" ? (
                           <Check className={cn(
                             isWizard ? "h-4 w-4" : "h-3.5 w-3.5",
-                            selectedPlan === plan ? "text-primary" : plan === "experiencia" ? "text-primary" : (isWizard ? "text-muted-foreground" : "text-muted-foreground/60")
+                            selectedPlan === plan ? "text-primary" : plan === "experiencia" ? "text-primary" : (isWizard ? "text-muted-foreground" : "text-muted-foreground/80")
                           )} />
                         ) : (
                           <span className={cn(
@@ -357,7 +357,7 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                             {cellTooltip && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+                                  <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-[220px] text-xs">{cellTooltip}</TooltipContent>
                               </Tooltip>
@@ -388,7 +388,7 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
                   <span className={cn(
                     "font-bold",
                     isWizard ? "text-sm" : "text-xs",
-                    selectedPlan === plan ? "text-primary" : (isWizard ? "text-foreground/70" : "text-foreground")
+                    selectedPlan === plan ? "text-primary" : (isWizard ? "text-foreground/80" : "text-foreground")
                   )}>
                     {pricingCost[plan]}
                   </span>

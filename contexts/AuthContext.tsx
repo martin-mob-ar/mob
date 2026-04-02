@@ -23,6 +23,7 @@ interface User {
   accountType: number | null;
   publicUserId: string | null;
   isVerified: boolean;
+  avatarUrl: string | null;
 }
 
 /** Exported so layout.tsx can build the same shape server-side. */
@@ -36,6 +37,7 @@ type PublicUser = {
   hoggax_last_verification_date: string | null;
   truora_last_verification_date: string | null;
   account_type: number | null;
+  logo: string | null;
 };
 
 interface AuthContextType {
@@ -61,6 +63,13 @@ function mapSupabaseUser(
   supabaseUser: SupabaseUser,
   publicUser?: PublicUser | null
 ): User {
+  const accountType = publicUser?.account_type ?? null;
+  const isInmobiliaria = accountType === 3 || accountType === 4;
+  // Inmobiliarias use their Tokko logo; everyone else uses Google profile photo
+  const avatarUrl = isInmobiliaria
+    ? (publicUser?.logo || null)
+    : (supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || null);
+
   return {
     email: supabaseUser.email || "",
     name:
@@ -72,11 +81,12 @@ function mapSupabaseUser(
     phoneCountryCode: publicUser?.telefono_country_code || "+54",
     // Derive isOwner from DB account_type (3 = inmobiliaria, 4 = red inmobiliaria), fall back to signup metadata
     isOwner: publicUser
-      ? publicUser.account_type === 3 || publicUser.account_type === 4
+      ? isInmobiliaria
       : (supabaseUser.user_metadata?.isOwner ?? false),
-    accountType: publicUser?.account_type ?? null,
+    accountType,
     publicUserId: publicUser?.id ?? null,
     isVerified: !!publicUser?.hoggax_last_verification_date && !!publicUser?.truora_last_verification_date,
+    avatarUrl,
   };
 }
 
@@ -117,7 +127,7 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const queryPromise = supabase
           .from("users")
-          .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type")
+          .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type, logo")
           .eq("auth_id", authId)
           .maybeSingle();
         const timeoutPromise = new Promise<{ data: null }>((resolve) =>
