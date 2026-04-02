@@ -76,6 +76,21 @@ export async function POST(request: Request) {
       });
     }
 
+    // Sync contact_phone to non-tokko properties when phone changes
+    // This triggers rebuild_property_listing via the properties UPDATE trigger
+    if (telefono !== undefined && updatedUser) {
+      const fullPhone = normalizedPhone
+        ? `${updateData.telefono_country_code || updatedUser.telefono_country_code || '+54'} ${normalizedPhone}`
+        : null;
+
+      await supabaseAdmin
+        .from('properties')
+        .update({ contact_phone: fullPhone })
+        .eq('user_id', updatedUser.id)
+        .eq('tokko', false)
+        .is('deleted_at', null);
+    }
+
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error('[Profile] Unexpected error:', error);

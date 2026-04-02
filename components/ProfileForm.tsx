@@ -36,9 +36,13 @@ interface ProfileFormProps {
   profile: ProfileData;
   /** When provided, shows DNI field for account types 1 (inquilino) and 2 (dueño directo) */
   accountType?: number | null;
+  /** When false, all fields are read-only (display mode) */
+  editing?: boolean;
+  /** Called after a successful save */
+  onSaved?: () => void;
 }
 
-export default function ProfileForm({ profile, accountType }: ProfileFormProps) {
+export default function ProfileForm({ profile, accountType, editing = true, onSaved }: ProfileFormProps) {
   const { refreshUser } = useAuth();
   const [name, setName] = useState(profile.name || "");
   const [phoneCountryCode, setPhoneCountryCode] = useState(profile.telefono_country_code || "+54");
@@ -91,6 +95,7 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
       setTimeout(() => setSaved(false), 3000);
       // Refresh auth context in background — don't block save feedback
       refreshUser().catch(() => {});
+      onSaved?.();
     } catch {
       setError("Error al guardar el perfil");
     } finally {
@@ -98,6 +103,41 @@ export default function ProfileForm({ profile, accountType }: ProfileFormProps) 
     }
   };
 
+  // ── Read-only display ──────────────────────────────────────────────────────
+  if (!editing) {
+    const phoneDisplay = phone
+      ? `${phoneCountryCode} ${phone}`
+      : "No especificado";
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Email</label>
+            <p className="text-sm text-foreground">{profile.email}</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Nombre completo</label>
+            <p className="text-sm text-foreground">{name || "No especificado"}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {showDni && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">DNI</label>
+              <p className="text-sm text-foreground">{dni || "No especificado"}</p>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Teléfono</label>
+            <p className="text-sm text-foreground">{phoneDisplay}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit mode ──────────────────────────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Error */}

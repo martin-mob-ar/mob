@@ -46,8 +46,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import PhotoUploader, { UploadedPhoto } from "@/components/PhotoUploader";
 import PlanSelector, { PlanType, pricingCost } from "@/components/pricing/PlanSelector";
+import { useAuth } from "@/contexts/AuthContext";
+import { COUNTRY_CODES } from "@/lib/constants/country-codes";
 
 const mobLogo = "/assets/mob-logo-new.png";
+const SUBIR_DRAFT_KEY = "mob_subir_propiedad_guest";
+const GUEST_STORAGE_KEY = "mob_guest_contact";
 
 const TOTAL_STEPS = 9;
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places"];
@@ -93,14 +97,18 @@ interface DraftProperty {
 type EditData = Record<string, any> | null;
 
 interface SubirPropiedadProps {
-  userId: string;
+  userId: string | null;
   draftData?: DraftData;
   editData?: EditData;
   existingDrafts?: DraftProperty[];
+  fromPropietarios?: boolean;
+  resumeAfterAuth?: boolean;
 }
 
-const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: SubirPropiedadProps) => {
+const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false }: SubirPropiedadProps) => {
   const router = useRouter();
+  const pathname = "/subir-propiedad";
+  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -197,6 +205,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
 
   // Step 8: Plan elegido
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
+
+  // Guest phone (unauthenticated users, step 2)
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestCountryCode, setGuestCountryCode] = useState("+54");
 
   // Scrollable main area
   const mainRef = useRef<HTMLDivElement>(null);
@@ -412,6 +424,28 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Resume after auth: restore form data from localStorage
+  useEffect(() => {
+    if (!resumeAfterAuth || !userId) return;
+    const raw = localStorage.getItem(SUBIR_DRAFT_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.typeId) setTypeId(data.typeId);
+      if (data.locationId) setLocationId(data.locationId);
+      if (data.selectedLocation) setSelectedLocation(data.selectedLocation);
+      if (data.address) { setAddress(data.address); setPlaceSelected(!!data.placeSelected); }
+      if (data.geoLat) setGeoLat(data.geoLat);
+      if (data.geoLong) setGeoLong(data.geoLong);
+      if (data.piso) setPiso(data.piso);
+      if (data.depto) setDepto(data.depto);
+      setCurrentStep(3);
+      maxStepReachedRef.current = 3;
+    } catch { /* ignore parse errors */ }
+    localStorage.removeItem(SUBIR_DRAFT_KEY);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Reset validation errors when step changes
   useEffect(() => {
     setShowErrors(false);
@@ -470,6 +504,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
       case 2:
         if (!typeId || !selectedLocation || !address || !placeSelected) return false;
         if ((typeId === 2 || typeId === 13) && (!piso || !depto)) return false;
+        // Require phone for unauthenticated users
+        if (!isAuthenticated && guestPhone.length < 6) return false;
         return true;
       case 3:
         if (!antiguedad || !superficieCubierta || !superficieTotal) return false;
@@ -590,6 +626,27 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
     if (currentStep < TOTAL_STEPS) {
       if (validateStep(currentStep)) {
         setShowErrors(false);
+
+        // Auth gate: after step 2, if not authenticated, open auth modal
+        if (currentStep === 2 && !isAuthenticated) {
+          // Persist form data to localStorage for resume after auth
+          localStorage.setItem(SUBIR_DRAFT_KEY, JSON.stringify({
+            typeId, locationId, selectedLocation, address, geoLat, geoLong,
+            piso, depto, placeSelected, guestPhone, guestCountryCode,
+          }));
+          // Save phone for applyGuestContactToProfile() in AuthModal
+          localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({
+            phone: guestPhone,
+            country_code: guestCountryCode,
+          }));
+          // Open auth modal with redirect back here
+          const params = new URLSearchParams(window.location.search);
+          params.set("redirect", "/subir-propiedad?resume=true");
+          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+          openAuthModal();
+          return;
+        }
+
         const nextStep = currentStep + 1;
         maxStepReachedRef.current = Math.max(maxStepReachedRef.current, nextStep);
 
@@ -825,10 +882,22 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           return;
         }
 
-        toast("Te vamos a contactar para coordinar con el fotógrafo", {
-          duration: 8000,
-        });
-        router.push(`/propiedad/${result.id}`);
+        // Fire Truora outbound for identity verification (fire-and-forget)
+        if (authUser?.phone) {
+          fetch("/api/truora/outbound", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              phone: authUser.phone,
+              country_code: authUser.phoneCountryCode || "+54",
+              name: authUser.name || "",
+              accountType: authUser.accountType || 2,
+            }),
+          }).catch(() => {});
+        }
+
+        // Redirect to property detail with verification modal
+        router.push(`/propiedad/${result.id}?verification=true`);
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error inesperado.");
@@ -991,30 +1060,30 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
           <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
             <div>
               <h1 className="font-display text-3xl sm:text-4xl md:text-[3.25rem] md:leading-[1.15] font-bold leading-tight mb-4 sm:mb-6">
-                Publicar tu propiedad es fácil
+                Alquila tu propiedad con seguridad
               </h1>
               <p className="text-muted-foreground text-base sm:text-lg">
-                Paso a paso para que tu propiedad se vea increíble y la vean los mejores inquilinos.
+                Recibí solo inquilinos calificados, aprobados para una garantía. Ahorra tiempo y dinero.
               </p>
             </div>
             <div className="divide-y divide-border">
               {[
                 {
                   num: "1",
-                  title: "Contanos acerca de tu propiedad",
-                  desc: "Compartí la ubicación, tipo y características principales.",
+                  title: "Contanos acerca de la propiedad",
+                  desc: "Comparti los datos y subi las fotos.",
                   img: "/assets/subir-propiedad-1.png",
                 },
                 {
                   num: "2",
-                  title: "Hacé que se destaque",
-                  desc: "Subí fotos y elegí el plan que mejor se adapte a vos.",
+                  title: "Elegí como queres publicarlo. Planes gratis y hasta USD 299.",
+                  desc: "Sin costo inicial (pagas al alquilar)",
                   img: "/assets/subir-propiedad-2.png",
                 },
                 {
                   num: "3",
-                  title: "Terminá todo y publicá tu anuncio",
-                  desc: "Revisá los detalles y publicá en minutos.",
+                  title: "Alquila tu propiedad en dias",
+                  desc: "Recibi interesados calificados, y firmá el contrato online. Tu inquilino tiene 50% off en su garantía y vos tu cobro asegurado todos los meses.",
                   img: "/assets/subir-propiedad-3.png",
                 },
               ].map((item) => (
@@ -1043,6 +1112,47 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
       case 2:
         return (
           <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
+            {/* WhatsApp phone input for unauthenticated users */}
+            <AnimateHeight show={!isAuthenticated}>
+              <div className="space-y-2 pb-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block">
+                  WhatsApp
+                </label>
+                <div className="flex gap-2">
+                  <Select value={guestCountryCode} onValueChange={setGuestCountryCode}>
+                    <SelectTrigger className="h-12 rounded-xl text-sm w-[110px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background">
+                      {COUNTRY_CODES.map((code) => (
+                        <SelectItem key={code.value} value={code.value}>
+                          {code.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="(11) 0000-0000"
+                    autoComplete="tel-national"
+                    value={guestPhone}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\D/g, "");
+                      setGuestPhone(cleaned);
+                    }}
+                    className={cn(
+                      "h-12 rounded-xl flex-1",
+                      showErrors && !isAuthenticated && guestPhone.length < 6 && "border-red-500"
+                    )}
+                  />
+                </div>
+                {showErrors && !isAuthenticated && guestPhone.length < 6 && (
+                  <p className="text-sm text-red-500">Ingresá tu número de WhatsApp</p>
+                )}
+              </div>
+            </AnimateHeight>
+
             <div className="space-y-4">
               <h1 className="font-display text-xl sm:text-3xl font-bold">
                 ¿Qué tipo de propiedad es?
@@ -1953,6 +2063,27 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                 isEditMode ? "Guardar cambios" : "Publicar propiedad"
               )}
             </Button>
+          ) : currentStep === 1 && !isAuthenticated && !fromPropietarios ? (
+            /* Role selection buttons for unregistered users on step 1 */
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/inmobiliarias")}
+                className="rounded-full px-6 h-12 text-muted-foreground"
+              >
+                Soy inmobiliaria
+              </Button>
+              <Button
+                onClick={() => {
+                  maxStepReachedRef.current = Math.max(maxStepReachedRef.current, 2);
+                  setCurrentStep(2);
+                  mainRef.current?.scrollTo({ top: 0 });
+                }}
+                className="rounded-full px-8 h-12"
+              >
+                Soy propietario
+              </Button>
+            </div>
           ) : (
             <Button onClick={handleNext} disabled={(isSaving && !draftPropertyIdRef.current) || (currentStep === 5 && isUploadingPhotos)} className="rounded-full px-10 h-12">
               {isSaving && !draftPropertyIdRef.current ? (
@@ -1961,7 +2092,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [] }: Su
                   Guardando...
                 </>
               ) : (
-                currentStep === 1 ? "Comenzar" : "Siguiente"
+                currentStep === 1 ? "Continuar" : "Siguiente"
               )}
             </Button>
           )}
