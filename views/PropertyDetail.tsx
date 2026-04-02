@@ -43,6 +43,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import VerificationRequiredDialog from "@/components/VerificationRequiredDialog";
+import VerificationSuccessModal from "@/components/VerificationSuccessModal";
 
 interface PropertyDetailProps {
   property?: Property;
@@ -72,6 +73,7 @@ interface PropertyDetailProps {
   ownerAccountType?: number | null;
   contractDuration?: number | null;
   orientation?: string | null;
+  showVerificationModal?: boolean;
 }
 
 function formatDescription(text: string): string {
@@ -81,7 +83,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, showVerificationModal = false }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -1502,6 +1504,12 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       </div>
     </div>
     {showVerificationBanner && <VerificationRequiredDialog />}
+    {showVerificationModal && (
+      <VerificationSuccessModal
+        open={showVerificationModal}
+        onOpenChange={() => {}}
+      />
+    )}
     </GoogleMapsProvider>
   );
 };

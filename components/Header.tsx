@@ -223,6 +223,10 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
   }, [landingCta]);
 
   const handleLandingCTA = () => {
+    if (pathname === "/propietarios") {
+      router.push("/subir-propiedad?from=propietarios");
+      return;
+    }
     if (isAuthenticated) {
       router.push("/perfil");
       return;
@@ -623,15 +627,25 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                         Soy inmobiliaria
                       </Link>
                     </Button>
+                    <Button
+                      className="rounded-full px-5 font-bold"
+                      asChild
+                    >
+                      <Link href="/subir-propiedad">
+                        Publica gratis
+                      </Link>
+                    </Button>
                   </>
                 ) : (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowPublishModal(true)}
-                    className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Publicar gratis
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowPublishModal(true)}
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Publicar gratis
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="outline"
@@ -646,7 +660,14 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden ml-auto">
+          <div className="md:hidden ml-auto flex items-center gap-2">
+            {!authLoading && !isAuthenticated && !landingCta && (
+              <Button size="sm" className="rounded-full px-4 h-9 font-bold text-sm" asChild>
+                <Link href="/subir-propiedad">
+                  Publica
+                </Link>
+              </Button>
+            )}
             <Drawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} shouldScaleBackground={false}>
               <DrawerTrigger asChild>
                 <button className="relative p-2" aria-label="Abrir menú">
@@ -761,22 +782,40 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                         <p className="text-base font-semibold text-foreground">Bienvenido a mob</p>
                         <p className="text-sm text-muted-foreground mt-1">Iniciá sesión para gestionar tus propiedades</p>
                       </div>
-                      <Button
-                        className="w-full rounded-full h-12 font-bold text-base"
-                        onClick={() => { setMobileMenuOpen(false); landingCta ? handleLandingCTA() : openAuthModal(); }}
-                      >
-                        {landingCta || "Iniciar sesión"}
-                      </Button>
                       {landingCta ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
-                          className="w-full rounded-full h-12 font-medium"
-                        >
-                          Iniciar sesión
-                        </Button>
+                        <>
+                          <Button
+                            className="w-full rounded-full h-12 font-bold text-base"
+                            onClick={() => { setMobileMenuOpen(false); handleLandingCTA(); }}
+                          >
+                            {landingCta}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
+                            className="w-full rounded-full h-12 font-medium"
+                          >
+                            Iniciar sesión
+                          </Button>
+                        </>
                       ) : (
                         <>
+                          <Button
+                            className="w-full rounded-full h-12 font-bold text-base"
+                            asChild
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Link href="/subir-propiedad">
+                              Publica gratis
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
+                            className="w-full rounded-full h-12 font-medium"
+                          >
+                            Iniciar sesión
+                          </Button>
                           <Button
                             variant="ghost"
                             className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"

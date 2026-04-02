@@ -69,14 +69,7 @@ const LandingPropietarios = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
 
   const handleCTA = () => {
-    if (isAuthenticated) {
-      router.push("/perfil");
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    params.set("redirect", "/perfil");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    openAuthModal();
+    router.push("/subir-propiedad?from=propietarios");
   };
 
   return (

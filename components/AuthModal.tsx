@@ -210,6 +210,7 @@ const AuthModal = () => {
           const redirectTo = searchParams.get("redirect")
             || new URLSearchParams(window.location.search).get("redirect");
           const inferredType = pathname === "/propietarios" ? 2
+            : pathname === "/subir-propiedad" ? 2
             : pathname === "/inmobiliarias" ? 3
             : redirectTo?.startsWith("/verificate") ? 1
             : null;

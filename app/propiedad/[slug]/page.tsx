@@ -232,10 +232,14 @@ export async function generateMetadata({
 
 export default async function PropiedadDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ verification?: string }>;
 }) {
   const { slug: slugParam } = await params;
+  const resolvedSearchParams = await searchParams;
+  const showVerificationModal = resolvedSearchParams?.verification === "true";
   const propertyId = extractPropertyId(slugParam);
 
   if (!propertyId) {
@@ -471,6 +475,7 @@ export default async function PropiedadDetailPage({
       ownerAccountType={propertyData.owner_account_type ?? null}
       contractDuration={contractDuration}
       orientation={orientation}
+      showVerificationModal={showVerificationModal}
     />
   );
 }

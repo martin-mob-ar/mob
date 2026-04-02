@@ -1,23 +1,34 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 import SubirPropiedad from "@/views/SubirPropiedad";
 
 interface PageProps {
-  searchParams: Promise<{ draftId?: string; editId?: string }>;
+  searchParams: Promise<{
+    draftId?: string;
+    editId?: string;
+    from?: string;
+    resume?: string;
+  }>;
 }
 
 export default async function SubirPropiedadPage({ searchParams }: PageProps) {
   const user = await getAuthUser();
+  const params = await searchParams;
+  const fromPropietarios = params?.from === "propietarios";
+  const resumeAfterAuth = params?.resume === "true";
 
+  // Unregistered users see intro + step 1 only (auth gate enforced client-side)
   if (!user) {
-    const headersList = await headers();
-    const pathname = headersList.get("x-pathname") || "/subir-propiedad";
-    redirect(`/login?redirect=${encodeURIComponent(pathname)}`);
+    return (
+      <SubirPropiedad
+        key="guest"
+        userId={null}
+        fromPropietarios={fromPropietarios}
+        resumeAfterAuth={false}
+      />
+    );
   }
 
-  const params = await searchParams;
   const draftId = params?.draftId ? parseInt(params.draftId) : null;
   const editId = params?.editId ? parseInt(params.editId) : null;
 
@@ -81,6 +92,8 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
       draftData={draftData}
       editData={editData}
       existingDrafts={existingDrafts || []}
+      fromPropietarios={fromPropietarios}
+      resumeAfterAuth={resumeAfterAuth}
     />
   );
 }
