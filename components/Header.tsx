@@ -632,7 +632,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                       asChild
                     >
                       <Link href="/subir-propiedad">
-                        Publica gratis
+                        Publicá gratis
                       </Link>
                     </Button>
                   </>
@@ -653,7 +653,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   className="rounded-full px-5 font-medium gap-2"
                 >
                   <User className="h-4 w-4" />
-                  Iniciar sesión
+                  Iniciá sesión o registrate
                 </Button>
               </>
             )}
@@ -664,7 +664,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
             {!authLoading && !isAuthenticated && !landingCta && (
               <Button size="sm" className="rounded-full px-4 h-9 font-bold text-sm" asChild>
                 <Link href="/subir-propiedad">
-                  Publica
+                  Publicá
                 </Link>
               </Button>
             )}
@@ -745,36 +745,60 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                         </Link>
                       )}
 
-                      <Button
-                        variant="ghost"
-                        className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
-                        asChild
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Link href="/perfil">
-                          <User className="h-4 w-4" />
-                          Mi perfil
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
-                        asChild
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Link href="/mis-busquedas">
-                          <Heart className="h-4 w-4" />
-                          Mis búsquedas
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => { logout(); setMobileMenuOpen(false); }}
-                        className="w-full rounded-full h-12 text-muted-foreground hover:text-foreground"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Cerrar sesión
-                      </Button>
+                      <div className="border-t border-border" />
+
+                      {/* Alquilá online section */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pb-1">Alquilá online</p>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link href="/buscar">
+                            <Search className="h-4 w-4 text-muted-foreground" />
+                            Buscar propiedades
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link href="/mis-busquedas">
+                            <Heart className="h-4 w-4 text-muted-foreground" />
+                            Favoritos
+                          </Link>
+                        </Button>
+                      </div>
+
+                      <div className="border-t border-border" />
+
+                      {/* Mi cuenta section */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pb-1">Mi cuenta</p>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link href="/perfil">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            Mi perfil
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => { logout(); setMobileMenuOpen(false); }}
+                          className="w-full justify-start rounded-xl h-12 font-medium text-muted-foreground gap-3 px-4"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Cerrar sesión
+                        </Button>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -795,49 +819,84 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                             onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
                             className="w-full rounded-full h-12 font-medium"
                           >
-                            Iniciar sesión
+                            Iniciá sesión o registrate
                           </Button>
                         </>
                       ) : (
                         <>
                           <Button
                             className="w-full rounded-full h-12 font-bold text-base"
-                            asChild
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <Link href="/subir-propiedad">
-                              Publica gratis
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
                             onClick={() => { setMobileMenuOpen(false); openAuthModal(); }}
-                            className="w-full rounded-full h-12 font-medium"
                           >
-                            Iniciar sesión
+                            Iniciá sesión o registrate
                           </Button>
-                          <Button
-                            variant="ghost"
-                            className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
-                            asChild
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <Link href="/propietarios">
-                              <Home className="h-4 w-4" />
-                              Soy propietario
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="w-full rounded-full h-12 font-medium text-muted-foreground hover:text-foreground gap-2"
-                            asChild
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <Link href="/inmobiliarias">
-                              <Building2 className="h-4 w-4" />
-                              Soy inmobiliaria
-                            </Link>
-                          </Button>
+
+                          {/* Alquilá online section */}
+                          <div className="space-y-1 pt-2">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pb-1">Alquilá online</p>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                              asChild
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Link href="/buscar">
+                                <Search className="h-4 w-4 text-muted-foreground" />
+                                Buscar propiedades
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                              asChild
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Link href="/mis-busquedas">
+                                <Heart className="h-4 w-4 text-muted-foreground" />
+                                Favoritos
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                              asChild
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Link href="/verificate">
+                                <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                                Verificate
+                              </Link>
+                            </Button>
+                          </div>
+
+                          <div className="border-t border-border" />
+
+                          {/* Publicá gratis section */}
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pb-1">Publicá gratis</p>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                              asChild
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Link href="/propietarios">
+                                <Home className="h-4 w-4 text-muted-foreground" />
+                                Soy propietario
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                              asChild
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Link href="/inmobiliarias">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                Soy inmobiliaria
+                              </Link>
+                            </Button>
+                          </div>
                         </>
                       )}
                     </>

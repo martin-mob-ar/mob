@@ -97,6 +97,15 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}${next}`);
         }
 
+        // If redirect destination is /subir-propiedad, auto-set as propietario
+        if (next.startsWith("/subir-propiedad")) {
+          await supabaseAdmin
+            .from("users")
+            .update({ account_type: 2 })
+            .eq("id", publicUserId);
+          return NextResponse.redirect(`${origin}${next}`);
+        }
+
         // New user — redirect to account type selection
         const separator = next.includes("?") ? "&" : "?";
         return NextResponse.redirect(

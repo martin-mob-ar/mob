@@ -108,7 +108,7 @@ interface SubirPropiedadProps {
 const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false }: SubirPropiedadProps) => {
   const router = useRouter();
   const pathname = "/subir-propiedad";
-  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal, isVerified } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -883,7 +883,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         }
 
         // Fire Truora outbound for identity verification (fire-and-forget)
-        if (authUser?.phone) {
+        // Skip if user is already verified
+        if (authUser?.phone && !isVerified) {
           fetch("/api/truora/outbound", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -896,8 +897,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           }).catch(() => {});
         }
 
-        // Redirect to property detail with verification modal
-        router.push(`/propiedad/${result.id}?verification=true`);
+        // Redirect to property detail — show verification modal only if not yet verified
+        router.push(`/propiedad/${result.id}${isVerified ? "" : "?verification=true"}`);
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error inesperado.");
@@ -2065,11 +2066,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
             </Button>
           ) : currentStep === 1 && !isAuthenticated && !fromPropietarios ? (
             /* Role selection buttons for unregistered users on step 1 */
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full">
               <Button
                 variant="outline"
                 onClick={() => router.push("/inmobiliarias")}
-                className="rounded-full px-6 h-12 text-muted-foreground"
+                className="flex-1 rounded-full h-12 font-semibold"
               >
                 Soy inmobiliaria
               </Button>
@@ -2079,7 +2080,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                   setCurrentStep(2);
                   mainRef.current?.scrollTo({ top: 0 });
                 }}
-                className="rounded-full px-8 h-12"
+                className="flex-1 rounded-full h-12 font-semibold"
               >
                 Soy propietario
               </Button>
