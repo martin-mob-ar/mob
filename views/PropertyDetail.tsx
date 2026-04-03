@@ -42,7 +42,6 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
-import VerificationRequiredDialog from "@/components/VerificationRequiredDialog";
 import VerificationSuccessModal from "@/components/VerificationSuccessModal";
 
 interface PropertyDetailProps {
@@ -91,7 +90,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const { rate } = useExchangeRate();
 
   const isCurrentUserOwner = !!user?.publicUserId && user.publicUserId === ownerId;
-  const showVerificationBanner = isPendingVerification && isCurrentUserOwner && !showVerificationModal;
+  const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
 
   // Show schedule picker for properties from inquilinos/dueños directos with availability configured
   const showSchedulePicker =
@@ -1511,7 +1510,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </p>
       </div>
     </div>
-    {showVerificationBanner && <VerificationRequiredDialog />}
     {showVerificationModal && (
       <VerificationSuccessModal
         open={showVerificationModal}
