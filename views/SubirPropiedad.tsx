@@ -108,7 +108,7 @@ interface SubirPropiedadProps {
 const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false }: SubirPropiedadProps) => {
   const router = useRouter();
   const pathname = "/subir-propiedad";
-  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal, refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -427,6 +427,24 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   // Resume after auth: restore form data from localStorage
   useEffect(() => {
     if (!resumeAfterAuth || !userId) return;
+    // Apply guest phone to profile (may not have happened for Google auth)
+    const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+    if (guestRaw) {
+      try {
+        const guest = JSON.parse(guestRaw);
+        if (guest?.phone) {
+          fetch("/api/users/profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              telefono: guest.phone,
+              telefono_country_code: guest.country_code || "+54",
+            }),
+          }).then(() => refreshUser()).catch(() => {});
+        }
+      } catch { /* ignore */ }
+      localStorage.removeItem(GUEST_STORAGE_KEY);
+    }
     const raw = localStorage.getItem(SUBIR_DRAFT_KEY);
     if (!raw) return;
     try {

@@ -91,7 +91,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const { rate } = useExchangeRate();
 
   const isCurrentUserOwner = !!user?.publicUserId && user.publicUserId === ownerId;
-  const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
+  const showVerificationBanner = isPendingVerification && isCurrentUserOwner && !showVerificationModal;
 
   // Show schedule picker for properties from inquilinos/dueños directos with availability configured
   const showSchedulePicker =
