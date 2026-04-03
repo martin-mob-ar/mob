@@ -794,6 +794,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             )}
           </div>
 
+          {!isCurrentUserOwner && (
+          <>
           <AnimateHeight show={!leadFormType}>
             <div className="space-y-2 mt-5">
               <Button
@@ -838,6 +840,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               )}
             </div>
           </AnimateHeight>
+          </>
+          )}
           </>)}
 
         </div>
@@ -1084,7 +1088,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
       {/* Mobile Fixed Bottom CTA - Only shows after scrolling past main CTA */}
       <div
         className={`md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-5 z-40 transition-transform duration-300 ${
-          showBottomBar && !isUnavailable ? "translate-y-0" : "translate-y-full"
+          showBottomBar && !isUnavailable && !isCurrentUserOwner ? "translate-y-0" : "translate-y-full"
         }`}
       >
         <div className="flex items-center gap-3">
@@ -1358,6 +1362,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   );
                 })()}
 
+                {!isCurrentUserOwner && (
+                <>
                 <AnimateHeight show={!leadFormType}>
                   <div className="space-y-2 mt-5">
                     <Button
@@ -1402,6 +1408,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     )}
                   </div>
                 </AnimateHeight>
+                </>
+                )}
               </div>
 
               {/* Trust Elements */}
