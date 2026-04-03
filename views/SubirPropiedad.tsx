@@ -108,7 +108,7 @@ interface SubirPropiedadProps {
 const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false }: SubirPropiedadProps) => {
   const router = useRouter();
   const pathname = "/subir-propiedad";
-  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal, isVerified } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -884,7 +884,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
 
         // Fire Truora outbound for identity verification (fire-and-forget)
         // Skip if user is already verified
-        if (authUser?.phone && !isVerified) {
+        if (authUser?.phone && !authUser?.isVerified) {
           fetch("/api/truora/outbound", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -898,7 +898,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         }
 
         // Redirect to property detail — show verification modal only if not yet verified
-        router.push(`/propiedad/${result.id}${isVerified ? "" : "?verification=true"}`);
+        router.push(`/propiedad/${result.id}${authUser?.isVerified ? "" : "?verification=true"}`);
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error inesperado.");
