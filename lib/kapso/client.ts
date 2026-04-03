@@ -189,7 +189,7 @@ export async function sendOwnerRejectionByInquilino(params: {
 
 /** Owner: prompt for new date/time */
 export async function sendOwnerDatePrompt(ownerPhone: string): Promise<void> {
-  await sendTextMessage(ownerPhone, 'Ok, cuándo podes? Decime día y horario. Ej: mañana a las 14, 15/04 10:30, el viernes a las 3 de la tarde. Solo horarios en punto o y media.');
+  await sendTextMessage(ownerPhone, 'Ok, cuándo podes? Decime día y horario. Ej: mañana a las 14, 15/04 10:30. Solo horarios en punto o y media.');
 }
 
 /** Owner: their suggestion was forwarded to inquilino */
@@ -257,7 +257,7 @@ export async function sendInquilinoCounterProposal(params: {
 
 /** Inquilino: prompt for new date/time */
 export async function sendInquilinoDatePrompt(inquilinoPhone: string): Promise<void> {
-  await sendTextMessage(inquilinoPhone, 'Ok, cuándo podes? Decime día y horario. Ej: mañana a las 14, 15/04 10:30, el viernes a las 3 de la tarde. Solo horarios en punto o y media.');
+  await sendTextMessage(inquilinoPhone, 'Ok, cuándo podes? Decime día y horario. Ej: mañana a las 14, 15/04 10:30. Solo horarios en punto o y media.');
 }
 
 /** Inquilino: their suggestion was forwarded to owner */

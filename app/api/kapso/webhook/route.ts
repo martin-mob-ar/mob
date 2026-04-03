@@ -164,6 +164,7 @@ async function parseDateTimeAI(text: string): Promise<{ date: string; time: stri
 Extraé la fecha y hora de este mensaje de WhatsApp sobre una visita a una propiedad:
 "${text}"
 
+El usuario puede expresar la hora con palabras (ej: "cinco y media de la tarde" = 17:30, "tres de la tarde" = 15:00).
 Solo se permiten horarios en punto (:00) o y media (:30). Redondeá al más cercano.
 Si el mensaje no contiene una fecha/hora válida, respondé exactamente: null
 
@@ -171,16 +172,13 @@ Si sí contiene fecha y hora, respondé SOLO con JSON (sin markdown):
 {"day":DD,"month":MM,"year":YYYY,"hour":HH,"minute":MM}`,
       temperature: 0,
       maxOutputTokens: 100,
-      providerOptions: {
-        google: { thinkingConfig: { thinkingBudget: 0 } },
-      },
     });
 
     const cleaned = response.trim();
     if (cleaned === 'null' || !cleaned.startsWith('{')) return null;
 
     const parsed = JSON.parse(cleaned);
-    if (!parsed.day || !parsed.month || !parsed.hour === undefined) return null;
+    if (!parsed.day || !parsed.month || parsed.hour === undefined) return null;
 
     const year = parsed.year ?? now.getFullYear();
     const { hour, minute } = roundToSlot(parsed.hour, parsed.minute ?? 0);
@@ -547,7 +545,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     }
     if (!parsed) {
       if (ownerPhone) {
-        await sendTextMessage(ownerPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30, el viernes a la tarde. Solo horarios en punto o y media.');
+        await sendTextMessage(ownerPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30. Solo horarios en punto o y media.');
       }
       return;
     }
@@ -686,7 +684,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     }
     if (!parsed) {
       if (inquilinoPhone) {
-        await sendTextMessage(inquilinoPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30, el viernes a la tarde. Solo horarios en punto o y media.');
+        await sendTextMessage(inquilinoPhone, 'No pude entender la fecha. Probá de nuevo, por ejemplo: mañana a las 14, 15/04 10:30. Solo horarios en punto o y media.');
       }
       return;
     }
