@@ -108,7 +108,7 @@ interface SubirPropiedadProps {
 const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false }: SubirPropiedadProps) => {
   const router = useRouter();
   const pathname = "/subir-propiedad";
-  const { isAuthenticated, isLoading: authLoading, user: authUser, openAuthModal, refreshUser } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user: authUser, login, register, authError, clearError, refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -209,6 +209,16 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   // Guest phone (unauthenticated users, step 2)
   const [guestPhone, setGuestPhone] = useState("");
   const [guestCountryCode, setGuestCountryCode] = useState("+54");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  // Inline auth gate (shown between step 2 and 3 for unauthenticated users)
+  const [showInlineAuth, setShowInlineAuth] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authStep, setAuthStep] = useState<"initial" | "password">("initial");
+  const [authIsExisting, setAuthIsExisting] = useState<boolean | null>(null);
+  const [authLocalError, setAuthLocalError] = useState<string | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Scrollable main area
   const mainRef = useRef<HTMLDivElement>(null);
@@ -469,6 +479,42 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     setShowErrors(false);
   }, [currentStep]);
 
+  // Auto-advance past inline auth gate when user authenticates (email/password flow)
+  useEffect(() => {
+    if (showInlineAuth && isAuthenticated && !authLoading) {
+      setShowInlineAuth(false);
+      // Apply guest phone to profile
+      const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+      if (guestRaw) {
+        try {
+          const guest = JSON.parse(guestRaw);
+          if (guest?.phone) {
+            fetch("/api/users/profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                telefono: guest.phone,
+                telefono_country_code: guest.country_code || "+54",
+              }),
+            }).then(() => refreshUser()).catch(() => {});
+          }
+        } catch { /* ignore */ }
+        localStorage.removeItem(GUEST_STORAGE_KEY);
+      }
+      // Auto-set account type to propietario
+      fetch("/api/users/account-type", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account_type: 2 }),
+      }).then(() => refreshUser()).catch(() => {});
+      // Advance to step 3
+      const nextStep = 3;
+      maxStepReachedRef.current = Math.max(maxStepReachedRef.current, nextStep);
+      setCurrentStep(nextStep);
+      mainRef.current?.scrollTo({ top: 0 });
+    }
+  }, [showInlineAuth, isAuthenticated, authLoading, refreshUser]);
+
   // Default IPC based on currency: ON for ARS, OFF for USD
   useEffect(() => {
     setIpcEnabled(moneda === "ARS");
@@ -645,23 +691,42 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       if (validateStep(currentStep)) {
         setShowErrors(false);
 
-        // Auth gate: after step 2, if not authenticated, open auth modal
+        // Check phone uniqueness before advancing from step 2
+        if (currentStep === 2 && !isAuthenticated && guestPhone) {
+          setPhoneError(null);
+          try {
+            // Normalize: strip leading '9' for Argentine numbers
+            const normalizedPhone = guestCountryCode === "+54"
+              ? guestPhone.replace(/^9/, "")
+              : guestPhone;
+            const phonesToCheck = guestCountryCode === "+54"
+              ? [normalizedPhone, "9" + normalizedPhone]
+              : [normalizedPhone];
+            const res = await fetch(`/api/auth/check-phone?phones=${phonesToCheck.join(",")}&country_code=${encodeURIComponent(guestCountryCode)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.exists) {
+                setPhoneError("Este teléfono ya está en uso.");
+                return;
+              }
+            }
+          } catch { /* allow to proceed if check fails */ }
+        }
+
+        // Auth gate: show inline auth before advancing to step 3
         if (currentStep === 2 && !isAuthenticated) {
-          // Persist form data to localStorage for resume after auth
+          // Persist form data to localStorage for resume after Google auth redirect
           localStorage.setItem(SUBIR_DRAFT_KEY, JSON.stringify({
             typeId, locationId, selectedLocation, address, geoLat, geoLong,
             piso, depto, placeSelected, guestPhone, guestCountryCode,
           }));
-          // Save phone for applyGuestContactToProfile() in AuthModal
+          // Save phone for applyGuestContactToProfile() after auth
           localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({
             phone: guestPhone,
             country_code: guestCountryCode,
           }));
-          // Open auth modal with redirect back here
-          const params = new URLSearchParams(window.location.search);
-          params.set("redirect", "/subir-propiedad?resume=true");
-          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-          openAuthModal();
+          setShowInlineAuth(true);
+          mainRef.current?.scrollTo({ top: 0 });
           return;
         }
 
@@ -697,7 +762,75 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     }
   };
 
+  // Inline auth handlers
+  const handleInlineEmailContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthSubmitting(true);
+    setAuthLocalError(null);
+    clearError();
+    try {
+      const res = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: authEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAuthLocalError("Error al verificar el email. Intentá de nuevo.");
+        return;
+      }
+      setAuthIsExisting(data.exists);
+      setAuthStep("password");
+    } catch {
+      setAuthLocalError("Error de conexión. Intentá de nuevo.");
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleInlinePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthSubmitting(true);
+    setAuthLocalError(null);
+    try {
+      if (authIsExisting) {
+        await login(authEmail, authPassword);
+        // isAuthenticated effect will handle advancing
+      } else {
+        const { confirmed } = await register(authEmail, authPassword, false);
+        if (!confirmed) {
+          setAuthLocalError("Revisá tu email para confirmar tu cuenta.");
+          return;
+        }
+        // isAuthenticated effect will handle advancing
+      }
+    } catch {
+      // Error is set in AuthContext
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleInlineGoogleAuth = () => {
+    const redirectUri = `${window.location.origin}/api/auth/callback/google`;
+    const state = encodeURIComponent("/subir-propiedad?resume=true");
+    const params = new URLSearchParams({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "openid email profile",
+      state,
+      access_type: "offline",
+      prompt: "select_account",
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  };
+
   const handleSaveAndExit = async () => {
+    if (!isAuthenticated) {
+      router.push("/");
+      return;
+    }
     if (isEditMode) {
       router.push(`/gestion/propiedad/${draftPropertyId}`);
       return;
@@ -1159,15 +1292,19 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                     onChange={(e) => {
                       const cleaned = e.target.value.replace(/\D/g, "");
                       setGuestPhone(cleaned);
+                      if (phoneError) setPhoneError(null);
                     }}
                     className={cn(
                       "h-12 rounded-xl flex-1",
-                      showErrors && !isAuthenticated && guestPhone.length < 6 && "border-red-500"
+                      (phoneError || (showErrors && !isAuthenticated && guestPhone.length < 6)) && "border-red-500"
                     )}
                   />
                 </div>
                 {showErrors && !isAuthenticated && guestPhone.length < 6 && (
                   <p className="text-sm text-red-500">Ingresá tu número de WhatsApp</p>
+                )}
+                {phoneError && (
+                  <p className="text-sm text-red-500">{phoneError}</p>
                 )}
               </div>
             </AnimateHeight>
@@ -2030,7 +2167,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                   Guardando...
                 </span>
               ) : (
-                isEditMode ? "Cancelar" : currentStep === 1 ? "Salir" : "Guardar y salir"
+                isEditMode ? "Cancelar" : !isAuthenticated || currentStep === 1 || showInlineAuth ? "Salir" : "Guardar y salir"
               )}
             </button>
           </div>
@@ -2044,9 +2181,122 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       <main ref={mainRef} className="flex-1 overflow-y-auto">
         <div className={cn(
           "container py-6 sm:py-12",
-          currentStep === 1 ? "min-h-full flex flex-col justify-center" : "min-h-[700px]"
+          currentStep === 1 || showInlineAuth ? "min-h-full flex flex-col justify-center" : "min-h-[700px]"
         )}>
-          {renderStep()}
+          {showInlineAuth ? (
+            <div className="max-w-sm mx-auto space-y-6">
+              <div className="text-center space-y-2">
+                <h1 className="font-display text-2xl sm:text-3xl font-bold">
+                  Creá tu cuenta para continuar
+                </h1>
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  Necesitás una cuenta para publicar tu propiedad
+                </p>
+              </div>
+
+              {(authLocalError || authError) && (
+                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl text-center">
+                  {authLocalError || authError}
+                </div>
+              )}
+
+              <AnimateHeight show={authStep === "initial"}>
+                <div className="space-y-4">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 rounded-xl font-medium justify-center gap-3"
+                    onClick={handleInlineGoogleAuth}
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Continuar con Google
+                  </Button>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-sm text-muted-foreground">o</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  <form onSubmit={handleInlineEmailContinue} className="space-y-4">
+                    <Input
+                      type="email"
+                      placeholder="Ingresá tu e-mail"
+                      value={authEmail}
+                      onChange={(e) => { setAuthEmail(e.target.value); setAuthLocalError(null); }}
+                      required
+                      autoComplete="email"
+                      spellCheck={false}
+                      className="h-12 rounded-xl"
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full h-12 rounded-xl font-semibold"
+                      disabled={authSubmitting}
+                    >
+                      {authSubmitting ? "Verificando..." : "Continuar con e-mail"}
+                    </Button>
+                  </form>
+                </div>
+              </AnimateHeight>
+
+              <AnimateHeight show={authStep === "password"}>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="email"
+                      value={authEmail}
+                      disabled
+                      className="h-12 rounded-xl flex-1 opacity-60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setAuthStep("initial"); setAuthPassword(""); setAuthIsExisting(null); setAuthLocalError(null); clearError(); }}
+                      className="text-sm text-primary hover:underline font-medium shrink-0"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleInlinePasswordSubmit} className="space-y-4">
+                    <Input
+                      type="password"
+                      placeholder={authIsExisting ? "Contraseña" : "Creá una contraseña"}
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      required
+                      autoComplete={authIsExisting ? "current-password" : "new-password"}
+                      className="h-12 rounded-xl"
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full h-12 rounded-xl font-semibold"
+                      disabled={authSubmitting}
+                    >
+                      {authSubmitting
+                        ? (authIsExisting ? "Entrando..." : "Creando cuenta...")
+                        : (authIsExisting ? "Entrar" : "Crear cuenta")
+                      }
+                    </Button>
+                  </form>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthStep("initial"); setAuthPassword(""); setAuthIsExisting(null); setAuthLocalError(null); clearError(); }}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      ← Volver
+                    </button>
+                  </div>
+                </div>
+              </AnimateHeight>
+            </div>
+          ) : renderStep()}
         </div>
       </main>
 
@@ -2054,10 +2304,21 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       <footer className="shrink-0 border-t border-border">
         <div className="container flex items-center justify-between h-20">
           {/* Back button — hidden on step 1 and draft prompt */}
-          {!showDraftPrompt && currentStep > 1 ? (
+          {!showDraftPrompt && (currentStep > 1 || showInlineAuth) ? (
             <Button
               variant="ghost"
-              onClick={handleBack}
+              onClick={() => {
+                if (showInlineAuth) {
+                  setShowInlineAuth(false);
+                  setAuthStep("initial");
+                  setAuthEmail("");
+                  setAuthPassword("");
+                  setAuthLocalError(null);
+                  clearError();
+                } else {
+                  handleBack();
+                }
+              }}
               className="rounded-full px-6 h-12"
             >
               Atrás
@@ -2067,7 +2328,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           )}
 
           {/* Forward / submit button */}
-          {showDraftPrompt ? null : currentStep === TOTAL_STEPS ? (
+          {showDraftPrompt || showInlineAuth ? null : currentStep === TOTAL_STEPS ? (
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}

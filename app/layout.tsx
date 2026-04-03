@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description: "Encontra tu proximo hogar de manera digital y costos menores",
   icons: {
     icon: "/assets/isotipo-mob-original.png",
+    apple: "/assets/isotipo-mob-original.png",
   },
 };
 
