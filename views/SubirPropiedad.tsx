@@ -437,22 +437,29 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   // Resume after auth: restore form data from localStorage
   useEffect(() => {
     if (!resumeAfterAuth || !userId) return;
-    // Apply guest phone to profile (may not have happened for Google auth)
+    // Apply guest phone to profile only if the account doesn't already have one
     const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
     if (guestRaw) {
-      try {
-        const guest = JSON.parse(guestRaw);
-        if (guest?.phone) {
-          fetch("/api/users/profile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              telefono: guest.phone,
-              telefono_country_code: guest.country_code || "+54",
-            }),
-          }).then(() => refreshUser()).catch(() => {});
-        }
-      } catch { /* ignore */ }
+      (async () => {
+        try {
+          const guest = JSON.parse(guestRaw);
+          if (guest?.phone) {
+            const profileRes = await fetch("/api/users/profile");
+            const profileData = profileRes.ok ? await profileRes.json() : null;
+            if (!profileData?.user?.telefono) {
+              await fetch("/api/users/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  telefono: guest.phone,
+                  telefono_country_code: guest.country_code || "+54",
+                }),
+              });
+              refreshUser();
+            }
+          }
+        } catch { /* ignore */ }
+      })();
       localStorage.removeItem(GUEST_STORAGE_KEY);
     }
     const raw = localStorage.getItem(SUBIR_DRAFT_KEY);
@@ -483,12 +490,12 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   useEffect(() => {
     if (showInlineAuth && isAuthenticated && !authLoading) {
       setShowInlineAuth(false);
-      // Apply guest phone to profile
+      // Apply guest phone to profile only if the account doesn't already have one
       const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
       if (guestRaw) {
         try {
           const guest = JSON.parse(guestRaw);
-          if (guest?.phone) {
+          if (guest?.phone && !authUser?.phone) {
             fetch("/api/users/profile", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -917,6 +924,20 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     setSubmitError(null);
 
     try {
+      // Resolve auth user ID: prefer server prop, fall back to client session
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user: sessionUser } } = await supabase.auth.getUser();
+        effectiveUserId = sessionUser?.id ?? null;
+      }
+      if (!effectiveUserId) {
+        setSubmitError("No se pudo identificar al usuario. Intentá recargar la página.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const propertyTypeLabel = propertyTypes.find((t) => t.id === typeId)?.label || "";
       const locationName = selectedLocation?.name || "";
       const autoTitle = `${propertyTypeLabel} en ${locationName}`.trim();
@@ -984,7 +1005,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       } else {
         // Create mode (new or from draft)
         const body = {
-          profile_id: userId,
+          profile_id: effectiveUserId,
           draftId: draftPropertyId,
           type_id: typeId,
           address: address || null,
@@ -1317,7 +1338,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                 {propertyTypes.map((type) => (
                   <button
                     key={type.id}
-                    onClick={() => { setTypeId(type.id); setShowErrors(false); }}
+                    onClick={() => { setTypeId(type.id); setShowErrors(false); if (type.id === 3) setDisposicion(""); }}
                     className={cn(
                       "flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-1.5 sm:px-6 rounded-xl border-2 text-[11px] sm:text-sm font-semibold transition-all min-w-0",
                       typeId === type.id
@@ -1430,10 +1451,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                       </label>
                       <Input
                         value={depto}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === "" || /^[A-Za-z]+$/.test(val)) setDepto(val.toUpperCase());
-                        }}
+                        onChange={(e) => setDepto(e.target.value.toUpperCase())}
                         placeholder="Ej: B"
                         className={cn(
                           "h-14 rounded-xl border-2 text-base ring-0 ring-offset-0 focus-visible:ring-0 focus-visible:border-primary",
@@ -1511,27 +1529,29 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
-                Disposición
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {disposiciones.map((disp) => (
-                  <button
-                    key={disp}
-                    onClick={() => setDisposicion(disp)}
-                    className={cn(
-                      "py-4 px-2 rounded-xl border-2 text-xs font-semibold transition-all text-center",
-                      disposicion === disp
-                        ? "border-primary bg-accent text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50"
-                    )}
-                  >
-                    {disp.toUpperCase()}
-                  </button>
-                ))}
+            <AnimateHeight show={typeId !== 3}>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                  Disposición
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {disposiciones.map((disp) => (
+                    <button
+                      key={disp}
+                      onClick={() => setDisposicion(disp)}
+                      className={cn(
+                        "py-4 px-2 rounded-xl border-2 text-xs font-semibold transition-all text-center",
+                        disposicion === disp
+                          ? "border-primary bg-accent text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50"
+                      )}
+                    >
+                      {disp.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            </AnimateHeight>
 
             {TAG_SECTIONS.map((section) => {
               const title =
@@ -1784,7 +1804,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
               propertyId={draftPropertyId ?? undefined}
             />
             <p className="text-sm text-muted-foreground">
-              Si elegís <em>experiencia <span className="font-ubuntu text-primary">mob</span></em>, luego mandamos al fotógrafo y cambiamos las fotos.
+              Si elegís <em>experiencia <span className="font-ubuntu font-medium text-primary">mob</span></em>, luego mandamos al fotógrafo y cambiamos las fotos.
             </p>
             {showErrors && uploadedPhotos.length < 5 && (
               <p className="text-sm text-red-500">Necesitás al menos 5 fotos</p>

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { leadApiSchema } from '@/lib/validations/lead';
 import { createTokkoWebContact } from '@/lib/integrations/tokko-contact';
-import { sendLeadEmail } from '@/lib/integrations/resend';
+import { sendLeadEmail, sendInmobiliariaLeadEmail } from '@/lib/integrations/resend';
 import { createNotionLead } from '@/lib/integrations/notion';
 import { decryptApiKey } from '@/lib/crypto';
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     // Fetch property details (include company_id for webcontact key lookup)
     const { data: property, error: propError } = await supabaseAdmin
       .from('properties')
-      .select('id, tokko, tokko_id, user_id, address, company_id')
+      .select('id, tokko, tokko_id, user_id, address, company_id, producer_email')
       .eq('id', propertyId)
       .single();
 
@@ -88,23 +88,26 @@ export async function POST(request: Request) {
     // Dispatch to external services in parallel (non-blocking for response)
     const dispatches: Promise<void>[] = [];
 
-    // 1. Inmobiliarias (tokko) → Tokko WebContact, Dueños/inquilinos → Email
+    // 1. Inmobiliarias (tokko) → Tokko WebContact + Resend email, Dueños/inquilinos → Email only
     if (property.tokko && property.tokko_id) {
       dispatches.push(
         (async () => {
-          let status: 'sent' | 'failed' | 'skipped' = 'skipped';
+          let tokkoStatus: 'sent' | 'failed' | 'skipped' = 'skipped';
+          let emailStatus: 'sent' | 'failed' | 'skipped' = 'skipped';
+          let companyEmail: string | null = null;
+
+          // A. Tokko WebContact
           try {
-            // Look up company key first (correct inmobiliaria for network accounts),
-            // fall back to user's key for backward compatibility
             let encryptedKey: string | null = null;
 
             if (property.company_id) {
               const { data: company } = await supabaseAdmin
                 .from('tokko_company')
-                .select('tokko_key_enc')
+                .select('tokko_key_enc, email')
                 .eq('id', property.company_id)
                 .single();
               encryptedKey = company?.tokko_key_enc || null;
+              companyEmail = company?.email || null;
             }
 
             if (!encryptedKey) {
@@ -113,7 +116,6 @@ export async function POST(request: Request) {
 
             if (!encryptedKey) {
               console.warn('[Leads] No encrypted Tokko API key found (company or user), skipping webcontact');
-              status = 'skipped';
             } else {
               const rawApiKey = decryptApiKey(encryptedKey);
               const result = await createTokkoWebContact(rawApiKey, property.tokko_id!, {
@@ -122,15 +124,36 @@ export async function POST(request: Request) {
                 phone: fullPhone,
                 message,
               }, inquilinoVerified);
-              status = result.success ? 'sent' : 'failed';
+              tokkoStatus = result.success ? 'sent' : 'failed';
             }
           } catch (err) {
             console.error('[Leads] Tokko dispatch error:', err);
-            status = 'failed';
+            tokkoStatus = 'failed';
           }
+
+          // B. Resend email to producer (fallback to company email)
+          try {
+            const recipientEmail = property.producer_email || companyEmail;
+            if (!recipientEmail) {
+              console.warn('[Leads] No producer or company email found, skipping inmobiliaria email');
+            } else {
+              const cc = process.env.LEAD_CC_EMAIL;
+              const result = await sendInmobiliariaLeadEmail(recipientEmail, cc, {
+                name,
+                email,
+                phone: fullPhone,
+                propertyAddress: property.address || 'Dirección no disponible',
+              });
+              emailStatus = result.success ? 'sent' : 'failed';
+            }
+          } catch (err) {
+            console.error('[Leads] Inmobiliaria email dispatch error:', err);
+            emailStatus = 'failed';
+          }
+
           await supabaseAdmin
             .from('leads')
-            .update({ tokko_status: status, email_status: 'skipped' })
+            .update({ tokko_status: tokkoStatus, email_status: emailStatus })
             .eq('id', leadId);
         })()
       );

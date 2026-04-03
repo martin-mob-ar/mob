@@ -16,13 +16,16 @@ import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
 import type { Post } from "@/lib/sanity/types";
 
 interface IndexProps {
-  properties?: Property[];
+  featuredProperties?: Property[];
+  latestProperties?: Property[];
   latestPosts?: Post[];
 }
 
-const Index = ({ properties, latestPosts }: IndexProps) => {
-  const displayProperties = properties && properties.length > 0 ? properties : mockProperties;
-  const enrichedProperties = usePropertyPhotos(displayProperties);
+const Index = ({ featuredProperties, latestProperties, latestPosts }: IndexProps) => {
+  const displayFeatured = featuredProperties && featuredProperties.length > 0 ? featuredProperties : mockProperties;
+  const displayLatest = latestProperties && latestProperties.length > 0 ? latestProperties : mockProperties;
+  const enrichedFeatured = usePropertyPhotos(displayFeatured);
+  const enrichedLatest = usePropertyPhotos(displayLatest);
 
   return <div className="min-h-screen bg-background">
       <Header />
@@ -31,9 +34,9 @@ const Index = ({ properties, latestPosts }: IndexProps) => {
       <HeroSection />
 
       {/* Properties Sections */}
-      <PropertySection title="Propiedades destacadas" properties={enrichedProperties} />
+      <PropertySection title="Propiedades destacadas" properties={enrichedFeatured} />
 
-      <PropertySection title="Últimas propiedades" properties={[...enrichedProperties].reverse()} />
+      <PropertySection title="Últimas propiedades" properties={enrichedLatest} />
 
       {/* How it works */}
       <Timeline />

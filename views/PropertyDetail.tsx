@@ -43,6 +43,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 import VerificationSuccessModal from "@/components/VerificationSuccessModal";
+import VerificationRequiredDialog from "@/components/VerificationRequiredDialog";
 
 interface PropertyDetailProps {
   property?: Property;
@@ -90,6 +91,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const { rate } = useExchangeRate();
 
   const isCurrentUserOwner = !!user?.publicUserId && user.publicUserId === ownerId;
+  const [verificationModalDismissed, setVerificationModalDismissed] = useState(false);
   const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
 
   // Show schedule picker for properties from inquilinos/dueños directos with availability configured
@@ -604,12 +606,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               <MapPin className="h-3.5 w-3.5" />
               {property.address}, {locationSuffix}
             </p>
-            {publicationDate && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                Publicado el {new Date(publicationDate).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
-              </span>
-            )}
           </div>
         </div>
 
@@ -705,12 +701,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             <MapPin className="h-3.5 w-3.5" />
             {property.address}, {property.neighborhood}
           </p>
-          {publicationDate && (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
-              <Calendar className="h-3 w-3" />
-              Publicado el {new Date(publicationDate).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
-            </p>
-          )}
         </div>
 
         {/* Price + CTA Block - Priority section */}
@@ -1020,7 +1010,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 </div>
                 <div>
                   <p className="font-semibold text-base text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip>.</p>
                 </div>
               </div>
             </div>
@@ -1431,7 +1421,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-xs text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
-                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip> para cualquier alquiler.</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip>.</p>
                   </div>
                 </div>
                 
@@ -1510,11 +1500,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </p>
       </div>
     </div>
-    {showVerificationModal && (
+    {showVerificationModal && !verificationModalDismissed ? (
       <VerificationSuccessModal
-        open={showVerificationModal}
-        onOpenChange={() => {}}
+        open
+        onOpenChange={() => setVerificationModalDismissed(true)}
       />
+    ) : showVerificationBanner && !verificationModalDismissed && (
+      <VerificationRequiredDialog />
     )}
     </GoogleMapsProvider>
   );

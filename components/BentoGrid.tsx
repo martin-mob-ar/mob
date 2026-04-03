@@ -63,7 +63,7 @@ const BentoGrid = () => {
                 </li>
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                  <GarantiaTooltip>Accedé a garantía 50% off</GarantiaTooltip>
+                  <GarantiaTooltip className="inline-flex items-center gap-1 cursor-help relative z-10">Accedé a garantía 50% off</GarantiaTooltip>
                 </li>
                 <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
@@ -211,7 +211,7 @@ const BentoGrid = () => {
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                <GarantiaTooltip>Accedé a garantía 50% off</GarantiaTooltip>
+                <GarantiaTooltip className="inline-flex items-center gap-1 cursor-help relative z-10">Accedé a garantía 50% off</GarantiaTooltip>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-primary shrink-0" />

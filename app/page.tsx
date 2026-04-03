@@ -6,20 +6,35 @@ import type { Post } from "@/lib/sanity/types";
 import Index from "@/views/Index";
 
 export default async function IndexPage() {
-  let properties;
+  let featuredProperties;
+  let latestProperties;
   let latestPosts: Post[] = [];
 
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+
+    // Propiedades destacadas: premium plans first (acompanado/experiencia), then rest
+    const { data: featured } = await supabase
+      .from("properties_read")
+      .select("*")
+      .eq("owner_verified", true)
+      .order("sort_priority", { ascending: true })
+      .order("property_created_at", { ascending: false })
+      .limit(6);
+
+    // Últimas propiedades: simply newest first
+    const { data: latest } = await supabase
       .from("properties_read")
       .select("*")
       .eq("owner_verified", true)
       .order("property_created_at", { ascending: false })
-      .limit(12);
+      .limit(6);
 
-    if (data && data.length > 0) {
-      properties = transformPropertyReadList(data);
+    if (featured && featured.length > 0) {
+      featuredProperties = transformPropertyReadList(featured);
+    }
+    if (latest && latest.length > 0) {
+      latestProperties = transformPropertyReadList(latest);
     }
   } catch {
     // Fall back to mock data if DB fetch fails
@@ -35,5 +50,5 @@ export default async function IndexPage() {
     // Sanity unavailable — skip blog posts
   }
 
-  return <Index properties={properties} latestPosts={latestPosts} />;
+  return <Index featuredProperties={featuredProperties} latestProperties={latestProperties} latestPosts={latestPosts} />;
 }

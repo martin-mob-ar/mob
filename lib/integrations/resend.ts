@@ -120,3 +120,75 @@ export async function sendLeadEmail(
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
+
+interface InmobiliariaLeadEmailData {
+  name: string;
+  email: string;
+  phone?: string;
+  propertyAddress: string;
+}
+
+/**
+ * Send a lead notification email to an inmobiliaria producer (or company fallback).
+ * Includes Mob/Hoggax marketing copy.
+ */
+export async function sendInmobiliariaLeadEmail(
+  to: string,
+  cc: string | undefined,
+  lead: InmobiliariaLeadEmailData
+): Promise<{ success: boolean; error?: string }> {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <p style="font-size: 16px; line-height: 1.6;">
+        Hola! Recibiste una nueva consulta por tu propiedad:
+      </p>
+
+      <div style="background: #f9fafb; border-radius: 8px; padding: 16px 20px; margin: 20px 0;">
+        <p style="margin: 6px 0;"><strong>Propiedad:</strong> ${lead.propertyAddress}</p>
+        <p style="margin: 6px 0;"><strong>Nombre:</strong> ${lead.name}</p>
+        <p style="margin: 6px 0;"><strong>Teléfono:</strong> ${lead.phone
+          ? `<a href="https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}" style="color: #25D366; text-decoration: none;">${lead.phone}</a>`
+          : '<span style="color: #9ca3af;">No informado</span>'}</p>
+        <p style="margin: 6px 0;"><strong>Email:</strong> <a href="mailto:${lead.email}" style="color: #2563eb; text-decoration: none;">${lead.email}</a></p>
+      </div>
+
+      <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        Esta consulta fue generada a través de <strong>mob.ar</strong>, plataforma asociada con Hoggax.
+      </p>
+
+      <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        En Mob podés recibir consultas únicamente inquilinos calificados, con garantía de alquiler aprobada y un 50% de descuento en la garantía a través de Hoggax.
+      </p>
+
+      <p style="font-size: 14px; line-height: 1.6; color: #555;">
+        Además, simplificás todo el proceso: coordinación visitas, gestión de documentación y contratos con firma electrónica.
+      </p>
+
+      <p style="font-size: 14px; line-height: 1.6;">
+        Te invitamos a conocer más en <a href="https://mob.ar/inmobiliarias" style="color: #2563eb; font-weight: bold;">mob.ar/inmobiliarias</a>
+      </p>
+    </div>
+  `;
+
+  try {
+    const fromEmail = process.env.LEAD_FROM_EMAIL || 'onboarding@resend.dev';
+    console.log(`[Resend] Sending inmobiliaria lead email to: ${to}, cc: ${cc || 'none'}`);
+    const result = await getResend().emails.send({
+      from: `mob <${fromEmail}>`,
+      to,
+      ...(cc ? { cc } : {}),
+      subject: 'Nueva consulta por tu propiedad',
+      html,
+    });
+
+    if (result.error) {
+      console.error('[Resend] Inmobiliaria email error:', result.error);
+      return { success: false, error: result.error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Resend] Inmobiliaria email exception:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}

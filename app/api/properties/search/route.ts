@@ -236,19 +236,27 @@ export async function GET(request: NextRequest) {
     query = query.or(`min_start_date.is.null,min_start_date.lte.${availabilityDate}`);
   }
 
-  // Apply sort
+  // Apply sort — premium plans (acompanado/experiencia) always shown first by default
   switch (sort) {
     case "price-low":
-      query = query.order("valor_total_primary", { ascending: true, nullsFirst: false });
+      query = query
+        .order("sort_priority", { ascending: true })
+        .order("valor_total_primary", { ascending: true, nullsFirst: false });
       break;
     case "price-high":
-      query = query.order("valor_total_primary", { ascending: false, nullsFirst: false });
+      query = query
+        .order("sort_priority", { ascending: true })
+        .order("valor_total_primary", { ascending: false, nullsFirst: false });
       break;
     case "recent":
-      query = query.order("property_created_at", { ascending: false });
+      query = query
+        .order("sort_priority", { ascending: true })
+        .order("property_created_at", { ascending: false });
       break;
     default:
-      query = query.order("listing_updated_at", { ascending: false });
+      query = query
+        .order("sort_priority", { ascending: true })
+        .order("listing_updated_at", { ascending: false });
   }
 
   // Apply pagination

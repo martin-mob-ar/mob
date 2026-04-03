@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { CheckCircle, Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -96,34 +96,30 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
       <DialogContent className="sm:max-w-md p-6 gap-0">
         <DialogTitle className="sr-only">Propiedad publicada</DialogTitle>
 
-        <div className="space-y-5">
-          <div className="flex justify-center">
-            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckCircle className="h-7 w-7 text-primary" />
-            </div>
-          </div>
-
+        <div>
           <div className="text-center space-y-2">
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+              <Shield className="h-7 w-7 text-amber-600" />
+            </div>
             <h2 className="font-display text-xl font-semibold text-foreground">
-              Tu propiedad fue publicada
+              Verificá tu identidad
             </h2>
             <p className="text-sm text-muted-foreground">
-              Para que sea visible, necesitás verificar tu identidad.
+              Tu propiedad fue creada, pero no será visible hasta que verifiques tu identidad. Es rápido y solo se hace una vez.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-secondary/30 border border-border space-y-2">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-primary shrink-0" />
-              <p className="text-sm text-foreground">
-                Ya te enviamos un mensaje de WhatsApp al número:{" "}
-                <span className="font-semibold">{formattedPhone}</span>
-              </p>
-            </div>
+          <div className="mt-5 flex items-start gap-2.5 text-sm text-muted-foreground">
+            <MessageCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p>
+              Te enviamos un WhatsApp al{" "}
+              <span className="font-semibold text-foreground">{formattedPhone}</span>{" "}
+              — respondé para verificarte.
+            </p>
           </div>
 
           <AnimateHeight show={!showPhoneEdit && !resent}>
-            <div className="text-center">
+            <div className="text-center mt-3">
               <button
                 type="button"
                 onClick={() => {
@@ -139,7 +135,7 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
           </AnimateHeight>
 
           <AnimateHeight show={showPhoneEdit}>
-            <div className="space-y-3 pt-1">
+            <div className="space-y-3 mt-4">
               <p className="text-sm text-muted-foreground">
                 Editá tu número y te reenviamos el mensaje:
               </p>
@@ -187,7 +183,7 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
           </AnimateHeight>
 
           <AnimateHeight show={resent}>
-            <div className="text-center">
+            <div className="text-center mt-4">
               <p className="text-sm text-primary font-medium">
                 Mensaje reenviado correctamente
               </p>
@@ -196,7 +192,7 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
 
           <Button
             onClick={handleDismiss}
-            className="w-full rounded-xl h-11 font-semibold"
+            className="w-full rounded-xl h-11 font-semibold mt-5"
           >
             Entendido
           </Button>

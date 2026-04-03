@@ -311,7 +311,8 @@ export default async function PropiedadDetailPage({
 
   // 301 redirect if accessed via numeric ID or wrong slug (only for active properties)
   if (!isUnavailable && propertyData.slug && slugParam !== propertyData.slug) {
-    permanentRedirect(`/propiedad/${propertyData.slug}`);
+    const qs = resolvedSearchParams?.verification === "true" ? "?verification=true" : "";
+    permanentRedirect(`/propiedad/${propertyData.slug}${qs}`);
   }
 
   let property;

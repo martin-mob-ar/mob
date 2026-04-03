@@ -47,7 +47,6 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
   const [name, setName] = useState(profile.name || "");
   const [phoneCountryCode, setPhoneCountryCode] = useState(profile.telefono_country_code || "+54");
   const [phone, setPhone] = useState(profile.telefono || "");
-  const [dni, setDni] = useState(profile.dni || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -55,16 +54,14 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
     name: profile.name || "",
     phoneCountryCode: profile.telefono_country_code || "+54",
     phone: profile.telefono || "",
-    dni: profile.dni || "",
   });
 
-  const showDni = accountType === 1 || accountType === 2;
+  const showDni = !!profile.dni;
 
   const isDirty =
     name !== savedValues.name ||
     phoneCountryCode !== savedValues.phoneCountryCode ||
-    phone !== savedValues.phone ||
-    (showDni && dni !== savedValues.dni);
+    phone !== savedValues.phone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +77,6 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
           name,
           telefono: phone,
           telefono_country_code: phoneCountryCode,
-          ...(showDni ? { dni } : {}),
         }),
       });
 
@@ -91,7 +87,7 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
       }
 
       setSaved(true);
-      setSavedValues({ name, phoneCountryCode, phone, dni });
+      setSavedValues({ name, phoneCountryCode, phone });
       setTimeout(() => setSaved(false), 3000);
       // Refresh auth context in background — don't block save feedback
       refreshUser().catch(() => {});
@@ -125,7 +121,7 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
           {showDni && (
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-muted-foreground">DNI</label>
-              <p className="text-sm text-foreground">{dni || "No especificado"}</p>
+              <p className="text-sm text-foreground">{profile.dni}</p>
             </div>
           )}
           <div className="space-y-1.5">
@@ -185,11 +181,9 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
             <label className="text-sm font-medium text-foreground">DNI</label>
             <Input
               type="text"
-              inputMode="numeric"
-              placeholder="Sin puntos, ej: 30123456"
-              value={dni}
-              onChange={(e) => setDni(e.target.value.replace(/\D/g, ""))}
-              className="h-10 rounded-lg"
+              value={profile.dni!}
+              disabled
+              className="h-10 rounded-lg bg-muted"
             />
           </div>
         )}
@@ -220,13 +214,30 @@ export default function ProfileForm({ profile, accountType, editing = true, onSa
         </div>
       </div>
 
-      <Button
-        type="submit"
-        className="h-10 rounded-lg font-semibold"
-        disabled={loading || !isDirty}
-      >
-        {loading ? "Guardando..." : "Guardar cambios"}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 rounded-lg font-semibold"
+          disabled={loading}
+          onClick={() => {
+            setName(savedValues.name);
+            setPhoneCountryCode(savedValues.phoneCountryCode);
+            setPhone(savedValues.phone);
+            setError(null);
+            onSaved?.();
+          }}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          className="h-10 rounded-lg font-semibold"
+          disabled={loading || !isDirty}
+        >
+          {loading ? "Guardando..." : "Guardar cambios"}
+        </Button>
+      </div>
     </form>
   );
 }

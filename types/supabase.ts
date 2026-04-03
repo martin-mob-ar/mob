@@ -365,6 +365,8 @@ export type Database = {
           parking_lot_type: string | null
           portal_footer: string | null
           private_area: string | null
+          producer_email: string | null
+          producer_name: string | null
           property_condition: string | null
           public_url: string | null
           publication_title: string | null
@@ -453,6 +455,8 @@ export type Database = {
           parking_lot_type?: string | null
           portal_footer?: string | null
           private_area?: string | null
+          producer_email?: string | null
+          producer_name?: string | null
           property_condition?: string | null
           public_url?: string | null
           publication_title?: string | null
@@ -541,6 +545,8 @@ export type Database = {
           parking_lot_type?: string | null
           portal_footer?: string | null
           private_area?: string | null
+          producer_email?: string | null
+          producer_name?: string | null
           property_condition?: string | null
           public_url?: string | null
           publication_title?: string | null
@@ -655,6 +661,7 @@ export type Database = {
           secondary_currency: string | null
           secondary_price: number | null
           slug: string | null
+          sort_priority: number
           state_name: string | null
           suite_amount: number | null
           tag_names_type_1: string[] | null
@@ -705,6 +712,7 @@ export type Database = {
           secondary_currency?: string | null
           secondary_price?: number | null
           slug?: string | null
+          sort_priority?: number
           state_name?: string | null
           suite_amount?: number | null
           tag_names_type_1?: string[] | null
@@ -755,6 +763,7 @@ export type Database = {
           secondary_currency?: string | null
           secondary_price?: number | null
           slug?: string | null
+          sort_priority?: number
           state_name?: string | null
           suite_amount?: number | null
           tag_names_type_1?: string[] | null
@@ -1552,6 +1561,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_debug_log: {
+        Row: {
+          created_at: string | null
+          error: string | null
+          id: number
+          matched_branch: string | null
+          raw_payload: Json | null
+          sender_phone: string | null
+          user_id: string | null
+          visita_id: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          error?: string | null
+          id?: number
+          matched_branch?: string | null
+          raw_payload?: Json | null
+          sender_phone?: string | null
+          user_id?: string | null
+          visita_id?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          error?: string | null
+          id?: number
+          matched_branch?: string | null
+          raw_payload?: Json | null
+          sender_phone?: string | null
+          user_id?: string | null
+          visita_id?: number | null
+        }
+        Relationships: []
       }
     }
     Views: {

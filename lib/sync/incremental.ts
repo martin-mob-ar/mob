@@ -480,6 +480,8 @@ async function syncSingleProperty(
     files: Array.isArray(tkkProp.files) ? tkkProp.files : null,
     videos: Array.isArray(tkkProp.videos) ? tkkProp.videos : null,
     contact_phone: getContactPhone(tkkProp),
+    producer_email: tkkProp.producer?.email?.trim() || null,
+    producer_name: tkkProp.producer?.name?.trim() || null,
     created_at: tkkProp.created_at || new Date().toISOString(),
     deleted_at: null, // Active property — always clear soft-delete marker
     updated_at: tkkProp.updated_at || null,
