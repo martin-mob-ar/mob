@@ -472,27 +472,13 @@ export default function ProfileSection({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          {!editing && (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Editar perfil"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          )}
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              Mi perfil
-            </h1>
-            <p className="text-muted-foreground mt-0.5 text-sm">
-              Tu información personal y configuración de cuenta
-            </p>
-          </div>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          Mi perfil
+        </h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">
+          Tu información personal y configuración de cuenta
+        </p>
       </div>
 
       {verificationBadge}
@@ -569,6 +555,21 @@ export default function ProfileSection({
 
       {/* Profile form card */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-base text-foreground">
+            Datos personales
+          </h2>
+          {!editing && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Editar perfil"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         <ProfileForm
           profile={profile}
           accountType={accountType}

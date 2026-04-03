@@ -66,7 +66,7 @@ const LocationSearchInput = ({
     return (
       <div className={cn("flex items-center gap-2 h-14 w-full rounded-xl border-2 border-border bg-background px-4 py-1 text-base", className)}>
         <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 truncate">
           <span className="font-medium">{selectedLocation.name}</span>
           {selectedLocation.display && (
             <span className="text-muted-foreground ml-1.5 text-sm">

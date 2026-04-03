@@ -13,6 +13,7 @@ export default async function BuscarPage() {
       .from("properties_read")
       .select("*", { count: "exact" })
       .eq("owner_verified", true)
+      .order("sort_priority", { ascending: true })
       .order("property_created_at", { ascending: false })
       .range(0, 19);
 

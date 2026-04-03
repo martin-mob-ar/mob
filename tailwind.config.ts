@@ -109,6 +109,10 @@ export default {
           from: { opacity: "0", transform: "scale(0.95)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
+        "ping-slow": {
+          "0%": { transform: "scale(1)", opacity: "0.6" },
+          "75%, 100%": { transform: "scale(1.6)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -116,6 +120,7 @@ export default {
         "fade-in": "fade-in 0.4s ease-out",
         "fade-in-up": "fade-in-up 0.5s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
+        "ping-slow": "ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite",
       },
     },
   },

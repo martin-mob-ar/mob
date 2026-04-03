@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { leadFormSchema, type LeadFormValues } from "@/lib/validations/lead";
+import ConsultaEnviadaModal from "@/components/ConsultaEnviadaModal";
 
 const GUEST_STORAGE_KEY = "mob_guest_contact";
 
@@ -97,6 +98,7 @@ export default function LeadForm({
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const isVerified = !!user?.isVerified;
   const requiresVerification =
@@ -180,6 +182,7 @@ export default function LeadForm({
         position: "bottom-right",
       });
       setSubmitted(true);
+      if (!isInmobiliaria) setShowModal(true);
       form.reset();
     } catch (error) {
       toast.error(
@@ -232,16 +235,68 @@ export default function LeadForm({
     // Unverified user: show verification CTA
     if (!isVerified) {
       return (
+        <>
+          <div className="text-center py-4 space-y-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <CheckCircle className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">¡Consulta enviada!</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Verificate para que {publisherLabel} pueda conocer tu perfil y priorizarte.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSubmitted(false);
+                onClose();
+              }}
+            >
+              Volver
+            </Button>
+          </div>
+          <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} />
+        </>
+      );
+    }
+
+    // Verified user: current success state with WhatsApp/call options
+    return (
+      <>
         <div className="text-center py-4 space-y-3">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <CheckCircle className="h-5 w-5 text-primary" />
+            <Send className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="font-semibold text-sm">¡Consulta enviada!</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Verificate para que {publisherLabel} pueda conocer tu perfil y priorizarte.
+              Te contactaremos a la brevedad.
             </p>
           </div>
+          {inmobiliariaPhone && (
+            <div className="space-y-2 pt-1">
+              <a
+                href={`https://wa.me/${inmobiliariaPhone}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Button className="w-full rounded-xl h-10 font-semibold text-sm">
+                  Hablar por WhatsApp
+                </Button>
+              </a>
+              <a href={`tel:${inmobiliariaPhone}`} className="block">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl h-10 font-medium text-sm"
+                >
+                  Llamar por teléfono
+                </Button>
+              </a>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -253,54 +308,8 @@ export default function LeadForm({
             Volver
           </Button>
         </div>
-      );
-    }
-
-    // Verified user: current success state with WhatsApp/call options
-    return (
-      <div className="text-center py-4 space-y-3">
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-          <Send className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <p className="font-semibold text-sm">¡Consulta enviada!</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Te contactaremos a la brevedad.
-          </p>
-        </div>
-        {inmobiliariaPhone && (
-          <div className="space-y-2 pt-1">
-            <a
-              href={`https://wa.me/${inmobiliariaPhone}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block"
-            >
-              <Button className="w-full rounded-xl h-10 font-semibold text-sm">
-                Hablar por WhatsApp
-              </Button>
-            </a>
-            <a href={`tel:${inmobiliariaPhone}`} className="block">
-              <Button
-                variant="outline"
-                className="w-full rounded-xl h-10 font-medium text-sm"
-              >
-                Llamar por teléfono
-              </Button>
-            </a>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setSubmitted(false);
-            onClose();
-          }}
-        >
-          Volver
-        </Button>
-      </div>
+        <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} />
+      </>
     );
   }
 

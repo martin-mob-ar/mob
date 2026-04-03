@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Upload,
   X,
@@ -56,8 +56,8 @@ interface UploadingFile {
   error?: string;
 }
 
-const MIN_WIDTH = 1200;
-const MIN_HEIGHT = 800;
+const MIN_WIDTH = 900;
+const MIN_HEIGHT = 720;
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "jfif", "pjp", "pjpeg"];
@@ -210,19 +210,15 @@ export default function PhotoUploader({
   onChange,
   onUploadingChange,
 }: PhotoUploaderProps) {
-  const [uploading, _setUploading] = useState<UploadingFile[]>([]);
-  const setUploading: typeof _setUploading = useCallback(
-    (action) => {
-      _setUploading((prev) => {
-        const next = typeof action === "function" ? action(prev) : action;
-        const wasBusy = prev.length > 0;
-        const isBusy = next.length > 0;
-        if (wasBusy !== isBusy) onUploadingChange?.(isBusy);
-        return next;
-      });
-    },
-    [onUploadingChange],
-  );
+  const [uploading, setUploading] = useState<UploadingFile[]>([]);
+  const isBusy = uploading.length > 0;
+  const prevBusyRef = useRef(false);
+  useEffect(() => {
+    if (prevBusyRef.current !== isBusy) {
+      prevBusyRef.current = isBusy;
+      onUploadingChange?.(isBusy);
+    }
+  }, [isBusy, onUploadingChange]);
   const [errors, setErrors] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart, Home } from "lucide-react";
+import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart, Home, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
@@ -628,10 +628,12 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                       </Link>
                     </Button>
                     <Button
-                      className="rounded-full px-5 font-bold"
+                      variant="ghost"
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
                       asChild
                     >
                       <Link href="/subir-propiedad">
+                        <Megaphone className="h-4 w-4" />
                         Publicá gratis
                       </Link>
                     </Button>
@@ -640,10 +642,33 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   <>
                     <Button
                       variant="ghost"
-                      onClick={() => setShowPublishModal(true)}
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground"
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
+                      asChild
                     >
-                      Publicar gratis
+                      <Link href="/propietarios">
+                        <Home className="h-4 w-4" />
+                        Soy propietario
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
+                      asChild
+                    >
+                      <Link href="/inmobiliarias">
+                        <Building2 className="h-4 w-4" />
+                        Soy inmobiliaria
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
+                      asChild
+                    >
+                      <Link href="/subir-propiedad">
+                        <Megaphone className="h-4 w-4" />
+                        Publicá gratis
+                      </Link>
                     </Button>
                   </>
                 )}
