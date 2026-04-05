@@ -28,7 +28,7 @@ const VisitaIntro = () => {
     if (selectedProperty) {
       router.push(`/propiedad/${selectedProperty.id}`);
     } else {
-      router.push("/buscar");
+      router.push("/alquileres");
     }
   };
 

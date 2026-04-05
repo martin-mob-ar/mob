@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
   const stats = { reminder24h: 0, reminder2h: 0, postvisit: 0, errors: 0 };
 
   // ── 24h reminder ───────────────────────────────────────────────────────────
-  // Visit is 23.5h to 24.5h from now
+  // Visit is 23.5h to 24h from now
   const reminder24hFrom = new Date(now.getTime() + 23.5 * 60 * 60 * 1000);
-  const reminder24hTo = new Date(now.getTime() + 24.5 * 60 * 60 * 1000);
+  const reminder24hTo = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
   const { data: visitas24h } = await supabaseAdmin
     .from('visitas')
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
   if (visitas24h) {
     for (const v of visitas24h) {
-      const visitDt = new Date(`${v.confirmed_date}T${v.confirmed_time}`);
+      const visitDt = new Date(`${v.confirmed_date}T${v.confirmed_time}-03:00`);
       if (visitDt < reminder24hFrom || visitDt > reminder24hTo) continue;
 
       try {
@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 2h reminder ────────────────────────────────────────────────────────────
-  // Visit is 1.5h to 2.5h from now
+  // Visit is 1.5h to 2h from now
   const reminder2hFrom = new Date(now.getTime() + 1.5 * 60 * 60 * 1000);
-  const reminder2hTo = new Date(now.getTime() + 2.5 * 60 * 60 * 1000);
+  const reminder2hTo = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
   const { data: visitas2h } = await supabaseAdmin
     .from('visitas')
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
 
   if (visitas2h) {
     for (const v of visitas2h) {
-      const visitDt = new Date(`${v.confirmed_date}T${v.confirmed_time}`);
+      const visitDt = new Date(`${v.confirmed_date}T${v.confirmed_time}-03:00`);
       if (visitDt < reminder2hFrom || visitDt > reminder2hTo) continue;
 
       try {
@@ -113,9 +113,9 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Post-visit feedback ────────────────────────────────────────────────────
-  // Visit was 30min to 1h ago
-  const postvisitFrom = new Date(now.getTime() - 1 * 60 * 60 * 1000);
-  const postvisitTo = new Date(now.getTime() - 30 * 60 * 1000);
+  // Visit was 40min to 70min ago
+  const postvisitFrom = new Date(now.getTime() - 70 * 60 * 1000);
+  const postvisitTo = new Date(now.getTime() - 40 * 60 * 1000);
 
   const { data: visitasPost } = await supabaseAdmin
     .from('visitas')
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
 
   if (visitasPost) {
     for (const v of visitasPost) {
-      const visitDt = new Date(`${v.confirmed_date}T${v.confirmed_time}`);
+      const visitDt = new Date(`${v.confirmed_date}T${v.confirmed_time}-03:00`);
       if (visitDt < postvisitFrom || visitDt > postvisitTo) continue;
 
       try {

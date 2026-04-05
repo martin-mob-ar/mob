@@ -60,9 +60,20 @@ export async function POST(request: Request) {
     // Fetch owner data once for all dispatches
     const { data: owner } = await supabaseAdmin
       .from('users')
-      .select('name, email, tokko_email, telefono, tokko_api_key_enc')
+      .select('name, email, tokko_email, telefono, tokko_api_key_enc, account_type')
       .eq('id', property.user_id)
       .single();
+
+    // For inmobiliaria accounts (type 3/4), fetch company data for owner fields
+    let companyData: { name: string | null; email: string | null; phone: string | null } | null = null;
+    if (owner?.account_type === 4 && property.company_id) {
+      const { data: company } = await supabaseAdmin
+        .from('tokko_company')
+        .select('name, email, phone')
+        .eq('id', property.company_id)
+        .single();
+      companyData = company;
+    }
 
     // Determine if the submitter (inquilino) is verified (requires both Hoggax + Truora)
     let inquilinoVerified = false;
@@ -208,9 +219,9 @@ export async function POST(request: Request) {
             source,
             propertyId: property.id,
             tokko: property.tokko ?? false,
-            ownerName: owner?.name || undefined,
-            ownerEmail: owner?.email || owner?.tokko_email || undefined,
-            ownerPhone: owner?.telefono || undefined,
+            ownerName: companyData?.name || owner?.name || undefined,
+            ownerEmail: property.producer_email || companyData?.email || owner?.email || owner?.tokko_email || undefined,
+            ownerPhone: companyData?.phone || owner?.telefono || undefined,
           });
           status = result.success ? 'sent' : 'failed';
         } catch (err) {

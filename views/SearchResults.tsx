@@ -71,7 +71,7 @@ function PropertyGridSkeleton({ count = 8, mobile = false }: { count?: number; m
 
 /* ───────── Pagination component ───────── */
 function SearchPagination() {
-  const { page, totalPages } = useSearchFilters();
+  const { page, totalPages, basePath } = useSearchFilters();
   const searchParams = useSearchParams();
 
   if (totalPages <= 1) return null;
@@ -84,7 +84,7 @@ function SearchPagination() {
       params.set("page", String(n));
     }
     const qs = params.toString();
-    return qs ? `/buscar?${qs}` : "/buscar";
+    return qs ? `${basePath}?${qs}` : basePath;
   };
 
   // Sliding window of up to 5 pages centered on current
@@ -143,20 +143,35 @@ function SearchPagination() {
 interface SearchResultsProps {
   initialProperties?: Property[];
   initialTotal?: number;
+  basePath?: string;
+  initialLocationSeed?: {
+    stateId?: number;
+    stateName?: string;
+    locationId?: number;
+    locationName?: string;
+    locationDisplay?: string;
+  };
+  initialPropertyTypeNames?: string[];
+  initialAmbientes?: { min: number; max?: number };
+  pageTitle?: string;
 }
 
-const SearchResults = ({ initialProperties, initialTotal = 0 }: SearchResultsProps) => {
+const SearchResults = ({ initialProperties, initialTotal = 0, basePath, initialLocationSeed, initialPropertyTypeNames, initialAmbientes, pageTitle }: SearchResultsProps) => {
   return (
     <SearchFiltersProvider
       initialResults={initialProperties}
       initialTotal={initialTotal}
+      basePath={basePath}
+      initialLocationSeed={initialLocationSeed}
+      initialPropertyTypeNames={initialPropertyTypeNames}
+      initialAmbientes={initialAmbientes}
     >
-      <SearchResultsInner />
+      <SearchResultsInner pageTitle={pageTitle} />
     </SearchFiltersProvider>
   );
 };
 
-const SearchResultsInner = () => {
+const SearchResultsInner = ({ pageTitle }: { pageTitle?: string }) => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const { filters, setFilter, results, total, isLoading } = useSearchFilters();
   const enrichedResults = usePropertyPhotos(results);
@@ -180,7 +195,7 @@ const SearchResultsInner = () => {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
-        <Header hideSearch sticky={false} />
+        <Header sticky={false} hideSearch />
 
         <MobileSearchHeader
           location={filters.location || "Buenos Aires"}
@@ -191,9 +206,18 @@ const SearchResultsInner = () => {
         {/* Results Count */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div>
-            <p className="font-display font-bold text-lg text-foreground">
-              {isLoading ? "Buscando..." : `${total} propiedades`}
-            </p>
+            {pageTitle ? (
+              <>
+                <p className="font-display font-bold text-lg text-foreground">{pageTitle}</p>
+                <p className="text-sm text-muted-foreground">
+                  {isLoading ? "Buscando..." : `${total} propiedades`}
+                </p>
+              </>
+            ) : (
+              <p className="font-display font-bold text-lg text-foreground">
+                {isLoading ? "Buscando..." : `${total} propiedades`}
+              </p>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -264,7 +288,7 @@ const SearchResultsInner = () => {
   // Desktop Layout
   return (
     <div className="min-h-screen bg-background">
-      <Header hideSearch sticky={false} />
+      <Header sticky={false} hideSearch />
 
       {/* Filters Bar */}
       <div className="border-b border-border sticky top-0 bg-background z-40">
@@ -297,9 +321,20 @@ const SearchResultsInner = () => {
             Resultados de búsqueda
           </p>
           <div className="flex items-center justify-between">
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              {isLoading ? "Buscando..." : `${total} propiedades`}
-            </h1>
+            <div>
+              {pageTitle ? (
+                <>
+                  <h1 className="font-display text-2xl font-bold text-foreground">{pageTitle}</h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {isLoading ? "Buscando..." : `${total} propiedades`}
+                  </p>
+                </>
+              ) : (
+                <h1 className="font-display text-2xl font-bold text-foreground">
+                  {isLoading ? "Buscando..." : `${total} propiedades`}
+                </h1>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Ordenar por:</span>
               <DropdownMenu>

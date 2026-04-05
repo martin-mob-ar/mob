@@ -283,6 +283,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           depth: draftData.tokko_location.depth,
           display: "",
           type: "location",
+          slug: null,
+          stateSlug: null,
         });
       }
     }
@@ -359,6 +361,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
             depth: loc.depth ?? 0,
             display: "",
             type: "location",
+            slug: null,
+            stateSlug: null,
           });
         }
       }

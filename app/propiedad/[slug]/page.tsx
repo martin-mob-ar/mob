@@ -1,10 +1,14 @@
 import { createClient } from "@/lib/supabase/server-component";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
-import { transformPropertyRead } from "@/lib/transforms/property";
+import { transformPropertyRead, transformPropertyReadList } from "@/lib/transforms/property";
 import PropertyDetail from "@/views/PropertyDetail";
+import PropertyJsonLd from "@/components/seo/PropertyJsonLd";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import { permanentRedirect, notFound } from "next/navigation";
 import type { Metadata } from "next";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar";
 
 /** Extract the numeric property ID from a slug or raw number */
 function extractPropertyId(slugOrId: string): number | null {
@@ -130,13 +134,13 @@ export async function generateMetadata({
     const title = titleParts.join(" ") + " - No disponible | Mob.ar";
     const description = `${typeNameEs} ya no disponible para alquiler. Alquileres 100% online en mob.`;
     const canonicalSlug = rawProperty.slug || slugParam;
-    const canonicalUrl = `https://www.mob.ar/propiedad/${canonicalSlug}`;
+    const canonicalUrl = `${APP_URL}/propiedad/${canonicalSlug}`;
 
     return {
       title,
       description,
       alternates: { canonical: canonicalUrl },
-      openGraph: { title, description, url: canonicalUrl, siteName: "mob", type: "website" },
+      openGraph: { title, description, url: canonicalUrl, siteName: "mob", type: "article" },
       twitter: { card: "summary_large_image", title, description },
     };
   }
@@ -194,7 +198,7 @@ export async function generateMetadata({
     descParts.join(" ") + ". Alquileres 100% online en mob.";
 
   const canonicalSlug = data.slug || slugParam;
-  const canonicalUrl = `https://www.mob.ar/propiedad/${canonicalSlug}`;
+  const canonicalUrl = `${APP_URL}/propiedad/${canonicalSlug}`;
 
   return {
     title,
@@ -207,7 +211,7 @@ export async function generateMetadata({
       description,
       url: canonicalUrl,
       siteName: "mob",
-      type: "website",
+      type: "article",
       ...(data.cover_photo_url && {
         images: [
           {
@@ -366,13 +370,15 @@ export default async function PropiedadDetailPage({
   // Fetch all photos for this property
   const { data: photoData } = await supabase
     .from("tokko_property_photo")
-    .select("image, thumb, is_front_cover")
+    .select("image, thumb, is_front_cover, description")
     .eq("property_id", propertyId)
     .order("is_front_cover", { ascending: false })
     .order("order", { ascending: true });
 
+  let photoDescriptions: (string | null)[] = [];
   if (photoData && photoData.length > 0) {
     photos = photoData.map((p: any) => p.image).filter(Boolean);
+    photoDescriptions = photoData.map((p: any) => p.description || null);
   }
 
   // Publisher info: companies (Tokko-synced) get name + logo; dueño directo gets name only (person icon shown)
@@ -447,10 +453,109 @@ export default async function PropiedadDetailPage({
   // Publication date from properties_read
   const publicationDate: string | null = propertyData.property_created_at ?? null;
 
+  // Resolve location slugs for breadcrumb SEO URLs
+  let locationBreadcrumbHref: string | null = null;
+  if (propertyData.location_id) {
+    const { data: locData } = await supabaseAdmin
+      .from("tokko_location")
+      .select("slug, tokko_state!state_id(slug)")
+      .eq("id", propertyData.location_id)
+      .single();
+    if (locData) {
+      const stateSlug = (locData as any).tokko_state?.slug;
+      if (stateSlug && locData.slug) {
+        locationBreadcrumbHref = `/alquileres/${stateSlug}/${locData.slug}`;
+      }
+    }
+  }
+
+  // Related properties: same location, fallback to sibling locations (same parent)
+  let relatedProperties;
+  if (!isUnavailable && propertyData.location_id) {
+    const { data: related } = await supabase
+      .from("properties_read")
+      .select("*")
+      .eq("owner_verified", true)
+      .eq("location_id", propertyData.location_id)
+      .neq("property_id", propertyId)
+      .order("property_created_at", { ascending: false })
+      .limit(6);
+
+    if (related && related.length >= 2) {
+      relatedProperties = transformPropertyReadList(related);
+    } else {
+      // Fallback: find parent location, then query sibling locations
+      const { data: loc } = await supabaseAdmin
+        .from("tokko_location")
+        .select("parent_location_id")
+        .eq("id", propertyData.location_id)
+        .single();
+
+      if (loc?.parent_location_id) {
+        const { data: siblingLocs } = await supabaseAdmin
+          .from("tokko_location")
+          .select("id")
+          .eq("parent_location_id", loc.parent_location_id);
+
+        if (siblingLocs && siblingLocs.length > 0) {
+          const siblingIds = siblingLocs.map((l) => l.id);
+          const { data: siblingRelated } = await supabase
+            .from("properties_read")
+            .select("*")
+            .eq("owner_verified", true)
+            .in("location_id", siblingIds)
+            .neq("property_id", propertyId)
+            .order("property_created_at", { ascending: false })
+            .limit(6);
+
+          if (siblingRelated && siblingRelated.length > 0) {
+            // Merge any results from the same location with sibling results
+            const merged = [...(related || []), ...siblingRelated];
+            const unique = merged.filter(
+              (p, i, arr) => arr.findIndex((x) => x.property_id === p.property_id) === i
+            );
+            relatedProperties = transformPropertyReadList(unique.slice(0, 6));
+          }
+        }
+      }
+    }
+  }
+
   return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Inicio", href: "/" },
+          { name: "Buscar", href: "/alquileres" },
+          ...(propertyData.location_name && locationBreadcrumbHref
+            ? [{ name: propertyData.location_name, href: locationBreadcrumbHref }]
+            : []),
+          { name: property.title || "Propiedad", href: `/propiedad/${propertyData.slug || slugParam}` },
+        ]}
+      />
+      {!isUnavailable && (
+        <PropertyJsonLd
+          title={property.title || "Propiedad en alquiler"}
+          description={description}
+          slug={propertyData.slug || slugParam}
+          datePosted={publicationDate}
+          images={photos}
+          price={propertyData.price ? Number(propertyData.price) : null}
+          currency={propertyData.currency}
+          locationName={propertyData.location_name}
+          parentLocationName={propertyData.parent_location_name}
+          geoLat={geoLat}
+          geoLong={geoLong}
+          totalSurface={propertyData.total_surface ? Number(propertyData.total_surface) : null}
+          roomAmount={propertyData.room_amount}
+          bathroomAmount={propertyData.bathroom_amount}
+          isAvailable={true}
+        />
+      )}
     <PropertyDetail
       property={property}
       photos={photos}
+      photoDescriptions={photoDescriptions}
       tags={tags}
       description={description}
       publisherName={publisherName}
@@ -477,6 +582,8 @@ export default async function PropiedadDetailPage({
       contractDuration={contractDuration}
       orientation={orientation}
       showVerificationModal={showVerificationModal}
+      relatedProperties={relatedProperties}
     />
+    </>
   );
 }

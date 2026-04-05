@@ -277,7 +277,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     setAvailabilityDate("");
     setOwnerType("");
     clearFilters();
-    router.replace("/buscar");
+    router.replace("/alquileres");
     onClose();
   };
 

@@ -8,8 +8,23 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import type { InitialAuthUser } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Mob - Alquileres 100% online",
-  description: "Encontra tu proximo hogar de manera digital y costos menores",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar"
+  ),
+  title: {
+    default: "Mob - Alquileres 100% online en Argentina",
+    template: "%s | Mob",
+  },
+  description:
+    "Alquila de forma digital y segura. Departamentos, casas y PH verificados en CABA y GBA. Visitas, reservas, contratos y garantia 100% online.",
+  openGraph: {
+    type: "website",
+    siteName: "Mob",
+    locale: "es_AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   icons: {
     icon: "/assets/isotipo-mob-original.png",
     apple: "/assets/isotipo-mob-original.png",
@@ -73,6 +88,8 @@ export default async function RootLayout({
   return (
     <html lang="es">
       <head>
+        <link rel="preconnect" href="https://storage.googleapis.com" />
+        <link rel="preconnect" href="https://cdn.sanity.io" />
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <Script
             id="gtm-script"

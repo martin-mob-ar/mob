@@ -182,7 +182,7 @@ export default function LeadForm({
         position: "bottom-right",
       });
       setSubmitted(true);
-      if (!isInmobiliaria) setShowModal(true);
+      setShowModal(true);
       form.reset();
     } catch (error) {
       toast.error(

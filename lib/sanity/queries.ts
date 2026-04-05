@@ -3,6 +3,7 @@ import { groq } from "next-sanity";
 // Shared post fields projection
 const postFields = `
   _id,
+  _updatedAt,
   title,
   slug,
   excerpt,

@@ -19,7 +19,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ExploreRentals from "@/components/ExploreRentals";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Property } from "@/components/PropertyCard";
+import PropertyCard, { Property } from "@/components/PropertyCard";
 import Image from "next/image";
 const KeyRoundIcon = "/assets/key-round-icon.svg";
 import {
@@ -48,6 +48,7 @@ import VerificationRequiredDialog from "@/components/VerificationRequiredDialog"
 interface PropertyDetailProps {
   property?: Property;
   photos?: string[];
+  photoDescriptions?: (string | null)[];
   tags?: string[];
   description?: string | null;
   publisherName?: string | null;
@@ -74,6 +75,7 @@ interface PropertyDetailProps {
   contractDuration?: number | null;
   orientation?: string | null;
   showVerificationModal?: boolean;
+  relatedProperties?: Property[];
 }
 
 function formatDescription(text: string): string {
@@ -83,7 +85,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, showVerificationModal = false }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescriptions = [], tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, showVerificationModal = false, relatedProperties }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -169,6 +171,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
   const [preloadedIndices, setPreloadedIndices] = useState<Set<number>>(new Set());
   const [badgeTooltipOpen, setBadgeTooltipOpen] = useState(false);
   const [publisherTooltipOpen, setPublisherTooltipOpen] = useState(false);
+
+  // Build descriptive alt text for gallery photos
+  const getPhotoAlt = (index: number) => {
+    if (photoDescriptions[index]) return photoDescriptions[index]!;
+    const typeName = property.propertyType || "Propiedad";
+    const loc = propLocationFull || property.neighborhood || "";
+    return `${typeName} en ${loc} - Vista ${index + 1}`;
+  };
 
   // Gallery images: use real photos if available, otherwise mock
   const galleryImages = propPhotos && propPhotos.length > 0
@@ -360,7 +370,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <Image
                     key={index}
                     src={img}
-                    alt={`Vista ${index + 1}`}
+                    alt={getPhotoAlt(index)}
                     width={1200}
                     height={900}
                     sizes="90vw"
@@ -402,7 +412,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                     index === galleryIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-80'
                   }`}
                 >
-                  <Image src={img} alt={`Miniatura ${index + 1}`} fill sizes="64px" className="object-cover" />
+                  <Image src={img} alt={getPhotoAlt(index)} fill sizes="64px" className="object-cover" />
                 </button>
               ))}
             </div>
@@ -515,7 +525,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <div className="aspect-[4/3] relative">
                     <Image
                       src={image}
-                      alt={`Vista ${index + 1}`}
+                      alt={getPhotoAlt(index)}
                       fill
                       sizes="100vw"
                       priority={index === 0}
@@ -636,7 +646,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
             >
               <Image
                 src={img}
-                alt={`Vista ${index + 2}`}
+                alt={getPhotoAlt(index + 1)}
                 fill
                 sizes="(max-width: 1024px) 25vw, 17vw"
                 className="object-cover"
@@ -793,13 +803,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
               >
                 <Calendar className="h-5 w-5 mr-2" />
                 Agendar visita
-              </Button>
-              <Button
-                className="w-full rounded-xl h-12 font-medium text-base bg-secondary hover:bg-secondary/80 text-foreground border-0"
-                onClick={() => setLeadFormType("reserva")}
-              >
-                <Image src={KeyRoundIcon} alt="" width={20} height={20} className="mr-2" />
-                Quiero reservar
               </Button>
             </div>
           </AnimateHeight>
@@ -1010,7 +1013,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                 </div>
                 <div>
                   <p className="font-semibold text-base text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip>.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span></p>
                 </div>
               </div>
             </div>
@@ -1362,13 +1365,6 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                       <Calendar className="h-4 w-4 mr-2" />
                       Agendar visita
                     </Button>
-                    <Button
-                      className="w-full rounded-xl py-5 font-medium text-sm bg-secondary hover:bg-secondary/80 text-foreground border-0"
-                      onClick={() => setLeadFormType("reserva")}
-                    >
-                      <Image src={KeyRoundIcon} alt="" width={16} height={16} className="mr-2" />
-                      Quiero reservar
-                    </Button>
                   </div>
                 </AnimateHeight>
 
@@ -1421,7 +1417,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
                   <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-xs text-foreground"><GarantiaTooltip>Garantía con 50% off</GarantiaTooltip></p>
-                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <GarantiaTooltip className="font-semibold text-foreground cursor-help">garantía 50% off</GarantiaTooltip>.</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Te verificás y accedés a <span className="font-semibold text-foreground">garantía 50% off</span></p>
                   </div>
                 </div>
                 
@@ -1473,6 +1469,17 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
       </main>
       
+      {relatedProperties && relatedProperties.length > 0 && (
+        <section className="container py-10 md:py-14">
+          <h2 className="text-xl font-semibold mb-6">Propiedades similares</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {relatedProperties.map((rp) => (
+              <PropertyCard key={rp.id} property={rp} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <ExploreRentals title="Más alquileres" />
 
       <div className="hidden md:block">
@@ -1492,7 +1499,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, tags: prop
         </div>
         <div className="flex justify-center gap-6 text-xs text-muted-foreground">
           <Link href="/" className="hover:text-foreground">Inicio</Link>
-          <Link href="/buscar" className="hover:text-foreground">Buscar</Link>
+          <Link href="/alquileres" className="hover:text-foreground">Buscar</Link>
           <Link href="/subir-propiedad" className="hover:text-foreground">Publicar</Link>
         </div>
         <p className="text-[10px] text-center text-muted-foreground mt-4">

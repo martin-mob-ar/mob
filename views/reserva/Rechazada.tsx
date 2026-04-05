@@ -17,7 +17,7 @@ const Rechazada = () => {
 
   const handleSearchProperties = () => {
     resetReservation();
-    router.push("/buscar");
+    router.push("/alquileres");
   };
 
   return (

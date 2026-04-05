@@ -93,7 +93,20 @@ export async function GET(request: Request) {
     depth: number;
     display: string;
     type: "location" | "state";
+    slug: string | null;
+    stateSlug: string | null;
   }[] = [];
+
+  // Fetch slugs for matched states
+  const matchedStateIds = matchedStates.map((s) => s.id);
+  const matchedStateSlugs = new Map<number, string | null>();
+  if (matchedStateIds.length > 0) {
+    const { data: msRows } = await supabaseAdmin
+      .from('tokko_state')
+      .select('id, slug')
+      .in('id', matchedStateIds);
+    for (const r of msRows || []) matchedStateSlugs.set(r.id, r.slug);
+  }
 
   for (const s of matchedStates) {
     const fullContext = normalize(s.name);
@@ -105,6 +118,8 @@ export async function GET(request: Request) {
       depth: 0,
       display: country?.name ?? 'Argentina',
       type: 'state',
+      slug: matchedStateSlugs.get(s.id) ?? null,
+      stateSlug: matchedStateSlugs.get(s.id) ?? null,
     });
   }
 
@@ -188,6 +203,26 @@ export async function GET(request: Request) {
     return chain;
   }
 
+  // Fetch slugs for all matched locations + their state slugs
+  const locationIds = locations.map((l) => l.id);
+  const slugMap = new Map<number, string | null>();
+  if (locationIds.length > 0) {
+    const { data: slugRows } = await supabaseAdmin
+      .from('tokko_location')
+      .select('id, slug')
+      .in('id', locationIds);
+    for (const r of slugRows || []) slugMap.set(r.id, r.slug);
+  }
+
+  const stateSlugMap = new Map<number, string | null>();
+  if (stateIdArr.length > 0) {
+    const { data: stateSlugRows } = await supabaseAdmin
+      .from('tokko_state')
+      .select('id, slug')
+      .in('id', stateIdArr);
+    for (const r of stateSlugRows || []) stateSlugMap.set(r.id, r.slug);
+  }
+
   // Build location results
   for (const l of locations) {
     const chain = getAncestorChain(l.parent_location_id, l.state_id);
@@ -202,6 +237,8 @@ export async function GET(request: Request) {
       depth: l.depth,
       display: chain.join(', '),
       type: 'location',
+      slug: slugMap.get(l.id) ?? null,
+      stateSlug: l.state_id ? (stateSlugMap.get(l.state_id) ?? null) : null,
     });
 
     if (results.length >= limit) break;

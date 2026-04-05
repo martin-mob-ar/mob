@@ -220,7 +220,7 @@ const GestionView = ({
                   Publicar mi propiedad
                 </Link>
                 <Link
-                  href="/buscar"
+                  href="/alquileres"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
                 >
                   <Search className="h-4 w-4" />
@@ -230,7 +230,7 @@ const GestionView = ({
             ) : (
               <>
                 <Link
-                  href="/buscar"
+                  href="/alquileres"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
                 >
                   <Search className="h-4 w-4" />

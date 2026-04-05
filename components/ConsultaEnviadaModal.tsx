@@ -81,7 +81,7 @@ export default function ConsultaEnviadaModal({
           </div>
 
           {/* CTA */}
-          <Link href="/buscar" className="block mt-5">
+          <Link href="/alquileres" className="block mt-5">
             <Button className="w-full rounded-xl h-11 font-semibold text-sm gap-2">
               Ver más propiedades
               <ArrowRight className="h-4 w-4" />

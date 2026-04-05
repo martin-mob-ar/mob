@@ -3,7 +3,10 @@ import Image from "next/image";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Política de privacidad | Mob",
+  title: "Politica de privacidad",
+  description:
+    "Politica de privacidad de Mob. Como protegemos tus datos personales, informacion de alquileres y documentacion de verificacion.",
+  alternates: { canonical: "/politica-de-privacidad" },
 };
 
 export default function PrivacidadPage() {

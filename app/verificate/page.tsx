@@ -163,7 +163,7 @@ export default function VerificatePage() {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => router.push("/buscar")}
+                  onClick={() => router.push("/alquileres")}
                   className="w-full h-12 rounded-xl text-sm font-semibold"
                 >
                   <Search className="h-4 w-4 mr-2" />

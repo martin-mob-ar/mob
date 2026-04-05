@@ -538,7 +538,7 @@ export default function ProfileSection({
                 </Button>
               </Link>
               {isInquilino && (
-                <Link href="/buscar">
+                <Link href="/alquileres">
                   <Button
                     variant="ghost"
                     className="h-9 w-full rounded-full text-sm font-medium text-blue-700 hover:bg-blue-100 gap-1.5"

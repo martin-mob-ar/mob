@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PostBody from "@/components/blog/PostBody";
 import BlogJsonLd from "@/components/blog/BlogJsonLd";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import { Badge } from "@/components/ui/badge";
 import { sanityFetch } from "@/lib/sanity/client";
 import { urlFor } from "@/lib/sanity/image";
@@ -113,6 +114,16 @@ export default async function BlogPostPage({
     <div className="min-h-screen bg-background">
       <Header />
       <BlogJsonLd post={post} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Inicio", href: "/" },
+          { name: "Blog", href: "/blog" },
+          ...(post.categories?.[0]
+            ? [{ name: post.categories[0].title, href: `/blog/categoria/${post.categories[0].slug.current}` }]
+            : []),
+          { name: post.title, href: `/blog/${post.slug.current}` },
+        ]}
+      />
 
       <main className="container py-12 md:py-16">
         <article className="mx-auto max-w-3xl">

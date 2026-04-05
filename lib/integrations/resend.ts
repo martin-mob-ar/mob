@@ -157,7 +157,7 @@ export async function sendInmobiliariaLeadEmail(
       </p>
 
       <p style="font-size: 14px; line-height: 1.6; color: #555;">
-        En Mob podés recibir consultas únicamente inquilinos calificados, con garantía de alquiler aprobada y un 50% de descuento en la garantía a través de Hoggax.
+        En Mob podés recibir consultas únicamente de inquilinos calificados para alquilar y aprobados para una garantía de Hoggax con 50% de descuento (exclusivo para inmobiliarias asociadas).
       </p>
 
       <p style="font-size: 14px; line-height: 1.6; color: #555;">

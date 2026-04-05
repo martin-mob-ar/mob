@@ -17,7 +17,7 @@ const PropertySection = ({
   title,
   properties,
   showAll = true,
-  href = "/buscar",
+  href = "/alquileres",
 }: PropertySectionProps) => {
   const displayProperties = properties.slice(0, 12);
 

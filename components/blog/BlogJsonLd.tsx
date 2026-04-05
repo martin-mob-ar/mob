@@ -15,6 +15,7 @@ export default function BlogJsonLd({ post }: { post: Post }) {
     description: post.seo?.metaDescription || post.excerpt,
     image: imageUrl,
     datePublished: post.publishedAt,
+    ...(post._updatedAt && { dateModified: post._updatedAt }),
     author: {
       "@type": "Person",
       name: post.author.name,

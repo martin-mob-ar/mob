@@ -45,19 +45,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Monoambiente",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minAmbientes=1&maxAmbientes=1`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=1&maxAmbientes=1`,
       },
       {
         label: "2 ambientes",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minAmbientes=2&maxAmbientes=2`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=2&maxAmbientes=2`,
       },
       {
         label: "3 ambientes",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minAmbientes=3&maxAmbientes=3`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=3&maxAmbientes=3`,
       },
       {
         label: "4+ ambientes",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minAmbientes=4`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=4`,
       },
     ],
   },
@@ -66,19 +66,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Hasta 600.000",
-        href: (z) => `/buscar?${buildLocationParam(z)}&maxPrice=600000`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=600000`,
       },
       {
         label: "Hasta 800.000",
-        href: (z) => `/buscar?${buildLocationParam(z)}&maxPrice=800000`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=800000`,
       },
       {
         label: "Hasta 1.000.000",
-        href: (z) => `/buscar?${buildLocationParam(z)}&maxPrice=1000000`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=1000000`,
       },
       {
         label: "Hasta USD 1.000",
-        href: (z) => `/buscar?${buildLocationParam(z)}&maxPrice=1300000`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=1300000`,
       },
     ],
   },
@@ -87,19 +87,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Entre 40 y 60m²",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minSurface=40&maxSurface=60`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=40&maxSurface=60`,
       },
       {
         label: "Entre 60 y 80m²",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minSurface=60&maxSurface=80`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=60&maxSurface=80`,
       },
       {
         label: "Entre 80 y 100m²",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minSurface=80&maxSurface=100`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=80&maxSurface=100`,
       },
       {
         label: "Más de 100m²",
-        href: (z) => `/buscar?${buildLocationParam(z)}&minSurface=100`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=100`,
       },
     ],
   },
@@ -108,19 +108,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Con terraza",
-        href: (z) => `/buscar?${buildLocationParam(z)}&tagIds=25,114`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&tagIds=25,114`,
       },
       {
         label: "Con jardín",
-        href: (z) => `/buscar?${buildLocationParam(z)}&tagIds=19`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&tagIds=19`,
       },
       {
         label: "Con pileta",
-        href: (z) => `/buscar?${buildLocationParam(z)}&tagIds=51,164`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&tagIds=51,164`,
       },
       {
         label: "A estrenar",
-        href: (z) => `/buscar?${buildLocationParam(z)}&maxAge=0`,
+        href: (z) => `/alquileres?${buildLocationParam(z)}&maxAge=0`,
       },
     ],
   },
@@ -250,7 +250,7 @@ const ExploreRentals = ({ title = "Alquileres para vos" }: ExploreRentalsProps) 
 
           {/* CTA */}
           <Link
-            href="/buscar"
+            href="/alquileres"
             className="inline-flex items-center gap-1 text-primary text-sm font-medium hover:underline mb-4"
           >
             Ver alquileres recientes

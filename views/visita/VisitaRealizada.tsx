@@ -32,7 +32,7 @@ const VisitaRealizada = () => {
   };
 
   const handleKeepSearching = () => {
-    router.push("/buscar");
+    router.push("/alquileres");
   };
 
   return (

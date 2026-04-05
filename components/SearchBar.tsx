@@ -125,18 +125,8 @@ const SearchBar = () => {
   };
 
   const handleSearch = () => {
+    // Build extra filter params
     const params = new URLSearchParams();
-    if (selectedLocation) {
-      params.set("location", selectedLocation.name);
-      params.set("locationNames", selectedLocation.name);
-      if (selectedLocation.type === "state") {
-        params.set("stateId", String(selectedLocation.id));
-      } else {
-        params.set("locationId", String(selectedLocation.id));
-      }
-    } else if (locationQuery.trim()) {
-      params.set("location", locationQuery.trim());
-    }
     if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
     if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
     if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
@@ -152,7 +142,33 @@ const SearchBar = () => {
       }
     }
     const qs = params.toString();
-    router.push(qs ? `/buscar?${qs}` : "/buscar");
+
+    // Use SEO-friendly URL when a location with slug data is selected
+    if (selectedLocation?.slug && selectedLocation.stateSlug) {
+      if (selectedLocation.type === "state") {
+        const base = `/alquileres/${selectedLocation.stateSlug}`;
+        router.push(qs ? `${base}?${qs}` : base);
+      } else {
+        const base = `/alquileres/${selectedLocation.stateSlug}/${selectedLocation.slug}`;
+        router.push(qs ? `${base}?${qs}` : base);
+      }
+      return;
+    }
+
+    // Fallback: query-param search (free-text search without slug data)
+    if (selectedLocation) {
+      params.set("location", selectedLocation.name);
+      params.set("locationNames", selectedLocation.name);
+      if (selectedLocation.type === "state") {
+        params.set("stateId", String(selectedLocation.id));
+      } else {
+        params.set("locationId", String(selectedLocation.id));
+      }
+    } else if (locationQuery.trim()) {
+      params.set("location", locationQuery.trim());
+    }
+    const fallbackQs = params.toString();
+    router.push(fallbackQs ? `/alquileres?${fallbackQs}` : "/alquileres");
   };
 
   const handleClearRooms = () => {

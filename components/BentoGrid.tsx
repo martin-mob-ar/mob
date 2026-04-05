@@ -45,7 +45,7 @@ const BentoGrid = () => {
             style={cardStyle(0)}
           >
             {/* Stretched link covers the whole card */}
-            <Link href="/buscar" className="absolute inset-0 z-0 rounded-xl" aria-label="Buscar propiedades" />
+            <Link href="/alquileres" className="absolute inset-0 z-0 rounded-xl" aria-label="Buscar propiedades" />
             {/* Subtle corner accent */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/[0.08] to-transparent rounded-tr-xl rounded-bl-[80px] pointer-events-none" />
             <div>
@@ -72,7 +72,7 @@ const BentoGrid = () => {
               </ul>
             </div>
             {/* Mini search preview - own link with higher z-index */}
-            <Link href="/buscar?minAmbientes=2&location=Capital%20Federal&locationId=51400" className="relative z-10 mt-4 bg-background/80 backdrop-blur-sm rounded-xl border border-border p-3 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20 block">
+            <Link href="/alquileres?minAmbientes=2&location=Capital%20Federal&locationId=51400" className="relative z-10 mt-4 bg-background/80 backdrop-blur-sm rounded-xl border border-border p-3 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20 block">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Search className="h-3.5 w-3.5 text-primary" />
@@ -195,7 +195,7 @@ const BentoGrid = () => {
         <div className="md:hidden space-y-3">
           {/* Encontrá tu hogar */}
           <div className="relative bg-gradient-to-br from-primary/[0.06] via-primary/[0.03] to-primary/[0.10] border border-primary/15 rounded-xl p-5 overflow-hidden">
-            <Link href="/buscar" className="absolute inset-0 z-0 rounded-xl" aria-label="Buscar propiedades" />
+            <Link href="/alquileres" className="absolute inset-0 z-0 rounded-xl" aria-label="Buscar propiedades" />
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/[0.08] to-transparent rounded-tr-xl rounded-bl-[60px] pointer-events-none" />
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-3">
               <Users className="h-3 w-3" />
@@ -219,7 +219,7 @@ const BentoGrid = () => {
               </li>
             </ul>
             {/* Mini search preview - own link */}
-            <Link href="/buscar?minAmbientes=2&location=Capital%20Federal&locationId=51400" className="relative z-10 mt-4 bg-background/80 backdrop-blur-sm rounded-xl border border-border p-3 shadow-sm block">
+            <Link href="/alquileres?minAmbientes=2&location=Capital%20Federal&locationId=51400" className="relative z-10 mt-4 bg-background/80 backdrop-blur-sm rounded-xl border border-border p-3 shadow-sm block">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Search className="h-3.5 w-3.5 text-primary" />

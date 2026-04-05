@@ -16,12 +16,12 @@ const VisitaRechazada = () => {
   const { resetVisita } = useVisita();
 
   const handleSearchMore = () => {
-    router.push("/buscar");
+    router.push("/alquileres");
   };
 
   const handleScheduleAnother = () => {
     // Reset and go back to search - user remains verified
-    router.push("/buscar");
+    router.push("/alquileres");
   };
 
   return (
