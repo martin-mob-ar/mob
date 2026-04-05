@@ -5,6 +5,7 @@ interface PropertyJsonLdProps {
   description: string | null;
   slug: string;
   datePosted: string | null;
+  dateModified: string | null;
   images: string[];
   price: number | null;
   currency: string | null;
@@ -23,6 +24,7 @@ export default function PropertyJsonLd({
   description,
   slug,
   datePosted,
+  dateModified,
   images,
   price,
   currency,
@@ -48,6 +50,10 @@ export default function PropertyJsonLd({
 
   if (datePosted) {
     jsonLd.datePosted = datePosted;
+  }
+
+  if (dateModified) {
+    jsonLd.dateModified = dateModified;
   }
 
   if (images.length > 0) {

@@ -677,7 +677,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
           {/* Mobile Menu Button */}
           <div className="md:hidden ml-auto flex items-center gap-2">
             {!authLoading && !isAuthenticated && !landingCta && (
-              <Button variant="outline" size="sm" className="rounded-full px-4 h-9 font-bold text-sm" asChild>
+              <Button variant="ghost" size="sm" className="rounded-full px-4 h-9 font-bold text-sm" asChild>
                 <Link href="/subir-propiedad">
                   Publicá
                 </Link>

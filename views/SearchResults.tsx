@@ -154,9 +154,10 @@ interface SearchResultsProps {
   initialPropertyTypeNames?: string[];
   initialAmbientes?: { min: number; max?: number };
   pageTitle?: string;
+  lastUpdated?: string;
 }
 
-const SearchResults = ({ initialProperties, initialTotal = 0, basePath, initialLocationSeed, initialPropertyTypeNames, initialAmbientes, pageTitle }: SearchResultsProps) => {
+const SearchResults = ({ initialProperties, initialTotal = 0, basePath, initialLocationSeed, initialPropertyTypeNames, initialAmbientes, pageTitle, lastUpdated }: SearchResultsProps) => {
   return (
     <SearchFiltersProvider
       initialResults={initialProperties}
@@ -166,12 +167,12 @@ const SearchResults = ({ initialProperties, initialTotal = 0, basePath, initialL
       initialPropertyTypeNames={initialPropertyTypeNames}
       initialAmbientes={initialAmbientes}
     >
-      <SearchResultsInner pageTitle={pageTitle} />
+      <SearchResultsInner pageTitle={pageTitle} lastUpdated={lastUpdated} />
     </SearchFiltersProvider>
   );
 };
 
-const SearchResultsInner = ({ pageTitle }: { pageTitle?: string }) => {
+const SearchResultsInner = ({ pageTitle, lastUpdated }: { pageTitle?: string; lastUpdated?: string }) => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const { filters, setFilter, results, total, isLoading } = useSearchFilters();
   const enrichedResults = usePropertyPhotos(results);
@@ -208,15 +209,15 @@ const SearchResultsInner = ({ pageTitle }: { pageTitle?: string }) => {
           <div>
             {pageTitle ? (
               <>
-                <p className="font-display font-bold text-lg text-foreground">{pageTitle}</p>
+                <h1 className="font-display font-bold text-lg text-foreground">{pageTitle}</h1>
                 <p className="text-sm text-muted-foreground">
                   {isLoading ? "Buscando..." : `${total} propiedades`}
                 </p>
               </>
             ) : (
-              <p className="font-display font-bold text-lg text-foreground">
+              <h1 className="font-display font-bold text-lg text-foreground">
                 {isLoading ? "Buscando..." : `${total} propiedades`}
-              </p>
+              </h1>
             )}
           </div>
           <DropdownMenu>
@@ -271,6 +272,12 @@ const SearchResultsInner = ({ pageTitle }: { pageTitle?: string }) => {
           <div className="px-4">
             <SearchPagination />
           </div>
+        )}
+
+        {lastUpdated && (
+          <p className="sr-only">
+            Datos actualizados al <time dateTime={lastUpdated}>{new Date(lastUpdated).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</time>
+          </p>
         )}
 
         <ExploreRentals title="Más alquileres" />
@@ -387,6 +394,12 @@ const SearchResultsInner = ({ pageTitle }: { pageTitle?: string }) => {
           </div>
         )}
       </main>
+
+      {lastUpdated && (
+        <p className="sr-only">
+          Datos actualizados al <time dateTime={lastUpdated}>{new Date(lastUpdated).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}</time>
+        </p>
+      )}
 
       <ExploreRentals title="Más alquileres" />
 

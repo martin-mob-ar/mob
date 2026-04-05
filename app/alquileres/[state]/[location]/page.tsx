@@ -148,6 +148,7 @@ export default async function LocationPage({ params }: PageProps) {
             locationDisplay: `${state.name}, Argentina`,
           }}
           pageTitle={`Alquileres en ${location.name}, ${state.name}`}
+          lastUpdated={new Date().toISOString()}
         />
       </Suspense>
     </>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import "./globals.css";
@@ -6,6 +6,14 @@ import { Providers } from "./providers";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type { InitialAuthUser } from "@/contexts/AuthContext";
+import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
+import WebSiteJsonLd from "@/components/seo/WebSiteJsonLd";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#7C3AED",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -118,6 +126,8 @@ y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         )}
       </head>
       <body>
+        <OrganizationJsonLd />
+        <WebSiteJsonLd />
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <noscript>
             <iframe

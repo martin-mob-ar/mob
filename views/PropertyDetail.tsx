@@ -177,7 +177,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
     if (photoDescriptions[index]) return photoDescriptions[index]!;
     const typeName = property.propertyType || "Propiedad";
     const loc = propLocationFull || property.neighborhood || "";
-    return `${typeName} en ${loc} - Vista ${index + 1}`;
+    const rooms = property.rooms ? ` ${property.rooms} ambientes` : "";
+    return `${typeName}${rooms} en ${loc} - foto ${index + 1}`;
   };
 
   // Gallery images: use real photos if available, otherwise mock
@@ -623,7 +624,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
           <div className="col-span-2 row-span-2 relative cursor-pointer" onClick={() => { setGalleryIndex(0); setShowGallery(true); }}>
             <Image
               src={galleryImages[0] || property.image}
-              alt={property.address}
+              alt={getPhotoAlt(0)}
               fill
               sizes="(max-width: 1024px) 50vw, 33vw"
               priority

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { sanityFetch } from "@/lib/sanity/client";
 import { sitemapPostsQuery, sitemapCategoriesQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/lib/sanity/image";
 import { createClient } from "@/lib/supabase/server-component";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -24,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let blogPages: MetadataRoute.Sitemap = [];
   try {
     const posts = await sanityFetch<
-      { slug: string; publishedAt: string; _updatedAt: string }[]
+      { slug: string; publishedAt: string; _updatedAt: string; coverImage?: any }[]
     >({ query: sitemapPostsQuery, tags: ["post"], fallback: [] });
 
     blogPages = posts.map((post) => ({
@@ -32,6 +33,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: post._updatedAt || post.publishedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,
+      ...(post.coverImage && {
+        images: [urlFor(post.coverImage).width(1200).height(630).url()],
+      }),
     }));
   } catch {
     // Sanity unavailable — skip blog entries

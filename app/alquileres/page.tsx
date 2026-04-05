@@ -68,6 +68,7 @@ export default async function AlquileresPage() {
         <SearchResults
           initialProperties={initialProperties}
           initialTotal={initialTotal}
+          lastUpdated={new Date().toISOString()}
         />
       </Suspense>
     </>

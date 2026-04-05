@@ -86,7 +86,7 @@ const Index = ({ featuredProperties, latestProperties, latestPosts }: IndexProps
               },
               {
                 q: "¿Cuánto cuesta usar Mob?",
-                a: "Para inquilinos, buscar y visitar propiedades es completamente gratis. Para propietarios, publicar es gratis y solo se cobra una comisión cuando el alquiler se concreta. No hay costos iniciales ni cargos ocultos.",
+                a: "Para inquilinos, buscar y visitar propiedades es completamente gratis. Para inmobiliarias y propietarios, publicar es gratis y solo se cobra un costo de plataforma cuando el alquiler se concreta. No hay costos iniciales ni cargos ocultos.",
               },
             ].map((faq, i) => (
               <AccordionItem

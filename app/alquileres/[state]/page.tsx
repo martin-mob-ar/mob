@@ -141,6 +141,7 @@ export default async function StatePage({ params }: PageProps) {
             stateName: state.name!,
           }}
           pageTitle={`Alquileres en ${state.name}`}
+          lastUpdated={new Date().toISOString()}
         />
       </Suspense>
     </>

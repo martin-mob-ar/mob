@@ -167,7 +167,7 @@ export default async function BlogPostPage({
                 alt={post.author.name}
                 width={40}
                 height={40}
-                className="rounded-full"
+                className="rounded-full object-cover"
               />
             )}
             <div>
@@ -176,6 +176,14 @@ export default async function BlogPostPage({
                 <time dateTime={post.publishedAt}>
                   {formatDate(post.publishedAt)}
                 </time>
+                {post._updatedAt && post._updatedAt.slice(0, 10) !== post.publishedAt.slice(0, 10) && (
+                  <>
+                    {" · Actualizado "}
+                    <time dateTime={post._updatedAt}>
+                      {formatDate(post._updatedAt)}
+                    </time>
+                  </>
+                )}
                 {" · "}
                 {readingTime} min de lectura
               </p>
@@ -198,6 +206,28 @@ export default async function BlogPostPage({
           <div className="mt-10">
             <PostBody body={post.body} />
           </div>
+
+          {/* Author bio */}
+          {post.author.bio && (
+            <div className="mt-12 pt-8 border-t border-border">
+              <div className="flex items-start gap-4">
+                {post.author.image && (
+                  <Image
+                    src={urlFor(post.author.image).width(56).height(56).url()}
+                    alt={post.author.name}
+                    width={56}
+                    height={56}
+                    className="rounded-full object-cover flex-shrink-0"
+                  />
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">Escrito por</p>
+                  <p className="font-semibold text-foreground">{post.author.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{post.author.bio}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </article>
       </main>
       <Footer />

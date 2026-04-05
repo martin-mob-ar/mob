@@ -533,25 +533,24 @@ export default async function PropiedadDetailPage({
           { name: property.title || "Propiedad", href: `/propiedad/${propertyData.slug || slugParam}` },
         ]}
       />
-      {!isUnavailable && (
-        <PropertyJsonLd
-          title={property.title || "Propiedad en alquiler"}
-          description={description}
-          slug={propertyData.slug || slugParam}
-          datePosted={publicationDate}
-          images={photos}
-          price={propertyData.price ? Number(propertyData.price) : null}
-          currency={propertyData.currency}
-          locationName={propertyData.location_name}
-          parentLocationName={propertyData.parent_location_name}
-          geoLat={geoLat}
-          geoLong={geoLong}
-          totalSurface={propertyData.total_surface ? Number(propertyData.total_surface) : null}
-          roomAmount={propertyData.room_amount}
-          bathroomAmount={propertyData.bathroom_amount}
-          isAvailable={true}
-        />
-      )}
+      <PropertyJsonLd
+        title={property.title || "Propiedad en alquiler"}
+        description={description}
+        slug={propertyData.slug || slugParam}
+        datePosted={publicationDate}
+        dateModified={propertyData.property_updated_at ?? null}
+        images={photos}
+        price={propertyData.price ? Number(propertyData.price) : null}
+        currency={propertyData.currency}
+        locationName={propertyData.location_name}
+        parentLocationName={propertyData.parent_location_name}
+        geoLat={geoLat}
+        geoLong={geoLong}
+        totalSurface={propertyData.total_surface ? Number(propertyData.total_surface) : null}
+        roomAmount={propertyData.room_amount}
+        bathroomAmount={propertyData.bathroom_amount}
+        isAvailable={!isUnavailable}
+      />
     <PropertyDetail
       property={property}
       photos={photos}

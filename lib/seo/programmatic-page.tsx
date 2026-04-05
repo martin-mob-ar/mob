@@ -166,6 +166,9 @@ export default async function ProgrammaticSearchPage({
 
   return (
     <>
+      {initialTotal < 2 && (
+        <meta name="robots" content="noindex, follow" />
+      )}
       <BreadcrumbJsonLd items={breadcrumbs} />
       {itemListJsonLd && (
         <script
@@ -182,6 +185,7 @@ export default async function ProgrammaticSearchPage({
           initialPropertyTypeNames={typeInfo ? [typeInfo.dbName] : undefined}
           initialAmbientes={roomInfo ? { min: roomInfo.count, max: roomInfo.count } : undefined}
           pageTitle={pageTitle}
+          lastUpdated={new Date().toISOString()}
         />
       </Suspense>
     </>
