@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from("properties_read")
-    .select("property_id, slug, cover_photo_url, address, title, description, location_name, parent_location_name, valor_total_primary, price, expenses, currency, tokko_id, room_amount, suite_amount, total_surface, bathroom_amount, parking_lot_amount, age, property_type_name, company_name, mob_plan, sort_priority, property_created_at, listing_updated_at, state_name, location_id, state_id, tag_names, tag_ids, min_start_date, owner_account_type, property_status, operacion_status, operacion_id", { count: "exact" })
+    .select("property_id, slug, cover_photo_url, address, description, location_name, parent_location_name, valor_total_primary, price, expenses, currency, tokko_id, room_amount, suite_amount, total_surface, bathroom_amount, parking_lot_amount, age, property_type_name, company_name, mob_plan, sort_priority, property_created_at, listing_updated_at, state_name, location_id, state_id, tag_names_type_1, tag_names_type_2, tag_names_type_3, all_tag_ids, min_start_date, owner_account_type, property_status, operacion_status, operacion_id", { count: "exact" })
     .eq("owner_verified", true);
 
   // Apply location filter - stateId for state-level, locationId for location-level

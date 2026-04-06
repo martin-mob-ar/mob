@@ -128,7 +128,7 @@ export default function VisitLeadForm({
             Volver
           </Button>
         </div>
-        <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} />
+        <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} isVisitRequest />
       </>
     );
   }

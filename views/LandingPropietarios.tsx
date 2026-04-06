@@ -524,12 +524,12 @@ const LandingPropietarios = () => {
                 asChild
               >
                 <a
-                  href="https://wa.me/5491100000000"
+                  href="https://wa.me/5492236000055"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Hablar con un asesor
+                  Hablá con nuestro equipo
                 </a>
               </Button>
             </div>
@@ -589,10 +589,6 @@ const LandingPropietarios = () => {
                 {
                   q: "¿Tengo que hacer algo durante el proceso?",
                   a: "Solo publicás tu propiedad y confirmás al inquilino. El resto: coordinación de visitas, documentación, pago y contrato lo gestionamos nosotros.",
-                },
-                {
-                  q: "¿El contrato tiene validez legal?",
-                  a: "Sí. El contrato digital de MOB tiene plena validez legal en Argentina.",
                 },
               ].map((faq, i) => (
                 <AccordionItem

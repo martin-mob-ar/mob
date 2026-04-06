@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 const popularSearches = [
   { label: "alquiler barato", href: "/alquileres?maxPrice=700000" },
   { label: "alquiler en belgrano", href: "/alquileres/capital-federal/belgrano" },
-  { label: "dueño directo", href: "/alquileres?propertyType=dueno" },
+  { label: "dueño directo", href: "/alquileres?ownerType=dueno" },
   { label: "alquiler en palermo", href: "/alquileres/capital-federal/palermo" },
   { label: "alquiler en CABA", href: "/alquileres/capital-federal" },
   { label: "alquileres sin garantía", href: "/alquileres?ownerType=dueno" },

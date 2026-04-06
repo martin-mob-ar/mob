@@ -159,24 +159,15 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
   };
 
   const getRoomsLabel = () => {
-    const hasSelection = 
-      dormitoriosMin !== "sin-minimo" || 
-      dormitoriosMax !== "sin-minimo" || 
-      ambientesMin !== "sin-minimo" || 
+    const hasSelection =
+      dormitoriosMin !== "sin-minimo" ||
+      dormitoriosMax !== "sin-minimo" ||
+      ambientesMin !== "sin-minimo" ||
       ambientesMax !== "sin-minimo";
-    
-    if (!hasSelection) return "Dormitorios";
-    
+
+    if (!hasSelection) return "Ambientes";
+
     const parts: string[] = [];
-    if (dormitoriosMin !== "sin-minimo" || dormitoriosMax !== "sin-minimo") {
-      if (dormitoriosMin !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
-        parts.push(`${dormitoriosMin}-${dormitoriosMax} dorm.`);
-      } else if (dormitoriosMin !== "sin-minimo") {
-        parts.push(`${dormitoriosMin}+ dorm.`);
-      } else {
-        parts.push(`≤${dormitoriosMax} dorm.`);
-      }
-    }
     if (ambientesMin !== "sin-minimo" || ambientesMax !== "sin-minimo") {
       if (ambientesMin !== "sin-minimo" && ambientesMax !== "sin-minimo") {
         parts.push(`${ambientesMin}-${ambientesMax} amb.`);
@@ -186,7 +177,16 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
         parts.push(`≤${ambientesMax} amb.`);
       }
     }
-    return parts.join(", ") || "Dormitorios";
+    if (dormitoriosMin !== "sin-minimo" || dormitoriosMax !== "sin-minimo") {
+      if (dormitoriosMin !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
+        parts.push(`${dormitoriosMin}-${dormitoriosMax} dorm.`);
+      } else if (dormitoriosMin !== "sin-minimo") {
+        parts.push(`${dormitoriosMin}+ dorm.`);
+      } else {
+        parts.push(`≤${dormitoriosMax} dorm.`);
+      }
+    }
+    return parts.join(", ") || "Ambientes";
   };
 
   // Handle scroll to show/hide header search bar
@@ -266,37 +266,54 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
   };
 
   const handleHeaderSearch = () => {
-    // Build extra filter params
     const params = new URLSearchParams();
     if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
     if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
-    if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
-    if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+
+    // Check if ambientes maps to a programmatic room slug (e.g. min=2, max=2 → "2-ambientes")
+    const ambMin = ambientesMin !== "sin-minimo" ? ambientesMin.replace("+", "") : "";
+    const ambMax = ambientesMax !== "sin-minimo" ? ambientesMax.replace("+", "") : "";
+    const AMBIENTES_SLUG: Record<string, string> = { "1": "monoambiente", "2": "2-ambientes", "3": "3-ambientes", "4": "4-ambientes", "5": "5-ambientes" };
+    const roomSlug = ambMin && ambMin === ambMax ? AMBIENTES_SLUG[ambMin] ?? null : null;
+
+    if (!roomSlug) {
+      if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
+      if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+    }
+
     const priceARS = getPriceARS();
     if (priceARS.min) params.set("minPrice", priceARS.min);
     if (priceARS.max) params.set("maxPrice", priceARS.max);
-    const hasExtraFilters = params.size > 0;
     const qs = params.toString();
 
     // Use SEO-friendly URL when a location with slug data is selected
     if (headerSelectedLocation?.slug && headerSelectedLocation.stateSlug) {
+      let base: string;
       if (headerSelectedLocation.type === "state") {
-        const base = `/alquileres/${headerSelectedLocation.stateSlug}`;
-        router.push(qs ? `${base}?${qs}` : base);
+        base = roomSlug
+          ? `/alquileres/${roomSlug}/${headerSelectedLocation.stateSlug}`
+          : `/alquileres/${headerSelectedLocation.stateSlug}`;
       } else {
-        const base = `/alquileres/${headerSelectedLocation.stateSlug}/${headerSelectedLocation.slug}`;
-        router.push(qs ? `${base}?${qs}` : base);
+        base = roomSlug
+          ? `/alquileres/${roomSlug}/${headerSelectedLocation.stateSlug}/${headerSelectedLocation.slug}`
+          : `/alquileres/${headerSelectedLocation.stateSlug}/${headerSelectedLocation.slug}`;
       }
+      router.push(qs ? `${base}?${qs}` : base);
       return;
     }
 
-    // Fallback: query-param search (free-text search without slug data)
+    // Fallback: no location slug — put ambientes back as query params
+    if (roomSlug) {
+      params.set("minAmbientes", ambMin);
+      params.set("maxAmbientes", ambMax);
+    }
     if (headerSelectedLocation) {
       params.set("location", headerSelectedLocation.name);
       if (headerSelectedLocation.type === "state") {
         params.set("stateId", String(headerSelectedLocation.id));
       } else {
         params.set("locationId", String(headerSelectedLocation.id));
+        params.set("locationNames", headerSelectedLocation.name);
       }
     } else if (headerLocationQuery.trim()) {
       params.set("location", headerLocationQuery.trim());
@@ -432,33 +449,6 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-4 bg-background z-50" align="center">
                     <div className="space-y-5">
-                      {/* Dormitorios */}
-                      <div>
-                        <label className="font-display font-semibold text-sm uppercase tracking-wider text-foreground block mb-3">Dormitorios</label>
-                        <div className="flex gap-3">
-                          <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
-                            <SelectTrigger className="flex-1 rounded-xl h-10">
-                              <SelectValue placeholder="Sin mínimo" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background z-[100]">
-                              {dormitoriosOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Select value={dormitoriosMax} onValueChange={setDormitoriosMax}>
-                            <SelectTrigger className="flex-1 rounded-xl h-10">
-                              <SelectValue placeholder="sin máximo" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background z-[100]">
-                              {dormitoriosOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
                       {/* Ambientes */}
                       <div>
                         <label className="font-display font-semibold text-sm uppercase tracking-wider text-foreground block mb-3">Ambientes</label>
@@ -479,6 +469,33 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                             </SelectTrigger>
                             <SelectContent className="bg-background z-[100]">
                               {ambientesOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Dormitorios */}
+                      <div>
+                        <label className="font-display font-semibold text-sm uppercase tracking-wider text-foreground block mb-3">Dormitorios</label>
+                        <div className="flex gap-3">
+                          <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
+                            <SelectTrigger className="flex-1 rounded-xl h-10">
+                              <SelectValue placeholder="Sin mínimo" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background z-[100]">
+                              {dormitoriosOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={dormitoriosMax} onValueChange={setDormitoriosMax}>
+                            <SelectTrigger className="flex-1 rounded-xl h-10">
+                              <SelectValue placeholder="sin máximo" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background z-[100]">
+                              {dormitoriosOptions.map((opt) => (
                                 <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
                               ))}
                             </SelectContent>
@@ -532,7 +549,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   </Button>
                 ) : (
                   <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
-                    Publicar<span className="hidden min-[1150px]:inline"> mi propiedad</span>
+                    <span>Publicar<span className="hidden min-[1150px]:inline">&nbsp;mi propiedad</span></span>
                   </Button>
                 )}
                 <DropdownMenu>
@@ -668,7 +685,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   className="rounded-full px-3 lg:px-5 font-medium gap-1.5 lg:gap-2"
                 >
                   <User className="h-4 w-4" />
-                  Iniciá sesión{" "}<span className="hidden min-[1080px]:inline">o registrate</span>
+                  <span>Iniciá sesión<span className="hidden min-[1080px]:inline">&nbsp;o registrate</span></span>
                 </Button>
               </>
             )}

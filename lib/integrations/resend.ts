@@ -25,6 +25,8 @@ interface PropertyInfo {
 
 /**
  * Send a lead notification email via Resend to the property owner.
+ * For basico plan: simpler email with lead info + plan upgrade CTA.
+ * For acompanado/experiencia: detailed email with verification status block.
  */
 export async function sendLeadEmail(
   to: string,
@@ -33,34 +35,66 @@ export async function sendLeadEmail(
   property: PropertyInfo
 ): Promise<{ success: boolean; error?: string }> {
   const typeLabel = lead.type === 'visita' ? 'Agendar visita' : 'Quiero reservar';
-  const propertyUrl = `https://mob.com.ar/propiedad/${property.propertyId}`;
+  const propertyUrl = `https://mob.ar/propiedad/${property.propertyId}`;
 
   const isBasico = !lead.propertyPlan || lead.propertyPlan === 'basico';
 
-  // Verification status block at the bottom of the email
-  const verificationBlock = isBasico
-    ? `
-      <div style="margin: 24px 0 0 0; padding: 14px 16px; background: #fff8e1; border-left: 4px solid #f59e0b; border-radius: 4px;">
-        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.5;">
-          <strong>Atención:</strong> para ver si este lead está verificado/calificado, tenés que contar con el plan Acompañado o Experiencia Mob. Contactanos para mejorar tu plan.
+  let subject: string;
+  let html: string;
+
+  if (isBasico) {
+    // Basico plan: simpler email with lead info + upsell
+    subject = 'Nueva consulta por tu propiedad';
+    html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <p style="font-size: 16px; line-height: 1.6;">
+        ¡Hola! Recibiste una nueva consulta por tu propiedad en <a href="${propertyUrl}" style="color: #2563eb; font-weight: bold;">${property.address}</a>.
+      </p>
+
+      <div style="background: #f9fafb; border-radius: 8px; padding: 16px 20px; margin: 20px 0;">
+        <p style="margin: 6px 0;"><strong>Nombre:</strong> ${lead.name}</p>
+        <p style="margin: 6px 0;"><strong>Email:</strong> <a href="mailto:${lead.email}" style="color: #2563eb; text-decoration: none;">${lead.email}</a></p>
+        <p style="margin: 6px 0;"><strong>Teléfono:</strong> ${lead.phone
+          ? `<a href="https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}" style="color: #25D366; text-decoration: none;">${lead.phone}</a>`
+          : '<span style="color: #9ca3af;">No informado</span>'}</p>
+      </div>
+
+      <div style="margin: 24px 0; padding: 16px 20px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 4px;">
+        <p style="margin: 0 0 8px 0; color: #1e40af; font-size: 14px; font-weight: bold;">
+          ¿Querés recibir inquilinos verificados y coordinar visitas automáticamente?
         </p>
-      </div>`
-    : lead.inquilinoVerified
-    ? `
+        <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.5;">
+          Con el plan Acompañado o Experiencia de Mob accedés a: coordinación de visitas con agenda online, inquilinos verificados y calificados, contrato digital con firma electrónica y descuento en garantía.
+        </p>
+        <p style="margin: 12px 0 0 0;">
+          <a href="https://mob.ar/planes" style="color: #2563eb; font-weight: bold; font-size: 14px;">Conocé los planes →</a>
+        </p>
+      </div>
+
+      <p style="font-size: 13px; color: #9ca3af; margin-top: 24px;">
+        Esta consulta fue generada a través de <strong>mob.ar</strong>
+      </p>
+    </div>
+    `;
+  } else {
+    // Acompanado/Experiencia: detailed email with verification status
+    const verificationBlock = lead.inquilinoVerified
+      ? `
       <div style="margin: 24px 0 0 0; padding: 14px 16px; background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">
         <p style="margin: 0 0 4px 0; color: #15803d; font-size: 13px; font-weight: bold;">✅ Inquilino Verificado por Mob</p>
         <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.5;">
           ¡Hola! Soy inquilino verificado y calificado para alquilar, quiero agendar una visita para la propiedad en ${property.address} que vi en mob.ar
         </p>
       </div>`
-    : `
+      : `
       <div style="margin: 24px 0 0 0; padding: 14px 16px; background: #f9fafb; border-left: 4px solid #9ca3af; border-radius: 4px;">
         <p style="margin: 0; color: #6b7280; font-size: 14px;">
           Este inquilino aún no completó su verificación de perfil.
         </p>
       </div>`;
 
-  const html = `
+    subject = `Nueva consulta: ${typeLabel}`;
+    html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #333; margin-bottom: 4px;">Nueva consulta: ${typeLabel}</h2>
       <p style="color: #666; margin-top: 0;">Se recibió una nueva consulta desde <strong>mob.ar</strong></p>
@@ -96,7 +130,8 @@ export async function sendLeadEmail(
 
       ${verificationBlock}
     </div>
-  `;
+    `;
+  }
 
   try {
     const fromEmail = process.env.LEAD_FROM_EMAIL || 'onboarding@resend.dev';
@@ -105,7 +140,7 @@ export async function sendLeadEmail(
       from: `mob <${fromEmail}>`,
       to,
       ...(cc ? { cc } : {}),
-      subject: `Nueva consulta: ${typeLabel}`,
+      subject,
       html,
     });
 

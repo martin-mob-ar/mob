@@ -43,6 +43,8 @@ const LocationFilter = () => {
       name: loc.name,
       display: loc.display,
       type: loc.type,
+      slug: loc.slug ?? undefined,
+      stateSlug: loc.stateSlug ?? undefined,
     };
 
     const updatedLocations = [...filters.selectedLocations, newSelected];

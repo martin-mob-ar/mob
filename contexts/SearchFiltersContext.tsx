@@ -1,15 +1,34 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, ReactNode } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Property } from "@/components/PropertyCard";
 import { transformPropertyReadList } from "@/lib/transforms/property";
+
+/* ── SEO path helpers ─────────────────────────────────── */
+const PROP_TYPE_SLUGS = new Set(["departamentos", "casas", "ph"]);
+const ROOM_SLUG_SET = new Set(["monoambiente", "2-ambientes", "3-ambientes", "4-ambientes", "5-ambientes"]);
+const AMB_TO_ROOM_SLUG: Record<string, string> = { "1": "monoambiente", "2": "2-ambientes", "3": "3-ambientes", "4": "4-ambientes", "5": "5-ambientes" };
+const DB_NAME_TO_TYPE_SLUG: Record<string, string> = { Departamento: "departamentos", Casa: "casas", PH: "ph" };
+
+/** Parse a programmatic basePath into its constituent slugs */
+function parseBasePath(bp: string) {
+  const segs = bp.split("/").filter(Boolean).slice(1); // drop "alquileres"
+  let i = 0;
+  const propType = i < segs.length && PROP_TYPE_SLUGS.has(segs[i]) ? segs[i++] : null;
+  const room = i < segs.length && ROOM_SLUG_SET.has(segs[i]) ? segs[i++] : null;
+  const state = i < segs.length ? segs[i++] : null;
+  const location = i < segs.length ? segs[i++] : null;
+  return { propType, room, state, location };
+}
 
 export interface SelectedLocation {
   id: number;
   name: string;
   display?: string;
   type: "location" | "state";
+  slug?: string;
+  stateSlug?: string;
 }
 
 export interface SearchFilters {
@@ -137,22 +156,34 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   if (stateId) updates.stateId = stateId;
   // Reconstruct selectedLocations from URL params
   const locationNames = searchParams.get("locationNames");
+  const stateName = searchParams.get("stateName");
+  const selectedLocations: SelectedLocation[] = [];
+
+  // Reconstruct location-type entries
   if (locationId && locationNames) {
     const ids = locationId.split(",").filter(Boolean);
     const names = locationNames.split(",").filter(Boolean);
     if (ids.length === names.length) {
-      updates.selectedLocations = ids.map((id, i) => ({
-        id: parseInt(id),
-        name: names[i],
-        type: "location" as const,
-      }));
+      ids.forEach((id, i) => selectedLocations.push({ id: parseInt(id), name: names[i], type: "location" }));
     }
-  } else if (stateId && location) {
-    updates.selectedLocations = [{
-      id: parseInt(stateId),
-      name: location,
-      type: "state" as const,
-    }];
+  } else if (locationId && location) {
+    // Fallback for single location without explicit locationNames
+    const ids = locationId.split(",").filter(Boolean);
+    if (ids.length === 1) {
+      selectedLocations.push({ id: parseInt(ids[0]), name: location, type: "location" });
+    }
+  }
+
+  // Reconstruct state-type entry (independent of locations — both can coexist)
+  if (stateId) {
+    const sName = stateName || (selectedLocations.length === 0 ? location : null);
+    if (sName) {
+      selectedLocations.push({ id: parseInt(stateId), name: sName, type: "state" });
+    }
+  }
+
+  if (selectedLocations.length > 0) {
+    updates.selectedLocations = selectedLocations;
   }
   if (priceType) updates.priceType = priceType as "total" | "alquiler";
   if (currency === "USD") updates.currency = "USD";
@@ -200,6 +231,9 @@ export function SearchFiltersProvider({
   const searchParamsString = searchParams.toString();
   const prevSearchParamsRef = useRef(searchParamsString);
 
+  // Parse basePath once to extract SEO slug segments (used for seed slugs + URL sync)
+  const parsedBase = useMemo(() => basePath !== "/alquileres" ? parseBasePath(basePath) : null, [basePath]);
+
   // Compute seed filters from location seed (e.g. from SEO path like /alquileres/capital-federal/palermo)
   const seedFilters: Partial<SearchFilters> = {};
   if (initialLocationSeed?.locationId && initialLocationSeed?.locationName) {
@@ -210,6 +244,8 @@ export function SearchFiltersProvider({
       name: initialLocationSeed.locationName,
       display: initialLocationSeed.locationDisplay,
       type: "location",
+      slug: parsedBase?.location ?? undefined,
+      stateSlug: parsedBase?.state ?? undefined,
     }];
   } else if (initialLocationSeed?.stateId && initialLocationSeed?.stateName) {
     seedFilters.stateId = String(initialLocationSeed.stateId);
@@ -218,6 +254,8 @@ export function SearchFiltersProvider({
       id: initialLocationSeed.stateId,
       name: initialLocationSeed.stateName,
       type: "state",
+      slug: parsedBase?.state ?? undefined,
+      stateSlug: parsedBase?.state ?? undefined,
     }];
   }
   // Seed property type names from programmatic route
@@ -285,7 +323,10 @@ export function SearchFiltersProvider({
     if (f.locationId) params.set("locationId", f.locationId);
     if (f.stateId) params.set("stateId", f.stateId);
     if (f.selectedLocations.length > 0) {
-      params.set("locationNames", f.selectedLocations.map((l) => l.name).join(","));
+      const locNames = f.selectedLocations.filter((l) => l.type === "location").map((l) => l.name);
+      const stateNames = f.selectedLocations.filter((l) => l.type === "state").map((l) => l.name);
+      if (locNames.length > 0) params.set("locationNames", locNames.join(","));
+      if (stateNames.length > 0) params.set("stateName", stateNames[0]);
     }
     if (f.priceType && f.priceType !== "total") params.set("priceType", f.priceType);
     if (f.currency && f.currency !== "ARS") params.set("currency", f.currency);
@@ -312,6 +353,7 @@ export function SearchFiltersProvider({
   }, []);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const navigatingRef = useRef(false); // skip auto-search when navigating to a new programmatic page
 
   const fetchPage = useCallback(async (pageNum: number) => {
     // Cancel any in-flight request to prevent stale results
@@ -378,17 +420,149 @@ export function SearchFiltersProvider({
       isInitialMount.current = false;
       return;
     }
-    if (pathname !== "/alquileres") return;
+    // After a cross-page navigation, stop all effects until the component unmounts
+    if (navigatingRef.current) return;
 
+    if (basePath === "/alquileres") {
+      // Base /alquileres: try to build an SEO-friendly path if possible
+      const sel = filters.selectedLocations;
+      const ambMin = filters.minAmbientes;
+      const ambMax = filters.maxAmbientes;
+      const roomSlug = ambMin && ambMin === ambMax ? AMB_TO_ROOM_SLUG[ambMin] ?? null : null;
+
+      // Can we build a SEO path? Need exactly 1 location/state with slug data
+      if (sel.length === 1 && sel[0].stateSlug) {
+        const stSlug = sel[0].stateSlug;
+        const locSlug = sel[0].type === "location" ? (sel[0].slug ?? null) : null;
+
+        const parts = ["/alquileres"];
+        if (roomSlug) parts.push(roomSlug);
+        parts.push(stSlug);
+        if (locSlug) parts.push(locSlug);
+        const seoPath = parts.join("/");
+
+        // Build query params, stripping values encoded in path
+        const params = buildFilterParams(filters);
+        params.delete("location");
+        params.delete("locationId");
+        params.delete("stateId");
+        params.delete("locationNames");
+        params.delete("stateName");
+        if (roomSlug) { params.delete("minAmbientes"); params.delete("maxAmbientes"); }
+        const qs = params.toString();
+        const newUrl = qs ? `${seoPath}?${qs}` : seoPath;
+
+        navigatingRef.current = true;
+        router.push(newUrl, { scroll: false });
+        return;
+      }
+
+      // Fallback: use /alquileres/{roomSlug} if exact ambientes, otherwise plain query params
+      if (roomSlug) {
+        const params = buildFilterParams(filters);
+        params.delete("minAmbientes");
+        params.delete("maxAmbientes");
+        const qs = params.toString();
+        const newUrl = qs ? `/alquileres/${roomSlug}?${qs}` : `/alquileres/${roomSlug}`;
+        navigatingRef.current = true;
+        router.push(newUrl, { scroll: false });
+        return;
+      }
+      const params = buildFilterParams(filters);
+      const qs = params.toString();
+      const newUrl = qs ? `/alquileres?${qs}` : "/alquileres";
+      router.replace(newUrl, { scroll: false });
+      return;
+    }
+
+    // Programmatic page: rebuild the SEO-friendly path from current filters
+    // Resolve current location slugs from selectedLocations (dynamic) or fallback to parsedBase (static)
+    const sel = filters.selectedLocations;
+    let stateSlug: string | null = null;
+    let locationSlug: string | null = null;
+    let canBuildSeoPath = true;
+
+    if (sel.length === 1 && sel[0].stateSlug) {
+      // Single location/state with slug data → use it
+      stateSlug = sel[0].stateSlug;
+      locationSlug = sel[0].type === "location" ? (sel[0].slug ?? null) : null;
+    } else if (sel.length === 0) {
+      // No location selected → fall back to base /alquileres with query params
+      canBuildSeoPath = false;
+    } else if (sel.length > 1) {
+      // Multi-location → can't encode in path, fall back
+      canBuildSeoPath = false;
+    } else {
+      // Single selection but no slug data → use parsedBase as fallback
+      stateSlug = parsedBase.state;
+      locationSlug = parsedBase.location;
+    }
+
+    if (!canBuildSeoPath || !stateSlug) {
+      // Fall back: use /alquileres/{roomSlug} if exact ambientes, otherwise /alquileres
+      const fallbackRoomSlug = filters.minAmbientes && filters.minAmbientes === filters.maxAmbientes
+        ? AMB_TO_ROOM_SLUG[filters.minAmbientes] ?? null : null;
+      const params = buildFilterParams(filters);
+      if (fallbackRoomSlug) { params.delete("minAmbientes"); params.delete("maxAmbientes"); }
+      const qs = params.toString();
+      const fallbackBase = fallbackRoomSlug ? `/alquileres/${fallbackRoomSlug}` : "/alquileres";
+      const newUrl = qs ? `${fallbackBase}?${qs}` : fallbackBase;
+      if (fallbackBase !== basePath) {
+        navigatingRef.current = true;
+        router.push(newUrl, { scroll: false });
+      } else {
+        router.replace(newUrl, { scroll: false });
+      }
+      return;
+    }
+
+    // Determine room slug from current ambientes
+    const newRoomSlug = filters.minAmbientes && filters.minAmbientes === filters.maxAmbientes
+      ? AMB_TO_ROOM_SLUG[filters.minAmbientes] ?? null
+      : null;
+
+    // Determine property type slug (keep seeded type if filter still matches)
+    let propTypeSlug = parsedBase.propType;
+    if (propTypeSlug) {
+      const currentTypeSlugs = filters.propertyTypeNames.map((n) => DB_NAME_TO_TYPE_SLUG[n]).filter(Boolean);
+      if (currentTypeSlugs.length !== 1 || currentTypeSlugs[0] !== propTypeSlug) {
+        propTypeSlug = null; // user changed property type, drop from path
+      }
+    }
+
+    // Build new path
+    const parts = ["/alquileres"];
+    if (propTypeSlug) parts.push(propTypeSlug);
+    if (newRoomSlug) parts.push(newRoomSlug);
+    parts.push(stateSlug);
+    if (locationSlug) parts.push(locationSlug);
+    const newPath = parts.join("/");
+
+    // Build query params, stripping values already encoded in the path
     const params = buildFilterParams(filters);
-    // page param omitted → page 1
+    params.delete("location");
+    params.delete("locationId");
+    params.delete("stateId");
+    params.delete("locationNames");
+    if (newRoomSlug) { params.delete("minAmbientes"); params.delete("maxAmbientes"); }
+    if (propTypeSlug) { params.delete("propertyTypeNames"); }
+
     const qs = params.toString();
-    const newUrl = qs ? `/alquileres?${qs}` : "/alquileres";
-    router.replace(newUrl, { scroll: false });
+    const newUrl = qs ? `${newPath}?${qs}` : newPath;
+
+    if (newPath !== basePath) {
+      // Path changed (e.g. location or ambientes changed) — navigate to new page
+      navigatingRef.current = true;
+      router.push(newUrl, { scroll: false });
+    } else {
+      // Same path, just update query params
+      router.replace(newUrl, { scroll: false });
+    }
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect external URL changes (e.g. clicking links while already on /alquileres)
   useEffect(() => {
+    if (navigatingRef.current) return;
     if (searchParamsString === prevSearchParamsRef.current) return;
     prevSearchParamsRef.current = searchParamsString;
     setIsLoading(true);
@@ -401,6 +575,8 @@ export function SearchFiltersProvider({
   // On first mount: if URL has filters or a specific page, use those; otherwise use server initial results
   const [hasSearched, setHasSearched] = useState(false);
   useEffect(() => {
+    // Skip all effects after a cross-page navigation is initiated (new page will load its own data)
+    if (navigatingRef.current) return;
     if (!hasSearched && !hasUrlFilters && pageFromUrl === 1 && initialResults && initialResults.length > 0) {
       setHasSearched(true);
       return;

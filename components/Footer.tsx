@@ -81,6 +81,11 @@ const Footer = ({ className }: { className?: string }) => {
                 </Link>
               </li>
               <li>
+                <Link href="/terminos-de-servicio" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Términos de servicio
+                </Link>
+              </li>
+              <li>
                 <a href="https://wa.me/5492236000055" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Comunicate con nosotros por WhatsApp
                 </a>
