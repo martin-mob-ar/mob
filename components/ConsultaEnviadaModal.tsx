@@ -6,9 +6,11 @@ import {
   Globe,
   BadgeCheck,
   Calendar,
+  MessageCircle,
   Percent,
   ArrowRight,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,22 +18,39 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-const BENEFITS = [
+interface Benefit {
+  icon: LucideIcon;
+  label: string;
+}
+
+const INMOBILIARIA_BENEFITS: Benefit[] = [
   { icon: Globe, label: "Proceso 100% online" },
   { icon: BadgeCheck, label: "Dueños verificados" },
   { icon: Calendar, label: "Agenda de visitas online" },
   { icon: Percent, label: "Acceso a garantía 50% off" },
-] as const;
+];
+
+const PROPIETARIO_BENEFITS: Benefit[] = [
+  { icon: BadgeCheck, label: "Dueño verificado por Mob" },
+  { icon: MessageCircle, label: "Te avisamos por WhatsApp" },
+  { icon: Globe, label: "Proceso 100% online" },
+  { icon: Percent, label: "Acceso a garantía 50% off" },
+];
 
 interface ConsultaEnviadaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Whether the property belongs to an inmobiliaria (true) or a propietario (false). */
+  isInmobiliaria?: boolean;
 }
 
 export default function ConsultaEnviadaModal({
   open,
   onOpenChange,
+  isInmobiliaria = false,
 }: ConsultaEnviadaModalProps) {
+  const benefits = isInmobiliaria ? INMOBILIARIA_BENEFITS : PROPIETARIO_BENEFITS;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 gap-0 overflow-hidden max-w-sm">
@@ -46,12 +65,22 @@ export default function ConsultaEnviadaModal({
           </div>
 
           <DialogTitle className="font-display text-xl font-bold tracking-tight">
-            ¡Consulta enviada!
+            {isInmobiliaria ? "¡Consulta enviada!" : "¡Visita solicitada!"}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-            Enviamos tu consulta a la inmobiliaria.
-            <br />
-            Se pondrán en contacto con vos.
+            {isInmobiliaria ? (
+              <>
+                Enviamos tu consulta a la inmobiliaria.
+                <br />
+                Se pondrán en contacto con vos.
+              </>
+            ) : (
+              <>
+                Enviamos tu propuesta al propietario.
+                <br />
+                Te avisaremos por WhatsApp cuando confirme.
+              </>
+            )}
           </p>
         </div>
 
@@ -65,7 +94,7 @@ export default function ConsultaEnviadaModal({
           </p>
 
           <div className="grid grid-cols-2 gap-2.5">
-            {BENEFITS.map(({ icon: Icon, label }) => (
+            {benefits.map(({ icon: Icon, label }) => (
               <div
                 key={label}
                 className="flex items-center gap-2.5 rounded-xl bg-secondary/50 px-3 py-2.5"
@@ -81,7 +110,7 @@ export default function ConsultaEnviadaModal({
           </div>
 
           {/* CTA */}
-          <Link href="/buscar" className="block mt-5">
+          <Link href="/alquileres" className="block mt-5">
             <Button className="w-full rounded-xl h-11 font-semibold text-sm gap-2">
               Ver más propiedades
               <ArrowRight className="h-4 w-4" />

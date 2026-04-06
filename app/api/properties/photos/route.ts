@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     .order("order", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[properties/photos] Query error:", error);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 
   // Group by property_id, limit to 4 per property (cover + 4 = 5 total)

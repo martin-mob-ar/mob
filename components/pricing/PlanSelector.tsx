@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Check, Minus, ChevronDown, Info } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Check, ChevronDown, X, Info } from "lucide-react";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AnimateHeight } from "@/components/ui/animate-height";
 
 export type PlanType = "basico" | "acompanado" | "experiencia";
 
@@ -52,187 +53,213 @@ export const pricingCost: Record<PlanType, string> = {
   experiencia: "USD 299",
 };
 
-const CellContent = ({ value, isHighlighted = false }: { value: string; isHighlighted?: boolean }) => {
-  if (value === "—") return <Minus className="h-4 w-4 text-muted-foreground/60 mx-auto" />;
-  return (
-    <span className={cn("text-sm leading-relaxed", isHighlighted ? "text-foreground font-medium" : "text-muted-foreground")}>
-      {value}
-    </span>
-  );
+// Curated highlights for mobile cards
+const planHighlights: Record<PlanType, { text: string; included: boolean }[]> = {
+  experiencia: [
+    { text: "Solo inquilinos calificados", included: true },
+    { text: "Confección de contrato", included: true },
+    { text: "Firma electrónica", included: true },
+    { text: "Coordinación de visitas", included: true },
+    { text: "Fotógrafo profesional", included: true },
+    { text: "50% off garantía para tu inquilino", included: true },
+  ],
+  acompanado: [
+    { text: "Solo inquilinos calificados", included: true },
+    { text: "Plantilla de contrato", included: true },
+    { text: "Firma electrónica", included: true },
+    { text: "Coordinación de visitas", included: true },
+    { text: "30% off garantía para tu inquilino", included: true },
+  ],
+  basico: [
+    { text: "Interesados sin verificar", included: false },
+    { text: "Sin destaque", included: false },
+    { text: "20% off garantía para tu inquilino", included: true },
+  ],
+};
+
+const planNames: Record<PlanType, React.ReactNode> = {
+  basico: "Básico",
+  acompanado: "Acompañado",
+  experiencia: <>Experiencia <span className="font-ubuntu text-primary">mob</span></>,
+};
+
+const planDescriptions: Record<PlanType, string> = {
+  basico: "Para empezar sin costo",
+  acompanado: "Más visibilidad y soporte",
+  experiencia: "Gestión completa, sin ocuparte de nada",
 };
 
 // Mobile card for each plan
 const MobilePlanCard = ({
   plan,
-  isRecommended,
   isSelected,
-  hasSelection,
   onSelectPlan,
-  openSections,
-  toggleSection,
-  isWizard,
+  showDetails,
+  onToggleDetails,
 }: {
   plan: PlanType;
-  isRecommended?: boolean;
   isSelected: boolean;
-  hasSelection: boolean;
   onSelectPlan: (p: PlanType) => void;
-  openSections: Record<string, boolean>;
-  toggleSection: (key: string) => void;
-  isWizard?: boolean;
+  showDetails: boolean;
+  onToggleDetails: () => void;
 }) => {
-  const planNames: Record<PlanType, React.ReactNode> = {
-    basico: "Básico",
-    acompanado: "Acompañado",
-    experiencia: <>Experiencia <span className="font-ubuntu text-primary">mob</span></>,
-  };
-  const planDescriptions: Record<PlanType, string> = {
-    basico: "Para empezar sin costo",
-    acompanado: "Más visibilidad y soporte",
-    experiencia: "Gestión completa, sin ocuparte de nada",
-  };
-  const planCtas: Record<PlanType, string> = {
-    basico: "Elegir básico",
-    acompanado: "Elegir acompañado",
-    experiencia: "Quiero gestión completa",
-  };
+  const highlights = planHighlights[plan];
 
   return (
     <div
       className={cn(
-        "rounded-xl p-6 transition-all cursor-pointer",
+        "rounded-2xl transition-all cursor-pointer",
         isSelected
-          ? "bg-primary/[0.06] border-2 border-primary shadow-lg shadow-primary/10"
-          : isRecommended
-          ? "bg-primary/[0.03] border-2 border-primary/40 shadow-md shadow-primary/5"
-          : "bg-card border border-border/60"
+          ? "border-2 border-primary shadow-lg shadow-primary/10"
+          : "border border-border/60"
       )}
       onClick={() => onSelectPlan(plan)}
     >
-      <div className="mb-6">
-        {isRecommended && !isSelected && (
-          <span className="inline-block bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full mb-3 tracking-wide">
-            RECOMENDADO
-          </span>
-        )}
-        {isSelected && (
-          <span className="inline-block bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full mb-3 tracking-wide">
-            SELECCIONADO
-          </span>
-        )}
-        <h3 className={cn("font-display font-bold mb-1", isRecommended || isSelected ? "text-2xl" : "text-xl")}>
-          {planNames[plan]}
-        </h3>
-        <p className="text-sm text-muted-foreground">{planDescriptions[plan]}</p>
+      {/* Header: name, price, description, chevron — entire header toggles detail view */}
+      <div
+        className="flex items-start justify-between p-6 pb-0 cursor-pointer"
+        onClick={(e) => { e.stopPropagation(); onToggleDetails(); }}
+      >
+        <div>
+          <h3 className="font-display font-bold text-2xl">
+            {planNames[plan]}
+          </h3>
+          <p className={cn(
+            "font-bold text-xl mt-0.5",
+            isSelected ? "text-primary" : "text-foreground"
+          )}>
+            {pricingCost[plan]}
+          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {planDescriptions[plan]}
+          </p>
+        </div>
+        <div className="mt-1 p-1 text-muted-foreground">
+          <ChevronDown className={cn(
+            "h-5 w-5 transition-transform duration-200",
+            showDetails && "rotate-180"
+          )} />
+        </div>
       </div>
 
-      <div className={cn("mb-6 pb-6 border-b", isWizard ? "border-border" : "border-border/50")}>
-        <div className={cn("uppercase tracking-wider mb-1", isWizard ? "text-xs font-semibold text-foreground/80" : "text-xs text-muted-foreground")}>Costo de plataforma</div>
-        <div className={cn("font-bold", isWizard ? "text-base text-foreground" : "text-sm text-foreground")}>{pricingCost[plan]}</div>
-      </div>
+      {/* Content area: toggles between highlights and full detail */}
+      <div className="px-6 pb-6">
+        <div className="border-t border-border/40 mt-4 pt-4">
+          {/* Face A: Curated highlights (default) */}
+          <AnimateHeight show={!showDetails}>
+            <div className="space-y-3">
+              {highlights.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  {item.included ? (
+                    <Check className={cn(
+                      "h-4 w-4 flex-shrink-0",
+                      isSelected ? "text-primary" : "text-muted-foreground"
+                    )} />
+                  ) : (
+                    <X className="h-4 w-4 flex-shrink-0 text-muted-foreground/50" />
+                  )}
+                  <span className={cn(
+                    "text-base",
+                    item.included ? "text-foreground font-medium" : "text-muted-foreground/60"
+                  )}>
+                    {item.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </AnimateHeight>
 
-      <div className="space-y-1 mb-6">
-        {pricingSections.map((section, idx) => (
-          <Collapsible
-            key={idx}
-            open={openSections[`${plan}-${section.title}`]}
-            onOpenChange={() => toggleSection(`${plan}-${section.title}`)}
-          >
-            <CollapsibleTrigger className="flex items-center justify-between w-full py-2.5 text-left group">
-              <span className={cn(
-                "font-bold uppercase tracking-wider group-hover:text-foreground transition-colors",
-                isWizard ? "text-xs text-foreground/90" : "text-[11px] text-foreground/70"
-              )}>
-                {section.title}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 text-muted-foreground transition-transform",
-                  openSections[`${plan}-${section.title}`] && "rotate-180"
-                )}
-              />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-3 pb-3">
-                {section.rows.map((row, rowIdx) => {
-                  const value = row[plan];
-                  const isEmpty = value === "—";
-                  return (
-                    <div key={rowIdx} className="flex items-start gap-3">
-                      {isEmpty ? (
-                        <Minus className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isWizard ? "text-muted-foreground/60" : "text-muted-foreground/50")} />
-                      ) : (
-                        <Check className={cn("h-4 w-4 mt-0.5 flex-shrink-0", isSelected || isRecommended ? "text-primary" : "text-muted-foreground")} />
-                      )}
-                      <div>
-                        <div className={cn("flex items-center gap-1", isWizard ? "text-sm text-muted-foreground" : "text-xs", isEmpty ? (isWizard ? "text-muted-foreground/70" : "text-muted-foreground/60") : (isWizard ? "text-foreground/80" : "text-muted-foreground"))}>
-                          {row.feature}
-                          {row.tooltip && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-[220px] text-xs">{row.tooltip}</TooltipContent>
-                            </Tooltip>
+          {/* Face B: Full feature breakdown from desktop table */}
+          <AnimateHeight show={showDetails}>
+            <div>
+              {pricingSections.map((section, sectionIdx) => (
+                <div key={sectionIdx} className={sectionIdx > 0 ? "mt-4" : ""}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/80 mb-2">
+                    {section.title}
+                  </p>
+                  <div className="space-y-2">
+                    {section.rows.map((row, rowIdx) => {
+                      const value = row[plan];
+                      const cellTooltip = plan === "experiencia" && (row as Record<string, string>).experienciaTooltip;
+                      return (
+                        <div key={rowIdx} className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-muted-foreground">{row.feature}</span>
+                          {value === "—" ? (
+                            <span className="text-sm text-muted-foreground/50">—</span>
+                          ) : value === "Incluido" || value === "Incluida" ? (
+                            <Check className={cn(
+                              "h-4 w-4 flex-shrink-0",
+                              isSelected ? "text-primary" : "text-muted-foreground/80"
+                            )} />
+                          ) : (
+                            <span className={cn(
+                              "text-sm text-right font-medium inline-flex items-center gap-1",
+                              isSelected ? "text-foreground" : "text-foreground/80"
+                            )}>
+                              {value}
+                              {cellTooltip && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" onClick={(e) => e.stopPropagation()} />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px] text-xs">{cellTooltip}</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </span>
                           )}
                         </div>
-                        {!isEmpty && (
-                          <div className={cn("inline-flex items-center gap-1", isWizard ? "text-base" : "text-sm", isSelected || isRecommended ? "text-foreground font-medium" : "text-foreground")}>
-                            {value}
-                            {plan === "experiencia" && (row as Record<string, string>).experienciaTooltip && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-[220px] text-xs">{(row as Record<string, string>).experienciaTooltip}</TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {/* Cost row */}
+              <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">Costo de plataforma</span>
+                <span className={cn("text-sm font-bold", isSelected ? "text-primary" : "text-foreground")}>
+                  {pricingCost[plan]}
+                </span>
               </div>
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
+            </div>
+          </AnimateHeight>
+        </div>
       </div>
-
-      <Button
-        variant={isSelected || (isRecommended && !hasSelection) ? "default" : "outline"}
-        size="lg"
-        className={cn(
-          "w-full rounded-full",
-          isSelected && "ring-2 ring-offset-2 ring-primary"
-        )}
-        onClick={(e) => { e.stopPropagation(); onSelectPlan(plan); }}
-      >
-        {isSelected ? "✓ Seleccionado" : planCtas[plan]}
-      </Button>
     </div>
   );
 };
 
 export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", showSelectButtons = true, showCostNote = true }: PlanSelectorProps) => {
   const isWizard = variant === "wizard";
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    (["basico", "acompanado", "experiencia"] as PlanType[]).forEach((plan) => {
-      pricingSections.forEach((section) => {
-        initial[`${plan}-${section.title}`] = true;
-      });
-    });
-    return initial;
+
+  // Mobile: track which cards show full detail view (all start with highlights)
+  const [mobileDetailView, setMobileDetailView] = useState<Record<PlanType, boolean>>({
+    experiencia: false,
+    acompanado: false,
+    basico: false,
   });
 
-  const toggleSection = (key: string) => {
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleMobileDetailView = (plan: PlanType) => {
+    setMobileDetailView((prev) => ({ ...prev, [plan]: !prev[plan] }));
   };
 
   return (
     <TooltipProvider>
     <div className="max-w-5xl mx-auto">
+      {showCostNote && (
+        <div className="mb-4 space-y-0.5">
+          <p className={cn(
+            "font-semibold text-foreground",
+            isWizard ? "text-sm xl:text-base" : "text-sm"
+          )}>
+            El costo se cobra únicamente cuando el alquiler se concreta.
+          </p>
+          <p className={cn(
+            "font-medium text-muted-foreground",
+            isWizard ? "text-sm" : "text-sm"
+          )}>No hay costos iniciales.</p>
+        </div>
+      )}
+
       {/* Desktop: Compact comparative table */}
       <div className="hidden lg:block">
         <div className={cn(
@@ -426,57 +453,20 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
           </div>
         )}
 
-        {showCostNote && (
-          <div className="text-center mt-6 space-y-1">
-            <p className={cn(
-              "font-semibold text-foreground",
-              isWizard ? "text-sm xl:text-base" : "text-sm"
-            )}>
-              El costo se cobra únicamente cuando el alquiler se concreta.
-            </p>
-            <p className={cn(
-              "font-medium text-muted-foreground",
-              isWizard ? "text-sm" : "text-sm"
-            )}>No hay costos iniciales.</p>
-          </div>
-        )}
       </div>
 
       {/* Mobile: Stacked cards */}
       <div className="lg:hidden space-y-4">
-        <MobilePlanCard
-          plan="experiencia"
-          isRecommended
-          isSelected={selectedPlan === "experiencia"}
-          hasSelection={selectedPlan !== null}
-          onSelectPlan={onSelectPlan}
-          openSections={openSections}
-          toggleSection={toggleSection}
-          isWizard={isWizard}
-        />
-        <MobilePlanCard
-          plan="acompanado"
-          isSelected={selectedPlan === "acompanado"}
-          hasSelection={selectedPlan !== null}
-          onSelectPlan={onSelectPlan}
-          openSections={openSections}
-          toggleSection={toggleSection}
-          isWizard={isWizard}
-        />
-        <MobilePlanCard
-          plan="basico"
-          isSelected={selectedPlan === "basico"}
-          hasSelection={selectedPlan !== null}
-          onSelectPlan={onSelectPlan}
-          openSections={openSections}
-          toggleSection={toggleSection}
-          isWizard={isWizard}
-        />
-        {showCostNote && (
-          <p className="text-center text-base font-medium text-foreground pt-4">
-            El costo se cobra únicamente cuando el alquiler se concreta.
-          </p>
-        )}
+        {(["experiencia", "acompanado", "basico"] as PlanType[]).map((plan) => (
+          <MobilePlanCard
+            key={plan}
+            plan={plan}
+            isSelected={selectedPlan === plan}
+            onSelectPlan={onSelectPlan}
+            showDetails={mobileDetailView[plan]}
+            onToggleDetails={() => toggleMobileDetailView(plan)}
+          />
+        ))}
       </div>
     </div>
     </TooltipProvider>

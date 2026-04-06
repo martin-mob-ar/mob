@@ -113,8 +113,8 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
             <MessageCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <p>
               Te enviamos un WhatsApp al{" "}
-              <span className="font-semibold text-foreground">{formattedPhone}</span>{" "}
-              — respondé para verificarte.
+              <span className="font-semibold text-foreground">{formattedPhone}</span>.
+              Respondé para verificarte.
             </p>
           </div>
 

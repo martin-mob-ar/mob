@@ -5,7 +5,7 @@ const navLinks = [{
   path: "/",
   label: "Inicio"
 }, {
-  path: "/buscar",
+  path: "/alquileres",
   label: "Buscar propiedades"
 }, {
   path: "/subir-propiedad",

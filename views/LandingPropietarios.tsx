@@ -460,7 +460,7 @@ const LandingPropietarios = () => {
             </p>
           </motion.div>
 
-          <PlanSelector selectedPlan={null} onSelectPlan={() => handleCTA()} showSelectButtons={false} showCostNote={false} />
+          <PlanSelector selectedPlan={null} onSelectPlan={() => {}} showSelectButtons={false} showCostNote={false} />
 
           {/* Plan CTA buttons */}
           <div className="hidden lg:grid grid-cols-[1fr_1fr_1fr_1fr] mt-6 max-w-5xl mx-auto">

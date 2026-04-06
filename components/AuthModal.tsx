@@ -15,6 +15,11 @@ import AccountTypeSelector from "@/components/profile/AccountTypeSelector";
 
 type AuthStep = "initial" | "password" | "register-inmobiliaria" | "select-account-type" | "check-email";
 
+/** Only allow relative-path redirects (blocks open redirect to external sites). */
+function isSafeRedirect(url: string): boolean {
+  return url.startsWith("/") && !url.startsWith("//");
+}
+
 const GUEST_STORAGE_KEY = "mob_guest_contact";
 
 async function applyGuestContactToProfile() {
@@ -79,7 +84,7 @@ const AuthModal = () => {
         params.delete("auth");
         params.delete("redirect");
         const newQuery = params.toString();
-        if (redirectTo) {
+        if (redirectTo && isSafeRedirect(redirectTo)) {
           router.push(redirectTo);
           router.refresh();
         } else {
@@ -183,7 +188,7 @@ const AuthModal = () => {
         // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
         const redirectTo = searchParams.get("redirect")
           || new URLSearchParams(window.location.search).get("redirect");
-        if (redirectTo) {
+        if (redirectTo && isSafeRedirect(redirectTo)) {
           closeAuthModal();
           resetForm();
           router.push(redirectTo);
@@ -256,7 +261,7 @@ const AuthModal = () => {
       // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
       const redirectTo = searchParams.get("redirect")
         || new URLSearchParams(window.location.search).get("redirect");
-      if (redirectTo) {
+      if (redirectTo && isSafeRedirect(redirectTo)) {
         closeAuthModal();
         resetForm();
         router.push(redirectTo);
@@ -276,7 +281,7 @@ const AuthModal = () => {
     // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
     const redirectTo = searchParams.get("redirect")
       || new URLSearchParams(window.location.search).get("redirect");
-    if (redirectTo) {
+    if (redirectTo && isSafeRedirect(redirectTo)) {
       closeAuthModal();
       resetForm();
       router.push(redirectTo);

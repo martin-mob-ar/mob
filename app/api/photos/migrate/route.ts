@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { uploadPhotoFromUrl } from '@/lib/storage/gcs';
 
@@ -7,6 +8,20 @@ export const maxDuration = 300; // 5 minutes (Hobby + Fluid Compute)
 const BATCH_SIZE = 50;
 const CONCURRENCY = 20;
 const TIME_LIMIT_MS = 270_000; // 270s — 30s buffer before 300s timeout
+
+function verifyCronSecret(request: NextRequest): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return false;
+  const authHeader = request.headers.get('authorization') || '';
+  const expected = `Bearer ${cronSecret}`;
+  try {
+    const a = Buffer.from(authHeader);
+    const b = Buffer.from(expected);
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Simple concurrency limiter (like p-limit). Runs async tasks
@@ -50,6 +65,10 @@ function pLimit(limit: number) {
  * Idempotent — safe to run multiple times.
  */
 export async function POST(request: NextRequest) {
+  if (!verifyCronSecret(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const startTime = Date.now();
 
   try {
@@ -206,7 +225,11 @@ export async function POST(request: NextRequest) {
       const chainUrl = nextUrl.toString();
       after(async () => {
         try {
-          await fetch(chainUrl, { method: 'POST', signal: AbortSignal.timeout(10_000) });
+          await fetch(chainUrl, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` },
+            signal: AbortSignal.timeout(10_000),
+          });
         } catch {
           // AbortError is expected (we abort after 10s), other errors are fine too
         }
@@ -224,7 +247,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[photos/migrate] Unhandled error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error en migración' },
+      { error: 'Error en migración' },
       { status: 500 }
     );
   }

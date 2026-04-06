@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import SimulacionContrato from "@/components/ipc/SimulacionContrato";
@@ -64,6 +66,12 @@ export default function CalculadoraIPC() {
           <IPCInfoSections />
         </section>
       </main>
+      <p className="sr-only">
+        Datos IPC actualizados al{" "}
+        <time dateTime={new Date().toISOString()}>
+          {new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
+        </time>
+      </p>
       <Footer />
     </div>;
 }

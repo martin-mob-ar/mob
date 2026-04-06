@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server-component';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 async function getPublicUserId(): Promise<string | null> {
   try {
@@ -39,6 +40,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(ip, 'favoritos', 30, 60_000);
+  if (!rl.success) return rateLimitResponse(rl.resetIn);
+
   const publicUserId = await getPublicUserId();
   if (!publicUserId) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });

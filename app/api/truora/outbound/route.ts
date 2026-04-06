@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraOutboundSchema } from '@/lib/validations/truora-outbound';
 import { sendOutbound } from '@/lib/truora/outbound';
+import { getAuthUser } from '@/lib/supabase/auth';
 
 const TRUORA_OUTBOUND_ID = process.env.TRUORA_OUTBOUND_ID ?? '';
 const TRUORA_OUTBOUND_ID_NO_PROPERTY = process.env.TRUORA_OUTBOUND_ID_NO_PROPERTY ?? '';
@@ -16,6 +17,11 @@ function formatPrice(price: number | null): string {
 
 export async function POST(request: Request) {
   try {
+    const authUser = await getAuthUser();
+    if (!authUser) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const parsed = truoraOutboundSchema.safeParse(body);
 
@@ -108,7 +114,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[TruoraOutbound] Error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

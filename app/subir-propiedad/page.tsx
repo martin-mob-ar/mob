@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 import SubirPropiedad from "@/views/SubirPropiedad";
+
+export const metadata: Metadata = {
+  title: "Publicar propiedad en alquiler",
+  description:
+    "Publica tu departamento, casa o PH en alquiler en Mob. Proceso simple, verificacion de inquilinos incluida y gestion 100% online.",
+  alternates: { canonical: "/subir-propiedad" },
+};
 
 interface PageProps {
   searchParams: Promise<{

@@ -5,9 +5,14 @@ import { createTokkoWebContact } from '@/lib/integrations/tokko-contact';
 import { sendLeadEmail, sendInmobiliariaLeadEmail } from '@/lib/integrations/resend';
 import { createNotionLead } from '@/lib/integrations/notion';
 import { decryptApiKey } from '@/lib/crypto';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'leads', 5, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     const body = await request.json();
     const parsed = leadApiSchema.safeParse(body);
 
@@ -60,9 +65,20 @@ export async function POST(request: Request) {
     // Fetch owner data once for all dispatches
     const { data: owner } = await supabaseAdmin
       .from('users')
-      .select('name, email, tokko_email, telefono, tokko_api_key_enc')
+      .select('name, email, tokko_email, telefono, tokko_api_key_enc, account_type')
       .eq('id', property.user_id)
       .single();
+
+    // For inmobiliaria accounts (type 3/4), fetch company data for owner fields
+    let companyData: { name: string | null; email: string | null; phone: string | null } | null = null;
+    if (owner?.account_type === 4 && property.company_id) {
+      const { data: company } = await supabaseAdmin
+        .from('tokko_company')
+        .select('name, email, phone')
+        .eq('id', property.company_id)
+        .single();
+      companyData = company;
+    }
 
     // Determine if the submitter (inquilino) is verified (requires both Hoggax + Truora)
     let inquilinoVerified = false;
@@ -208,9 +224,9 @@ export async function POST(request: Request) {
             source,
             propertyId: property.id,
             tokko: property.tokko ?? false,
-            ownerName: owner?.name || undefined,
-            ownerEmail: owner?.email || owner?.tokko_email || undefined,
-            ownerPhone: owner?.telefono || undefined,
+            ownerName: companyData?.name || owner?.name || undefined,
+            ownerEmail: property.producer_email || companyData?.email || owner?.email || owner?.tokko_email || undefined,
+            ownerPhone: companyData?.phone || owner?.telefono || undefined,
           });
           status = result.success ? 'sent' : 'failed';
         } catch (err) {
@@ -233,7 +249,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Leads] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

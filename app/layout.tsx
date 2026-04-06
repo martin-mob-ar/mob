@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import "./globals.css";
@@ -6,13 +6,38 @@ import { Providers } from "./providers";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type { InitialAuthUser } from "@/contexts/AuthContext";
+import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
+import WebSiteJsonLd from "@/components/seo/WebSiteJsonLd";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#7C3AED",
+};
 
 export const metadata: Metadata = {
-  title: "Mob - Alquileres 100% online",
-  description: "Encontra tu proximo hogar de manera digital y costos menores",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar"
+  ),
+  title: {
+    default: "Mob - Alquileres 100% online en Argentina",
+    template: "%s | Mob",
+  },
+  description:
+    "Alquila de forma digital y segura. Departamentos, casas y PH verificados en CABA y GBA. Visitas, reservas, contratos y garantia 100% online.",
+  openGraph: {
+    type: "website",
+    siteName: "Mob",
+    locale: "es_AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   icons: {
-    icon: "/assets/isotipo-mob-original.png",
-    apple: "/assets/isotipo-mob-original.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/favicon.png",
   },
 };
 
@@ -73,6 +98,8 @@ export default async function RootLayout({
   return (
     <html lang="es">
       <head>
+        <link rel="preconnect" href="https://storage.googleapis.com" />
+        <link rel="preconnect" href="https://cdn.sanity.io" />
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <Script
             id="gtm-script"
@@ -101,6 +128,8 @@ y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         )}
       </head>
       <body>
+        <OrganizationJsonLd />
+        <WebSiteJsonLd />
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <noscript>
             <iframe

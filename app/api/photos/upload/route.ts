@@ -4,6 +4,9 @@ import {
   ALLOWED_IMAGE_TYPES,
   MAX_FILE_SIZE,
 } from '@/lib/storage/gcs';
+import { getAuthUser } from '@/lib/supabase/auth';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 /**
  * POST /api/photos/upload
@@ -16,6 +19,15 @@ import {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'photos-upload', 30, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
+    const authUser = await getAuthUser();
+    if (!authUser) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const propertyId = formData.get('propertyId') as string | null;
@@ -26,6 +38,28 @@ export async function POST(request: NextRequest) {
         { error: 'file and propertyId are required' },
         { status: 400 }
       );
+    }
+
+    // Verify ownership: property must belong to authenticated user
+    const { data: publicUser } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('auth_id', authUser.id)
+      .maybeSingle();
+
+    if (!publicUser) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
+    const { data: property } = await supabaseAdmin
+      .from('properties')
+      .select('id')
+      .eq('id', parseInt(propertyId, 10))
+      .eq('user_id', publicUser.id)
+      .maybeSingle();
+
+    if (!property) {
+      return NextResponse.json({ error: 'Sin acceso a esta propiedad' }, { status: 403 });
     }
 
     // Validate file type
@@ -58,7 +92,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[photos/upload] Error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al subir la foto' },
+      { error: 'Error al subir la foto' },
       { status: 500 }
     );
   }

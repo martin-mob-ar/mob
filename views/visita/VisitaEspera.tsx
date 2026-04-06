@@ -160,7 +160,7 @@ const VisitaEspera = () => {
         <div className="max-w-md mx-auto">
           <Button 
             variant="outline"
-            onClick={() => router.push("/buscar")}
+            onClick={() => router.push("/alquileres")}
             className="w-full rounded-full"
           >
             Volver a buscar propiedades

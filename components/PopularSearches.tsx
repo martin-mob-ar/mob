@@ -2,12 +2,12 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 const popularSearches = [
-  { label: "alquiler barato", href: "/buscar?maxPrice=700000" },
-  { label: "alquiler en belgrano", href: "/buscar?location=Belgrano&locationId=24682" },
-  { label: "dueño directo", href: "/buscar?propertyType=dueno" },
-  { label: "alquiler en palermo", href: "/buscar?location=Palermo&locationId=24728" },
-  { label: "alquiler en CABA", href: `/buscar?location=${encodeURIComponent("Capital Federal")}&stateId=146` },
-  { label: "alquileres sin garantía", href: "/buscar?ownerType=dueno" },
+  { label: "alquiler barato", href: "/alquileres?maxPrice=700000" },
+  { label: "alquiler en belgrano", href: "/alquileres/capital-federal/belgrano" },
+  { label: "dueño directo", href: "/alquileres?propertyType=dueno" },
+  { label: "alquiler en palermo", href: "/alquileres/capital-federal/palermo" },
+  { label: "alquiler en CABA", href: "/alquileres/capital-federal" },
+  { label: "alquileres sin garantía", href: "/alquileres?ownerType=dueno" },
 ];
 
 interface PopularSearchesProps {
@@ -34,7 +34,7 @@ const PopularSearches = ({ title = "Búsquedas populares" }: PopularSearchesProp
         ))}
         <span className="text-muted-foreground mx-1">·</span>
         <Link
-          href="/buscar"
+          href="/alquileres"
           className="text-primary font-medium hover:underline flex items-center gap-0.5"
         >
           ver más

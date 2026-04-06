@@ -8,6 +8,8 @@ export interface LocationResult {
   depth: number;
   display: string;
   type: "location" | "state";
+  slug: string | null;
+  stateSlug: string | null;
 }
 
 export function useLocationSearch(query: string, { enabled = true, limit = 15 } = {}) {

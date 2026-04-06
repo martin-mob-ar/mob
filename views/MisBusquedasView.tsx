@@ -227,7 +227,7 @@ function EmptyState({ icon: Icon, title, description }: { icon: React.ElementTyp
       <p className="font-semibold text-foreground">{title}</p>
       <p className="text-sm text-muted-foreground mt-1 mb-5">{description}</p>
       <Link
-        href="/buscar"
+        href="/alquileres"
         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
       >
         <Search className="h-4 w-4" />

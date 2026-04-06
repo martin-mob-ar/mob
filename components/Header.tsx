@@ -266,7 +266,31 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
   };
 
   const handleHeaderSearch = () => {
+    // Build extra filter params
     const params = new URLSearchParams();
+    if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
+    if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
+    if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
+    if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+    const priceARS = getPriceARS();
+    if (priceARS.min) params.set("minPrice", priceARS.min);
+    if (priceARS.max) params.set("maxPrice", priceARS.max);
+    const hasExtraFilters = params.size > 0;
+    const qs = params.toString();
+
+    // Use SEO-friendly URL when a location with slug data is selected
+    if (headerSelectedLocation?.slug && headerSelectedLocation.stateSlug) {
+      if (headerSelectedLocation.type === "state") {
+        const base = `/alquileres/${headerSelectedLocation.stateSlug}`;
+        router.push(qs ? `${base}?${qs}` : base);
+      } else {
+        const base = `/alquileres/${headerSelectedLocation.stateSlug}/${headerSelectedLocation.slug}`;
+        router.push(qs ? `${base}?${qs}` : base);
+      }
+      return;
+    }
+
+    // Fallback: query-param search (free-text search without slug data)
     if (headerSelectedLocation) {
       params.set("location", headerSelectedLocation.name);
       if (headerSelectedLocation.type === "state") {
@@ -277,15 +301,8 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
     } else if (headerLocationQuery.trim()) {
       params.set("location", headerLocationQuery.trim());
     }
-    if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
-    if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
-    if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
-    if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
-    const priceARS = getPriceARS();
-    if (priceARS.min) params.set("minPrice", priceARS.min);
-    if (priceARS.max) params.set("maxPrice", priceARS.max);
-    const qs = params.toString();
-    router.push(qs ? `/buscar?${qs}` : "/buscar");
+    const fallbackQs = params.toString();
+    router.push(fallbackQs ? `/alquileres?${fallbackQs}` : "/alquileres");
   };
 
   const handlePriceCurrencySwitch = (newCurrency: "ARS" | "USD") => {
@@ -347,13 +364,15 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
   return <>
       <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border/40 bg-background`}>
         <div className="container relative flex h-16 md:h-20 items-center gap-4">
-          <Link href="/" className="flex items-center shrink-0">
-            <Image alt="mob" width={112} height={44} className="h-7 md:h-11 w-auto" src={mobLogo} />
-          </Link>
+          <div className="flex items-center xl:flex-1">
+            <Link href="/" className="flex items-center shrink-0">
+              <Image alt="mob" width={112} height={44} className="h-7 md:h-11 w-auto" src={mobLogo} />
+            </Link>
+          </div>
 
           {/* Compact Search Bar - Desktop only - Completely unmount on home until scrolled */}
           {!hideSearch && (!isHome || showHeaderSearch) && (
-            <div className={`hidden lg:flex items-center justify-center absolute left-1/2 -translate-x-1/2 transition-all duration-300 ${isHome && !showHeaderSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`hidden min-[900px]:flex items-center justify-center flex-1 min-w-0 transition-all duration-300 ${isHome && !showHeaderSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center h-10 rounded-full border border-border bg-background shadow-sm">
                 <div className="flex items-center gap-2 px-4 border-r border-border flex-1 relative">
                   <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -494,7 +513,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
           )}
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
+          <div className="hidden md:flex items-center gap-1 lg:gap-3 shrink-0 ml-auto xl:flex-1 xl:justify-end xl:ml-0">
             {authLoading ? (
               <div className="flex items-center gap-3">
                 <Skeleton className="h-10 w-40 rounded-full" />
@@ -513,7 +532,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   </Button>
                 ) : (
                   <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
-                    Publicar mi propiedad
+                    Publicar<span className="hidden min-[1150px]:inline"> mi propiedad</span>
                   </Button>
                 )}
                 <DropdownMenu>
@@ -605,64 +624,35 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                     {landingCta}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                ) : hideSearch || (isHome && !showHeaderSearch) ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
-                      asChild
-                    >
-                      <Link href="/propietarios">
-                        <Home className="h-4 w-4" />
-                        Soy propietario
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
-                      asChild
-                    >
-                      <Link href="/inmobiliarias">
-                        <Building2 className="h-4 w-4" />
-                        Soy inmobiliaria
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
-                      asChild
-                    >
-                      <Link href="/subir-propiedad">
-                        <Megaphone className="h-4 w-4" />
-                        Publicá gratis
-                      </Link>
-                    </Button>
-                  </>
                 ) : (
                   <>
+                    {(hideSearch || (isHome && !showHeaderSearch)) && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="rounded-full px-3 lg:px-5 font-medium text-muted-foreground hover:text-foreground gap-1.5 lg:gap-2"
+                          asChild
+                        >
+                          <Link href="/propietarios">
+                            <Home className="h-4 w-4" />
+                            Soy propietario
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="rounded-full px-3 lg:px-5 font-medium text-muted-foreground hover:text-foreground gap-1.5 lg:gap-2"
+                          asChild
+                        >
+                          <Link href="/inmobiliarias">
+                            <Building2 className="h-4 w-4" />
+                            Soy inmobiliaria
+                          </Link>
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="ghost"
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
-                      asChild
-                    >
-                      <Link href="/propietarios">
-                        <Home className="h-4 w-4" />
-                        Soy propietario
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
-                      asChild
-                    >
-                      <Link href="/inmobiliarias">
-                        <Building2 className="h-4 w-4" />
-                        Soy inmobiliaria
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="rounded-full px-5 font-medium text-muted-foreground hover:text-foreground gap-2"
+                      className="rounded-full px-3 lg:px-5 font-medium text-muted-foreground hover:text-foreground gap-1.5 lg:gap-2"
                       asChild
                     >
                       <Link href="/subir-propiedad">
@@ -675,10 +665,10 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                 <Button
                   variant="outline"
                   onClick={openAuthModal}
-                  className="rounded-full px-5 font-medium gap-2"
+                  className="rounded-full px-3 lg:px-5 font-medium gap-1.5 lg:gap-2"
                 >
                   <User className="h-4 w-4" />
-                  Iniciá sesión o registrate
+                  Iniciá sesión{" "}<span className="hidden min-[1080px]:inline">o registrate</span>
                 </Button>
               </>
             )}
@@ -687,7 +677,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
           {/* Mobile Menu Button */}
           <div className="md:hidden ml-auto flex items-center gap-2">
             {!authLoading && !isAuthenticated && !landingCta && (
-              <Button size="sm" className="rounded-full px-4 h-9 font-bold text-sm" asChild>
+              <Button variant="ghost" size="sm" className="rounded-full px-4 h-9 font-bold text-sm" asChild>
                 <Link href="/subir-propiedad">
                   Publicá
                 </Link>
@@ -781,7 +771,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                           asChild
                           onClick={() => setMobileMenuOpen(false)}
                         >
-                          <Link href="/buscar">
+                          <Link href="/alquileres">
                             <Search className="h-4 w-4 text-muted-foreground" />
                             Buscar propiedades
                           </Link>
@@ -829,7 +819,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                     <>
                       <div className="text-center py-2">
                         <p className="text-base font-semibold text-foreground">Bienvenido a mob</p>
-                        <p className="text-sm text-muted-foreground mt-1">Iniciá sesión para gestionar tus propiedades</p>
+
                       </div>
                       {landingCta ? (
                         <>
@@ -865,7 +855,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                               asChild
                               onClick={() => setMobileMenuOpen(false)}
                             >
-                              <Link href="/buscar">
+                              <Link href="/alquileres">
                                 <Search className="h-4 w-4 text-muted-foreground" />
                                 Buscar propiedades
                               </Link>

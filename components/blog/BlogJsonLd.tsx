@@ -15,6 +15,7 @@ export default function BlogJsonLd({ post }: { post: Post }) {
     description: post.seo?.metaDescription || post.excerpt,
     image: imageUrl,
     datePublished: post.publishedAt,
+    ...(post._updatedAt && { dateModified: post._updatedAt }),
     author: {
       "@type": "Person",
       name: post.author.name,
@@ -36,7 +37,7 @@ export default function BlogJsonLd({ post }: { post: Post }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/<\//g, '<\\/') }}
     />
   );
 }

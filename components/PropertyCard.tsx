@@ -119,7 +119,7 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
               <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
                 <Image
                   src={img}
-                  alt={`${property.address} - ${index + 1}`}
+                  alt={`${property.propertyType || "Propiedad"} ${property.rooms ? `${property.rooms} ambientes ` : ""}en ${property.neighborhood || property.address} - foto ${index + 1}`}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                   className="object-cover"

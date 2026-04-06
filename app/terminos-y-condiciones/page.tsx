@@ -3,7 +3,10 @@ import Image from "next/image";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Términos y condiciones | Mob",
+  title: "Terminos y condiciones",
+  description:
+    "Terminos y condiciones de uso de la plataforma Mob. Informacion sobre alquileres, contratos digitales, garantias y responsabilidades.",
+  alternates: { canonical: "/terminos-y-condiciones" },
 };
 
 export default function TerminosPage() {

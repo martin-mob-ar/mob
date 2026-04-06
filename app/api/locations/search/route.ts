@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { LOCATION_ALIASES, normalizeForAlias } from '@/lib/constants/location-aliases';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
+/** Strip characters that could inject PostgREST filter operators */
+function sanitizeForFilter(s: string): string {
+  return s.replace(/[.,()\\*:]/g, '');
+}
+
 export async function GET(request: Request) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(ip, 'locations-search', 60, 60_000);
+  if (!rl.success) return rateLimitResponse(rl.resetIn);
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
   const limit = Math.min(Number(searchParams.get('limit')) || 20, 50);
@@ -25,7 +35,10 @@ export async function GET(request: Request) {
   }
 
   // Normalize tokens for accent-insensitive search against name_search column
-  const searchTokens = tokens.map(normalize);
+  const searchTokens = tokens.map((t) => sanitizeForFilter(normalize(t))).filter((t) => t.length >= 2);
+  if (searchTokens.length === 0) {
+    return NextResponse.json({ data: aliasMatch?.results ?? [] });
+  }
 
   // Build Supabase OR filter: name_search matches ANY normalized token
   const orFilter = searchTokens.map((t) => `name_search.ilike.%${t}%`).join(',');
@@ -57,11 +70,11 @@ export async function GET(request: Request) {
 
   if (directResult.error) {
     console.error('[locations/search]', directResult.error);
-    return NextResponse.json({ error: directResult.error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
   if (tokenResult.error) {
     console.error('[locations/search]', tokenResult.error);
-    return NextResponse.json({ error: tokenResult.error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 
   // Merge direct matches first (prioritized), then token matches, deduplicating by id
@@ -93,7 +106,20 @@ export async function GET(request: Request) {
     depth: number;
     display: string;
     type: "location" | "state";
+    slug: string | null;
+    stateSlug: string | null;
   }[] = [];
+
+  // Fetch slugs for matched states
+  const matchedStateIds = matchedStates.map((s) => s.id);
+  const matchedStateSlugs = new Map<number, string | null>();
+  if (matchedStateIds.length > 0) {
+    const { data: msRows } = await supabaseAdmin
+      .from('tokko_state')
+      .select('id, slug')
+      .in('id', matchedStateIds);
+    for (const r of msRows || []) matchedStateSlugs.set(r.id, r.slug);
+  }
 
   for (const s of matchedStates) {
     const fullContext = normalize(s.name);
@@ -105,6 +131,8 @@ export async function GET(request: Request) {
       depth: 0,
       display: country?.name ?? 'Argentina',
       type: 'state',
+      slug: matchedStateSlugs.get(s.id) ?? null,
+      stateSlug: matchedStateSlugs.get(s.id) ?? null,
     });
   }
 
@@ -188,6 +216,26 @@ export async function GET(request: Request) {
     return chain;
   }
 
+  // Fetch slugs for all matched locations + their state slugs
+  const locationIds = locations.map((l) => l.id);
+  const slugMap = new Map<number, string | null>();
+  if (locationIds.length > 0) {
+    const { data: slugRows } = await supabaseAdmin
+      .from('tokko_location')
+      .select('id, slug')
+      .in('id', locationIds);
+    for (const r of slugRows || []) slugMap.set(r.id, r.slug);
+  }
+
+  const stateSlugMap = new Map<number, string | null>();
+  if (stateIdArr.length > 0) {
+    const { data: stateSlugRows } = await supabaseAdmin
+      .from('tokko_state')
+      .select('id, slug')
+      .in('id', stateIdArr);
+    for (const r of stateSlugRows || []) stateSlugMap.set(r.id, r.slug);
+  }
+
   // Build location results
   for (const l of locations) {
     const chain = getAncestorChain(l.parent_location_id, l.state_id);
@@ -202,6 +250,8 @@ export async function GET(request: Request) {
       depth: l.depth,
       display: chain.join(', '),
       type: 'location',
+      slug: slugMap.get(l.id) ?? null,
+      stateSlug: l.state_id ? (stateSlugMap.get(l.state_id) ?? null) : null,
     });
 
     if (results.length >= limit) break;

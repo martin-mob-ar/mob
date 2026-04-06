@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'check-email', 10, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     const { email } = await request.json();
 
     if (!email || typeof email !== "string") {

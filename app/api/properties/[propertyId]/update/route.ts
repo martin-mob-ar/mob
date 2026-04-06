@@ -210,22 +210,25 @@ export async function PUT(
         console.error("[properties/update] Photos insert error:", photoError);
       }
     } else if (legacyPhotos.length > 0) {
-      for (let i = 0; i < legacyPhotos.length; i++) {
-        const url = legacyPhotos[i].trim();
-        await supabaseAdmin.from("tokko_property_photo").insert({
-          property_id: numericId,
-          image: url,
-          original: url,
-          thumb: url,
-          description: null,
-          is_blueprint: false,
-          is_front_cover: i === 0,
-          order: i,
-        });
+      const legacyPhotoRows = legacyPhotos.map((url: string, i: number) => ({
+        property_id: numericId,
+        image: url.trim(),
+        original: url.trim(),
+        thumb: url.trim(),
+        description: null,
+        is_blueprint: false,
+        is_front_cover: i === 0,
+        order: i,
+      }));
+      const { error: legacyPhotoError } = await supabaseAdmin
+        .from("tokko_property_photo")
+        .insert(legacyPhotoRows);
+      if (legacyPhotoError) {
+        console.error("[properties/update] Legacy photos insert error:", legacyPhotoError);
       }
     }
 
-    // 4. Replace videos (delete all, then re-insert)
+    // 4. Replace videos (delete all, then re-insert as batch)
     await supabaseAdmin
       .from("tokko_property_video")
       .delete()
@@ -234,27 +237,39 @@ export async function PUT(
     const videos = Array.isArray(videoUrls)
       ? videoUrls.filter((u: string) => u && u.trim())
       : [];
-    for (let i = 0; i < videos.length; i++) {
-      await supabaseAdmin.from("tokko_property_video").insert({
+    if (videos.length > 0) {
+      const videoRows = videos.map((url: string, i: number) => ({
         property_id: numericId,
-        url: videos[i].trim(),
+        url: url.trim(),
         description: null,
         order: i,
-      });
+      }));
+      const { error: videoError } = await supabaseAdmin
+        .from("tokko_property_video")
+        .insert(videoRows);
+      if (videoError) {
+        console.error("[properties/update] Videos insert error:", videoError);
+      }
     }
 
-    // 5. Replace tags (delete all, then re-insert)
+    // 5. Replace tags (delete all, then re-insert as batch)
     await supabaseAdmin
       .from("tokko_property_property_tag")
       .delete()
       .eq("property_id", numericId);
 
     const tagIdsArr = Array.isArray(tagIds) ? tagIds : [];
-    for (const tagId of tagIdsArr) {
-      await supabaseAdmin.from("tokko_property_property_tag").insert({
+    if (tagIdsArr.length > 0) {
+      const tagRows = tagIdsArr.map((tagId: number) => ({
         property_id: numericId,
         tag_id: Number(tagId),
-      });
+      }));
+      const { error: tagError } = await supabaseAdmin
+        .from("tokko_property_property_tag")
+        .insert(tagRows);
+      if (tagError) {
+        console.error("[properties/update] Tags insert error:", tagError);
+      }
     }
 
     return NextResponse.json({ success: true });

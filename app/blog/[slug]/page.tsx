@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PostBody from "@/components/blog/PostBody";
 import BlogJsonLd from "@/components/blog/BlogJsonLd";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import { Badge } from "@/components/ui/badge";
 import { sanityFetch } from "@/lib/sanity/client";
 import { urlFor } from "@/lib/sanity/image";
@@ -113,6 +114,16 @@ export default async function BlogPostPage({
     <div className="min-h-screen bg-background">
       <Header />
       <BlogJsonLd post={post} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Inicio", href: "/" },
+          { name: "Blog", href: "/blog" },
+          ...(post.categories?.[0]
+            ? [{ name: post.categories[0].title, href: `/blog/categoria/${post.categories[0].slug.current}` }]
+            : []),
+          { name: post.title, href: `/blog/${post.slug.current}` },
+        ]}
+      />
 
       <main className="container py-12 md:py-16">
         <article className="mx-auto max-w-3xl">
@@ -156,7 +167,7 @@ export default async function BlogPostPage({
                 alt={post.author.name}
                 width={40}
                 height={40}
-                className="rounded-full"
+                className="rounded-full object-cover"
               />
             )}
             <div>
@@ -165,6 +176,14 @@ export default async function BlogPostPage({
                 <time dateTime={post.publishedAt}>
                   {formatDate(post.publishedAt)}
                 </time>
+                {post._updatedAt && post._updatedAt.slice(0, 10) !== post.publishedAt.slice(0, 10) && (
+                  <>
+                    {" · Actualizado "}
+                    <time dateTime={post._updatedAt}>
+                      {formatDate(post._updatedAt)}
+                    </time>
+                  </>
+                )}
                 {" · "}
                 {readingTime} min de lectura
               </p>
@@ -187,6 +206,28 @@ export default async function BlogPostPage({
           <div className="mt-10">
             <PostBody body={post.body} />
           </div>
+
+          {/* Author bio */}
+          {post.author.bio && (
+            <div className="mt-12 pt-8 border-t border-border">
+              <div className="flex items-start gap-4">
+                {post.author.image && (
+                  <Image
+                    src={urlFor(post.author.image).width(56).height(56).url()}
+                    alt={post.author.name}
+                    width={56}
+                    height={56}
+                    className="rounded-full object-cover flex-shrink-0"
+                  />
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">Escrito por</p>
+                  <p className="font-semibold text-foreground">{post.author.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{post.author.bio}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </article>
       </main>
       <Footer />

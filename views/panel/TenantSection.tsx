@@ -99,7 +99,7 @@ const TenantSection = ({ rentals, mockMode }: TenantSectionProps) => {
           tu contrato desde acá.
         </p>
         <Link
-          href="/buscar"
+          href="/alquileres"
           className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-colors"
         >
           <Search className="h-4 w-4" />

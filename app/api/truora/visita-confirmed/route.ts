@@ -1,9 +1,32 @@
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { truoraVisitaConfirmedSchema } from '@/lib/validations/truora-visita-confirmed';
 import { createVisita } from '@/lib/visitas/create';
 import { findUserByPhone } from '@/lib/truora/find-user-by-phone';
 
+function verifyWebhookSecret(request: Request): boolean {
+  const webhookSecret = process.env.TRUORA_WEBHOOK_SECRET;
+  if (!webhookSecret) return false;
+  const header = request.headers.get('x-webhook-secret') || '';
+  try {
+    const a = Buffer.from(header);
+    const b = Buffer.from(webhookSecret);
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
+  // Verify shared secret header (timing-safe)
+  if (!process.env.TRUORA_WEBHOOK_SECRET) {
+    console.error('[VisitaConfirmed] TRUORA_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+  }
+  if (!verifyWebhookSecret(request)) {
+    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const parsed = truoraVisitaConfirmedSchema.safeParse(body);
@@ -49,7 +72,7 @@ export async function POST(request: Request) {
     // Return 200 so Truora doesn't break the flow
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Error interno',
+      error: 'Error interno',
     });
   }
 }

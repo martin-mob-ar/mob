@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo, useEffect } from "react";
 import { Search, SlidersHorizontal, X, TrendingUp, ChevronLeft, ChevronRight, ChevronsUpDown, Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

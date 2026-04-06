@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'check-phone', 10, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     const phones = request.nextUrl.searchParams.get("phones");
     const countryCode = request.nextUrl.searchParams.get("country_code") || "+54";
 

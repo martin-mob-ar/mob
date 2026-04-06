@@ -54,6 +54,7 @@ interface SearchFiltersContextValue {
   totalPages: number;
   goToPage: (n: number) => void;
   search: () => void;
+  basePath: string;
 }
 
 const defaultFilters: SearchFilters = {
@@ -96,6 +97,16 @@ interface SearchFiltersProviderProps {
   children: ReactNode;
   initialResults?: Property[];
   initialTotal?: number;
+  basePath?: string;
+  initialLocationSeed?: {
+    stateId?: number;
+    stateName?: string;
+    locationId?: number;
+    locationName?: string;
+    locationDisplay?: string;
+  };
+  initialPropertyTypeNames?: string[];
+  initialAmbientes?: { min: number; max?: number };
 }
 
 function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<SearchFilters> {
@@ -174,6 +185,10 @@ export function SearchFiltersProvider({
   children,
   initialResults,
   initialTotal,
+  basePath = "/alquileres",
+  initialLocationSeed,
+  initialPropertyTypeNames,
+  initialAmbientes,
 }: SearchFiltersProviderProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -185,8 +200,40 @@ export function SearchFiltersProvider({
   const searchParamsString = searchParams.toString();
   const prevSearchParamsRef = useRef(searchParamsString);
 
+  // Compute seed filters from location seed (e.g. from SEO path like /alquileres/capital-federal/palermo)
+  const seedFilters: Partial<SearchFilters> = {};
+  if (initialLocationSeed?.locationId && initialLocationSeed?.locationName) {
+    seedFilters.locationId = String(initialLocationSeed.locationId);
+    seedFilters.location = initialLocationSeed.locationName;
+    seedFilters.selectedLocations = [{
+      id: initialLocationSeed.locationId,
+      name: initialLocationSeed.locationName,
+      display: initialLocationSeed.locationDisplay,
+      type: "location",
+    }];
+  } else if (initialLocationSeed?.stateId && initialLocationSeed?.stateName) {
+    seedFilters.stateId = String(initialLocationSeed.stateId);
+    seedFilters.location = initialLocationSeed.stateName;
+    seedFilters.selectedLocations = [{
+      id: initialLocationSeed.stateId,
+      name: initialLocationSeed.stateName,
+      type: "state",
+    }];
+  }
+  // Seed property type names from programmatic route
+  if (initialPropertyTypeNames && initialPropertyTypeNames.length > 0) {
+    seedFilters.propertyTypeNames = initialPropertyTypeNames;
+  }
+  // Seed ambientes from programmatic route
+  if (initialAmbientes) {
+    seedFilters.minAmbientes = String(initialAmbientes.min);
+    if (initialAmbientes.max) seedFilters.maxAmbientes = String(initialAmbientes.max);
+  }
+  const seedFiltersRef = useRef(seedFilters);
+
   const [filters, setFiltersState] = useState<SearchFilters>({
     ...defaultFilters,
+    ...seedFilters,
     ...urlUpdates,
   });
   const [results, setResults] = useState<Property[]>(initialResults || []);
@@ -264,7 +311,14 @@ export function SearchFiltersProvider({
     return params;
   }, []);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchPage = useCallback(async (pageNum: number) => {
+    // Cancel any in-flight request to prevent stale results
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsLoading(true);
     try {
       const params = buildFilterParams(filters);
@@ -272,7 +326,9 @@ export function SearchFiltersProvider({
       params.set("page", String(pageNum));
       params.set("limit", String(ITEMS_PER_PAGE));
 
-      const res = await fetch(`/api/properties/search?${params.toString()}`);
+      const res = await fetch(`/api/properties/search?${params.toString()}`, {
+        signal: controller.signal,
+      });
       const json = await res.json();
 
       if (res.ok) {
@@ -282,21 +338,34 @@ export function SearchFiltersProvider({
         setTotalPages(Math.ceil(json.total / ITEMS_PER_PAGE));
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
       console.error("Search failed:", e);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [filters, buildFilterParams]);
 
   const goToPage = useCallback((n: number) => {
     setPage(n);
     const params = buildFilterParams(filters);
+    // On SEO paths, exclude seeded params (they're encoded in the URL path)
+    if (basePath !== "/alquileres") {
+      params.delete("location");
+      params.delete("locationId");
+      params.delete("stateId");
+      params.delete("locationNames");
+      params.delete("propertyTypeNames");
+      params.delete("minAmbientes");
+      params.delete("maxAmbientes");
+    }
     if (n > 1) params.set("page", String(n));
     const qs = params.toString();
-    const newUrl = qs ? `/buscar?${qs}` : "/buscar";
+    const newUrl = qs ? `${basePath}?${qs}` : basePath;
     router.push(newUrl, { scroll: true });
     fetchPage(n);
-  }, [filters, buildFilterParams, router, fetchPage]);
+  }, [filters, basePath, buildFilterParams, router, fetchPage]);
 
   const search = useCallback(() => {
     setPage(1);
@@ -309,22 +378,23 @@ export function SearchFiltersProvider({
       isInitialMount.current = false;
       return;
     }
-    if (pathname !== "/buscar") return;
+    if (pathname !== "/alquileres") return;
 
     const params = buildFilterParams(filters);
     // page param omitted → page 1
     const qs = params.toString();
-    const newUrl = qs ? `/buscar?${qs}` : "/buscar";
+    const newUrl = qs ? `/alquileres?${qs}` : "/alquileres";
     router.replace(newUrl, { scroll: false });
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detect external URL changes (e.g. clicking links while already on /buscar)
+  // Detect external URL changes (e.g. clicking links while already on /alquileres)
   useEffect(() => {
     if (searchParamsString === prevSearchParamsRef.current) return;
     prevSearchParamsRef.current = searchParamsString;
     setIsLoading(true);
     const urlFilters = getInitialFiltersFromParams(searchParams);
-    setFiltersState({ ...defaultFilters, ...urlFilters });
+    // Preserve seed filters (from SEO path) when URL params change
+    setFiltersState({ ...defaultFilters, ...seedFiltersRef.current, ...urlFilters });
   }, [searchParamsString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-search when filters change
@@ -365,6 +435,7 @@ export function SearchFiltersProvider({
         totalPages,
         goToPage,
         search,
+        basePath,
       }}
     >
       {children}

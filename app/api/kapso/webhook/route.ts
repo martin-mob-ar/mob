@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
-import { generateText } from 'ai';
+import { generateText, Output } from 'ai';
 import { gateway } from '@ai-sdk/gateway';
+import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import {
   BTN,
@@ -145,6 +146,64 @@ function parseDateTimeRegex(text: string): ParseResult {
   };
 }
 
+/** Get Buenos Aires "today" as a Date (date-only, no time drift). */
+function getBuenosAiresToday(): Date {
+  const parts = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Buenos_Aires' }).split('-');
+  return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+}
+
+/**
+ * Regex pass for relative dates: "mañana 17:00", "hoy 14hs", "pasado mañana 10:30", etc.
+ * Handles common abbreviations: hrs, hs, horas, h, and plain numbers.
+ */
+function parseDateTimeRelative(text: string): ParseResult {
+  const lower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Match relative day keyword (with common typos/variations)
+  // "mañana" typos: mñana, maana, manana, mañan, mnana
+  // "pasado mañana" typos: pasadomañana, pasado manana, etc.
+  // "hoy" typos: oy
+  let dayOffset: number | null = null;
+  if (/pasado\s*m+a*n+a+n*a*/.test(lower)) dayOffset = 2;
+  else if (/\bm+a*n+a+n*a*\b/.test(lower)) dayOffset = 1;
+  else if (/\b[h]?oy\b/.test(lower)) dayOffset = 0;
+
+  if (dayOffset === null) return null;
+
+  // Extract time: "17:00", "17.30", "17hs", "17hrs", "17 horas", "17h", or bare "17"
+  const timeMatch = lower.match(/(\d{1,2})\s*[:\.]?\s*(\d{2})?\s*(?:hrs?|horas?|hs)?/);
+  if (!timeMatch) return null;
+
+  let hour = parseInt(timeMatch[1], 10);
+  if (hour < 0 || hour > 23) return null;
+  let rawMinute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+
+  // "y media" → :30 (e.g. "mañana 10 y media", "hoy a las 17 y media")
+  if (/y\s*media/.test(lower)) rawMinute = 30;
+
+  // "de la tarde/noche" → convert 1-12 to PM (e.g. "a las 3 de la tarde" → 15:00)
+  if (hour >= 1 && hour <= 12 && /(?:de la|a la)\s*(?:tarde|noche)/.test(lower)) hour += 12;
+
+  if (rawMinute !== 0 && rawMinute !== 30) return 'bad_minutes';
+
+  const target = getBuenosAiresToday();
+  target.setDate(target.getDate() + dayOffset);
+
+  return {
+    date: `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`,
+    time: `${String(hour).padStart(2, '0')}:${String(rawMinute).padStart(2, '0')}`,
+  };
+}
+
+/** Zod schema for AI structured output. */
+const dateTimeSchema = z.object({
+  day: z.number().describe('Day of the month (1-31)'),
+  month: z.number().describe('Month number (1-12)'),
+  year: z.number().describe('Full year (e.g. 2026)'),
+  hour: z.number().describe('Hour in 24h format (0-23)'),
+  minute: z.number().describe('Minutes, rounded to 0 or 30'),
+});
+
 /** AI fallback: extract date/time from natural language Spanish using Gemini. */
 async function parseDateTimeAI(text: string): Promise<{ date: string; time: string } | null> {
   const now = new Date();
@@ -157,34 +216,41 @@ async function parseDateTimeAI(text: string): Promise<{ date: string; time: stri
   });
 
   try {
-    const { text: response } = await generateText({
+    const { output } = await generateText({
       model: gateway('google/gemini-2.5-flash'),
-      prompt: `Hoy es ${buenosAires}.
+      output: Output.object({ schema: dateTimeSchema }),
+      prompt: `Sos un parser de fechas. Hoy es ${buenosAires} en Buenos Aires, Argentina.
 
-Extraé la fecha y hora de este mensaje de WhatsApp sobre una visita a una propiedad:
+Extraé la fecha y hora de este mensaje informal de WhatsApp. Los usuarios escriben con abreviaturas, errores de tipeo, y lenguaje coloquial argentino.
+
 "${text}"
 
-El usuario puede expresar la hora con palabras (ej: "cinco y media de la tarde" = 17:30, "tres de la tarde" = 15:00).
-Solo se permiten horarios en punto (:00) o y media (:30). Redondeá al más cercano.
-Si el mensaje no contiene una fecha/hora válida, respondé exactamente: null
+Ejemplos:
+- "mañana 17hs" → mañana, 17:00
+- "el lunes a las 10" → próximo lunes, 10:00
+- "a las 3 de la tarde" → 15:00
+- "mñana 14" (typo) → mañana, 14:00
+- "cinco y media de la tarde" → 17:30
+- "el martes tipo 11" → próximo martes, 11:00
+- "pasado mañana a las 9" → pasado mañana, 09:00
+- "oy 18hs" (typo de "hoy") → hoy, 18:00
 
-Si sí contiene fecha y hora, respondé SOLO con JSON (sin markdown):
-{"day":DD,"month":MM,"year":YYYY,"hour":HH,"minute":MM}`,
+Reglas:
+- Redondeá minutos al :00 o :30 más cercano
+- "mañana", "hoy", "pasado mañana" son relativos a hoy
+- Interpretá errores de tipeo comunes (mñana=mañana, oy=hoy, etc.)
+- Usá formato 24h (3 de la tarde = 15, no 3)`,
       temperature: 0,
       maxOutputTokens: 100,
     });
 
-    const cleaned = response.trim();
-    if (cleaned === 'null' || !cleaned.startsWith('{')) return null;
+    if (!output || !output.day || !output.month || output.hour === undefined) return null;
 
-    const parsed = JSON.parse(cleaned);
-    if (!parsed.day || !parsed.month || parsed.hour === undefined) return null;
-
-    const year = parsed.year ?? now.getFullYear();
-    const { hour, minute } = roundToSlot(parsed.hour, parsed.minute ?? 0);
+    const year = output.year ?? now.getFullYear();
+    const { hour, minute } = roundToSlot(output.hour, output.minute ?? 0);
 
     return {
-      date: `${year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`,
+      date: `${year}-${String(output.month).padStart(2, '0')}-${String(output.day).padStart(2, '0')}`,
       time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
     };
   } catch (err) {
@@ -194,12 +260,17 @@ Si sí contiene fecha y hora, respondé SOLO con JSON (sin markdown):
 }
 
 /**
- * Parse date/time from user text: tries fast regex first, then AI fallback.
+ * Parse date/time from user text. Tries in order:
+ * 1. Exact regex (15/04 14:00)
+ * 2. Relative regex (mañana 17hs, hoy 14:30)
+ * 3. AI fallback (natural language)
  * Returns { date, time }, 'bad_minutes' (user typed non-:00/:30), or null.
  */
 async function parseDateTime(text: string): Promise<ParseResult> {
-  const regex = parseDateTimeRegex(text);
-  if (regex) return regex; // includes 'bad_minutes'
+  const exact = parseDateTimeRegex(text);
+  if (exact) return exact;
+  const relative = parseDateTimeRelative(text);
+  if (relative) return relative;
   return (await parseDateTimeAI(text));
 }
 
@@ -749,12 +820,14 @@ export async function POST(request: Request) {
   const rawBody = await request.text();
   const sig = request.headers.get('x-webhook-signature') ?? '';
 
-  if (KAPSO_WEBHOOK_SECRET) {
-    const expected = createHmac('sha256', KAPSO_WEBHOOK_SECRET).update(rawBody).digest('hex');
-    if (sig !== expected) {
-      console.error('[KapsoWebhook] Invalid signature');
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    }
+  if (!KAPSO_WEBHOOK_SECRET) {
+    console.error('[KapsoWebhook] KAPSO_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+  }
+  const expected = createHmac('sha256', KAPSO_WEBHOOK_SECRET).update(rawBody).digest('hex');
+  if (sig !== expected) {
+    console.error('[KapsoWebhook] Invalid signature');
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

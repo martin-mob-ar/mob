@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { visitaApiSchema } from '@/lib/validations/visita';
 import { createVisita } from '@/lib/visitas/create';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'visitas', 5, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     const body = await request.json();
     const parsed = visitaApiSchema.safeParse(body);
 
@@ -38,11 +43,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, visitaId: result.visitaId });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error interno';
-    const isConflict = message.includes('visita confirmada');
+    const rawMessage = error instanceof Error ? error.message : '';
+    const isConflict = rawMessage.includes('visita confirmada');
     console.error('[Visitas] Unexpected error:', error);
     return NextResponse.json(
-      { error: message },
+      { error: isConflict ? 'Ya existe una visita confirmada para esta propiedad' : 'Error interno' },
       { status: isConflict ? 409 : 500 }
     );
   }

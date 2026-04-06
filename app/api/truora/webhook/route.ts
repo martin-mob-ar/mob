@@ -1,10 +1,33 @@
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraWebhookSchema } from '@/lib/validations/truora-webhook';
 import { qualify } from '@/lib/hoggax/client';
 import { findUserByPhone } from '@/lib/truora/find-user-by-phone';
 
+function verifyWebhookSecret(request: Request): boolean {
+  const webhookSecret = process.env.TRUORA_WEBHOOK_SECRET;
+  if (!webhookSecret) return false;
+  const header = request.headers.get('x-webhook-secret') || '';
+  try {
+    const a = Buffer.from(header);
+    const b = Buffer.from(webhookSecret);
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
+  // Verify shared secret header (timing-safe)
+  if (!process.env.TRUORA_WEBHOOK_SECRET) {
+    console.error('[TruoraWebhook] TRUORA_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+  }
+  if (!verifyWebhookSecret(request)) {
+    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const parsed = truoraWebhookSchema.safeParse(body);
@@ -130,7 +153,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[TruoraWebhook] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

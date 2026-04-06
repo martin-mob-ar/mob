@@ -1,6 +1,6 @@
 import { TokkoClient, TokkoProperty, TokkoBranch } from '@/lib/tokko/client';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import CryptoJS from 'crypto-js';
+import { createHash } from 'crypto';
 import { encryptApiKey } from '@/lib/crypto';
 
 /** Tokko operation type ID for Rent. Sale=1, Rent=2, Temporary Rent=3. */
@@ -36,7 +36,7 @@ function triggerPhotoMigration(userId: string) {
  * Hash API key for identification (SHA-256)
  */
 function hashApiKey(apiKey: string): string {
-  return CryptoJS.SHA256(apiKey).toString();
+  return createHash('sha256').update(apiKey).digest('hex');
 }
 
 /**

@@ -6,11 +6,14 @@ import {
   getPublicUrl,
   ALLOWED_IMAGE_TYPES,
 } from '@/lib/storage/gcs';
+import { createClient } from '@/lib/supabase/server-component';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 /**
  * POST /api/photos/signed-url
  *
  * Generate a signed URL for direct client-to-GCS upload.
+ * Requires authentication.
  *
  * For new properties (wizard): pass { tempFolder: string, order, contentType }
  *   → uploads to {tempFolder}/{order}-{uuid}.{ext}
@@ -22,6 +25,15 @@ import {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'photos-signed-url', 30, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
     const { propertyId, tempFolder, order, contentType } = await request.json();
 
     if (order == null || !contentType) {
@@ -55,7 +67,7 @@ export async function POST(request: NextRequest) {
     } else {
       // New property wizard — upload into temp folder, moved to {propertyId}/ after creation
       // Validate tempFolder format: only allow alphanumeric, hyphens, underscores, and slashes
-      if (!/^[a-zA-Z0-9_/-]+$/.test(tempFolder) || tempFolder.includes('..')) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(tempFolder)) {
         return NextResponse.json({ error: 'Invalid tempFolder' }, { status: 400 });
       }
       storagePath = `${tempFolder}/${order}-${uuid}.${ext}`;
@@ -68,7 +80,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[photos/signed-url] Error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al generar URL de subida' },
+      { error: 'Error al generar URL de subida' },
       { status: 500 }
     );
   }

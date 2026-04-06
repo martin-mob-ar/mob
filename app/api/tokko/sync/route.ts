@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { syncTokkoData, triggerSyncContinuation } from '@/lib/sync/service';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export const maxDuration = 300; // 5 minutes for large syncs
 
@@ -7,6 +8,10 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log('[Tokko Sync API] POST /api/tokko/sync received');
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'tokko-sync', 2, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     const body = await request.json();
     const { apiKey, limit: rawLimit, authId, authEmail, resume } = body;
 
@@ -79,10 +84,7 @@ export async function POST(request: NextRequest) {
     console.error('[Tokko Sync API] Sync error:', error);
 
     return NextResponse.json(
-      {
-        error: 'Sync failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Sync failed' },
       { status: 500 }
     );
   }

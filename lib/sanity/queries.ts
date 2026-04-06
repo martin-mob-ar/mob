@@ -3,6 +3,7 @@ import { groq } from "next-sanity";
 // Shared post fields projection
 const postFields = `
   _id,
+  _updatedAt,
   title,
   slug,
   excerpt,
@@ -72,12 +73,13 @@ export const allCategorySlugsQuery = groq`
   *[_type == "category" && defined(slug.current)].slug.current
 `;
 
-// Sitemap data: all posts with slug and updated date
+// Sitemap data: all posts with slug, updated date, and cover image
 export const sitemapPostsQuery = groq`
   *[_type == "post" && defined(slug.current)] | order(publishedAt desc) {
     "slug": slug.current,
     publishedAt,
-    _updatedAt
+    _updatedAt,
+    coverImage
   }
 `;
 

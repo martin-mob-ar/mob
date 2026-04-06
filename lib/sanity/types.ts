@@ -41,6 +41,7 @@ export interface Post {
   excerpt: string;
   coverImage: SanityImage;
   publishedAt: string;
+  _updatedAt?: string;
   author: Author;
   categories?: Category[];
   body?: PortableTextBlock[];

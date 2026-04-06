@@ -28,10 +28,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      {
-        error: 'Check failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Check failed' },
       { status: 500 }
     );
   }
