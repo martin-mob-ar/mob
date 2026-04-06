@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Percent,
   ArrowRight,
+  FileText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -24,10 +25,10 @@ interface Benefit {
 }
 
 const INMOBILIARIA_BENEFITS: Benefit[] = [
-  { icon: Globe, label: "Proceso 100% online" },
-  { icon: BadgeCheck, label: "Dueños verificados" },
   { icon: Calendar, label: "Agenda de visitas online" },
   { icon: Percent, label: "Acceso a garantía 50% off" },
+  { icon: Globe, label: "Proceso 100% online" },
+  { icon: FileText, label: "Contratos online" },
 ];
 
 const PROPIETARIO_BENEFITS: Benefit[] = [
@@ -79,7 +80,7 @@ export default function ConsultaEnviadaModal({
               <>
                 Enviamos tu consulta a la inmobiliaria.
                 <br />
-                Se pondrán en contacto con vos.
+                <span className="font-bold text-foreground">Se pondrán en contacto con vos.</span>
               </>
             ) : isVisitRequest ? (
               <>
@@ -100,11 +101,23 @@ export default function ConsultaEnviadaModal({
         {/* ── Benefits section ── */}
         <div className="px-6 pb-6 pt-2">
           <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-3">
-            En las propiedades con experiencia{" "}
-            <span className="font-ubuntu text-primary font-bold tracking-normal">
-              mob
-            </span>{" "}
-            accedés a:
+            {isInmobiliaria ? (
+              <>
+                Esta propiedad no cuenta con experiencia{" "}
+                <span className="font-ubuntu text-primary font-bold tracking-normal">
+                  mob
+                </span>
+                . Si lo tuviese, accederías a:
+              </>
+            ) : (
+              <>
+                En las propiedades con experiencia{" "}
+                <span className="font-ubuntu text-primary font-bold tracking-normal">
+                  mob
+                </span>{" "}
+                accedés a:
+              </>
+            )}
           </p>
 
           <div className="grid grid-cols-2 gap-2.5">
