@@ -538,7 +538,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                   </SelectTrigger>
                   <SelectContent className="bg-background">
                     <SelectItem value="none">Sin mínimo</SelectItem>
-                    <SelectItem value="1">Monoamb.</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
                     {["2", "3", "4", "5"].map((n) => (
                       <SelectItem key={n} value={n}>{n}</SelectItem>
                     ))}
@@ -550,7 +550,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
                   </SelectTrigger>
                   <SelectContent className="bg-background">
                     <SelectItem value="none">Sin máximo</SelectItem>
-                    <SelectItem value="1">Monoamb.</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
                     {["2", "3", "4", "5"].map((n) => (
                       <SelectItem key={n} value={n}>{n}</SelectItem>
                     ))}
