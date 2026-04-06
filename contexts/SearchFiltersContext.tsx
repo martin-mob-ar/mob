@@ -380,7 +380,7 @@ export function SearchFiltersProvider({
         setTotalPages(Math.ceil(json.total / ITEMS_PER_PAGE));
       }
     } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (e instanceof Error && e.name === "AbortError") return;
       console.error("Search failed:", e);
     } finally {
       if (!controller.signal.aborted) {
