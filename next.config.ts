@@ -19,7 +19,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://storage.googleapis.com https://*.tokkobroker.com https://*.tokko.io https://cdn.sanity.io https://lh3.googleusercontent.com https://maps.googleapis.com https://*.google.com https://*.gstatic.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googletagmanager.com https://www.clarity.ms https://*.sentry.io https://*.google-analytics.com https://maps.googleapis.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googletagmanager.com https://www.clarity.ms https://*.sentry.io https://*.google-analytics.com https://maps.googleapis.com https://storage.googleapis.com",
       "frame-src 'self' https://accounts.google.com https://www.googletagmanager.com",
       "worker-src 'self' blob:",
       "object-src 'none'",
