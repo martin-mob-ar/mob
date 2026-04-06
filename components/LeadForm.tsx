@@ -257,7 +257,7 @@ export default function LeadForm({
               Volver
             </Button>
           </div>
-          <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} />
+          <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} isInmobiliaria={isInmobiliaria} />
         </>
       );
     }
@@ -308,7 +308,7 @@ export default function LeadForm({
             Volver
           </Button>
         </div>
-        <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} />
+        <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} isInmobiliaria={isInmobiliaria} />
       </>
     );
   }

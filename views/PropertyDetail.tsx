@@ -586,13 +586,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                 Verificá tu identidad para que otros usuarios puedan encontrarla.
               </p>
             </div>
-            <Link
-              href="/verificate"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
-            >
-              Verificar
-              <ChevronRight className="h-4 w-4" />
-            </Link>
+            {!showVerificationModal && (
+              <Link
+                href="/verificate"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              >
+                Verificar
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         )}
 
@@ -680,13 +682,15 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
               </p>
             </div>
           </div>
-          <Link
-            href="/verificate"
-            className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
-          >
-            Verificar mi identidad
-            <ChevronRight className="h-4 w-4" />
-          </Link>
+          {!showVerificationModal && (
+            <Link
+              href="/verificate"
+              className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+            >
+              Verificar mi identidad
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       )}
 

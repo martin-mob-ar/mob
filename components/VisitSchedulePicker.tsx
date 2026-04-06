@@ -148,6 +148,33 @@ export default function VisitSchedulePicker({
 }: VisitSchedulePickerProps) {
   const { ref: containerRef, width: containerWidth } = useContainerWidth();
   const timeScrollRef = useRef<HTMLDivElement>(null);
+  const dayScrollRef = useRef<HTMLDivElement>(null);
+
+  // Mobile scroll arrow state
+  const [dayCanScrollLeft, setDayCanScrollLeft] = useState(false);
+  const [dayCanScrollRight, setDayCanScrollRight] = useState(false);
+  const [timeCanScrollLeft, setTimeCanScrollLeft] = useState(false);
+  const [timeCanScrollRight, setTimeCanScrollRight] = useState(false);
+
+  const updateMobileScroll = useCallback(
+    (
+      el: HTMLElement | null,
+      setLeft: (v: boolean) => void,
+      setRight: (v: boolean) => void
+    ) => {
+      if (!el) return;
+      setLeft(el.scrollLeft > 4);
+      setRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    },
+    []
+  );
+
+  const scrollStrip = useCallback(
+    (ref: React.RefObject<HTMLDivElement | null>, amount: number) => {
+      ref.current?.scrollBy({ left: amount, behavior: "smooth" });
+    },
+    []
+  );
 
   // Desktop paged state
   const [dayOffset, setDayOffset] = useState(0);
@@ -251,6 +278,15 @@ export default function VisitSchedulePicker({
     setTimeOffset((o) => Math.min(o, Math.max(0, timeSlots.length - visibleTimes)));
   }, [visibleTimes, timeSlots.length]);
 
+  // Initialize mobile scroll indicators when data changes
+  useEffect(() => {
+    updateMobileScroll(dayScrollRef.current, setDayCanScrollLeft, setDayCanScrollRight);
+  }, [availableDates, updateMobileScroll]);
+
+  useEffect(() => {
+    updateMobileScroll(timeScrollRef.current, setTimeCanScrollLeft, setTimeCanScrollRight);
+  }, [timeSlots, updateMobileScroll]);
+
   // Desktop day strip navigation
   const handleDayNav = (dir: "prev" | "next") => {
     const d = dir === "next" ? 1 : -1;
@@ -306,27 +342,57 @@ export default function VisitSchedulePicker({
 
       {/* ── Day strip: mobile = scrollable, desktop = paged ── */}
 
-      {/* Mobile: scrollable */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1 md:hidden">
-        {availableDates.map((date) => {
-          const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
-          return (
-            <button
-              key={date.toISOString()}
-              type="button"
-              onClick={() => handleDateSelect(date)}
-              className={cn(dayButtonClasses(isSelected), "px-3 shrink-0 snap-start")}
-            >
-              <span className={cn("text-[11px] font-medium leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
-                {JS_DAY_ABBR[date.getDay()]}
-              </span>
-              <span className="text-lg font-bold leading-tight text-foreground">{date.getDate()}</span>
-              <span className={cn("text-[11px] leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
-                {MONTH_ABBR[date.getMonth()]}
-              </span>
-            </button>
-          );
-        })}
+      {/* Mobile: scrollable with arrows */}
+      <div className="relative md:hidden">
+        {dayCanScrollLeft && (
+          <button
+            type="button"
+            onClick={() => scrollStrip(dayScrollRef, -200)}
+            className="absolute left-0 top-0 bottom-1 z-10 flex items-center pl-0.5 pr-3 bg-gradient-to-r from-background via-background/80 to-transparent"
+            aria-label="Días anteriores"
+          >
+            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+
+        <div
+          ref={dayScrollRef}
+          onScroll={(e) =>
+            updateMobileScroll(e.currentTarget, setDayCanScrollLeft, setDayCanScrollRight)
+          }
+          className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1"
+        >
+          {availableDates.map((date) => {
+            const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+            return (
+              <button
+                key={date.toISOString()}
+                type="button"
+                onClick={() => handleDateSelect(date)}
+                className={cn(dayButtonClasses(isSelected), "px-3 min-w-[66px] shrink-0 snap-start")}
+              >
+                <span className={cn("text-[11px] font-medium leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
+                  {JS_DAY_ABBR[date.getDay()]}
+                </span>
+                <span className="text-lg font-bold leading-tight text-foreground">{date.getDate()}</span>
+                <span className={cn("text-[11px] leading-none", isSelected ? "text-primary" : "text-muted-foreground")}>
+                  {MONTH_ABBR[date.getMonth()]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {dayCanScrollRight && (
+          <button
+            type="button"
+            onClick={() => scrollStrip(dayScrollRef, 200)}
+            className="absolute right-0 top-0 bottom-1 z-10 flex items-center pr-0.5 pl-3 bg-gradient-to-l from-background via-background/80 to-transparent"
+            aria-label="Días siguientes"
+          >
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
       {/* Desktop: paged with arrows */}
@@ -397,24 +463,51 @@ export default function VisitSchedulePicker({
 
       {timeSlots.length > 0 && (
         <>
-          {/* Mobile: scrollable */}
-          <div
-            ref={timeScrollRef}
-            className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1 md:hidden"
-          >
-            {timeSlots.map((time) => {
-              const isSelected = selectedTime === time;
-              return (
-                <button
-                  key={time}
-                  type="button"
-                  onClick={() => onTimeSelect(time)}
-                  className={cn(timeButtonClasses(isSelected), "px-3 shrink-0 snap-start")}
-                >
-                  {formatTime12h(time)}
-                </button>
-              );
-            })}
+          {/* Mobile: scrollable with arrows */}
+          <div className="relative md:hidden">
+            {timeCanScrollLeft && (
+              <button
+                type="button"
+                onClick={() => scrollStrip(timeScrollRef, -200)}
+                className="absolute left-0 top-0 bottom-1 z-10 flex items-center pl-0.5 pr-3 bg-gradient-to-r from-background via-background/80 to-transparent"
+                aria-label="Horarios anteriores"
+              >
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+
+            <div
+              ref={timeScrollRef}
+              onScroll={(e) =>
+                updateMobileScroll(e.currentTarget, setTimeCanScrollLeft, setTimeCanScrollRight)
+              }
+              className="flex gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1"
+            >
+              {timeSlots.map((time) => {
+                const isSelected = selectedTime === time;
+                return (
+                  <button
+                    key={time}
+                    type="button"
+                    onClick={() => onTimeSelect(time)}
+                    className={cn(timeButtonClasses(isSelected), "px-3 shrink-0 snap-start")}
+                  >
+                    {formatTime12h(time)}
+                  </button>
+                );
+              })}
+            </div>
+
+            {timeCanScrollRight && (
+              <button
+                type="button"
+                onClick={() => scrollStrip(timeScrollRef, 200)}
+                className="absolute right-0 top-0 bottom-1 z-10 flex items-center pr-0.5 pl-3 bg-gradient-to-l from-background via-background/80 to-transparent"
+                aria-label="Horarios siguientes"
+              >
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
           </div>
 
           {/* Desktop: paged with arrows */}

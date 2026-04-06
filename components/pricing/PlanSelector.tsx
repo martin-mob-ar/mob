@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Check, ChevronDown, X, Info } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AnimateHeight } from "@/components/ui/animate-height";
 
 export type PlanType = "basico" | "acompanado" | "experiencia";
 
@@ -93,14 +94,14 @@ const MobilePlanCard = ({
   plan,
   isSelected,
   onSelectPlan,
-  isOpen,
-  onToggle,
+  showDetails,
+  onToggleDetails,
 }: {
   plan: PlanType;
   isSelected: boolean;
   onSelectPlan: (p: PlanType) => void;
-  isOpen: boolean;
-  onToggle: () => void;
+  showDetails: boolean;
+  onToggleDetails: () => void;
 }) => {
   const highlights = planHighlights[plan];
 
@@ -114,8 +115,11 @@ const MobilePlanCard = ({
       )}
       onClick={() => onSelectPlan(plan)}
     >
-      {/* Header: name, price, description, chevron */}
-      <div className="flex items-start justify-between p-6 pb-0">
+      {/* Header: name, price, description, chevron — entire header toggles detail view */}
+      <div
+        className="flex items-start justify-between p-6 pb-0 cursor-pointer"
+        onClick={(e) => { e.stopPropagation(); onToggleDetails(); }}
+      >
         <div>
           <h3 className="font-display font-bold text-2xl">
             {planNames[plan]}
@@ -130,23 +134,19 @@ const MobilePlanCard = ({
             {planDescriptions[plan]}
           </p>
         </div>
-        <button
-          type="button"
-          className="mt-1 p-1 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={(e) => { e.stopPropagation(); onToggle(); }}
-          aria-label={isOpen ? "Ocultar detalles" : "Ver detalles"}
-        >
+        <div className="mt-1 p-1 text-muted-foreground">
           <ChevronDown className={cn(
             "h-5 w-5 transition-transform duration-200",
-            isOpen && "rotate-180"
+            showDetails && "rotate-180"
           )} />
-        </button>
+        </div>
       </div>
 
-      {/* Features list */}
-      {isOpen && (
-        <div className="px-6 pb-6">
-          <div className="border-t border-border/40 mt-4 pt-4">
+      {/* Content area: toggles between highlights and full detail */}
+      <div className="px-6 pb-6">
+        <div className="border-t border-border/40 mt-4 pt-4">
+          {/* Face A: Curated highlights (default) */}
+          <AnimateHeight show={!showDetails}>
             <div className="space-y-3">
               {highlights.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
@@ -167,9 +167,63 @@ const MobilePlanCard = ({
                 </div>
               ))}
             </div>
-          </div>
+          </AnimateHeight>
+
+          {/* Face B: Full feature breakdown from desktop table */}
+          <AnimateHeight show={showDetails}>
+            <div>
+              {pricingSections.map((section, sectionIdx) => (
+                <div key={sectionIdx} className={sectionIdx > 0 ? "mt-4" : ""}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/80 mb-2">
+                    {section.title}
+                  </p>
+                  <div className="space-y-2">
+                    {section.rows.map((row, rowIdx) => {
+                      const value = row[plan];
+                      const cellTooltip = plan === "experiencia" && (row as Record<string, string>).experienciaTooltip;
+                      return (
+                        <div key={rowIdx} className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-muted-foreground">{row.feature}</span>
+                          {value === "—" ? (
+                            <span className="text-sm text-muted-foreground/50">—</span>
+                          ) : value === "Incluido" || value === "Incluida" ? (
+                            <Check className={cn(
+                              "h-4 w-4 flex-shrink-0",
+                              isSelected ? "text-primary" : "text-muted-foreground/80"
+                            )} />
+                          ) : (
+                            <span className={cn(
+                              "text-sm text-right font-medium inline-flex items-center gap-1",
+                              isSelected ? "text-foreground" : "text-foreground/80"
+                            )}>
+                              {value}
+                              {cellTooltip && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3 w-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" onClick={(e) => e.stopPropagation()} />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px] text-xs">{cellTooltip}</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {/* Cost row */}
+              <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">Costo de plataforma</span>
+                <span className={cn("text-sm font-bold", isSelected ? "text-primary" : "text-foreground")}>
+                  {pricingCost[plan]}
+                </span>
+              </div>
+            </div>
+          </AnimateHeight>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -177,15 +231,15 @@ const MobilePlanCard = ({
 export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", showSelectButtons = true, showCostNote = true }: PlanSelectorProps) => {
   const isWizard = variant === "wizard";
 
-  // Mobile: track which cards are expanded (all open by default)
-  const [mobileOpenCards, setMobileOpenCards] = useState<Record<PlanType, boolean>>({
-    experiencia: true,
-    acompanado: true,
-    basico: true,
+  // Mobile: track which cards show full detail view (all start with highlights)
+  const [mobileDetailView, setMobileDetailView] = useState<Record<PlanType, boolean>>({
+    experiencia: false,
+    acompanado: false,
+    basico: false,
   });
 
-  const toggleMobileCard = (plan: PlanType) => {
-    setMobileOpenCards((prev) => ({ ...prev, [plan]: !prev[plan] }));
+  const toggleMobileDetailView = (plan: PlanType) => {
+    setMobileDetailView((prev) => ({ ...prev, [plan]: !prev[plan] }));
   };
 
   return (
@@ -409,8 +463,8 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
             plan={plan}
             isSelected={selectedPlan === plan}
             onSelectPlan={onSelectPlan}
-            isOpen={mobileOpenCards[plan]}
-            onToggle={() => toggleMobileCard(plan)}
+            showDetails={mobileDetailView[plan]}
+            onToggleDetails={() => toggleMobileDetailView(plan)}
           />
         ))}
       </div>
