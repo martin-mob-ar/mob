@@ -222,6 +222,25 @@ const MobilePlanCard = ({
               </div>
             </div>
           </AnimateHeight>
+
+          {/* Select button */}
+          <Button
+            variant={isSelected ? "default" : "outline"}
+            size="lg"
+            className={cn(
+              "w-full rounded-full mt-4",
+              isSelected && "ring-2 ring-offset-2 ring-primary"
+            )}
+            onClick={(e) => { e.stopPropagation(); onSelectPlan(plan); }}
+          >
+            {isSelected
+              ? "✓ Seleccionado"
+              : plan === "basico"
+              ? "Elegir básico"
+              : plan === "acompanado"
+              ? "Elegir acompañado"
+              : "Quiero gestión completa"}
+          </Button>
         </div>
       </div>
     </div>

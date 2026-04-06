@@ -18,7 +18,6 @@ export default function PropietariosPage() {
           { question: "¿Cómo verifican a los inquilinos?", answer: "Validamos identidad, antecedentes penales, situación financiera y capacidad de pago antes de que el interesado pueda avanzar." },
           { question: "¿Qué pasa si el inquilino no paga?", answer: "Con el respaldo de Hoggax, tu alquiler está garantizado. Si el inquilino se atrasa, vos cobrás igual." },
           { question: "¿Tengo que hacer algo durante el proceso?", answer: "Solo publicás tu propiedad y confirmás al inquilino. El resto: coordinación de visitas, documentación, pago y contrato lo gestionamos nosotros." },
-          { question: "¿El contrato tiene validez legal?", answer: "Sí. El contrato digital de MOB tiene plena validez legal en Argentina." },
         ]}
       />
       <LandingPropietarios />

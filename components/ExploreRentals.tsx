@@ -7,26 +7,32 @@ import PopularSearches from "@/components/PopularSearches";
 interface Zone {
   id: string;
   name: string;
-  locationId?: number;
-  stateId?: number;
+  slug: string;         // location slug (empty for state-level zones)
+  stateSlug: string;    // state slug for SEO path
 }
 
 const zones: Zone[] = [
-  { id: "capital-federal", name: "Capital Federal", stateId: 146 },
-  { id: "palermo", name: "Palermo", locationId: 24728 },
-  { id: "recoleta", name: "Recoleta", locationId: 24681 },
-  { id: "belgrano", name: "Belgrano", locationId: 24682 },
-  { id: "caballito", name: "Caballito", locationId: 24690 },
-  { id: "nuñez", name: "Núñez", locationId: 24721 },
-  { id: "villa-urquiza", name: "Villa Urquiza", locationId: 24753 },
-  { id: "almagro", name: "Almagro", locationId: 24673 },
-  { id: "san-telmo", name: "San Telmo", locationId: 24738 },
+  { id: "capital-federal", name: "Capital Federal", slug: "", stateSlug: "capital-federal" },
+  { id: "palermo", name: "Palermo", slug: "palermo", stateSlug: "capital-federal" },
+  { id: "recoleta", name: "Recoleta", slug: "recoleta", stateSlug: "capital-federal" },
+  { id: "belgrano", name: "Belgrano", slug: "belgrano", stateSlug: "capital-federal" },
+  { id: "caballito", name: "Caballito", slug: "caballito", stateSlug: "capital-federal" },
+  { id: "nuñez", name: "Núñez", slug: "nunez", stateSlug: "capital-federal" },
+  { id: "villa-urquiza", name: "Villa Urquiza", slug: "villa-urquiza", stateSlug: "capital-federal" },
+  { id: "almagro", name: "Almagro", slug: "almagro", stateSlug: "capital-federal" },
+  { id: "san-telmo", name: "San Telmo", slug: "san-telmo", stateSlug: "capital-federal" },
 ];
 
-function buildLocationParam(zone: Zone): string {
-  const loc = encodeURIComponent(zone.name);
-  if (zone.stateId) return `location=${loc}&stateId=${zone.stateId}`;
-  return `location=${loc}&locationId=${zone.locationId}`;
+/** SEO-friendly base path for a zone: /alquileres/capital-federal or /alquileres/capital-federal/palermo */
+function zonePath(zone: Zone): string {
+  if (zone.slug) return `/alquileres/${zone.stateSlug}/${zone.slug}`;
+  return `/alquileres/${zone.stateSlug}`;
+}
+
+/** Programmatic SEO path for room count + zone: /alquileres/2-ambientes/capital-federal/palermo */
+function roomPath(zone: Zone, roomSlug: string): string {
+  if (zone.slug) return `/alquileres/${roomSlug}/${zone.stateSlug}/${zone.slug}`;
+  return `/alquileres/${roomSlug}/${zone.stateSlug}`;
 }
 
 interface CategoryItem {
@@ -45,19 +51,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Monoambiente",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=1&maxAmbientes=1`,
+        href: (z) => roomPath(z, "monoambiente"),
       },
       {
         label: "2 ambientes",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=2&maxAmbientes=2`,
+        href: (z) => roomPath(z, "2-ambientes"),
       },
       {
         label: "3 ambientes",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=3&maxAmbientes=3`,
+        href: (z) => roomPath(z, "3-ambientes"),
       },
       {
         label: "4+ ambientes",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minAmbientes=4`,
+        href: (z) => `${zonePath(z)}?minAmbientes=4`,
       },
     ],
   },
@@ -66,19 +72,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Hasta 600.000",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=600000`,
+        href: (z) => `${zonePath(z)}?maxPrice=600000`,
       },
       {
         label: "Hasta 800.000",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=800000`,
+        href: (z) => `${zonePath(z)}?maxPrice=800000`,
       },
       {
         label: "Hasta 1.000.000",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=1000000`,
+        href: (z) => `${zonePath(z)}?maxPrice=1000000`,
       },
       {
         label: "Hasta USD 1.000",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&maxPrice=1300000`,
+        href: (z) => `${zonePath(z)}?maxPrice=1300000`,
       },
     ],
   },
@@ -87,19 +93,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Entre 40 y 60m²",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=40&maxSurface=60`,
+        href: (z) => `${zonePath(z)}?minSurface=40&maxSurface=60`,
       },
       {
         label: "Entre 60 y 80m²",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=60&maxSurface=80`,
+        href: (z) => `${zonePath(z)}?minSurface=60&maxSurface=80`,
       },
       {
         label: "Entre 80 y 100m²",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=80&maxSurface=100`,
+        href: (z) => `${zonePath(z)}?minSurface=80&maxSurface=100`,
       },
       {
         label: "Más de 100m²",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&minSurface=100`,
+        href: (z) => `${zonePath(z)}?minSurface=100`,
       },
     ],
   },
@@ -108,19 +114,19 @@ const categories: Record<string, Category> = {
     items: [
       {
         label: "Con terraza",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&tagIds=25,114`,
+        href: (z) => `${zonePath(z)}?tagIds=25,114`,
       },
       {
         label: "Con jardín",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&tagIds=19`,
+        href: (z) => `${zonePath(z)}?tagIds=19`,
       },
       {
         label: "Con pileta",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&tagIds=51,164`,
+        href: (z) => `${zonePath(z)}?tagIds=51,164`,
       },
       {
         label: "A estrenar",
-        href: (z) => `/alquileres?${buildLocationParam(z)}&maxAge=0`,
+        href: (z) => `${zonePath(z)}?maxAge=0`,
       },
     ],
   },

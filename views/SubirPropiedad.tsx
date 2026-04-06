@@ -1291,7 +1291,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
             {/* WhatsApp phone input for unauthenticated users */}
             <AnimateHeight show={!isAuthenticated}>
-              <div className="space-y-2 pb-2">
+              <div className="space-y-4 pb-2">
+                <h1 className="font-display text-xl sm:text-3xl font-bold">
+                  Decinos tu WhatsApp
+                </h1>
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block">
                   WhatsApp
                 </label>

@@ -111,19 +111,6 @@ const RoomsFilter = () => {
   const getDisplayText = () => {
     const parts = [];
 
-    if (hasMinRooms || hasMaxRooms) {
-      const min = hasMinRooms ? minRooms : "1";
-      const max = hasMaxRooms ? maxRooms : null;
-
-      if (hasMinRooms && hasMaxRooms) {
-        parts.push(`${min}-${max} dorm`);
-      } else if (hasMinRooms) {
-        parts.push(`${min}+ dorm`);
-      } else {
-        parts.push(`1-${max} dorm`);
-      }
-    }
-
     if (hasMinAmbientes || hasMaxAmbientes) {
       const min = hasMinAmbientes ? minAmbientes : "1";
       const max = hasMaxAmbientes ? maxAmbientes : null;
@@ -137,7 +124,20 @@ const RoomsFilter = () => {
       }
     }
 
-    return parts.length > 0 ? parts.join(", ") : "Dormitorios";
+    if (hasMinRooms || hasMaxRooms) {
+      const min = hasMinRooms ? minRooms : "1";
+      const max = hasMaxRooms ? maxRooms : null;
+
+      if (hasMinRooms && hasMaxRooms) {
+        parts.push(`${min}-${max} dorm`);
+      } else if (hasMinRooms) {
+        parts.push(`${min}+ dorm`);
+      } else {
+        parts.push(`1-${max} dorm`);
+      }
+    }
+
+    return parts.length > 0 ? parts.join(", ") : "Ambientes";
   };
 
   const handleClear = () => {
@@ -168,39 +168,6 @@ const RoomsFilter = () => {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-4 bg-background" align="start">
         <div className="space-y-5">
-          {/* Dormitorios */}
-          <div>
-            <p className="font-display font-semibold text-sm uppercase tracking-wider text-foreground mb-3">
-              Dormitorios
-            </p>
-            <div className="flex gap-3">
-              <Select value={minRooms} onValueChange={setMinRooms}>
-                <SelectTrigger className="flex-1 rounded-full border-border focus:ring-primary">
-                  <SelectValue placeholder="Sin mínimo" />
-                </SelectTrigger>
-                <SelectContent className="bg-background">
-                  {dormitoriosMinOptions.map((option) => (
-                    <SelectItem key={`min-room-${option.value}`} value={option.value || "none"}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={maxRooms} onValueChange={setMaxRooms}>
-                <SelectTrigger className="flex-1 rounded-full border-border focus:ring-primary">
-                  <SelectValue placeholder="Sin máximo" />
-                </SelectTrigger>
-                <SelectContent className="bg-background">
-                  {dormitoriosMaxOptions.map((option) => (
-                    <SelectItem key={`max-room-${option.value}`} value={option.value || "none"}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           {/* Ambientes */}
           <div>
             <p className="font-display font-semibold text-sm uppercase tracking-wider text-foreground mb-3">
@@ -226,6 +193,39 @@ const RoomsFilter = () => {
                 <SelectContent className="bg-background">
                   {ambientesMaxOptions.map((option) => (
                     <SelectItem key={`max-amb-${option.value}`} value={option.value || "none"}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Dormitorios */}
+          <div>
+            <p className="font-display font-semibold text-sm uppercase tracking-wider text-foreground mb-3">
+              Dormitorios
+            </p>
+            <div className="flex gap-3">
+              <Select value={minRooms} onValueChange={setMinRooms}>
+                <SelectTrigger className="flex-1 rounded-full border-border focus:ring-primary">
+                  <SelectValue placeholder="Sin mínimo" />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  {dormitoriosMinOptions.map((option) => (
+                    <SelectItem key={`min-room-${option.value}`} value={option.value || "none"}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={maxRooms} onValueChange={setMaxRooms}>
+                <SelectTrigger className="flex-1 rounded-full border-border focus:ring-primary">
+                  <SelectValue placeholder="Sin máximo" />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  {dormitoriosMaxOptions.map((option) => (
+                    <SelectItem key={`max-room-${option.value}`} value={option.value || "none"}>
                       {option.label}
                     </SelectItem>
                   ))}

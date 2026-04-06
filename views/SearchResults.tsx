@@ -160,6 +160,7 @@ interface SearchResultsProps {
 const SearchResults = ({ initialProperties, initialTotal = 0, basePath, initialLocationSeed, initialPropertyTypeNames, initialAmbientes, pageTitle, lastUpdated }: SearchResultsProps) => {
   return (
     <SearchFiltersProvider
+      key={basePath}
       initialResults={initialProperties}
       initialTotal={initialTotal}
       basePath={basePath}

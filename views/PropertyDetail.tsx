@@ -97,8 +97,10 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
   const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
 
   // Show schedule picker for properties from inquilinos/dueños directos with availability configured
+  // Plan basico disables the calendar picker — they get the generic LeadForm instead
   const showSchedulePicker =
     !isInmobiliaria &&
+    propertyPlan !== "basico" &&
     (ownerAccountType === 1 || ownerAccountType === 2) &&
     !!visitDays && visitDays.length > 0 &&
     !!visitHours && visitHours.length > 0;
@@ -1005,8 +1007,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base text-foreground">{isTokko ? "Solicitud de visita" : "Coordinación directa"}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : "Sincronizamos tu agenda con la del dueño."}</p>
+                  <p className="font-semibold text-base text-foreground">{isTokko ? "Solicitud de visita" : showSchedulePicker ? "Coordinación directa" : "Consulta directa"}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : showSchedulePicker ? "Sincronizamos tu agenda con la del dueño." : "Enviamos tu consulta al propietario."}</p>
                 </div>
               </div>
             </div>
@@ -1414,8 +1416,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                 <div className="flex gap-2.5">
                   <Calendar className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-xs text-foreground">{isTokko ? "Solicitud de visita" : "Coordinación directa"}</p>
-                    <p className="text-xs text-muted-foreground leading-snug">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : "Sincronizamos tu agenda con la del dueño."}</p>
+                    <p className="font-medium text-xs text-foreground">{isTokko ? "Solicitud de visita" : showSchedulePicker ? "Coordinación directa" : "Consulta directa"}</p>
+                    <p className="text-xs text-muted-foreground leading-snug">{isTokko ? "Envíamos tu consulta a la inmobiliaria." : showSchedulePicker ? "Sincronizamos tu agenda con la del dueño." : "Enviamos tu consulta al propietario."}</p>
                   </div>
                 </div>
                 <div className="flex gap-2.5">

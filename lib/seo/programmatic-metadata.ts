@@ -50,6 +50,14 @@ export function buildProgrammaticMetadata(params: ProgrammaticMetadataParams): M
     // Rooms + state + location
     title = `Alquileres de ${roomInfo.label} en ${locationLabel}`;
     description = `${roomInfo.titleLabel} en alquiler en ${locationLabel}. Departamentos, casas y PH verificados con contratos 100% online en Mob.`;
+  } else if (roomInfo && stateName) {
+    // Rooms + state
+    title = `Alquileres de ${roomInfo.label} en ${stateName}`;
+    description = `${roomInfo.titleLabel} en alquiler en ${stateName}. Departamentos, casas y PH verificados con contratos 100% online en Mob.`;
+  } else if (roomInfo) {
+    // Rooms only (national)
+    title = `Alquileres de ${roomInfo.label} en Argentina`;
+    description = `${roomInfo.titleLabel} en alquiler en Argentina. Departamentos, casas y PH verificados con contratos 100% online en Mob.`;
   } else {
     title = "Alquileres en Argentina";
     description = "Encontra alquileres verificados en Argentina con Mob.";

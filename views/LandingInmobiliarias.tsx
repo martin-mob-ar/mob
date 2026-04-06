@@ -13,6 +13,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import ProblemSection from "@/components/inmobiliarias/ProblemSection";
 import HowItWorksV3 from "@/components/inmobiliarias/HowItWorksV3";
 import FunnelComparison from "@/components/inmobiliarias/FunnelComparison";
@@ -90,11 +91,17 @@ const LandingInmobiliarias = () => {
                       transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }}
                     >
                       <Icon className="h-5 w-5 shrink-0 text-primary" />
-                      <span
-                        className={`font-medium text-sm text-foreground ${label === "Garantía aprobada por Hoggax" ? "md:whitespace-nowrap" : ""}`}
-                      >
-                        {label}
-                      </span>
+                      {label === "50% off en garantía" ? (
+                        <GarantiaTooltip className="inline-flex items-center gap-1 cursor-help font-medium text-sm text-foreground whitespace-nowrap">
+                          {label}
+                        </GarantiaTooltip>
+                      ) : (
+                        <span
+                          className={`font-medium text-sm text-foreground ${label === "Garantía aprobada por Hoggax" ? "md:whitespace-nowrap" : ""}`}
+                        >
+                          {label}
+                        </span>
+                      )}
                     </motion.div>
                   ))}
                 </div>

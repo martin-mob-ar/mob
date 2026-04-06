@@ -155,7 +155,7 @@ const MoreFiltersPanel = ({ open, onClose }: MoreFiltersPanelProps) => {
     if (isPendingSelected(loc)) {
       setPendingLocations((prev) => prev.filter((l) => !(l.id === loc.id && l.type === loc.type)));
     } else {
-      setPendingLocations((prev) => [...prev, { id: loc.id, name: loc.name, display: loc.display, type: loc.type }]);
+      setPendingLocations((prev) => [...prev, { id: loc.id, name: loc.name, display: loc.display, type: loc.type, slug: loc.slug ?? undefined, stateSlug: loc.stateSlug ?? undefined }]);
     }
     setLocationSearch("");
   };

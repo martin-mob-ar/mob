@@ -42,12 +42,15 @@ interface ConsultaEnviadaModalProps {
   onOpenChange: (open: boolean) => void;
   /** Whether the property belongs to an inmobiliaria (true) or a propietario (false). */
   isInmobiliaria?: boolean;
+  /** Whether this came from a scheduled visit request (VisitLeadForm) vs a generic lead form. */
+  isVisitRequest?: boolean;
 }
 
 export default function ConsultaEnviadaModal({
   open,
   onOpenChange,
   isInmobiliaria = false,
+  isVisitRequest = false,
 }: ConsultaEnviadaModalProps) {
   const benefits = isInmobiliaria ? INMOBILIARIA_BENEFITS : PROPIETARIO_BENEFITS;
 
@@ -65,7 +68,11 @@ export default function ConsultaEnviadaModal({
           </div>
 
           <DialogTitle className="font-display text-xl font-bold tracking-tight">
-            {isInmobiliaria ? "¡Consulta enviada!" : "¡Visita solicitada!"}
+            {isInmobiliaria
+              ? "¡Consulta enviada!"
+              : isVisitRequest
+                ? "¡Visita solicitada!"
+                : "¡Consulta enviada!"}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
             {isInmobiliaria ? (
@@ -74,11 +81,17 @@ export default function ConsultaEnviadaModal({
                 <br />
                 Se pondrán en contacto con vos.
               </>
-            ) : (
+            ) : isVisitRequest ? (
               <>
                 Enviamos tu propuesta al propietario.
                 <br />
                 Te avisaremos por WhatsApp cuando confirme.
+              </>
+            ) : (
+              <>
+                Enviamos tu consulta al propietario.
+                <br />
+                Se pondrá en contacto con vos.
               </>
             )}
           </p>
@@ -86,11 +99,12 @@ export default function ConsultaEnviadaModal({
 
         {/* ── Benefits section ── */}
         <div className="px-6 pb-6 pt-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Te invitamos a conocer más de{" "}
-            <span className="font-ubuntu text-primary font-bold normal-case tracking-normal">
+          <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-3">
+            En las propiedades con experiencia{" "}
+            <span className="font-ubuntu text-primary font-bold tracking-normal">
               mob
-            </span>
+            </span>{" "}
+            accedés a:
           </p>
 
           <div className="grid grid-cols-2 gap-2.5">

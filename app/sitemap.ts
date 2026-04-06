@@ -6,6 +6,11 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar";
 
+// Next.js doesn't XML-escape & in <image:loc> URLs, so we must pre-escape them
+function escapeXmlUrl(url: string): string {
+  return url.replace(/&/g, "&amp;");
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
@@ -33,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
       ...(post.coverImage && {
-        images: [urlFor(post.coverImage).width(1200).height(630).url()],
+        images: [escapeXmlUrl(urlFor(post.coverImage).width(1200).height(630).url())],
       }),
     }));
   } catch {
@@ -77,7 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           lastModified: p.property_updated_at || undefined,
           changeFrequency: "weekly" as const,
           priority: 0.8,
-          ...(p.cover_photo_url && { images: [p.cover_photo_url] }),
+          ...(p.cover_photo_url && { images: [escapeXmlUrl(p.cover_photo_url)] }),
         }));
 
       // 2. Location & state pages (derived from denormalized slugs)

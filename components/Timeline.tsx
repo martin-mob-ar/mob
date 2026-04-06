@@ -357,7 +357,7 @@ const Timeline = () => {
                         className="text-4xl font-black mb-2 font-display leading-none"
                         style={{
                           color: isHighlighted
-                            ? "rgba(81,112,255,0.4)"
+                            ? "#5170ff"
                             : "rgba(81,112,255,0.2)",
                           transform: isVisible
                             ? "translateX(0)"

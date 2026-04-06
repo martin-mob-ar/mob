@@ -125,16 +125,24 @@ const SearchBar = () => {
   };
 
   const handleSearch = () => {
-    // Build extra filter params
     const params = new URLSearchParams();
     if (dormitoriosMin !== "sin-minimo") params.set("minRooms", dormitoriosMin.replace("+", ""));
     if (dormitoriosMax !== "sin-minimo") params.set("maxRooms", dormitoriosMax.replace("+", ""));
-    if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
-    if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+
+    // Check if ambientes maps to a programmatic room slug (e.g. min=2, max=2 → "2-ambientes")
+    const ambMin = ambientesMin !== "sin-minimo" ? ambientesMin.replace("+", "") : "";
+    const ambMax = ambientesMax !== "sin-minimo" ? ambientesMax.replace("+", "") : "";
+    const AMBIENTES_SLUG: Record<string, string> = { "1": "monoambiente", "2": "2-ambientes", "3": "3-ambientes", "4": "4-ambientes", "5": "5-ambientes" };
+    const roomSlug = ambMin && ambMin === ambMax ? AMBIENTES_SLUG[ambMin] ?? null : null;
+
+    if (!roomSlug) {
+      if (ambientesMin !== "sin-minimo") params.set("minAmbientes", ambientesMin.replace("+", ""));
+      if (ambientesMax !== "sin-minimo") params.set("maxAmbientes", ambientesMax.replace("+", ""));
+    }
+
     if (price) {
       let numericPrice = price.replace(/[^\d]/g, "");
       if (numericPrice) {
-        // Convert USD to ARS for the backend (DB stores ARS)
         if (currency === "USD" && usdRate) {
           numericPrice = String(Math.round(parseFloat(numericPrice) * usdRate));
         }
@@ -145,17 +153,25 @@ const SearchBar = () => {
 
     // Use SEO-friendly URL when a location with slug data is selected
     if (selectedLocation?.slug && selectedLocation.stateSlug) {
+      let base: string;
       if (selectedLocation.type === "state") {
-        const base = `/alquileres/${selectedLocation.stateSlug}`;
-        router.push(qs ? `${base}?${qs}` : base);
+        base = roomSlug
+          ? `/alquileres/${roomSlug}/${selectedLocation.stateSlug}`
+          : `/alquileres/${selectedLocation.stateSlug}`;
       } else {
-        const base = `/alquileres/${selectedLocation.stateSlug}/${selectedLocation.slug}`;
-        router.push(qs ? `${base}?${qs}` : base);
+        base = roomSlug
+          ? `/alquileres/${roomSlug}/${selectedLocation.stateSlug}/${selectedLocation.slug}`
+          : `/alquileres/${selectedLocation.stateSlug}/${selectedLocation.slug}`;
       }
+      router.push(qs ? `${base}?${qs}` : base);
       return;
     }
 
-    // Fallback: query-param search (free-text search without slug data)
+    // Fallback: no location slug — put ambientes back as query params
+    if (roomSlug) {
+      params.set("minAmbientes", ambMin);
+      params.set("maxAmbientes", ambMax);
+    }
     if (selectedLocation) {
       params.set("location", selectedLocation.name);
       params.set("locationNames", selectedLocation.name);
@@ -185,18 +201,9 @@ const SearchBar = () => {
       ambientesMin !== "sin-minimo" ||
       ambientesMax !== "sin-minimo";
 
-    if (!hasSelection) return "Dormitorios";
+    if (!hasSelection) return "Ambientes";
 
     const parts: string[] = [];
-    if (dormitoriosMin !== "sin-minimo" || dormitoriosMax !== "sin-minimo") {
-      if (dormitoriosMin !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
-        parts.push(`${dormitoriosMin}-${dormitoriosMax} dorm.`);
-      } else if (dormitoriosMin !== "sin-minimo") {
-        parts.push(`${dormitoriosMin}+ dorm.`);
-      } else {
-        parts.push(`≤${dormitoriosMax} dorm.`);
-      }
-    }
     if (ambientesMin !== "sin-minimo" || ambientesMax !== "sin-minimo") {
       if (ambientesMin !== "sin-minimo" && ambientesMax !== "sin-minimo") {
         parts.push(`${ambientesMin}-${ambientesMax} amb.`);
@@ -206,7 +213,16 @@ const SearchBar = () => {
         parts.push(`≤${ambientesMax} amb.`);
       }
     }
-    return parts.join(", ") || "Dormitorios";
+    if (dormitoriosMin !== "sin-minimo" || dormitoriosMax !== "sin-minimo") {
+      if (dormitoriosMin !== "sin-minimo" && dormitoriosMax !== "sin-minimo") {
+        parts.push(`${dormitoriosMin}-${dormitoriosMax} dorm.`);
+      } else if (dormitoriosMin !== "sin-minimo") {
+        parts.push(`${dormitoriosMin}+ dorm.`);
+      } else {
+        parts.push(`≤${dormitoriosMax} dorm.`);
+      }
+    }
+    return parts.join(", ") || "Ambientes";
   };
 
   const locationDropdown = showLocationDropdown ? (
@@ -245,33 +261,6 @@ const SearchBar = () => {
 
   const roomsInnerContent = (
     <div className="space-y-5">
-      {/* Dormitorios */}
-      <div>
-        <label className="text-sm font-semibold text-foreground block mb-3">Dormitorios</label>
-        <div className="flex gap-3">
-          <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
-            <SelectTrigger className="flex-1 rounded-xl h-11">
-              <SelectValue placeholder="Sin mínimo" />
-            </SelectTrigger>
-            <SelectContent className="bg-background z-[100]">
-              {dormitoriosOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={dormitoriosMax} onValueChange={setDormitoriosMax}>
-            <SelectTrigger className="flex-1 rounded-xl h-11">
-              <SelectValue placeholder="sin máximo" />
-            </SelectTrigger>
-            <SelectContent className="bg-background z-[100]">
-              {dormitoriosOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Ambientes */}
       <div>
         <label className="text-sm font-semibold text-foreground block mb-3">Ambientes</label>
@@ -292,6 +281,33 @@ const SearchBar = () => {
             </SelectTrigger>
             <SelectContent className="bg-background z-[100]">
               {ambientesOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Dormitorios */}
+      <div>
+        <label className="text-sm font-semibold text-foreground block mb-3">Dormitorios</label>
+        <div className="flex gap-3">
+          <Select value={dormitoriosMin} onValueChange={setDormitoriosMin}>
+            <SelectTrigger className="flex-1 rounded-xl h-11">
+              <SelectValue placeholder="Sin mínimo" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-[100]">
+              {dormitoriosOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={dormitoriosMax} onValueChange={setDormitoriosMax}>
+            <SelectTrigger className="flex-1 rounded-xl h-11">
+              <SelectValue placeholder="sin máximo" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-[100]">
+              {dormitoriosOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>{opt.value === "sin-minimo" ? "sin máximo" : opt.label}</SelectItem>
               ))}
             </SelectContent>
@@ -345,7 +361,7 @@ const SearchBar = () => {
                 <PopoverTrigger asChild>
                   <div className="cursor-pointer">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Dormitorios
+                      Ambientes
                     </label>
                     <button type="button" className="w-full flex items-center justify-between text-foreground mt-1">
                       <span>{getRoomsLabel()}</span>
