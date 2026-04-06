@@ -7,6 +7,7 @@ import { Check, ChevronDown, X, Info } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimateHeight } from "@/components/ui/animate-height";
+import { TermsOfServiceModal } from "@/components/pricing/TermsOfServiceModal";
 
 export type PlanType = "basico" | "acompanado" | "experiencia";
 
@@ -136,7 +137,7 @@ const MobilePlanCard = ({
         </div>
         <div className="mt-1 p-1 text-muted-foreground">
           <ChevronDown className={cn(
-            "h-5 w-5 transition-transform duration-200",
+            "h-7 w-7 transition-transform duration-200",
             showDetails && "rotate-180"
           )} />
         </div>
@@ -487,6 +488,13 @@ export const PlanSelector = ({ selectedPlan, onSelectPlan, variant = "default", 
           />
         ))}
       </div>
+
+      {/* Terms of service (wizard only) */}
+      {isWizard && (
+        <div className="mt-6">
+          <TermsOfServiceModal />
+        </div>
+      )}
     </div>
     </TooltipProvider>
   );
