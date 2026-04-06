@@ -19,7 +19,7 @@ const founders = [
     role: "Cofundador",
     photo: "/assets/propietarios/foto_perfil_martin.png",
     bio: "Programo desde los 15. También vengo de familia inmobiliaria",
-    credentials: ["Lic. en Negocios Digitales - UdeSA", "Ex Cofundador de Tuni.com.ar"],
+    credentials: ["Lic. en Negocios Digitales - UdeSA", "Lic en Administracion de Empresas - UdeSA", "Ex Cofundador de Tuni.com.ar"],
     email: "martin@mob.ar",
     linkedin: "https://www.linkedin.com/in/martin-quijano-/",
   },

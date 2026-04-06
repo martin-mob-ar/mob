@@ -56,6 +56,7 @@ const founders = [
     bio: "Programo desde los 15. También vengo de familia inmobiliaria",
     credentials: [
       "Lic. en Negocios Digitales - UdeSA",
+      "Lic en Administracion de Empresas - UdeSA",
       "Ex Cofundador de Tuni.com.ar",
     ],
     email: "martin@mob.ar",
