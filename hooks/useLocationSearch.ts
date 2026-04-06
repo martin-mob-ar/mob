@@ -41,7 +41,7 @@ export function useLocationSearch(query: string, { enabled = true, limit = 15 } 
         const json = await res.json();
         setResults(json.data || []);
       } catch (e: unknown) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
+        if (e instanceof Error && e.name === "AbortError") return;
         setResults([]);
       } finally {
         if (!controller.signal.aborted) {
