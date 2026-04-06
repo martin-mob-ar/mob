@@ -105,10 +105,13 @@ export default function PropertyJsonLd({
     jsonLd.numberOfBathroomsTotal = bathroomAmount;
   }
 
+  // Escape </script> sequences to prevent breaking out of the JSON-LD block
+  const safeJson = JSON.stringify(jsonLd).replace(/<\//g, '<\\/');
+
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: safeJson }}
     />
   );
 }

@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server-component';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'users-profile', 15, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     // Get authenticated user
     const supabase = await createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -95,7 +100,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Profile] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }
@@ -125,7 +130,7 @@ export async function GET() {
   } catch (error) {
     console.error('[Profile] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

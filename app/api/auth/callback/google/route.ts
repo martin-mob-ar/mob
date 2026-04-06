@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
+import { sanitizeRedirect } from "@/lib/utils/sanitize-redirect";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -10,8 +11,8 @@ export async function GET(request: Request) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  // Parse redirect destination from state
-  const next = state ? decodeURIComponent(state) : "/";
+  // Parse redirect destination from state (sanitized to prevent open redirects)
+  const next = sanitizeRedirect(state ? decodeURIComponent(state) : "/");
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=auth`);

@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, getOrCreateUserFromAuth } from '@/lib/supabase/server';
+import { getAuthUser } from '@/lib/supabase/auth';
 import { movePhoto, getPublicUrl } from '@/lib/storage/gcs';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'properties-create', 10, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
+    // Auth: verify cookie-based session
+    const authUser = await getAuthUser();
+    if (!authUser) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       profile_id,
@@ -49,12 +61,11 @@ export async function POST(request: Request) {
       selectedPlan,
     } = body;
 
-    if (!profile_id) {
-      return NextResponse.json({ error: 'profile_id es requerido' }, { status: 400 });
-    }
+    // Use the authenticated user's ID, ignoring any profile_id from the body
+    const effectiveAuthId = authUser.id;
 
-    console.log('[properties/create] Resolving user for profile_id:', profile_id);
-    const resolvedUserId = await getOrCreateUserFromAuth(profile_id);
+    console.log('[properties/create] Resolving user for auth_id:', effectiveAuthId);
+    const resolvedUserId = await getOrCreateUserFromAuth(effectiveAuthId);
     console.log('[properties/create] Resolved user_id:', resolvedUserId);
 
     let propertyId: number;

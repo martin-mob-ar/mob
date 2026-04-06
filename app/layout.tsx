@@ -34,8 +34,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
   },
   icons: {
-    icon: "/assets/isotipo-mob-original.png",
-    apple: "/assets/isotipo-mob-original.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/favicon.png",
   },
 };
 

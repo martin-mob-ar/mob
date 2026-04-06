@@ -311,7 +311,14 @@ export function SearchFiltersProvider({
     return params;
   }, []);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchPage = useCallback(async (pageNum: number) => {
+    // Cancel any in-flight request to prevent stale results
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsLoading(true);
     try {
       const params = buildFilterParams(filters);
@@ -319,7 +326,9 @@ export function SearchFiltersProvider({
       params.set("page", String(pageNum));
       params.set("limit", String(ITEMS_PER_PAGE));
 
-      const res = await fetch(`/api/properties/search?${params.toString()}`);
+      const res = await fetch(`/api/properties/search?${params.toString()}`, {
+        signal: controller.signal,
+      });
       const json = await res.json();
 
       if (res.ok) {
@@ -329,9 +338,12 @@ export function SearchFiltersProvider({
         setTotalPages(Math.ceil(json.total / ITEMS_PER_PAGE));
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
       console.error("Search failed:", e);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [filters, buildFilterParams]);
 

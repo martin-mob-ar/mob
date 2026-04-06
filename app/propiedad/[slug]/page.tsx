@@ -386,15 +386,8 @@ export default async function PropiedadDetailPage({
   publisherLogo = propertyData.company_logo || null;
 
   if (!publisherName && propertyData.user_id) {
-    // Dueño directo: fetch name from users table; logo is intentionally not used (person icon shown instead)
-    const { data: userData } = await supabaseAdmin
-      .from("users")
-      .select("name")
-      .eq("id", propertyData.user_id)
-      .single();
-
-    // Fall back to "Propietario" so the publisher section always renders for dueño directo
-    publisherName = userData?.name || "Propietario";
+    // Dueño directo: use owner_name from properties_read (denormalized from users.name)
+    publisherName = propertyData.owner_name || "Propietario";
   }
 
   // Contact phone: stored directly on the property (producer.cellphone → producer.phone → branch phone)
@@ -406,67 +399,24 @@ export default async function PropiedadDetailPage({
   // Determine publisher type: company → inmobiliaria, else propietario
   const isInmobiliaria = !!propertyData.company_name;
 
-  // Fetch extra property fields not in properties_read (suite_amount, roofed_surface, visit data)
-  let suiteAmount: number | null = null;
-  let roofedSurface: number | null = null;
-  let visitDays: string[] | null = null;
-  let visitHours: string[] | null = null;
-  let orientation: string | null = null;
+  // All these fields are now denormalized into properties_read
+  const suiteAmount: number | null = propertyData.suite_amount ?? null;
+  const roofedSurface: number | null = propertyData.roofed_surface ? Number(propertyData.roofed_surface) : null;
+  const visitDays: string[] | null = (!isUnavailable && propertyData.visit_days?.length) ? propertyData.visit_days : null;
+  const visitHours: string[] | null = (!isUnavailable && propertyData.visit_hours?.length) ? propertyData.visit_hours : null;
+  const orientation: string | null = (!isUnavailable ? propertyData.orientation : null) ?? null;
 
-  if (!isUnavailable) {
-    const { data: extraFields } = await supabaseAdmin
-      .from("properties")
-      .select("suite_amount, roofed_surface, visit_days, visit_hours, orientation")
-      .eq("id", propertyId)
-      .single();
-
-    if (extraFields) {
-      suiteAmount = extraFields.suite_amount ?? null;
-      roofedSurface = extraFields.roofed_surface ? Number(extraFields.roofed_surface) : null;
-      visitDays = extraFields.visit_days ?? null;
-      visitHours = extraFields.visit_hours ?? null;
-      orientation = extraFields.orientation ?? null;
-    }
-  } else {
-    // For unavailable properties, these were already fetched in mapRawToPropertyData
-    suiteAmount = propertyData.suite_amount ?? null;
-    roofedSurface = propertyData.roofed_surface ? Number(propertyData.roofed_surface) : null;
-  }
-
-  // Fetch contract fields from operaciones (if operacion exists)
-  let ipcAdjustment: string | null = null;
-  let contractDuration: number | null = null;
-  const operacionId = propertyData.operacion_id;
-  if (operacionId) {
-    const { data: opData } = await supabaseAdmin
-      .from("operaciones")
-      .select("ipc_adjustment, duration_months")
-      .eq("id", operacionId)
-      .single();
-
-    if (opData) {
-      ipcAdjustment = opData.ipc_adjustment ?? null;
-      contractDuration = opData.duration_months ?? null;
-    }
-  }
+  // Contract fields denormalized from operaciones
+  const ipcAdjustment: string | null = propertyData.ipc_adjustment ?? null;
+  const contractDuration: number | null = propertyData.duration_months ?? null;
 
   // Publication date from properties_read
   const publicationDate: string | null = propertyData.property_created_at ?? null;
 
-  // Resolve location slugs for breadcrumb SEO URLs
+  // Location slugs for breadcrumb SEO URLs (denormalized from tokko_location/tokko_state)
   let locationBreadcrumbHref: string | null = null;
-  if (propertyData.location_id) {
-    const { data: locData } = await supabaseAdmin
-      .from("tokko_location")
-      .select("slug, tokko_state!state_id(slug)")
-      .eq("id", propertyData.location_id)
-      .single();
-    if (locData) {
-      const stateSlug = (locData as any).tokko_state?.slug;
-      if (stateSlug && locData.slug) {
-        locationBreadcrumbHref = `/alquileres/${stateSlug}/${locData.slug}`;
-      }
-    }
+  if (propertyData.state_slug && propertyData.location_slug) {
+    locationBreadcrumbHref = `/alquileres/${propertyData.state_slug}/${propertyData.location_slug}`;
   }
 
   // Related properties: same location, fallback to sibling locations (same parent)

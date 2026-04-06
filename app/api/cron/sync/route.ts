@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse, after } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getIncrementalSyncTargets, syncTargetIncremental, createSyncCache } from '@/lib/sync/incremental';
 
 export const maxDuration = 300;
+
+function verifyCronSecret(request: NextRequest): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return false;
+  const authHeader = request.headers.get('authorization') || '';
+  const expected = `Bearer ${cronSecret}`;
+  try {
+    const a = Buffer.from(authHeader);
+    const b = Buffer.from(expected);
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * GET /api/cron/sync
@@ -21,8 +36,7 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
 
   // ── 1. Verify CRON_SECRET ──
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

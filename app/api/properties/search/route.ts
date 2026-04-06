@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+
+/** Strip characters that could inject PostgREST filter operators */
+function sanitizeFilterValue(value: string): string {
+  return value.replace(/[.,()\\*]/g, "");
+}
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(ip, 'properties-search', 60, 60_000);
+  if (!rl.success) return rateLimitResponse(rl.resetIn);
+
   const { searchParams } = request.nextUrl;
 
   const location = searchParams.get("location");
@@ -28,12 +38,13 @@ export async function GET(request: NextRequest) {
   const tier = searchParams.get("tier"); // "free" = inmobiliarias + plan basico
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "20");
+  const rawLimit = parseInt(searchParams.get("limit") || "20");
+  const limit = Math.min(Math.max(1, rawLimit), 100);
   const offset = (page - 1) * limit;
 
   let query = supabaseAdmin
     .from("properties_read")
-    .select("*", { count: "exact" })
+    .select("property_id, slug, cover_photo_url, address, title, description, location_name, parent_location_name, valor_total_primary, price, expenses, currency, tokko_id, room_amount, suite_amount, total_surface, bathroom_amount, parking_lot_amount, age, property_type_name, company_name, mob_plan, sort_priority, property_created_at, listing_updated_at, state_name, location_id, state_id, tag_names, tag_ids, min_start_date, owner_account_type, property_status, operacion_status, operacion_id", { count: "exact" })
     .eq("owner_verified", true);
 
   // Apply location filter - stateId for state-level, locationId for location-level
@@ -74,31 +85,31 @@ export async function GET(request: NextRequest) {
         query = query.eq("location_id", locId);
       }
     } else if (locIds.length > 1) {
-      // Multiple locations selected — collect all IDs including children for shallow locations
-      const allIds: number[] = [];
-      for (const locId of locIds) {
-        const { data: loc } = await supabaseAdmin
-          .from("tokko_location")
-          .select("id, depth")
-          .eq("id", locId)
-          .single();
+      // Multiple locations selected — batch fetch depths + children (avoid N+1)
+      const { data: locs } = await supabaseAdmin
+        .from("tokko_location")
+        .select("id, depth")
+        .in("id", locIds);
 
-        if (loc && loc.depth <= 3) {
-          const { data: children } = await supabaseAdmin
-            .from("tokko_location")
-            .select("id")
-            .eq("parent_location_id", locId);
-          allIds.push(locId, ...(children?.map((c) => c.id) || []));
-        } else {
-          allIds.push(locId);
-        }
+      const shallowIds = (locs || []).filter((l) => l.depth <= 3).map((l) => l.id);
+      const deepIds = (locs || []).filter((l) => l.depth > 3).map((l) => l.id);
+
+      let childIds: number[] = [];
+      if (shallowIds.length > 0) {
+        const { data: children } = await supabaseAdmin
+          .from("tokko_location")
+          .select("id")
+          .in("parent_location_id", shallowIds);
+        childIds = (children || []).map((c) => c.id);
       }
-      const uniqueIds = [...new Set(allIds)];
+
+      const uniqueIds = [...new Set([...locIds, ...childIds, ...deepIds])];
       query = query.in("location_id", uniqueIds);
     }
   } else if (location) {
+    const safeLocation = sanitizeFilterValue(location);
     query = query.or(
-      `location_name.ilike.%${location}%,address.ilike.%${location}%,state_name.ilike.%${location}%`
+      `location_name.ilike.%${safeLocation}%,address.ilike.%${safeLocation}%,state_name.ilike.%${safeLocation}%`
     );
   }
 
@@ -233,7 +244,10 @@ export async function GET(request: NextRequest) {
     const cutoff = new Date(d.getFullYear(), d.getMonth() + 2, 1).toISOString().split("T")[0];
     query = query.or(`min_start_date.is.null,min_start_date.lt.${cutoff}`);
   } else if (availabilityFilter === "custom" && availabilityDate) {
-    query = query.or(`min_start_date.is.null,min_start_date.lte.${availabilityDate}`);
+    // Validate ISO date format to prevent filter injection
+    if (/^\d{4}-\d{2}-\d{2}$/.test(availabilityDate)) {
+      query = query.or(`min_start_date.is.null,min_start_date.lte.${availabilityDate}`);
+    }
   }
 
   // Apply sort — premium plans (acompanado/experiencia) always shown first by default
@@ -265,7 +279,8 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[properties/search] Query error:", error);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 
   return NextResponse.json({

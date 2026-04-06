@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import CryptoJS from 'crypto-js';
+import { createHash } from 'crypto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -42,7 +42,7 @@ export async function resolveUserId(input: string): Promise<string> {
   if (authUser) return authUser.id;
 
   // Fall back to hashing as API key
-  const apiKeyHash = CryptoJS.SHA256(input).toString();
+  const apiKeyHash = createHash('sha256').update(input).digest('hex');
   const { data: user, error } = await supabaseAdmin
     .from('users')
     .select('id')
@@ -97,9 +97,12 @@ export async function getOrCreateUserFromAuth(authId: string): Promise<string> {
 
 // Client-side Supabase client (for read operations if needed)
 // Uses anon key which respects RLS policies
+if (!supabaseAnonKey) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY must be defined');
+}
 export const supabaseClient = createClient(
   supabaseUrl,
-  supabaseAnonKey || supabaseServiceRoleKey,
+  supabaseAnonKey,
   {
     auth: {
       persistSession: false,

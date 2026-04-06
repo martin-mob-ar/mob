@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { LOCATION_ALIASES, normalizeForAlias } from '@/lib/constants/location-aliases';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
+/** Strip characters that could inject PostgREST filter operators */
+function sanitizeForFilter(s: string): string {
+  return s.replace(/[.,()\\*:]/g, '');
+}
+
 export async function GET(request: Request) {
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(ip, 'locations-search', 60, 60_000);
+  if (!rl.success) return rateLimitResponse(rl.resetIn);
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
   const limit = Math.min(Number(searchParams.get('limit')) || 20, 50);
@@ -25,7 +35,10 @@ export async function GET(request: Request) {
   }
 
   // Normalize tokens for accent-insensitive search against name_search column
-  const searchTokens = tokens.map(normalize);
+  const searchTokens = tokens.map((t) => sanitizeForFilter(normalize(t))).filter((t) => t.length >= 2);
+  if (searchTokens.length === 0) {
+    return NextResponse.json({ data: aliasMatch?.results ?? [] });
+  }
 
   // Build Supabase OR filter: name_search matches ANY normalized token
   const orFilter = searchTokens.map((t) => `name_search.ilike.%${t}%`).join(',');
@@ -57,11 +70,11 @@ export async function GET(request: Request) {
 
   if (directResult.error) {
     console.error('[locations/search]', directResult.error);
-    return NextResponse.json({ error: directResult.error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
   if (tokenResult.error) {
     console.error('[locations/search]', tokenResult.error);
-    return NextResponse.json({ error: tokenResult.error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 
   // Merge direct matches first (prioritized), then token matches, deduplicating by id

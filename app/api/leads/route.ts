@@ -5,9 +5,14 @@ import { createTokkoWebContact } from '@/lib/integrations/tokko-contact';
 import { sendLeadEmail, sendInmobiliariaLeadEmail } from '@/lib/integrations/resend';
 import { createNotionLead } from '@/lib/integrations/notion';
 import { decryptApiKey } from '@/lib/crypto';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'leads', 5, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
     const body = await request.json();
     const parsed = leadApiSchema.safeParse(body);
 
@@ -244,7 +249,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Leads] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error interno' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

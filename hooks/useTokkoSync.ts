@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useEffect } from "react";
-import CryptoJS from "crypto-js";
+import { sha256 } from "@/lib/hash";
 import { toast } from "sonner";
 
 const SYNC_HASH_KEY = "mob_sync_apiKeyHash";
@@ -88,8 +88,8 @@ export function useTokkoSync() {
   }, []);
 
   const startSync = useCallback(
-    (apiKey: string, authId?: string, authEmail?: string) => {
-      const apiKeyHash = CryptoJS.SHA256(apiKey).toString();
+    async (apiKey: string, authId?: string, authEmail?: string) => {
+      const apiKeyHash = await sha256(apiKey);
 
       // Persist hash so polling survives page reload
       sessionStorage.setItem(SYNC_HASH_KEY, apiKeyHash);

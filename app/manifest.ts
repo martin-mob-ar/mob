@@ -12,12 +12,12 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#7C3AED",
     icons: [
       {
-        src: "/assets/isotipo-mob-original.png",
+        src: "/favicon.png",
         sizes: "192x192",
         type: "image/png",
       },
       {
-        src: "/assets/isotipo-mob-original.png",
+        src: "/favicon.png",
         sizes: "512x512",
         type: "image/png",
       },

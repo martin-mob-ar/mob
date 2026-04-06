@@ -16,12 +16,13 @@ export async function GET(request: Request) {
     .from('tokko_location')
     .select('id, name')
     .eq('parent_location_id', Number(parentId))
-    .order('name');
+    .order('name')
+    .limit(500);
 
   if (error) {
     console.error('[locations/children]', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch children' },
+      { error: 'Error interno' },
       { status: 500 }
     );
   }

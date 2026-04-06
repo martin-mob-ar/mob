@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import CryptoJS from "crypto-js";
+import { sha256 } from "@/lib/hash";
 import AccountTypeSelector from "./AccountTypeSelector";
 import ProfileForm from "@/components/ProfileForm";
 import { Button } from "@/components/ui/button";
@@ -218,7 +218,7 @@ export default function ProfileSection({
     setSetupError(null);
 
     try {
-      const apiKeyHash = CryptoJS.SHA256(tokkoApiKey.trim()).toString();
+      const apiKeyHash = await sha256(tokkoApiKey.trim());
 
       // Fire-and-forget sync — keepalive ensures it survives navigation
       fetch("/api/tokko/sync", {

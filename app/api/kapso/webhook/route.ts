@@ -749,12 +749,14 @@ export async function POST(request: Request) {
   const rawBody = await request.text();
   const sig = request.headers.get('x-webhook-signature') ?? '';
 
-  if (KAPSO_WEBHOOK_SECRET) {
-    const expected = createHmac('sha256', KAPSO_WEBHOOK_SECRET).update(rawBody).digest('hex');
-    if (sig !== expected) {
-      console.error('[KapsoWebhook] Invalid signature');
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    }
+  if (!KAPSO_WEBHOOK_SECRET) {
+    console.error('[KapsoWebhook] KAPSO_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+  }
+  const expected = createHmac('sha256', KAPSO_WEBHOOK_SECRET).update(rawBody).digest('hex');
+  if (sig !== expected) {
+    console.error('[KapsoWebhook] Invalid signature');
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

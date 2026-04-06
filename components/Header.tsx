@@ -668,7 +668,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                   className="rounded-full px-3 lg:px-5 font-medium gap-1.5 lg:gap-2"
                 >
                   <User className="h-4 w-4" />
-                  Iniciá sesión<span className="hidden min-[1080px]:inline"> o registrate</span>
+                  Iniciá sesión{" "}<span className="hidden min-[1080px]:inline">o registrate</span>
                 </Button>
               </>
             )}

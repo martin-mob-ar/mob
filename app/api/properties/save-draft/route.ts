@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, getOrCreateUserFromAuth } from '@/lib/supabase/server';
+import { getAuthUser } from '@/lib/supabase/auth';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, 'save-draft', 20, 60_000);
+    if (!rl.success) return rateLimitResponse(rl.resetIn);
+
+    // Auth: verify cookie-based session
+    const authUser = await getAuthUser();
+    if (!authUser) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       profile_id,
@@ -35,11 +47,8 @@ export async function POST(request: Request) {
       draftExtra,
     } = body;
 
-    if (!profile_id) {
-      return NextResponse.json({ error: 'profile_id es requerido' }, { status: 400 });
-    }
-
-    const resolvedUserId = await getOrCreateUserFromAuth(profile_id);
+    // Use the authenticated user's ID, ignoring any profile_id from the body
+    const resolvedUserId = await getOrCreateUserFromAuth(authUser.id);
 
     // Merge draftExtra into extra_attributes.draft
     const extraAttributes = draftExtra ? { draft: draftExtra } : undefined;
