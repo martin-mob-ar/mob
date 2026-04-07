@@ -18,7 +18,7 @@ const Footer = ({ className }: { className?: string }) => {
           {/* Logo and description */}
           <div className="md:col-span-2">
             <Image src={mobLogo} alt="MOB" width={112} height={28} className="h-7 w-auto mb-4" />
-            <p className="text-muted-foreground text-sm max-w-sm">La infraestructura digital del alquiler. Procesos claros, seguros y 100% online para inquilinos, inmobiliarias y propietarios</p>
+            <p className="text-muted-foreground text-sm max-w-sm">Alquileres online con aprobación de garantías y calificación financiera para inquilinos, ofreciendo más seguridad a inmobiliarias y propietarios.</p>
           </div>
           
           {/* Navigation */}
@@ -111,9 +111,6 @@ const Footer = ({ className }: { className?: string }) => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </a>
             </div>
-            <p className="text-muted-foreground text-xs">
-              Hecho con ❤️ para simplificar el alquiler
-            </p>
           </div>
         </div>
       </div>
