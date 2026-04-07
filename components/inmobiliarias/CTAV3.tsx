@@ -17,10 +17,9 @@ const CTAV3 = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4">
-            Sumá tu inmobiliaria.{" "}
-            <span className="text-primary">Publicá gratis</span>
+            Sumá tu inmobiliaria.
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-lg text-muted-foreground mb-2">
             Menos operación manual. Mejores leads. Más cierres.
           </p>
 
@@ -33,6 +32,10 @@ const CTAV3 = () => {
               Sumá tu inmobiliaria gratis
             </a>
           </Button>
+          <p className="text-xs text-muted-foreground mt-4">
+            Cobramos un costo de plataforma fijo por operación cerrada, cuando
+            se realiza la firma electrónica
+          </p>
         </motion.div>
       </div>
     </section>
