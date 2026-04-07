@@ -109,27 +109,6 @@ const categories: Record<string, Category> = {
       },
     ],
   },
-  highlights: {
-    title: "Destacados",
-    items: [
-      {
-        label: "Con terraza",
-        href: (z) => `${zonePath(z)}?tagIds=25,114`,
-      },
-      {
-        label: "Con jardín",
-        href: (z) => `${zonePath(z)}?tagIds=19`,
-      },
-      {
-        label: "Con pileta",
-        href: (z) => `${zonePath(z)}?tagIds=51,164`,
-      },
-      {
-        label: "A estrenar",
-        href: (z) => `${zonePath(z)}?maxAge=0`,
-      },
-    ],
-  },
 };
 
 const ZoneButton = ({
@@ -232,7 +211,7 @@ const ExploreRentals = ({ title = "Alquileres para vos" }: ExploreRentalsProps) 
           </div>
 
           {/* Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {Object.entries(categories).map(([key, category]) => (
               <div key={key} className="space-y-3">
                 <h3 className="font-medium text-foreground text-sm uppercase tracking-wider">
