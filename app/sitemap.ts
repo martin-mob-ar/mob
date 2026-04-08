@@ -4,6 +4,10 @@ import { sitemapPostsQuery, sitemapCategoriesQuery } from "@/lib/sanity/queries"
 import { urlFor } from "@/lib/sanity/image";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
+// Force dynamic rendering — sitemaps must be generated at request time,
+// not at build time, because they depend on live Supabase/Sanity data.
+export const dynamic = "force-dynamic";
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar";
 
 // Minimum number of properties required to include a programmatic page in the sitemap.
