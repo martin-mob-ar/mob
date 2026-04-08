@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { claritySet } from "@/lib/analytics/clarity";
 import { useLoadScript } from "@react-google-maps/api";
 import {
   Calendar,
@@ -110,6 +111,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   const pathname = "/subir-propiedad";
   const { isAuthenticated, isLoading: authLoading, user: authUser, login, register, authError, clearError, refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+
+  useEffect(() => {
+    claritySet('publish_step', String(currentStep));
+  }, [currentStep]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);

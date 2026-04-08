@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/auth/errors";
+import { clarityIdentify, claritySet } from "@/lib/analytics/clarity";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface User {
@@ -150,7 +151,14 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
   const resolveAndSetUser = useCallback(
     async (supabaseUser: SupabaseUser) => {
       const publicUser = await resolvePublicUser(supabaseUser.id);
-      setUser(mapSupabaseUser(supabaseUser, publicUser));
+      const mapped = mapSupabaseUser(supabaseUser, publicUser);
+      setUser(mapped);
+
+      // Clarity session enrichment
+      if (mapped.publicUserId) clarityIdentify(mapped.publicUserId);
+      const atLabel = mapped.accountType === 1 ? 'inquilino' : mapped.accountType === 2 ? 'dueno' : (mapped.accountType === 3 || mapped.accountType === 4) ? 'inmobiliaria' : 'sin_tipo';
+      claritySet('account_type', atLabel);
+      claritySet('verified', String(mapped.isVerified));
 
       // If publicUser is null, schedule a background retry
       if (!publicUser) {

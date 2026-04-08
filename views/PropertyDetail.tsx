@@ -19,6 +19,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ExploreRentals from "@/components/ExploreRentals";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { claritySet } from "@/lib/analytics/clarity";
 import PropertyCard, { Property } from "@/components/PropertyCard";
 import Image from "next/image";
 const KeyRoundIcon = "/assets/key-round-icon.svg";
@@ -93,6 +94,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
   const { rate } = useExchangeRate();
 
   const isCurrentUserOwner = !!user?.publicUserId && user.publicUserId === ownerId;
+
+  useEffect(() => {
+    if (propProperty?.propertyType) claritySet('property_type', propProperty.propertyType);
+  }, [propProperty?.propertyType]);
+
   const [verificationModalDismissed, setVerificationModalDismissed] = useState(false);
   const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
 
@@ -989,6 +995,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
             Alquilá con confianza
           </h2>
           <div className="space-y-3">
+            {propertyPlan === "experiencia" && (
+              <div className="flex justify-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-semibold">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Experiencia <span className="font-ubuntu">mob</span>
+                </span>
+              </div>
+            )}
             <div className="bg-background rounded-xl p-4 border border-border/50">
               <div className="flex items-start gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -1406,6 +1420,14 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
 
               {/* Trust Elements */}
               <div className="space-y-3 pt-4 border-t border-border">
+                {propertyPlan === "experiencia" && (
+                  <div className="flex justify-center">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold">
+                      <CheckCircle className="h-3 w-3" />
+                      Experiencia <span className="font-ubuntu">mob</span>
+                    </span>
+                  </div>
+                )}
                 <div className="flex gap-2.5">
                   <Shield className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <div>

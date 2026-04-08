@@ -283,32 +283,35 @@ export default async function PropiedadDetailPage({
         propertyData = activePropertyData;
         isPendingVerification = true;
       } else {
-        // Non-owner sees "no disponible" (same as paused properties)
-        propertyData = {
-          ...activePropertyData,
-          currency: null,
-          price: null,
-          expenses: null,
-          valor_total_primary: null,
-          cover_photo_url: null,
-          cover_photo_thumb: null,
-          tag_names_type_1: null,
-          tag_names_type_2: null,
-          tag_names_type_3: null,
-          mob_plan: "basico",
-          operacion_status: null,
-        };
-        isUnavailable = true;
+        // Non-owner cannot see unverified properties
+        notFound();
       }
     } else {
       propertyData = activePropertyData;
     }
   } else {
-    // Fallback: check if property exists but is paused/deleted
+    // Property not in properties_read — check if the current user is the owner
     const rawProperty = await fetchUnavailableProperty(propertyId);
     if (!rawProperty) {
       notFound();
     }
+
+    const authUser = await getAuthUser();
+    let isOwner = false;
+    if (authUser) {
+      const { data: publicUser } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("auth_id", authUser.id)
+        .single();
+      isOwner = publicUser?.id === rawProperty.user_id;
+    }
+
+    if (!isOwner) {
+      // Non-owner cannot see paused/unavailable properties
+      notFound();
+    }
+
     propertyData = mapRawToPropertyData(rawProperty);
     isUnavailable = true;
   }
@@ -387,7 +390,8 @@ export default async function PropiedadDetailPage({
 
   if (!publisherName && propertyData.user_id) {
     // Dueño directo: use owner_name from properties_read (denormalized from users.name)
-    publisherName = propertyData.owner_name || "Propietario";
+    const fullName = propertyData.owner_name || "Propietario";
+    publisherName = fullName.split(" ")[0];
   }
 
   // Contact phone: stored directly on the property (producer.cellphone → producer.phone → branch phone)
@@ -402,8 +406,18 @@ export default async function PropiedadDetailPage({
   // All these fields are now denormalized into properties_read
   const suiteAmount: number | null = propertyData.suite_amount ?? null;
   const roofedSurface: number | null = propertyData.roofed_surface ? Number(propertyData.roofed_surface) : null;
-  const visitDays: string[] | null = (!isUnavailable && propertyData.visit_days?.length) ? propertyData.visit_days : null;
-  const visitHours: string[] | null = (!isUnavailable && propertyData.visit_hours?.length) ? propertyData.visit_hours : null;
+  // Default availability: Mon–Sat 09:00–18:00 when owner hasn't configured specific days/hours
+  const DEFAULT_VISIT_DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const DEFAULT_VISIT_HOURS = [
+    "lunes 09:00-18:00",
+    "martes 09:00-18:00",
+    "miercoles 09:00-18:00",
+    "jueves 09:00-18:00",
+    "viernes 09:00-18:00",
+    "sabado 09:00-18:00",
+  ];
+  const visitDays: string[] | null = isUnavailable ? null : (propertyData.visit_days?.length ? propertyData.visit_days : DEFAULT_VISIT_DAYS);
+  const visitHours: string[] | null = isUnavailable ? null : (propertyData.visit_hours?.length ? propertyData.visit_hours : DEFAULT_VISIT_HOURS);
   const orientation: string | null = (!isUnavailable ? propertyData.orientation : null) ?? null;
 
   // Contract fields denormalized from operaciones

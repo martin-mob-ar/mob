@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeft, Calendar, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
+import { clarityEvent } from "@/lib/analytics/clarity";
 
 import { Button } from "@/components/ui/button";
 import VisitSchedulePicker from "@/components/VisitSchedulePicker";
@@ -93,6 +94,7 @@ export default function VisitLeadForm({
         }),
       });
       if (res.ok) {
+        clarityEvent("cta_visita");
         setSubmitted(true);
         setShowModal(true);
       } else {
