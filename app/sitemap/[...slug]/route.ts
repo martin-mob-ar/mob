@@ -1,65 +1,97 @@
-import type { MetadataRoute } from "next";
+import { NextResponse } from "next/server";
 import { sanityFetch } from "@/lib/sanity/client";
-import { sitemapPostsQuery, sitemapCategoriesQuery } from "@/lib/sanity/queries";
+import {
+  sitemapPostsQuery,
+  sitemapCategoriesQuery,
+} from "@/lib/sanity/queries";
 import { urlFor } from "@/lib/sanity/image";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-// Force dynamic rendering — sitemaps must be generated at request time,
-// not at build time, because they depend on live Supabase/Sanity data.
 export const dynamic = "force-dynamic";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar";
 
-// Minimum number of properties required to include a programmatic page in the sitemap.
-// Prevents thin-content pages from diluting crawl budget.
 const MIN_PROPERTIES_FOR_PROGRAMMATIC = 2;
 
-// Next.js doesn't XML-escape & in <image:loc> URLs, so we must pre-escape them
-function escapeXmlUrl(url: string): string {
-  return url.replace(/&/g, "&amp;");
-}
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ slug: string[] }> }
+) {
+  const { slug } = await params;
+  const file = slug?.[0];
+  const id = parseInt(file?.replace(".xml", "") ?? "", 10);
 
-// ---------------------------------------------------------------------------
-// Sitemap index – splits into 4 sub-sitemaps so Google can monitor each
-// category independently and prioritize crawl budget.
-//   0 = static + blog
-//   1 = property detail pages
-//   2 = location pages (state + state/location)
-//   3 = programmatic pages (type/room combos)
-//
-// The sitemap index is served manually via app/sitemap-index.xml/route.ts
-// because Next.js does not reliably auto-generate one.
-// ---------------------------------------------------------------------------
-
-export async function generateSitemaps() {
-  return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }];
-}
-
-export default async function sitemap({
-  id,
-}: {
-  id: number;
-}): Promise<MetadataRoute.Sitemap> {
-  // Next.js may pass id as a string from the URL segment — normalise to number
-  switch (Number(id)) {
-    case 0:
-      return buildStaticAndBlogSitemap();
-    case 1:
-      return buildPropertySitemap();
-    case 2:
-      return buildLocationSitemap();
-    case 3:
-      return buildProgrammaticSitemap();
-    default:
-      return [];
+  if (isNaN(id) || id < 0 || id > 3) {
+    return new NextResponse("Not found", { status: 404 });
   }
+
+  let entries: SitemapEntry[] = [];
+
+  switch (id) {
+    case 0:
+      entries = await buildStaticAndBlogSitemap();
+      break;
+    case 1:
+      entries = await buildPropertySitemap();
+      break;
+    case 2:
+      entries = await buildLocationSitemap();
+      break;
+    case 3:
+      entries = await buildProgrammaticSitemap();
+      break;
+  }
+
+  return new NextResponse(toXml(entries), {
+    headers: {
+      "Content-Type": "application/xml",
+      "Cache-Control": "public, max-age=3600, s-maxage=3600",
+    },
+  });
 }
 
-// ---------------------------------------------------------------------------
-// 0 – Static pages + blog
-// ---------------------------------------------------------------------------
-async function buildStaticAndBlogSitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticPages: MetadataRoute.Sitemap = [
+interface SitemapEntry {
+  url: string;
+  lastModified?: string;
+  changeFrequency?: string;
+  priority?: number;
+  images?: string[];
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function toXml(entries: SitemapEntry[]): string {
+  const hasImages = entries.some((e) => e.images?.length);
+  const nsImage = hasImages
+    ? ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'
+    : "";
+
+  const urls = entries
+    .map((e) => {
+      const parts = [`    <loc>${escapeXml(e.url)}</loc>`];
+      if (e.lastModified) parts.push(`    <lastmod>${e.lastModified}</lastmod>`);
+      if (e.changeFrequency)
+        parts.push(`    <changefreq>${e.changeFrequency}</changefreq>`);
+      if (e.priority != null)
+        parts.push(`    <priority>${e.priority}</priority>`);
+      if (e.images) {
+        for (const img of e.images) {
+          parts.push(
+            `    <image:image>\n      <image:loc>${escapeXml(img)}</image:loc>\n    </image:image>`
+          );
+        }
+      }
+      return `  <url>\n${parts.join("\n")}\n  </url>`;
+    })
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${nsImage}>\n${urls}\n</urlset>`;
+}
+
+async function buildStaticAndBlogSitemap(): Promise<SitemapEntry[]> {
+  const staticPages: SitemapEntry[] = [
     { url: APP_URL, changeFrequency: "daily", priority: 1.0 },
     { url: `${APP_URL}/alquileres`, changeFrequency: "daily", priority: 0.9 },
     { url: `${APP_URL}/blog`, changeFrequency: "daily", priority: 0.8 },
@@ -71,7 +103,7 @@ async function buildStaticAndBlogSitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/politica-de-privacidad`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  let blogPages: MetadataRoute.Sitemap = [];
+  let blogPages: SitemapEntry[] = [];
   try {
     const posts = await sanityFetch<
       { slug: string; publishedAt: string; _updatedAt: string; coverImage?: any }[]
@@ -80,39 +112,35 @@ async function buildStaticAndBlogSitemap(): Promise<MetadataRoute.Sitemap> {
     blogPages = posts.map((post) => ({
       url: `${APP_URL}/blog/${post.slug}`,
       lastModified: post._updatedAt || post.publishedAt,
-      changeFrequency: "weekly" as const,
+      changeFrequency: "weekly",
       priority: 0.7,
       ...(post.coverImage && {
-        images: [escapeXmlUrl(urlFor(post.coverImage).width(1200).height(630).url())],
+        images: [urlFor(post.coverImage).width(1200).height(630).url()],
       }),
     }));
   } catch {
-    // Sanity unavailable — skip blog entries
+    // Sanity unavailable
   }
 
-  let categoryPages: MetadataRoute.Sitemap = [];
+  let categoryPages: SitemapEntry[] = [];
   try {
     const categories = await sanityFetch<{ slug: string; _updatedAt: string }[]>(
       { query: sitemapCategoriesQuery, tags: ["category"], fallback: [] }
     );
-
     categoryPages = categories.map((cat) => ({
       url: `${APP_URL}/blog/categoria/${cat.slug}`,
       lastModified: cat._updatedAt,
-      changeFrequency: "weekly" as const,
+      changeFrequency: "weekly",
       priority: 0.5,
     }));
   } catch {
-    // Sanity unavailable — skip category entries
+    // Sanity unavailable
   }
 
   return [...staticPages, ...blogPages, ...categoryPages];
 }
 
-// ---------------------------------------------------------------------------
-// 1 – Property detail pages
-// ---------------------------------------------------------------------------
-async function buildPropertySitemap(): Promise<MetadataRoute.Sitemap> {
+async function buildPropertySitemap(): Promise<SitemapEntry[]> {
   try {
     const { data: allProps } = await supabaseAdmin
       .from("properties_read")
@@ -126,19 +154,16 @@ async function buildPropertySitemap(): Promise<MetadataRoute.Sitemap> {
       .map((p) => ({
         url: `${APP_URL}/propiedad/${p.slug}`,
         lastModified: p.property_updated_at || undefined,
-        changeFrequency: "weekly" as const,
+        changeFrequency: "weekly",
         priority: 0.8,
-        ...(p.cover_photo_url && { images: [escapeXmlUrl(p.cover_photo_url)] }),
+        ...(p.cover_photo_url && { images: [p.cover_photo_url] }),
       }));
   } catch {
     return [];
   }
 }
 
-// ---------------------------------------------------------------------------
-// 2 – Location pages (state-level + state/location-level)
-// ---------------------------------------------------------------------------
-async function buildLocationSitemap(): Promise<MetadataRoute.Sitemap> {
+async function buildLocationSitemap(): Promise<SitemapEntry[]> {
   try {
     const { data: allProps } = await supabaseAdmin
       .from("properties_read")
@@ -147,7 +172,6 @@ async function buildLocationSitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (!allProps?.length) return [];
 
-    // Track the most recent property update per state and per location
     const stateLastMod = new Map<string, string>();
     const locationLastMod = new Map<string, string>();
 
@@ -165,13 +189,13 @@ async function buildLocationSitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
 
-    const pages: MetadataRoute.Sitemap = [];
+    const pages: SitemapEntry[] = [];
 
     for (const [stateSlug, lastMod] of stateLastMod) {
       pages.push({
         url: `${APP_URL}/alquileres/${stateSlug}`,
         lastModified: lastMod || undefined,
-        changeFrequency: "weekly" as const,
+        changeFrequency: "weekly",
         priority: 0.7,
       });
     }
@@ -180,7 +204,7 @@ async function buildLocationSitemap(): Promise<MetadataRoute.Sitemap> {
       pages.push({
         url: `${APP_URL}/alquileres/${path}`,
         lastModified: lastMod || undefined,
-        changeFrequency: "weekly" as const,
+        changeFrequency: "weekly",
         priority: 0.6,
       });
     }
@@ -191,10 +215,7 @@ async function buildLocationSitemap(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 3 – Programmatic SEO pages (type / room / state / location combos)
-// ---------------------------------------------------------------------------
-async function buildProgrammaticSitemap(): Promise<MetadataRoute.Sitemap> {
+async function buildProgrammaticSitemap(): Promise<SitemapEntry[]> {
   try {
     const { data: allProps } = await supabaseAdmin
       .from("properties_read")
@@ -209,19 +230,12 @@ async function buildProgrammaticSitemap(): Promise<MetadataRoute.Sitemap> {
       .not("slug", "is", null);
 
     const typeSlugMap = new Map<number, string>();
-    types?.forEach((t) => {
-      if (t.slug) typeSlugMap.set(t.id, t.slug);
-    });
+    types?.forEach((t) => { if (t.slug) typeSlugMap.set(t.id, t.slug); });
 
     const roomSlugs: Record<number, string> = {
-      1: "monoambiente",
-      2: "2-ambientes",
-      3: "3-ambientes",
-      4: "4-ambientes",
-      5: "5-ambientes",
+      1: "monoambiente", 2: "2-ambientes", 3: "3-ambientes", 4: "4-ambientes", 5: "5-ambientes",
     };
 
-    // Track count AND most-recent update per combo
     const comboData = new Map<string, { count: number; lastMod: string }>();
 
     const trackCombo = (key: string, date: string) => {
@@ -241,46 +255,29 @@ async function buildProgrammaticSitemap(): Promise<MetadataRoute.Sitemap> {
       const roomSlug = p.room_amount ? roomSlugs[p.room_amount] : null;
       const date = p.property_updated_at || "";
 
-      // Type + state + location
-      if (typeSlug && stateSlug && locSlug) {
+      if (typeSlug && stateSlug && locSlug)
         trackCombo(`${typeSlug}/${stateSlug}/${locSlug}`, date);
-      }
-      // Type + rooms + state + location
-      if (typeSlug && roomSlug && stateSlug && locSlug) {
+      if (typeSlug && roomSlug && stateSlug && locSlug)
         trackCombo(`${typeSlug}/${roomSlug}/${stateSlug}/${locSlug}`, date);
-      }
-      // Rooms + state + location (any type)
-      if (roomSlug && stateSlug && locSlug) {
+      if (roomSlug && stateSlug && locSlug)
         trackCombo(`${roomSlug}/${stateSlug}/${locSlug}`, date);
-      }
     }
 
-    const pages: MetadataRoute.Sitemap = [];
+    const pages: SitemapEntry[] = [];
 
-    // National type pages (always included — these are high-value)
-    const activeSlugs = [
-      ...new Set(
-        allProps.map((p) => typeSlugMap.get(p.property_type_id)).filter(Boolean)
-      ),
-    ];
+    const activeSlugs = [...new Set(
+      allProps.map((p) => typeSlugMap.get(p.property_type_id)).filter(Boolean)
+    )];
     for (const slug of activeSlugs) {
-      pages.push({
-        url: `${APP_URL}/alquileres/${slug}`,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      });
+      pages.push({ url: `${APP_URL}/alquileres/${slug}`, changeFrequency: "weekly", priority: 0.7 });
     }
 
-    // Type + state pages (derived from qualifying combos)
-    const typeStateData = new Map<string, string>(); // pair -> lastMod
+    const typeStateData = new Map<string, string>();
     for (const [key, data] of comboData) {
       if (data.count < MIN_PROPERTIES_FOR_PROGRAMMATIC) continue;
       const parts = key.split("/");
-      // Only from 3-part combos (type/state/location)
       if (parts.length !== 3) continue;
-      const isTypeSlug = [...typeSlugMap.values()].includes(parts[0]);
-      if (!isTypeSlug) continue;
-
+      if (![...typeSlugMap.values()].includes(parts[0])) continue;
       const pair = `${parts[0]}/${parts[1]}`;
       const curDate = typeStateData.get(pair) || "";
       if (data.lastMod > curDate) typeStateData.set(pair, data.lastMod);
@@ -289,18 +286,17 @@ async function buildProgrammaticSitemap(): Promise<MetadataRoute.Sitemap> {
       pages.push({
         url: `${APP_URL}/alquileres/${pair}`,
         lastModified: lastMod || undefined,
-        changeFrequency: "weekly" as const,
+        changeFrequency: "weekly",
         priority: 0.6,
       });
     }
 
-    // All combos meeting the minimum threshold
     for (const [path, data] of comboData) {
       if (data.count < MIN_PROPERTIES_FOR_PROGRAMMATIC) continue;
       pages.push({
         url: `${APP_URL}/alquileres/${path}`,
         lastModified: data.lastMod || undefined,
-        changeFrequency: "weekly" as const,
+        changeFrequency: "weekly",
         priority: 0.5,
       });
     }
