@@ -55,6 +55,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
     openAuthModal
   } = useAuth();
   const isVerified = user?.isVerified ?? false;
+  const isInmobiliaria = user?.accountType === 3 || user?.accountType === 4;
   const pathname = usePathname();
   const isHome = pathname === "/";
 
@@ -547,11 +548,11 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                     {landingCta}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                ) : (
+                ) : !isInmobiliaria ? (
                   <Button onClick={() => window.location.href = '/subir-propiedad'} className="rounded-full px-6 font-bold">
                     <span>Publicar<span className="hidden min-[1150px]:inline">&nbsp;mi propiedad</span></span>
                   </Button>
-                )}
+                ) : null}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -746,12 +747,14 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                         </div>
                       </div>
 
-                      <Button
-                        onClick={() => { setMobileMenuOpen(false); if (landingCta) { router.push("/perfil"); } else { window.location.href = '/subir-propiedad'; } }}
-                        className="w-full rounded-full h-12 font-bold text-base"
-                      >
-                        {landingCta || "Publicar mi propiedad"}
-                      </Button>
+                      {(landingCta || !isInmobiliaria) && (
+                        <Button
+                          onClick={() => { setMobileMenuOpen(false); if (landingCta) { router.push("/perfil"); } else { window.location.href = '/subir-propiedad'; } }}
+                          className="w-full rounded-full h-12 font-bold text-base"
+                        >
+                          {landingCta || "Publicar mi propiedad"}
+                        </Button>
+                      )}
 
                       {/* CTA de verificación mobile */}
                       {isVerified ? (

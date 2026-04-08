@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getAuthUser } from "@/lib/supabase/auth";
+import { redirect } from "next/navigation";
 import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 import SubirPropiedad from "@/views/SubirPropiedad";
 
@@ -41,6 +42,17 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
   const editId = params?.editId ? parseInt(params.editId) : null;
 
   const publicUserId = await getOrCreateUserFromAuth(user.id);
+
+  // Inmobiliarias cannot upload properties manually — redirect to profile
+  const { data: userRecord } = await supabaseAdmin
+    .from("users")
+    .select("account_type")
+    .eq("id", publicUserId)
+    .maybeSingle();
+
+  if (userRecord?.account_type === 3 || userRecord?.account_type === 4) {
+    redirect("/perfil");
+  }
 
   // Always fetch existing drafts (lightweight query for draft prompt)
   const { data: existingDrafts } = await supabaseAdmin
