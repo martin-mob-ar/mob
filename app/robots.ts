@@ -58,6 +58,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: "/",
       },
     ],
-    sitemap: `${APP_URL}/sitemap.xml`,
+    sitemap: `${APP_URL}/sitemap-index.xml`,
   };
 }

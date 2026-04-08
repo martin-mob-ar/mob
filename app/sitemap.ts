@@ -22,6 +22,9 @@ function escapeXmlUrl(url: string): string {
 //   1 = property detail pages
 //   2 = location pages (state + state/location)
 //   3 = programmatic pages (type/room combos)
+//
+// The sitemap index is served manually via app/sitemap-index.xml/route.ts
+// because Next.js does not reliably auto-generate one.
 // ---------------------------------------------------------------------------
 
 export async function generateSitemaps() {
@@ -33,7 +36,8 @@ export default async function sitemap({
 }: {
   id: number;
 }): Promise<MetadataRoute.Sitemap> {
-  switch (id) {
+  // Next.js may pass id as a string from the URL segment — normalise to number
+  switch (Number(id)) {
     case 0:
       return buildStaticAndBlogSitemap();
     case 1:
