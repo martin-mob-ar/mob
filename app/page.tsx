@@ -22,12 +22,12 @@ export default async function IndexPage() {
   try {
     const supabase = await createClient();
 
-    // Propiedades destacadas: CABA only, premium plans first (acompanado/experiencia), then rest
+    // Propiedades destacadas: CABA + GBA Zona Norte, premium plans first (acompanado/experiencia), then rest
     const { data: featured } = await supabase
       .from("properties_read")
       .select("*")
       .eq("owner_verified", true)
-      .eq("state_id", 146) // Capital Federal (CABA)
+      .in("state_id", [146, 147]) // Capital Federal (CABA) + G.B.A. Zona Norte
       .order("sort_priority", { ascending: true })
       .order("property_created_at", { ascending: false })
       .limit(6);

@@ -6,13 +6,51 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar";
 
+// Minimum number of properties required to include a programmatic page in the sitemap.
+// Prevents thin-content pages from diluting crawl budget.
+const MIN_PROPERTIES_FOR_PROGRAMMATIC = 2;
+
 // Next.js doesn't XML-escape & in <image:loc> URLs, so we must pre-escape them
 function escapeXmlUrl(url: string): string {
   return url.replace(/&/g, "&amp;");
 }
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Static pages
+// ---------------------------------------------------------------------------
+// Sitemap index – splits into 4 sub-sitemaps so Google can monitor each
+// category independently and prioritize crawl budget.
+//   0 = static + blog
+//   1 = property detail pages
+//   2 = location pages (state + state/location)
+//   3 = programmatic pages (type/room combos)
+// ---------------------------------------------------------------------------
+
+export async function generateSitemaps() {
+  return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }];
+}
+
+export default async function sitemap({
+  id,
+}: {
+  id: number;
+}): Promise<MetadataRoute.Sitemap> {
+  switch (id) {
+    case 0:
+      return buildStaticAndBlogSitemap();
+    case 1:
+      return buildPropertySitemap();
+    case 2:
+      return buildLocationSitemap();
+    case 3:
+      return buildProgrammaticSitemap();
+    default:
+      return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 0 – Static pages + blog
+// ---------------------------------------------------------------------------
+async function buildStaticAndBlogSitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: APP_URL, changeFrequency: "daily", priority: 1.0 },
     { url: `${APP_URL}/alquileres`, changeFrequency: "daily", priority: 0.9 },
@@ -25,7 +63,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/politica-de-privacidad`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  // Blog posts from Sanity
   let blogPages: MetadataRoute.Sitemap = [];
   try {
     const posts = await sanityFetch<
@@ -45,7 +82,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Sanity unavailable — skip blog entries
   }
 
-  // Blog categories from Sanity
   let categoryPages: MetadataRoute.Sitemap = [];
   try {
     const categories = await sanityFetch<{ slug: string; _updatedAt: string }[]>(
@@ -62,136 +98,207 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Sanity unavailable — skip category entries
   }
 
-  // Fetch all verified properties once — only needed columns
-  let propertyPages: MetadataRoute.Sitemap = [];
-  let locationPages: MetadataRoute.Sitemap = [];
-  let programmaticPages: MetadataRoute.Sitemap = [];
+  return [...staticPages, ...blogPages, ...categoryPages];
+}
 
+// ---------------------------------------------------------------------------
+// 1 – Property detail pages
+// ---------------------------------------------------------------------------
+async function buildPropertySitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const { data: allProps } = await supabaseAdmin
       .from("properties_read")
-      .select("slug, property_updated_at, cover_photo_url, property_type_id, room_amount, location_slug, state_slug")
+      .select("slug, property_updated_at, cover_photo_url")
       .eq("owner_verified", true);
 
-    if (allProps && allProps.length > 0) {
-      // 1. Property detail pages
-      propertyPages = allProps
-        .filter((p) => p.slug)
-        .map((p) => ({
-          url: `${APP_URL}/propiedad/${p.slug}`,
-          lastModified: p.property_updated_at || undefined,
-          changeFrequency: "weekly" as const,
-          priority: 0.8,
-          ...(p.cover_photo_url && { images: [escapeXmlUrl(p.cover_photo_url)] }),
-        }));
+    if (!allProps?.length) return [];
 
-      // 2. Location & state pages (derived from denormalized slugs)
-      const stateSet = new Set<string>();
-      const locationSet = new Set<string>();
+    return allProps
+      .filter((p) => p.slug)
+      .map((p) => ({
+        url: `${APP_URL}/propiedad/${p.slug}`,
+        lastModified: p.property_updated_at || undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+        ...(p.cover_photo_url && { images: [escapeXmlUrl(p.cover_photo_url)] }),
+      }));
+  } catch {
+    return [];
+  }
+}
 
-      for (const p of allProps) {
-        if (p.state_slug) stateSet.add(p.state_slug);
-        if (p.state_slug && p.location_slug) {
-          locationSet.add(`${p.state_slug}/${p.location_slug}`);
-        }
-      }
+// ---------------------------------------------------------------------------
+// 2 – Location pages (state-level + state/location-level)
+// ---------------------------------------------------------------------------
+async function buildLocationSitemap(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { data: allProps } = await supabaseAdmin
+      .from("properties_read")
+      .select("state_slug, location_slug, property_updated_at")
+      .eq("owner_verified", true);
 
-      // State-level pages
-      for (const stateSlug of stateSet) {
-        locationPages.push({
-          url: `${APP_URL}/alquileres/${stateSlug}`,
-          changeFrequency: "weekly" as const,
-          priority: 0.7,
-        });
-      }
+    if (!allProps?.length) return [];
 
-      // Location-level pages
-      for (const path of locationSet) {
-        locationPages.push({
-          url: `${APP_URL}/alquileres/${path}`,
-          changeFrequency: "weekly" as const,
-          priority: 0.6,
-        });
-      }
+    // Track the most recent property update per state and per location
+    const stateLastMod = new Map<string, string>();
+    const locationLastMod = new Map<string, string>();
 
-      // 3. Programmatic SEO routes (type + room combos)
-      const { data: types } = await supabaseAdmin
-        .from("tokko_property_type")
-        .select("id, slug")
-        .not("slug", "is", null);
+    for (const p of allProps) {
+      if (!p.state_slug) continue;
+      const date = p.property_updated_at || "";
 
-      const typeSlugMap = new Map<number, string>();
-      types?.forEach((t) => { if (t.slug) typeSlugMap.set(t.id, t.slug); });
+      const curState = stateLastMod.get(p.state_slug) || "";
+      if (date > curState) stateLastMod.set(p.state_slug, date);
 
-      const roomSlugs: Record<number, string> = {
-        1: "monoambiente", 2: "2-ambientes", 3: "3-ambientes", 4: "4-ambientes", 5: "5-ambientes",
-      };
-
-      // Count properties per combo
-      const comboCounts = new Map<string, number>();
-      for (const p of allProps) {
-        const typeSlug = typeSlugMap.get(p.property_type_id);
-        const stateSlug = p.state_slug;
-        const locSlug = p.location_slug;
-        const roomSlug = p.room_amount ? roomSlugs[p.room_amount] : null;
-
-        // Type + state + location
-        if (typeSlug && stateSlug && locSlug) {
-          const key = `${typeSlug}/${stateSlug}/${locSlug}`;
-          comboCounts.set(key, (comboCounts.get(key) || 0) + 1);
-        }
-        // Type + rooms + state + location
-        if (typeSlug && roomSlug && stateSlug && locSlug) {
-          const key = `${typeSlug}/${roomSlug}/${stateSlug}/${locSlug}`;
-          comboCounts.set(key, (comboCounts.get(key) || 0) + 1);
-        }
-        // Rooms + state + location (any type)
-        if (roomSlug && stateSlug && locSlug) {
-          const key = `${roomSlug}/${stateSlug}/${locSlug}`;
-          comboCounts.set(key, (comboCounts.get(key) || 0) + 1);
-        }
-      }
-
-      // National type pages
-      const activeSlugs = [...new Set(allProps.map((p) => typeSlugMap.get(p.property_type_id)).filter(Boolean))];
-      for (const slug of activeSlugs) {
-        programmaticPages.push({
-          url: `${APP_URL}/alquileres/${slug}`,
-          changeFrequency: "weekly" as const,
-          priority: 0.7,
-        });
-      }
-
-      // Type + state pages (derived from combos)
-      const typeStatePairs = new Set<string>();
-      for (const [key, count] of comboCounts) {
-        if (count < 2) continue;
-        const parts = key.split("/");
-        if (parts.length === 3 && typeSlugMap.has([...typeSlugMap.entries()].find(([, v]) => v === parts[0])?.[0] || -1)) {
-          typeStatePairs.add(`${parts[0]}/${parts[1]}`);
-        }
-      }
-      for (const pair of typeStatePairs) {
-        programmaticPages.push({
-          url: `${APP_URL}/alquileres/${pair}`,
-          changeFrequency: "weekly" as const,
-          priority: 0.6,
-        });
-      }
-
-      // All combos with 2+ properties
-      for (const [path, count] of comboCounts) {
-        if (count < 2) continue;
-        programmaticPages.push({
-          url: `${APP_URL}/alquileres/${path}`,
-          changeFrequency: "weekly" as const,
-          priority: 0.5,
-        });
+      if (p.location_slug) {
+        const locKey = `${p.state_slug}/${p.location_slug}`;
+        const curLoc = locationLastMod.get(locKey) || "";
+        if (date > curLoc) locationLastMod.set(locKey, date);
       }
     }
-  } catch {
-    // Supabase unavailable — skip property/location/programmatic entries
-  }
 
-  return [...staticPages, ...blogPages, ...categoryPages, ...propertyPages, ...locationPages, ...programmaticPages];
+    const pages: MetadataRoute.Sitemap = [];
+
+    for (const [stateSlug, lastMod] of stateLastMod) {
+      pages.push({
+        url: `${APP_URL}/alquileres/${stateSlug}`,
+        lastModified: lastMod || undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      });
+    }
+
+    for (const [path, lastMod] of locationLastMod) {
+      pages.push({
+        url: `${APP_URL}/alquileres/${path}`,
+        lastModified: lastMod || undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      });
+    }
+
+    return pages;
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3 – Programmatic SEO pages (type / room / state / location combos)
+// ---------------------------------------------------------------------------
+async function buildProgrammaticSitemap(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { data: allProps } = await supabaseAdmin
+      .from("properties_read")
+      .select("property_type_id, room_amount, state_slug, location_slug, property_updated_at")
+      .eq("owner_verified", true);
+
+    if (!allProps?.length) return [];
+
+    const { data: types } = await supabaseAdmin
+      .from("tokko_property_type")
+      .select("id, slug")
+      .not("slug", "is", null);
+
+    const typeSlugMap = new Map<number, string>();
+    types?.forEach((t) => {
+      if (t.slug) typeSlugMap.set(t.id, t.slug);
+    });
+
+    const roomSlugs: Record<number, string> = {
+      1: "monoambiente",
+      2: "2-ambientes",
+      3: "3-ambientes",
+      4: "4-ambientes",
+      5: "5-ambientes",
+    };
+
+    // Track count AND most-recent update per combo
+    const comboData = new Map<string, { count: number; lastMod: string }>();
+
+    const trackCombo = (key: string, date: string) => {
+      const existing = comboData.get(key);
+      if (existing) {
+        existing.count++;
+        if (date > existing.lastMod) existing.lastMod = date;
+      } else {
+        comboData.set(key, { count: 1, lastMod: date });
+      }
+    };
+
+    for (const p of allProps) {
+      const typeSlug = typeSlugMap.get(p.property_type_id);
+      const stateSlug = p.state_slug;
+      const locSlug = p.location_slug;
+      const roomSlug = p.room_amount ? roomSlugs[p.room_amount] : null;
+      const date = p.property_updated_at || "";
+
+      // Type + state + location
+      if (typeSlug && stateSlug && locSlug) {
+        trackCombo(`${typeSlug}/${stateSlug}/${locSlug}`, date);
+      }
+      // Type + rooms + state + location
+      if (typeSlug && roomSlug && stateSlug && locSlug) {
+        trackCombo(`${typeSlug}/${roomSlug}/${stateSlug}/${locSlug}`, date);
+      }
+      // Rooms + state + location (any type)
+      if (roomSlug && stateSlug && locSlug) {
+        trackCombo(`${roomSlug}/${stateSlug}/${locSlug}`, date);
+      }
+    }
+
+    const pages: MetadataRoute.Sitemap = [];
+
+    // National type pages (always included — these are high-value)
+    const activeSlugs = [
+      ...new Set(
+        allProps.map((p) => typeSlugMap.get(p.property_type_id)).filter(Boolean)
+      ),
+    ];
+    for (const slug of activeSlugs) {
+      pages.push({
+        url: `${APP_URL}/alquileres/${slug}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      });
+    }
+
+    // Type + state pages (derived from qualifying combos)
+    const typeStateData = new Map<string, string>(); // pair -> lastMod
+    for (const [key, data] of comboData) {
+      if (data.count < MIN_PROPERTIES_FOR_PROGRAMMATIC) continue;
+      const parts = key.split("/");
+      // Only from 3-part combos (type/state/location)
+      if (parts.length !== 3) continue;
+      const isTypeSlug = [...typeSlugMap.values()].includes(parts[0]);
+      if (!isTypeSlug) continue;
+
+      const pair = `${parts[0]}/${parts[1]}`;
+      const curDate = typeStateData.get(pair) || "";
+      if (data.lastMod > curDate) typeStateData.set(pair, data.lastMod);
+    }
+    for (const [pair, lastMod] of typeStateData) {
+      pages.push({
+        url: `${APP_URL}/alquileres/${pair}`,
+        lastModified: lastMod || undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      });
+    }
+
+    // All combos meeting the minimum threshold
+    for (const [path, data] of comboData) {
+      if (data.count < MIN_PROPERTIES_FOR_PROGRAMMATIC) continue;
+      pages.push({
+        url: `${APP_URL}/alquileres/${path}`,
+        lastModified: data.lastMod || undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.5,
+      });
+    }
+
+    return pages;
+  } catch {
+    return [];
+  }
 }
