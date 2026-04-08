@@ -1,6 +1,5 @@
-'use client';
-import PostVenta from "@/views/PostVenta";
+import { notFound } from "next/navigation";
 
 export default function PostVentaPage() {
-  return <PostVenta />;
+  notFound();
 }

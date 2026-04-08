@@ -77,7 +77,7 @@ export default async function GestionPropertyDetailPage({
     // Fallback: check for paused property (status=1) in properties table
     const { data: pausedProp } = await supabaseAdmin
       .from("properties")
-      .select(`id, user_id, tokko, tokko_id, status, description, address, publication_title,
+      .select(`id, user_id, tokko, tokko_id, status, description, address, fake_address, real_address, publication_title,
         geo_lat, geo_long, room_amount, bathroom_amount, suite_amount, total_surface,
         roofed_surface, parking_lot_amount, age, slug, contact_phone, company_id, created_at, updated_at,
         tokko_property_type!type_id(id, name),
@@ -117,7 +117,7 @@ export default async function GestionPropertyDetailPage({
       user_id: pausedProp.user_id,
       tokko_id: pausedProp.tokko_id,
       description: pausedProp.description,
-      address: pausedProp.address,
+      address: pausedProp.fake_address || pausedProp.address || pausedProp.real_address,
       title: pausedProp.publication_title,
       geo_lat: pausedProp.geo_lat,
       geo_long: pausedProp.geo_long,
