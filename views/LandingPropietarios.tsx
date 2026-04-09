@@ -43,7 +43,6 @@ const founders = [
     bio: "Vengo de familia inmobiliaria, donde trabajé a los 16 años",
     credentials: [
       "Lic. en Negocios Digitales - UdeSA",
-      "Ex Cofundador de Roomix.ai",
     ],
     email: "inaki@mob.ar",
     linkedin: "https://www.linkedin.com/in/inaki-valencia/",

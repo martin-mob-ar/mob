@@ -9,7 +9,7 @@ const founders = [
     role: "Cofundador",
     photo: "/assets/propietarios/foto_perfil.png",
     bio: "Vengo de familia inmobiliaria, donde trabajé a los 16 años",
-    credentials: ["Lic. en Negocios Digitales - UdeSA", "Ex Cofundador de Roomix.ai"],
+    credentials: ["Lic. en Negocios Digitales - UdeSA"],
     email: "inaki@mob.ar",
     linkedin: "https://www.linkedin.com/in/inaki-valencia/",
     whatsapp: "https://wa.me/5492236000055",

@@ -147,7 +147,7 @@ interface SearchResultsProps {
   initialLocationSeed?: {
     stateId?: number;
     stateName?: string;
-    locationId?: number;
+    locationIds?: number[];
     locationName?: string;
     locationDisplay?: string;
   };
