@@ -39,17 +39,18 @@ export default async function ProgrammaticSearchPage({
     stateData = data;
   }
 
-  // Resolve location
+  // Resolve location (may return multiple rows for duplicate slug+state combos)
   let locationData: { id: number; name: string; slug: string } | null = null;
+  let locationIds: number[] = [];
   if (locationSlug && stateData) {
     const { data } = await supabaseAdmin
       .from("tokko_location")
       .select("id, name, slug")
       .eq("slug", locationSlug)
-      .eq("state_id", stateData.id)
-      .single();
-    if (!data) notFound();
-    locationData = data;
+      .eq("state_id", stateData.id);
+    if (!data || data.length === 0) notFound();
+    locationData = data[0];
+    locationIds = data.map((l) => l.id);
   }
 
   // Resolve property type ID
@@ -73,8 +74,8 @@ export default async function ProgrammaticSearchPage({
   if (propertyTypeId) query = query.eq("property_type_id", propertyTypeId);
   if (roomInfo) query = query.eq("room_amount", roomInfo.count);
 
-  if (locationData) {
-    query = query.eq("location_id", locationData.id);
+  if (locationIds.length > 0) {
+    query = query.in("location_id", locationIds);
   } else if (stateData) {
     const { data: stateLocations } = await supabaseAdmin
       .from("tokko_location")
@@ -156,7 +157,7 @@ export default async function ProgrammaticSearchPage({
     ? {
         stateId: stateData.id,
         stateName: stateData.name!,
-        locationId: locationData.id,
+        locationIds,
         locationName: locationData.name!,
         locationDisplay: `${stateData.name}, Argentina`,
       }

@@ -24,16 +24,20 @@ async function getLocationData(stateSlug: string, locationSlug: string) {
 
   if (!state) return null;
 
-  const { data: location } = await supabaseAdmin
+  // Fetch ALL locations matching slug + state (duplicates may exist)
+  const { data: locations } = await supabaseAdmin
     .from("tokko_location")
     .select("id, name, slug")
     .eq("slug", locationSlug)
-    .eq("state_id", state.id)
-    .single();
+    .eq("state_id", state.id);
 
-  if (!location) return null;
+  if (!locations || locations.length === 0) return null;
 
-  return { state, location };
+  // Use the first match for display, but collect all IDs for querying properties
+  const location = locations[0];
+  const locationIds = locations.map((l) => l.id);
+
+  return { state, location, locationIds };
 }
 
 export async function generateStaticParams() {
@@ -89,14 +93,14 @@ export default async function LocationPage({ params }: PageProps) {
     notFound();
   }
 
-  const { state, location } = data;
+  const { state, location, locationIds } = data;
   const supabase = await createClient();
 
   const { data: properties, count } = await supabase
     .from("properties_read")
     .select("*", { count: "exact" })
     .eq("owner_verified", true)
-    .eq("location_id", location.id)
+    .in("location_id", locationIds)
     .order("sort_priority", { ascending: true })
     .order("property_created_at", { ascending: false })
     .range(0, 19);
@@ -143,7 +147,7 @@ export default async function LocationPage({ params }: PageProps) {
           initialLocationSeed={{
             stateId: state.id,
             stateName: state.name!,
-            locationId: location.id,
+            locationIds,
             locationName: location.name!,
             locationDisplay: `${state.name}, Argentina`,
           }}

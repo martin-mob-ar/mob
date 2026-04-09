@@ -120,7 +120,7 @@ interface SearchFiltersProviderProps {
   initialLocationSeed?: {
     stateId?: number;
     stateName?: string;
-    locationId?: number;
+    locationIds?: number[];
     locationName?: string;
     locationDisplay?: string;
   };
@@ -236,11 +236,11 @@ export function SearchFiltersProvider({
 
   // Compute seed filters from location seed (e.g. from SEO path like /alquileres/capital-federal/palermo)
   const seedFilters: Partial<SearchFilters> = {};
-  if (initialLocationSeed?.locationId && initialLocationSeed?.locationName) {
-    seedFilters.locationId = String(initialLocationSeed.locationId);
+  if (initialLocationSeed?.locationIds?.length && initialLocationSeed?.locationName) {
+    seedFilters.locationId = initialLocationSeed.locationIds.join(",");
     seedFilters.location = initialLocationSeed.locationName;
     seedFilters.selectedLocations = [{
-      id: initialLocationSeed.locationId,
+      id: initialLocationSeed.locationIds[0],
       name: initialLocationSeed.locationName,
       display: initialLocationSeed.locationDisplay,
       type: "location",
