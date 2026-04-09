@@ -1,14 +1,13 @@
 "use client";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ArrowUpRight, Search } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import PopularSearches from "@/components/PopularSearches";
+import { useState } from "react";
 
 interface Zone {
   id: string;
   name: string;
-  slug: string;         // location slug (empty for state-level zones)
-  stateSlug: string;    // state slug for SEO path
+  slug: string;
+  stateSlug: string;
 }
 
 const zones: Zone[] = [
@@ -23,13 +22,11 @@ const zones: Zone[] = [
   { id: "san-telmo", name: "San Telmo", slug: "san-telmo", stateSlug: "capital-federal" },
 ];
 
-/** SEO-friendly base path for a zone: /alquileres/capital-federal or /alquileres/capital-federal/palermo */
 function zonePath(zone: Zone): string {
   if (zone.slug) return `/alquileres/${zone.stateSlug}/${zone.slug}`;
   return `/alquileres/${zone.stateSlug}`;
 }
 
-/** Programmatic SEO path for room count + zone: /alquileres/2-ambientes/capital-federal/palermo */
 function roomPath(zone: Zone, roomSlug: string): string {
   if (zone.slug) return `/alquileres/${roomSlug}/${zone.stateSlug}/${zone.slug}`;
   return `/alquileres/${roomSlug}/${zone.stateSlug}`;
@@ -41,96 +38,53 @@ interface CategoryItem {
 }
 
 interface Category {
+  number: string;
   title: string;
   items: CategoryItem[];
 }
 
-const categories: Record<string, Category> = {
-  size: {
+const categories: Category[] = [
+  {
+    number: "01",
     title: "Por tamaño",
     items: [
-      {
-        label: "Monoambiente",
-        href: (z) => roomPath(z, "monoambiente"),
-      },
-      {
-        label: "2 ambientes",
-        href: (z) => roomPath(z, "2-ambientes"),
-      },
-      {
-        label: "3 ambientes",
-        href: (z) => roomPath(z, "3-ambientes"),
-      },
-      {
-        label: "4+ ambientes",
-        href: (z) => `${zonePath(z)}?minAmbientes=4`,
-      },
+      { label: "Monoambiente", href: (z) => roomPath(z, "monoambiente") },
+      { label: "2 ambientes", href: (z) => roomPath(z, "2-ambientes") },
+      { label: "3 ambientes", href: (z) => roomPath(z, "3-ambientes") },
+      { label: "4+ ambientes", href: (z) => `${zonePath(z)}?minAmbientes=4` },
     ],
   },
-  budget: {
+  {
+    number: "02",
     title: "Por presupuesto",
     items: [
-      {
-        label: "Hasta 600.000",
-        href: (z) => `${zonePath(z)}?maxPrice=600000`,
-      },
-      {
-        label: "Hasta 800.000",
-        href: (z) => `${zonePath(z)}?maxPrice=800000`,
-      },
-      {
-        label: "Hasta 1.000.000",
-        href: (z) => `${zonePath(z)}?maxPrice=1000000`,
-      },
-      {
-        label: "Hasta USD 1.000",
-        href: (z) => `${zonePath(z)}?maxPrice=1300000`,
-      },
+      { label: "Hasta $600.000", href: (z) => `${zonePath(z)}?maxPrice=600000` },
+      { label: "Hasta $800.000", href: (z) => `${zonePath(z)}?maxPrice=800000` },
+      { label: "Hasta $1.000.000", href: (z) => `${zonePath(z)}?maxPrice=1000000` },
+      { label: "Hasta USD 1.000", href: (z) => `${zonePath(z)}?maxPrice=1300000` },
     ],
   },
-  surface: {
+  {
+    number: "03",
     title: "Por superficie",
     items: [
-      {
-        label: "Entre 40 y 60m²",
-        href: (z) => `${zonePath(z)}?minSurface=40&maxSurface=60`,
-      },
-      {
-        label: "Entre 60 y 80m²",
-        href: (z) => `${zonePath(z)}?minSurface=60&maxSurface=80`,
-      },
-      {
-        label: "Entre 80 y 100m²",
-        href: (z) => `${zonePath(z)}?minSurface=80&maxSurface=100`,
-      },
-      {
-        label: "Más de 100m²",
-        href: (z) => `${zonePath(z)}?minSurface=100`,
-      },
+      { label: "40–60 m²", href: (z) => `${zonePath(z)}?minSurface=40&maxSurface=60` },
+      { label: "60–80 m²", href: (z) => `${zonePath(z)}?minSurface=60&maxSurface=80` },
+      { label: "80–100 m²", href: (z) => `${zonePath(z)}?minSurface=80&maxSurface=100` },
+      { label: "+100 m²", href: (z) => `${zonePath(z)}?minSurface=100` },
     ],
   },
-};
-
-const ZoneButton = ({
-  zone,
-  isSelected,
-  onClick,
-}: {
-  zone: Zone;
-  isSelected: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-      isSelected
-        ? "bg-primary text-primary-foreground"
-        : "bg-secondary text-foreground hover:bg-secondary/80 border border-border"
-    }`}
-  >
-    {zone.name}
-  </button>
-);
+  {
+    number: "04",
+    title: "Otras",
+    items: [
+      { label: "Mascotas", href: (z) => `${zonePath(z)}?tags=mascotas` },
+      { label: "Pileta", href: (z) => `${zonePath(z)}?tags=pileta` },
+      { label: "Amoblado", href: (z) => `${zonePath(z)}?tags=amoblado` },
+      { label: "Alquiler dueño directo", href: (z) => `${zonePath(z)}?ownerType=dueno` },
+    ],
+  },
+];
 
 interface ExploreRentalsProps {
   title?: string;
@@ -138,115 +92,155 @@ interface ExploreRentalsProps {
 
 const ExploreRentals = ({ title = "Alquileres para vos" }: ExploreRentalsProps) => {
   const [selectedZone, setSelectedZone] = useState("capital-federal");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showZonePicker, setShowZonePicker] = useState(false);
   const activeZone = zones.find((z) => z.id === selectedZone) || zones[0];
 
-  // Start scrolled to the middle set so user can scroll both directions
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) {
-      el.scrollLeft = el.scrollWidth / 3;
-    }
-  }, []);
+  const CategoryBlock = ({ cat, large = false }: { cat: Category; large?: boolean }) => (
+    <div>
+      {/* Number + title */}
+      <div className="flex items-baseline gap-3 mb-4">
+        <span className="font-display text-3xl md:text-4xl font-black text-primary/75">
+          {cat.number}
+        </span>
+        <h3 className="font-display text-lg font-bold text-foreground">
+          {cat.title}
+        </h3>
+      </div>
 
-  // Infinite scroll: when nearing edges, jump to the equivalent position in the middle set
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const third = el.scrollWidth / 3;
-    if (el.scrollLeft >= third * 2) {
-      el.scrollLeft -= third;
-    } else if (el.scrollLeft <= 0) {
-      el.scrollLeft += third;
-    }
-  }, []);
+      {/* Links */}
+      <div>
+        {cat.items.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href(activeZone)}
+            className="group/link flex items-center justify-between py-3 border-b border-border last:border-b-0 hover:pl-2 transition-all"
+          >
+            <span className={`${large ? "text-base" : "text-sm"} text-foreground group-hover/link:text-primary transition-colors`}>
+              {item.label}
+            </span>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground/30 group-hover/link:text-primary group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-all" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <section className="py-[18px]">
       <div className="container">
-        <div className="bg-background rounded-xl border border-border shadow-sm p-6 md:px-8 md:pt-8 md:pb-6 text-center">
-          {/* Header */}
-          <div className="mb-4">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <h2 className="font-display text-2xl font-bold text-foreground">
-                {title}
-              </h2>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              Búsquedas frecuentes y útiles
-            </p>
-          </div>
+        {/* Title — editorial large */}
+        <div className="mb-6 md:mb-8">
+          <h2 className="font-display text-3xl md:text-[2.75rem] md:leading-tight font-black text-foreground">
+            {title}
+          </h2>
+          <div className="h-1 w-12 bg-primary rounded-full mt-3" />
+        </div>
 
-          {/* Zone Navigation - Desktop: centered wrap, Mobile: infinite scroll */}
-          <div className="hidden md:flex justify-center gap-2 flex-wrap pb-4 mb-6">
+        {/* Zone selector strip — desktop */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <span className="text-xs text-muted-foreground uppercase tracking-widest font-semibold shrink-0">
+            Barrio
+          </span>
+          <div className="h-px flex-1 bg-border" />
+          <div className="flex gap-2 flex-wrap">
             {zones.map((zone) => (
-              <ZoneButton
+              <button
                 key={zone.id}
-                zone={zone}
-                isSelected={selectedZone === zone.id}
                 onClick={() => setSelectedZone(zone.id)}
-              />
+                className={`px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+                  selectedZone === zone.id
+                    ? "text-primary underline underline-offset-4 decoration-2"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {zone.name}
+              </button>
             ))}
           </div>
+        </div>
 
-          <div className="md:hidden overflow-hidden pb-4 mb-6 relative">
-            {/* Fade edges */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-8 z-10 bg-gradient-to-r from-background to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 z-10 bg-gradient-to-l from-background to-transparent" />
-            <div
-              ref={scrollRef}
-              onScroll={handleScroll}
-              className="flex gap-2 overflow-x-auto scrollbar-hide"
-            >
-              {/* Render zones 3x for seamless infinite loop */}
-              {[...zones, ...zones, ...zones].map((zone, i) => (
-                <ZoneButton
-                  key={`${zone.id}-${i}`}
-                  zone={zone}
-                  isSelected={selectedZone === zone.id}
-                  onClick={() => setSelectedZone(zone.id)}
-                />
+        {/* Zone selector dropdown — mobile */}
+        <div className="md:hidden mb-6 relative">
+          <button
+            onClick={() => setShowZonePicker(!showZonePicker)}
+            className="inline-flex items-center gap-2 text-sm cursor-pointer"
+          >
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Buscar en</span>
+            <span className="font-semibold text-primary">{activeZone.name}</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
+                showZonePicker ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {showZonePicker && (
+            <div className="absolute left-0 top-full mt-2 bg-card rounded-xl border border-border shadow-lg p-2 z-20 min-w-[200px]">
+              {zones.map((zone) => (
+                <button
+                  key={zone.id}
+                  onClick={() => {
+                    setSelectedZone(zone.id);
+                    setShowZonePicker(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                    selectedZone === zone.id
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {zone.name}
+                </button>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {Object.entries(categories).map(([key, category]) => (
-              <div key={key} className="space-y-3">
-                <h3 className="font-medium text-foreground text-sm uppercase tracking-wider">
-                  {category.title}
-                </h3>
-                <ul className="space-y-2">
-                  {category.items.map((item) => (
-                    <li key={item.label}>
-                      <Link
-                        href={item.href(activeZone)}
-                        className="text-muted-foreground text-sm hover:text-primary hover:underline transition-colors"
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+        {/* Categories — equal width grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-accent/50 rounded-2xl p-6">
+            <CategoryBlock cat={categories[0]} />
+          </div>
+          <div className="bg-accent/50 rounded-2xl p-6">
+            <CategoryBlock cat={categories[1]} />
+          </div>
+          <div className="bg-accent/50 rounded-2xl p-6">
+            <CategoryBlock cat={categories[2]} />
+          </div>
+          <div className="bg-accent/50 rounded-2xl p-6">
+            <CategoryBlock cat={categories[3]} />
+          </div>
+        </div>
+
+        {/* Popular searches */}
+        <div className="mt-6 pt-4 border-t border-border">
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-2 text-sm">
+            {[
+              { label: "alquiler barato", href: "/alquileres?maxPrice=700000" },
+              { label: "alquiler en belgrano", href: "/alquileres/capital-federal/belgrano" },
+              { label: "alquiler dueño directo", href: "/alquileres?ownerType=dueno" },
+              { label: "alquiler en palermo", href: "/alquileres/capital-federal/palermo" },
+              { label: "alquiler en CABA", href: "/alquileres/capital-federal" },
+              { label: "alquileres sin garantía", href: "/alquileres?ownerType=dueno" },
+            ].map((search, index, arr) => (
+              <span key={search.label} className="flex items-center">
+                <Link
+                  href={search.href}
+                  className="text-foreground hover:text-primary hover:underline transition-colors"
+                >
+                  {search.label}
+                </Link>
+                {index < arr.length - 1 && (
+                  <span className="text-muted-foreground mx-1">·</span>
+                )}
+              </span>
             ))}
           </div>
-
-          {/* CTA */}
-          <Link
-            href="/alquileres"
-            className="inline-flex items-center gap-1 text-primary text-sm font-medium hover:underline mb-4"
-          >
-            Ver alquileres recientes
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-
-          {/* Popular Searches Footer */}
-          <PopularSearches title="Búsquedas populares" />
         </div>
       </div>
     </section>
   );
 };
+
 export default ExploreRentals;

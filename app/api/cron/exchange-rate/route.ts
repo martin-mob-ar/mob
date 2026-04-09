@@ -72,9 +72,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Log cron start
+  const { data: logRow } = await supabaseAdmin
+    .from('cron_job_log')
+    .insert({ job_name: 'exchange-rate', status: 'running' })
+    .select('id')
+    .single();
+  const logId = logRow?.id ?? null;
+
   const rate = await fetchBCRARate();
 
   if (!rate) {
+    if (logId) {
+      await supabaseAdmin
+        .from('cron_job_log')
+        .update({
+          finished_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: 'Could not fetch exchange rate from BCRA',
+        })
+        .eq('id', logId);
+    }
     return NextResponse.json(
       { error: 'Could not fetch exchange rate from BCRA' },
       { status: 502 }
@@ -91,6 +109,16 @@ export async function GET(request: NextRequest) {
 
   if (upsertError) {
     console.error('[cron/exchange-rate] DB upsert failed:', upsertError);
+    if (logId) {
+      await supabaseAdmin
+        .from('cron_job_log')
+        .update({
+          finished_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: `DB upsert failed: ${upsertError.message}`,
+        })
+        .eq('id', logId);
+    }
     return NextResponse.json({ error: 'DB upsert failed' }, { status: 500 });
   }
 
@@ -101,6 +129,17 @@ export async function GET(request: NextRequest) {
 
   if (rebuildError) {
     console.error('[cron/exchange-rate] Rebuild failed:', rebuildError);
+    if (logId) {
+      await supabaseAdmin
+        .from('cron_job_log')
+        .update({
+          finished_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: `Rebuild failed: ${rebuildError.message}`,
+          stats: { rate, rebuilt: 0, source: 'bcra' },
+        })
+        .eq('id', logId);
+    }
     return NextResponse.json({
       rate,
       rebuilt: 0,
@@ -109,6 +148,17 @@ export async function GET(request: NextRequest) {
   }
 
   console.log(`[cron/exchange-rate] Rate: ${rate}, rebuilt ${rebuilt} USD listings`);
+
+  if (logId) {
+    await supabaseAdmin
+      .from('cron_job_log')
+      .update({
+        finished_at: new Date().toISOString(),
+        status: 'completed',
+        stats: { rate, rebuilt, source: 'bcra' },
+      })
+      .eq('id', logId);
+  }
 
   return NextResponse.json({ rate, rebuilt, source: 'bcra' });
 }

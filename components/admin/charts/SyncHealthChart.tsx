@@ -22,7 +22,7 @@ export function SyncHealthChart({ data }: { data: SyncDay[] }) {
   }
 
   return (
-    <ChartContainer config={config} className="aspect-auto h-[200px] w-full">
+    <ChartContainer config={config} className="aspect-auto h-[160px] w-full">
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="date" tickLine={false} axisLine={false} tickFormatter={(v) => v.slice(5)} />
