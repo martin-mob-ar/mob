@@ -5,7 +5,6 @@ import {
   Upload,
   X,
   Star,
-  GripVertical,
   Loader2,
   AlertCircle,
   ImagePlus,
@@ -132,8 +131,10 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
-        "relative group rounded-xl overflow-hidden border-2 transition-all",
+        "relative group rounded-xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing touch-none",
         photo.isCover ? "border-primary ring-2 ring-primary/20" : "border-border",
         isDragging ? "opacity-30 scale-95" : "opacity-100"
       )}
@@ -157,15 +158,6 @@ function SortablePhoto({ photo, index, onRemove, onSetCover, isDragOverlay }: So
 
       {/* Hover overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-
-      {/* Drag handle — always visible as a subtle grip, stronger on hover */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute top-2 left-2 h-8 w-8 rounded-xl bg-black/40 group-hover:bg-black/70 backdrop-blur-sm flex items-center justify-center cursor-grab active:cursor-grabbing transition-colors touch-none"
-      >
-        <GripVertical className="h-4 w-4 text-white/70 group-hover:text-white" />
-      </div>
 
       {/* Delete button */}
       <button
