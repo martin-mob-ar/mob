@@ -126,11 +126,11 @@ const ExploreRentals = ({ title = "Alquileres para vos" }: ExploreRentalsProps) 
   );
 
   return (
-    <section className="py-[18px]">
+    <section className="py-[18px] font-display">
       <div className="container">
         {/* Title — editorial large */}
         <div className="mb-6 md:mb-8">
-          <h2 className="font-display text-3xl md:text-[2.75rem] md:leading-tight font-black text-foreground">
+          <h2 className="font-display text-2xl font-bold md:text-3xl text-foreground">
             {title}
           </h2>
           <div className="h-1 w-12 bg-primary rounded-full mt-3" />
