@@ -27,7 +27,7 @@ async function getLocationData(stateSlug: string, locationSlug: string) {
   // Fetch ALL locations matching slug + state (duplicates may exist)
   const { data: locations } = await supabaseAdmin
     .from("tokko_location")
-    .select("id, name, slug")
+    .select("id, name, slug, depth")
     .eq("slug", locationSlug)
     .eq("state_id", state.id);
 
@@ -35,7 +35,19 @@ async function getLocationData(stateSlug: string, locationSlug: string) {
 
   // Use the first match for display, but collect all IDs for querying properties
   const location = locations[0];
-  const locationIds = locations.map((l) => l.id);
+  let locationIds = locations.map((l) => l.id);
+
+  // For partido-level locations (depth ≤ 3), include all child neighborhoods
+  const shallowIds = locations.filter((l) => l.depth <= 3).map((l) => l.id);
+  if (shallowIds.length > 0) {
+    const { data: children } = await supabaseAdmin
+      .from("tokko_location")
+      .select("id")
+      .in("parent_location_id", shallowIds);
+    if (children) {
+      locationIds = [...new Set([...locationIds, ...children.map((c) => c.id)])];
+    }
+  }
 
   return { state, location, locationIds };
 }
