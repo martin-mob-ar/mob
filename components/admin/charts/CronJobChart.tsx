@@ -5,25 +5,28 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import type { LeadDay } from "@/lib/admin/queries";
+import type { CronJobDay } from "@/lib/admin/queries";
 
 const config: ChartConfig = {
-  count: { label: "Leads", color: "hsl(var(--chart-3))" },
+  completed: { label: "Completados", color: "hsl(var(--chart-1))" },
+  failed: { label: "Fallidos", color: "hsl(0 84% 60%)" },
 };
 
-export function LeadsChart({ data }: { data: LeadDay[] }) {
+export function CronJobChart({ data }: { data: CronJobDay[] }) {
   if (!data.length) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
-        Sin leads en este periodo
+        Sin datos
       </p>
     );
   }
 
   return (
-    <ChartContainer config={config} className="aspect-auto h-[280px] w-full">
+    <ChartContainer config={config} className="aspect-auto h-[160px] w-full">
       <BarChart
         data={data}
         margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
@@ -39,12 +42,19 @@ export function LeadsChart({ data }: { data: LeadDay[] }) {
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
-          width={32}
+          width={28}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
         <Bar
-          dataKey="count"
-          fill="var(--color-count)"
+          dataKey="completed"
+          stackId="1"
+          fill="var(--color-completed)"
+        />
+        <Bar
+          dataKey="failed"
+          stackId="1"
+          fill="var(--color-failed)"
           radius={[4, 4, 0, 0]}
         />
       </BarChart>

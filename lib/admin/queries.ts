@@ -44,7 +44,7 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
   ] = await Promise.all([
     supabaseAdmin.from('users').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
-    supabaseAdmin.from('properties').select('*', { count: 'exact', head: true }).eq('status', 2).is('deleted_at', null),
+    supabaseAdmin.from('properties_read').select('*', { count: 'exact', head: true }).eq('owner_verified', true),
     supabaseAdmin.from('properties').select('*', { count: 'exact', head: true }).not('draft_step', 'is', null).is('deleted_at', null),
     supabaseAdmin.from('properties').select('*', { count: 'exact', head: true }).neq('status', 2).is('deleted_at', null).is('draft_step', null),
     supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }),
@@ -132,22 +132,22 @@ export async function getNewPropertiesByDay(periodDays: number | null): Promise<
     : '1970-01-01T00:00:00Z';
 
   const { data } = await supabaseAdmin
-    .from('properties')
-    .select('created_at, tokko')
-    .is('deleted_at', null)
-    .gte('created_at', cutoff)
-    .order('created_at', { ascending: true });
+    .from('properties_read')
+    .select('property_created_at, tokko_id')
+    .eq('owner_verified', true)
+    .gte('property_created_at', cutoff)
+    .order('property_created_at', { ascending: true });
 
   if (!data?.length) return [];
 
   const byDay = new Map<string, PropertyDay>();
   for (const row of data) {
-    const date = row.created_at.slice(0, 10);
+    const date = (row.property_created_at as string).slice(0, 10);
     if (!byDay.has(date)) {
       byDay.set(date, { date, tokko: 0, manual: 0 });
     }
     const day = byDay.get(date)!;
-    if (row.tokko) day.tokko++;
+    if (row.tokko_id !== null) day.tokko++;
     else day.manual++;
   }
   return Array.from(byDay.values());
@@ -162,16 +162,15 @@ export interface PropertyTypeCount {
 
 export async function getPropertiesByType(): Promise<PropertyTypeCount[]> {
   const { data } = await supabaseAdmin
-    .from('properties')
-    .select('type_id, tokko_property_type(name)')
-    .eq('status', 2)
-    .is('deleted_at', null);
+    .from('properties_read')
+    .select('property_type_name')
+    .eq('owner_verified', true);
 
   if (!data?.length) return [];
 
   const counts = new Map<string, number>();
   for (const row of data) {
-    const name = (row.tokko_property_type as unknown as { name: string })?.name || 'Sin tipo';
+    const name = row.property_type_name || 'Sin tipo';
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
 
@@ -191,18 +190,16 @@ export interface LocationCount {
 
 export async function getPropertiesByLocation(): Promise<LocationCount[]> {
   const { data } = await supabaseAdmin
-    .from('properties')
-    .select('location_id, tokko_location(name, tokko_state(name))')
-    .eq('status', 2)
-    .is('deleted_at', null);
+    .from('properties_read')
+    .select('location_name, state_name')
+    .eq('owner_verified', true);
 
   if (!data?.length) return [];
 
   const counts = new Map<string, { location: string; state: string; count: number }>();
   for (const row of data) {
-    const loc = row.tokko_location as unknown as { name: string; tokko_state: { name: string } | null } | null;
-    const locName = loc?.name || 'Desconocido';
-    const stateName = loc?.tokko_state?.name || '';
+    const locName = row.location_name || 'Desconocido';
+    const stateName = row.state_name || '';
     const key = `${locName}|${stateName}`;
     if (!counts.has(key)) {
       counts.set(key, { location: locName, state: stateName, count: 0 });
@@ -377,6 +374,53 @@ export async function getSyncHealth(): Promise<{
     lastSync: {
       status: lastRow.status,
       finishedAt: lastRow.finished_at ?? lastRow.started_at,
+    },
+  };
+}
+
+// ── Cron job health ───────────────────────────────────────────────────────────
+
+export interface CronJobDay {
+  date: string;
+  completed: number;
+  failed: number;
+}
+
+export interface CronJobHealth {
+  days: CronJobDay[];
+  lastRun: { status: string; finishedAt: string; stats: Record<string, unknown> | null } | null;
+}
+
+export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+  const { data } = await supabaseAdmin
+    .from('cron_job_log')
+    .select('started_at, finished_at, status, stats')
+    .eq('job_name', jobName)
+    .gte('started_at', sevenDaysAgo)
+    .order('started_at', { ascending: true });
+
+  if (!data?.length) return { days: [], lastRun: null };
+
+  const byDay = new Map<string, CronJobDay>();
+  for (const row of data) {
+    const date = row.started_at.slice(0, 10);
+    if (!byDay.has(date)) {
+      byDay.set(date, { date, completed: 0, failed: 0 });
+    }
+    const day = byDay.get(date)!;
+    if (row.status === 'completed') day.completed++;
+    else if (row.status === 'failed') day.failed++;
+  }
+
+  const lastRow = data[data.length - 1];
+  return {
+    days: Array.from(byDay.values()),
+    lastRun: {
+      status: lastRow.status,
+      finishedAt: lastRow.finished_at ?? lastRow.started_at,
+      stats: lastRow.stats as Record<string, unknown> | null,
     },
   };
 }

@@ -44,6 +44,16 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const stats = { reminder24h: 0, reminder2h: 0, postvisit: 0, errors: 0 };
 
+  // Log cron start
+  const { data: logRow } = await supabaseAdmin
+    .from('cron_job_log')
+    .insert({ job_name: 'visitas', status: 'running' })
+    .select('id')
+    .single();
+  const logId = logRow?.id ?? null;
+
+  try {
+
   // ── 24h reminder ───────────────────────────────────────────────────────────
   // Visit is 23.5h to 24h from now
   const reminder24hFrom = new Date(now.getTime() + 23.5 * 60 * 60 * 1000);
@@ -168,7 +178,37 @@ export async function GET(request: NextRequest) {
   }
 
   console.log(`[CronVisitas] Done: 24h=${stats.reminder24h}, 2h=${stats.reminder2h}, postvisit=${stats.postvisit}, errors=${stats.errors}`);
+
+  if (logId) {
+    await supabaseAdmin
+      .from('cron_job_log')
+      .update({
+        finished_at: new Date().toISOString(),
+        status: stats.errors > 0 ? 'failed' : 'completed',
+        stats,
+      })
+      .eq('id', logId);
+  }
+
   return NextResponse.json({ success: true, stats });
+
+  } catch (err) {
+    console.error('[CronVisitas] Unexpected error:', err);
+    if (logId) {
+      await supabaseAdmin
+        .from('cron_job_log')
+        .update({
+          finished_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: err instanceof Error ? err.message : String(err),
+        })
+        .eq('id', logId);
+    }
+    return NextResponse.json(
+      { error: 'Internal error', message: err instanceof Error ? err.message : String(err) },
+      { status: 500 }
+    );
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
