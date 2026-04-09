@@ -26,6 +26,7 @@ export default function robots(): MetadataRoute.Robots {
           "/presentacion3",
           "/post-venta",
           "/admin",
+          "/operaciones/",
         ],
       },
       // Allow AI search bots explicitly (citation benefit)
