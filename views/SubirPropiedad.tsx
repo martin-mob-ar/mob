@@ -61,6 +61,7 @@ const propertyTypes = [
   { id: 2, label: "Departamento", icon: "/icons/property-types/depto.png" },
   { id: 3, label: "Casa", icon: "/icons/property-types/casa.png" },
   { id: 13, label: "PH", icon: "/icons/property-types/ph.png" },
+  { id: 7, label: "Local comercial", icon: "/icons/property-types/local.png" },
 ];
 
 const disposiciones = ["Frente", "Contrafrente", "Lateral", "Interior"];
@@ -1347,7 +1348,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
               <h1 className="font-display text-xl sm:text-3xl font-bold">
                 ¿Qué tipo de propiedad es?
               </h1>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {propertyTypes.map((type) => (
                   <button
                     key={type.id}
