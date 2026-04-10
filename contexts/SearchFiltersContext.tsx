@@ -430,12 +430,19 @@ export function SearchFiltersProvider({
       const ambMax = filters.maxAmbientes;
       const roomSlug = ambMin && ambMin === ambMax ? AMB_TO_ROOM_SLUG[ambMin] ?? null : null;
 
-      // Can we build a SEO path? Need exactly 1 location/state with slug data
+      // Single mappable property type → candidate for /alquileres/{propTypeSlug} routes.
+      // Types without a programmatic page (e.g. "Local") stay in the query string.
+      const propTypeSlug = filters.propertyTypeNames.length === 1
+        ? DB_NAME_TO_TYPE_SLUG[filters.propertyTypeNames[0]] ?? null
+        : null;
+
+      // Can we build a SEO path with a location? Need exactly 1 location/state with slug data
       if (sel.length === 1 && sel[0].stateSlug) {
         const stSlug = sel[0].stateSlug;
         const locSlug = sel[0].type === "location" ? (sel[0].slug ?? null) : null;
 
         const parts = ["/alquileres"];
+        if (propTypeSlug) parts.push(propTypeSlug);
         if (roomSlug) parts.push(roomSlug);
         parts.push(stSlug);
         if (locSlug) parts.push(locSlug);
@@ -449,9 +456,24 @@ export function SearchFiltersProvider({
         params.delete("locationNames");
         params.delete("stateName");
         if (roomSlug) { params.delete("minAmbientes"); params.delete("maxAmbientes"); }
+        if (propTypeSlug) params.delete("propertyTypeNames");
         const qs = params.toString();
         const newUrl = qs ? `${seoPath}?${qs}` : seoPath;
 
+        navigatingRef.current = true;
+        router.push(newUrl, { scroll: false });
+        return;
+      }
+
+      // No location. If a single mappable property type is selected, route to /alquileres/{propTypeSlug}.
+      // Preferred over /alquileres/{roomSlug} because /alquileres/{propType}/{room} without a state
+      // isn't a valid route, so only one of them can sit in the path.
+      if (propTypeSlug) {
+        const params = buildFilterParams(filters);
+        params.delete("propertyTypeNames");
+        const qs = params.toString();
+        const seoPath = `/alquileres/${propTypeSlug}`;
+        const newUrl = qs ? `${seoPath}?${qs}` : seoPath;
         navigatingRef.current = true;
         router.push(newUrl, { scroll: false });
         return;
@@ -499,13 +521,27 @@ export function SearchFiltersProvider({
     }
 
     if (!canBuildSeoPath || !stateSlug) {
-      // Fall back: use /alquileres/{roomSlug} if exact ambientes, otherwise /alquileres
+      // Fall back: try /alquileres/{propTypeSlug}, /alquileres/{roomSlug}, or plain /alquileres
       const fallbackRoomSlug = filters.minAmbientes && filters.minAmbientes === filters.maxAmbientes
         ? AMB_TO_ROOM_SLUG[filters.minAmbientes] ?? null : null;
+      const fallbackPropTypeSlug = filters.propertyTypeNames.length === 1
+        ? DB_NAME_TO_TYPE_SLUG[filters.propertyTypeNames[0]] ?? null
+        : null;
       const params = buildFilterParams(filters);
-      if (fallbackRoomSlug) { params.delete("minAmbientes"); params.delete("maxAmbientes"); }
+      // Prefer /alquileres/{propTypeSlug} over /alquileres/{roomSlug} since
+      // /alquileres/{propType}/{room} without a state isn't a valid route.
+      let fallbackBase: string;
+      if (fallbackPropTypeSlug) {
+        fallbackBase = `/alquileres/${fallbackPropTypeSlug}`;
+        params.delete("propertyTypeNames");
+      } else if (fallbackRoomSlug) {
+        fallbackBase = `/alquileres/${fallbackRoomSlug}`;
+        params.delete("minAmbientes");
+        params.delete("maxAmbientes");
+      } else {
+        fallbackBase = "/alquileres";
+      }
       const qs = params.toString();
-      const fallbackBase = fallbackRoomSlug ? `/alquileres/${fallbackRoomSlug}` : "/alquileres";
       const newUrl = qs ? `${fallbackBase}?${qs}` : fallbackBase;
       if (fallbackBase !== basePath) {
         navigatingRef.current = true;
@@ -521,14 +557,11 @@ export function SearchFiltersProvider({
       ? AMB_TO_ROOM_SLUG[filters.minAmbientes] ?? null
       : null;
 
-    // Determine property type slug (keep seeded type if filter still matches)
-    let propTypeSlug = parsedBase.propType;
-    if (propTypeSlug) {
-      const currentTypeSlugs = filters.propertyTypeNames.map((n) => DB_NAME_TO_TYPE_SLUG[n]).filter(Boolean);
-      if (currentTypeSlugs.length !== 1 || currentTypeSlugs[0] !== propTypeSlug) {
-        propTypeSlug = null; // user changed property type, drop from path
-      }
-    }
+    // Determine property type slug from the current filter (independent of parsedBase),
+    // so switching between types navigates directly to the new SEO page.
+    const propTypeSlug = filters.propertyTypeNames.length === 1
+      ? DB_NAME_TO_TYPE_SLUG[filters.propertyTypeNames[0]] ?? null
+      : null;
 
     // Build new path
     const parts = ["/alquileres"];

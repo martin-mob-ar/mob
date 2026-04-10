@@ -111,7 +111,7 @@ const OperacionesListView = () => {
                     </TableCell>
                     <TableCell>
                       <Link
-                        href={`/operaciones/${op.id}?role=admin`}
+                        href={`/operaciones/${op.id}?role=hoggax`}
                         className="text-primary hover:text-primary/80 transition-colors"
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -129,7 +129,7 @@ const OperacionesListView = () => {
           {filtered.map((op) => (
             <Link
               key={op.id}
-              href={`/operaciones/${op.id}?role=admin`}
+              href={`/operaciones/${op.id}?role=hoggax`}
               className="block rounded-xl border border-border bg-card p-4 space-y-3 active:bg-muted/50 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">

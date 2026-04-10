@@ -74,6 +74,26 @@ export interface ContractData {
   guaranteeType: string;
 }
 
+// ─── Tenant verification data (from Truora verification flow) ──────
+// In production this comes from the Supabase users table / Truora API
+// response stored at verification time.
+export type EmploymentSituation =
+  | "relacion_dependencia"
+  | "monotributista"
+  | "responsable_inscripto"
+  | "estudiante_universitario"
+  | "jubilado";
+
+export interface TenantVerificationData {
+  fullName: string;
+  dni: string;
+  gender: "masculino" | "femenino" | "otro";
+  employmentSituation: EmploymentSituation;
+  jobTenureMonths: number;
+  monthlyIncome: number;
+  incomeCurrency: string;
+}
+
 // ─── Operation ──────────────────────────────────────────────────────
 export type OperacionGeneralStatus = "en_proceso" | "completada" | "cancelada";
 
@@ -90,6 +110,7 @@ export interface Operacion {
   progressPercent: number;
   checklist: ChecklistStep[];
   contractData: ContractData;
+  tenantVerification: TenantVerificationData;
   createdAt: string;
   updatedAt: string;
 }

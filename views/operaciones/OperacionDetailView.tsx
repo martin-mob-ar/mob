@@ -4,6 +4,7 @@ import { Send, RotateCcw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OperacionHeader from "@/components/operaciones/OperacionHeader";
 import OperacionChecklist from "@/components/operaciones/OperacionChecklist";
+import RoleSwitcher from "@/components/operaciones/RoleSwitcher";
 import type { Operacion, OperacionViewerRole } from "@/lib/mock/operaciones-types";
 
 interface OperacionDetailViewProps {
@@ -17,9 +18,12 @@ const OperacionDetailView = ({
 }: OperacionDetailViewProps) => {
   return (
     <div className="flex-1 bg-background">
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+        {/* Demo role switcher */}
+        <RoleSwitcher operationId={operation.id} currentRole={role} />
+
         {/* Header card */}
-        <OperacionHeader operation={operation} role={role} />
+        <OperacionHeader operation={operation} />
 
         {/* Checklist */}
         <div>

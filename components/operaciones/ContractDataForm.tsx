@@ -13,7 +13,9 @@ import type {
 } from "@/lib/mock/operaciones-types";
 
 interface ContractDataFormProps {
-  contractData: ContractData;
+  formData: ContractData;
+  onChange: (key: keyof ContractData, value: string) => void;
+  onSave?: () => void;
   role: OperacionViewerRole;
 }
 
@@ -109,19 +111,24 @@ const rentalFields: FieldDef[] = [
   { key: "guaranteeType", label: fieldLabels.guaranteeType },
 ];
 
-const ContractDataForm = ({ contractData, role }: ContractDataFormProps) => {
-  const [formData, setFormData] = useState<ContractData>({ ...contractData });
+const ContractDataForm = ({
+  formData,
+  onChange,
+  onSave,
+  role,
+}: ContractDataFormProps) => {
   const [saved, setSaved] = useState(false);
   const editable = editableByRole[role];
 
   const handleChange = (key: keyof ContractData, value: string) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
+    onChange(key, value);
     setSaved(false);
   };
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    onSave?.();
   };
 
   const renderField = ({ key, label }: FieldDef) => {

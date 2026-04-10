@@ -7,38 +7,45 @@ import { DocStatusBadge } from "./OperacionStatusBadge";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { cn } from "@/lib/utils";
 import type {
+  DocumentStatus,
   OperacionDocument,
   OperacionViewerRole,
 } from "@/lib/mock/operaciones-types";
 
 interface DocumentRowProps {
   document: OperacionDocument;
+  status: DocumentStatus;
   role: OperacionViewerRole;
+  onStatusChange: (docId: string, status: DocumentStatus) => void;
 }
 
-const DocumentRow = ({ document: doc, role }: DocumentRowProps) => {
-  const [localStatus, setLocalStatus] = useState(doc.status);
+const DocumentRow = ({
+  document: doc,
+  status,
+  role,
+  onStatusChange,
+}: DocumentRowProps) => {
   const [rejectionText, setRejectionText] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
 
   const canUpload =
     role === "inquilino" &&
-    (localStatus === "pendiente" || localStatus === "rechazado");
+    (status === "pendiente" || status === "rechazado");
   const canReview =
-    (role === "hoggax" || role === "admin") && localStatus === "subido";
+    (role === "hoggax" || role === "admin") && status === "subido";
 
   const handleUpload = () => {
-    setLocalStatus("subido");
+    onStatusChange(doc.id, "subido");
   };
 
   const handleApprove = () => {
-    setLocalStatus("aprobado");
+    onStatusChange(doc.id, "aprobado");
     setShowRejectInput(false);
   };
 
   const handleReject = () => {
     if (rejectionText.trim()) {
-      setLocalStatus("rechazado");
+      onStatusChange(doc.id, "rechazado");
       setShowRejectInput(false);
       setRejectionText("");
     }
@@ -48,7 +55,7 @@ const DocumentRow = ({ document: doc, role }: DocumentRowProps) => {
     <div
       className={cn(
         "rounded-lg border p-3 space-y-2",
-        localStatus === "rechazado"
+        status === "rechazado"
           ? "border-destructive/30 bg-destructive/5"
           : "border-border bg-card"
       )}
@@ -58,17 +65,17 @@ const DocumentRow = ({ document: doc, role }: DocumentRowProps) => {
         <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{doc.name}</p>
-          {doc.fileName && localStatus !== "pendiente" && (
+          {doc.fileName && status !== "pendiente" && (
             <p className="text-xs text-muted-foreground truncate">
               {doc.fileName}
             </p>
           )}
         </div>
-        <DocStatusBadge status={localStatus} />
+        <DocStatusBadge status={status} />
       </div>
 
       {/* Rejection comment */}
-      <AnimateHeight show={localStatus === "rechazado" && !!doc.rejectionComment}>
+      <AnimateHeight show={status === "rechazado" && !!doc.rejectionComment}>
         <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/5 rounded-md p-2">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span>{doc.rejectionComment}</span>
@@ -84,7 +91,7 @@ const DocumentRow = ({ document: doc, role }: DocumentRowProps) => {
           onClick={handleUpload}
         >
           <Upload className="h-3.5 w-3.5 mr-1.5" />
-          {localStatus === "rechazado" ? "Volver a subir" : "Subir archivo"}
+          {status === "rechazado" ? "Volver a subir" : "Subir archivo"}
         </Button>
       )}
 

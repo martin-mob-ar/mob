@@ -15,6 +15,7 @@ const propertyTypes = [
   { id: "Departamento", label: "Departamento" },
   { id: "Casa", label: "Casa" },
   { id: "PH", label: "PH" },
+  { id: "Local", label: "Local comercial" },
 ];
 
 const PropertyTypeFilter = () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { Children } from "react";
 import { Check, Circle } from "lucide-react";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,10 @@ const ChecklistStepComponent = ({
   const isCompleted = step.status === "completed";
   const isActive = step.status === "in_progress";
   const isPending = step.status === "pending";
-  const hasContent = !!children;
+  // Detect real renderable content, ignoring `false`/`null`/`undefined`
+  // placeholders produced by conditional rendering like `{cond && <X />}`.
+  const hasContent =
+    Children.toArray(children).filter(Boolean).length > 0;
 
   return (
     <div className="flex gap-3">

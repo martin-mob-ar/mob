@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Circle, Send, FileCheck } from "lucide-react";
+import { useState } from "react";
+import { Check, Circle, Send, FileCheck, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type {
@@ -31,20 +32,33 @@ const stageOrder: Record<FirmaStage, number> = {
 };
 
 const FirmaTimeline = ({ currentStage, role }: FirmaTimelineProps) => {
-  const currentOrder = stageOrder[currentStage];
-  const canInitiate =
-    (role === "admin") && currentStage === "pendiente";
+  const [stage, setStage] = useState<FirmaStage>(currentStage);
+  const currentOrder = stageOrder[stage];
+
+  const canInitiate = role === "admin" && stage === "pendiente";
+  const canOwnerSign =
+    role === "propietario" && stage === "enviado_propietario";
+  const canTenantSign =
+    role === "inquilino" && stage === "enviado_inquilino";
+
+  // After signing, automatically forward to the next signer
+  // (simulates ZapSign auto-forwarding once a party completes their signature).
+  const handleOwnerSign = () => setStage("enviado_inquilino");
+  const handleTenantSign = () => setStage("documento_final");
 
   return (
     <div className="space-y-3">
-      {currentStage === "pendiente" ? (
+      {stage === "pendiente" ? (
         <div className="bg-card rounded-lg border border-border p-4 text-center space-y-3">
           <Send className="h-8 w-8 text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">
             El contrato está listo para ser enviado a firma.
           </p>
           {canInitiate && (
-            <Button className="w-full h-10">
+            <Button
+              className="w-full h-10"
+              onClick={() => setStage("enviado_propietario")}
+            >
               <Send className="h-4 w-4 mr-1.5" />
               Enviar a firma
             </Button>
@@ -52,15 +66,15 @@ const FirmaTimeline = ({ currentStage, role }: FirmaTimelineProps) => {
         </div>
       ) : (
         <div className="bg-card rounded-lg border border-border p-4 space-y-0">
-          {stages.map((stage, idx) => {
-            const order = stageOrder[stage.id];
+          {stages.map((stageDef, idx) => {
+            const order = stageOrder[stageDef.id];
             const isCompleted = order < currentOrder;
             const isActive = order === currentOrder;
             const isPending = order > currentOrder;
             const isLast = idx === stages.length - 1;
 
             return (
-              <div key={stage.id} className="flex gap-3">
+              <div key={stageDef.id} className="flex gap-3">
                 {/* Dot */}
                 <div className="flex flex-col items-center">
                   <div
@@ -98,15 +112,35 @@ const FirmaTimeline = ({ currentStage, role }: FirmaTimelineProps) => {
                       isPending && "text-muted-foreground"
                     )}
                   >
-                    {stage.label}
+                    {stageDef.label}
                   </span>
                 </div>
               </div>
             );
           })}
 
+          {/* Owner sign button */}
+          {canOwnerSign && (
+            <div className="pt-3">
+              <Button className="w-full h-10" onClick={handleOwnerSign}>
+                <PenLine className="h-4 w-4 mr-1.5" />
+                Firmar contrato
+              </Button>
+            </div>
+          )}
+
+          {/* Tenant sign button */}
+          {canTenantSign && (
+            <div className="pt-3">
+              <Button className="w-full h-10" onClick={handleTenantSign}>
+                <PenLine className="h-4 w-4 mr-1.5" />
+                Firmar contrato
+              </Button>
+            </div>
+          )}
+
           {/* Download button for final document */}
-          {currentStage === "documento_final" && (
+          {stage === "documento_final" && (
             <div className="pt-3">
               <Button variant="outline" className="w-full h-10">
                 <FileCheck className="h-4 w-4 mr-1.5" />

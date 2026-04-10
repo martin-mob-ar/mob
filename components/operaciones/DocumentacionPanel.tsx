@@ -4,15 +4,23 @@ import { DocSubStageBadge } from "./OperacionStatusBadge";
 import DocumentRow from "./DocumentRow";
 import type {
   ChecklistStep,
+  DocumentStatus,
   OperacionViewerRole,
 } from "@/lib/mock/operaciones-types";
 
 interface DocumentacionPanelProps {
   step: ChecklistStep;
   role: OperacionViewerRole;
+  docStatuses: Record<string, DocumentStatus>;
+  onDocStatusChange: (docId: string, status: DocumentStatus) => void;
 }
 
-const DocumentacionPanel = ({ step, role }: DocumentacionPanelProps) => {
+const DocumentacionPanel = ({
+  step,
+  role,
+  docStatuses,
+  onDocStatusChange,
+}: DocumentacionPanelProps) => {
   const documents = step.documents || [];
   const subStage = step.documentacionSubStage;
 
@@ -28,7 +36,13 @@ const DocumentacionPanel = ({ step, role }: DocumentacionPanelProps) => {
       {/* Documents list */}
       <div className="space-y-2">
         {documents.map((doc) => (
-          <DocumentRow key={doc.id} document={doc} role={role} />
+          <DocumentRow
+            key={doc.id}
+            document={doc}
+            status={docStatuses[doc.id] ?? doc.status}
+            role={role}
+            onStatusChange={onDocStatusChange}
+          />
         ))}
       </div>
     </div>
