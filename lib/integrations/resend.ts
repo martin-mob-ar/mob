@@ -191,7 +191,7 @@ export async function sendWelcomeEmail(
       </ul>`;
     closingHtml = `
       <p style="font-size: 15px; line-height: 1.6;">
-        A partir de acá nos encargamos nosotros. Cuando haya novedades, te avisamos.
+        Cualquier duda, podés <a href="${whatsappUrl}" style="color: #25D366;">escribirnos por WhatsApp</a>. Cuando haya novedades, te avisamos.
       </p>
       <p style="font-size: 15px; line-height: 1.6;">
         El costo de USD 299 se cobra únicamente cuando el alquiler se concreta. No hay ningún cargo inicial de ningún tipo.
@@ -216,6 +216,9 @@ export async function sendWelcomeEmail(
       </p>
       <p style="font-size: 15px; line-height: 1.6;">
         El costo de USD 99 se cobra únicamente cuando el alquiler se concreta. No hay ningún cargo inicial.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        Cualquier duda, podés <a href="${whatsappUrl}" style="color: #25D366;">escribirnos por WhatsApp</a>.
       </p>`;
   } else {
     // basico (default)
@@ -234,6 +237,9 @@ export async function sendWelcomeEmail(
       </p>
       <p style="font-size: 15px; line-height: 1.6;">
         Si en algún momento querés más visibilidad o que mob gestione las visitas y el contrato por vos, podés contactarnos para cambiar tu plan.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        Cualquier duda, podés <a href="${whatsappUrl}" style="color: #25D366;">escribirnos por WhatsApp</a>.
       </p>`;
   }
 
@@ -253,10 +259,6 @@ export async function sendWelcomeEmail(
       </p>
 
       ${closingHtml}
-
-      <p style="font-size: 15px; line-height: 1.6;">
-        Cualquier duda, podés <a href="${whatsappUrl}" style="color: #25D366;">escribirnos por WhatsApp</a>.
-      </p>
 
       <p style="font-size: 15px; line-height: 1.6; margin-top: 24px;">
         Saludos,<br/>Iñaki

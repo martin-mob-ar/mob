@@ -1109,7 +1109,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         }
 
         // Fire Truora outbound for identity verification (fire-and-forget)
-        // Skip if user is already verified
+        // No propertyId — use the generic verification flow (not visit request)
         if (authUser?.phone && !authUser?.isVerified) {
           fetch("/api/truora/outbound", {
             method: "POST",
