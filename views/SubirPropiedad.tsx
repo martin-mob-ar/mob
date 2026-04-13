@@ -162,7 +162,6 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   const [geoLong, setGeoLong] = useState("");
   const [piso, setPiso] = useState("");
   const [depto, setDepto] = useState("");
-  const [hideAddress, setHideAddress] = useState(false);
   const [fakeAddress, setFakeAddress] = useState("");
   const [missingAltura, setMissingAltura] = useState(false);
 
@@ -306,7 +305,6 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     if (draftData.floor) setPiso(String(draftData.floor));
     if (draftData.apartment_door) setDepto(String(draftData.apartment_door));
     if (draftData.fake_address) {
-      setHideAddress(true);
       setFakeAddress(draftData.fake_address);
     }
     if (draftData.room_amount != null) setAmbientes(draftData.room_amount);
@@ -389,7 +387,6 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     if (editData.floor) setPiso(String(editData.floor));
     if (editData.apartment_door) setDepto(String(editData.apartment_door));
     if (editData.fake_address) {
-      setHideAddress(true);
       setFakeAddress(editData.fake_address);
     }
     if (editData.room_amount != null) setAmbientes(editData.room_amount);
@@ -568,7 +565,6 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     setGeoLong("");
     setPlaceSelected(false);
     setMissingAltura(false);
-    setHideAddress(false);
     setFakeAddress("");
   };
 
@@ -601,11 +597,11 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     setPlaceSelected(true);
     setMissingAltura(false);
     setShowErrors(false);
-    // Recompute fake address if checkbox was already checked
-    if (hideAddress && finalAddress) {
+    // Always generate fake address
+    if (finalAddress) {
       setFakeAddress(generateFakeAddress(finalAddress));
     }
-  }, [hideAddress]);
+  }, []);
 
   const getTomorrowDateString = () => {
     const d = new Date();
@@ -675,7 +671,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
             draft_step: effectiveDraftStep,
             type_id: typeId,
             address: address || null,
-            fake_address: hideAddress ? fakeAddress || null : null,
+            fake_address: fakeAddress || null,
             geo_lat: geoLat || null,
             geo_long: geoLong || null,
             location_id: locationId,
@@ -730,7 +726,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     return promise;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    userId, typeId, address, hideAddress, fakeAddress, geoLat, geoLong, locationId,
+    userId, typeId, address, fakeAddress, geoLat, geoLong, locationId,
     piso, depto, ambientes, banos, toilettes, dormitorios, cocheras,
     superficieCubierta, superficieTotal, antiguedad, disposicion,
     fechaDisponible, diasVisita, horariosVisita, descripcion, selectedTagIds,
@@ -1005,7 +1001,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         const body = {
           type_id: typeId,
           address: address || null,
-          fake_address: hideAddress ? fakeAddress || null : null,
+          fake_address: fakeAddress || null,
           address_complement: null,
           geo_lat: geoLat || null,
           geo_long: geoLong || null,
@@ -1066,7 +1062,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           draftId: draftPropertyId,
           type_id: typeId,
           address: address || null,
-          fake_address: hideAddress ? fakeAddress || null : null,
+          fake_address: fakeAddress || null,
           geo_lat: geoLat || null,
           geo_long: geoLong || null,
           location_id: locationId,
@@ -1488,31 +1484,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                       <p className="text-sm text-red-500">Ingresá una dirección</p>
                     )}
 
-                    <AnimateHeight show={placeSelected}>
-                      <div className="flex items-start gap-3 mt-4 p-3 rounded-xl bg-muted/50">
-                        <Checkbox
-                          id="hide-address"
-                          checked={hideAddress}
-                          onCheckedChange={(checked) => {
-                            const val = !!checked;
-                            setHideAddress(val);
-                            if (val && address) {
-                              setFakeAddress(generateFakeAddress(address));
-                            } else {
-                              setFakeAddress("");
-                            }
-                          }}
-                          className="mt-0.5"
-                        />
-                        <label htmlFor="hide-address" className="text-sm cursor-pointer select-none">
-                          ¿Querés ocultar la dirección real?
-                        </label>
-                      </div>
-                      <AnimateHeight show={hideAddress && !!fakeAddress}>
-                        <p className="text-sm text-muted-foreground mt-2 ml-1">
-                          Los usuarios verán: <span className="font-medium text-foreground">{fakeAddress}</span>
-                        </p>
-                      </AnimateHeight>
+                    <AnimateHeight show={placeSelected && !!fakeAddress}>
+                      <p className="text-sm text-muted-foreground mt-2 ml-1">
+                        Los usuarios verán: <span className="font-medium text-foreground">{fakeAddress}</span>
+                      </p>
                     </AnimateHeight>
                   </div>
                 </AnimateHeight>

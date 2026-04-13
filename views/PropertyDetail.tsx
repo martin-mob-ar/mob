@@ -350,23 +350,11 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
               <button
                 onClick={closeGallery}
                 aria-label="Cerrar galería"
-                className="hidden md:flex h-9 w-9 items-center justify-center text-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+                className="flex h-9 w-9 items-center justify-center text-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
               >
                 <span className="text-lg leading-none">&times;</span>
               </button>
-              {/* Spacer on mobile to keep counter centered */}
-              <div className="w-[52px] md:hidden" />
             </div>
-
-            {/* Previous arrow */}
-            <button
-              onClick={(e) => { e.stopPropagation(); handleGalleryPrev(); }}
-              aria-label="Foto anterior"
-              className="absolute left-0 top-0 bottom-0 w-16 md:w-auto md:left-4 md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:h-11 md:w-11 md:rounded-full md:border md:border-border md:bg-background md:hover:bg-secondary md:shadow-sm flex items-center justify-start md:justify-center pl-3 md:pl-0 z-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:focus-visible:ring-offset-0 rounded-none md:rounded-full"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <ChevronLeft className="h-6 w-6 text-foreground/40 md:text-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] md:drop-shadow-none" />
-            </button>
 
             {/* Image container with swipe support — preloads ±2 adjacent images */}
             <div
@@ -407,17 +395,27 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                   />
                 );
               })}
-            </div>
 
-            {/* Next arrow */}
-            <button
-              onClick={(e) => { e.stopPropagation(); handleGalleryNext(); }}
-              aria-label="Foto siguiente"
-              className="absolute right-0 top-0 bottom-0 w-16 md:w-auto md:right-4 md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:h-11 md:w-11 md:rounded-full md:border md:border-border md:bg-background md:hover:bg-secondary md:shadow-sm flex items-center justify-end md:justify-center pr-3 md:pr-0 z-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:focus-visible:ring-offset-0 rounded-none md:rounded-full"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <ChevronRight className="h-6 w-6 text-foreground/40 md:text-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] md:drop-shadow-none" />
-            </button>
+              {/* Previous arrow — inside image container */}
+              <button
+                onClick={(e) => { e.stopPropagation(); handleGalleryPrev(); }}
+                aria-label="Foto anterior"
+                className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center z-10 transition-all hover:bg-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <ChevronLeft className="h-5 w-5 text-neutral-700" />
+              </button>
+
+              {/* Next arrow — inside image container */}
+              <button
+                onClick={(e) => { e.stopPropagation(); handleGalleryNext(); }}
+                aria-label="Foto siguiente"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center z-10 transition-all hover:bg-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <ChevronRight className="h-5 w-5 text-neutral-700" />
+              </button>
+            </div>
           </div>
 
           {/* Thumbnail strip */}

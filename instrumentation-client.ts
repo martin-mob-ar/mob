@@ -25,6 +25,10 @@ Sentry.init({
     /AbortError/,
     /signal is aborted/,
     /The user aborted a request/,
+    // Third-party: Twitter/X in-app browser WebView scroll handler
+    /webkit\.messageHandlers/,
+    // Third-party: Microsoft Clarity internal errors
+    /clarity\.js/,
   ],
 
   // Filter out errors from browser extensions (e.g. MetaMask inpage.js)

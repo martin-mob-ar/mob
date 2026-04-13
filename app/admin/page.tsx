@@ -290,7 +290,7 @@ export default async function AdminPage({
                       </div>
                       {b.outliers > 0 && (
                         <p className="text-xs text-muted-foreground">
-                          {b.outliers} outlier{b.outliers > 1 ? "s" : ""} fuera del rango
+                          {b.outliers} ({Math.round((b.outliers / b.count) * 100)}%) outlier{b.outliers > 1 ? "s" : ""} fuera del rango
                         </p>
                       )}
                     </div>
