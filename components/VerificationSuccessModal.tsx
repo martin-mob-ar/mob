@@ -191,12 +191,14 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
             </div>
           </AnimateHeight>
 
-          <Button
-            onClick={handleDismiss}
-            className="w-full rounded-xl h-11 font-semibold mt-5"
-          >
-            Entendido
-          </Button>
+          <AnimateHeight show={!showPhoneEdit}>
+            <Button
+              onClick={handleDismiss}
+              className="w-full rounded-xl h-11 font-semibold mt-5"
+            >
+              Entendido
+            </Button>
+          </AnimateHeight>
         </div>
       </DialogContent>
     </Dialog>
