@@ -282,7 +282,7 @@ export default function VerificatePage() {
                           <Input
                             type="tel"
                             inputMode="numeric"
-                            placeholder="(11) 0000-0000"
+                            placeholder="Ej: 1126373290"
                             autoComplete="tel-national"
                             className="h-12 rounded-xl"
                             {...field}
@@ -300,6 +300,7 @@ export default function VerificatePage() {
                     )}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">Sin 0 y sin 15. Ej: 1126373290</p>
               </div>
 
               {/* Submit */}

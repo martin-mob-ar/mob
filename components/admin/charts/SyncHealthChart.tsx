@@ -13,6 +13,7 @@ import type { SyncDay } from "@/lib/admin/queries";
 
 const config: ChartConfig = {
   completed: { label: "Completados", color: "hsl(var(--chart-1))" },
+  withErrors: { label: "Con errores", color: "hsl(var(--chart-3))" },
   failed: { label: "Fallidos", color: "hsl(0 84% 60%)" },
 };
 
@@ -30,6 +31,7 @@ export function SyncHealthChart({ data }: { data: SyncDay[] }) {
         <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent />} />
         <Bar dataKey="completed" stackId="1" fill="var(--color-completed)" radius={[0, 0, 0, 0]} />
+        <Bar dataKey="withErrors" stackId="1" fill="var(--color-withErrors)" radius={[0, 0, 0, 0]} />
         <Bar dataKey="failed" stackId="1" fill="var(--color-failed)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ChartContainer>

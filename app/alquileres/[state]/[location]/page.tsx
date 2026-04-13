@@ -114,7 +114,7 @@ export default async function LocationPage({ params }: PageProps) {
     .eq("owner_verified", true)
     .in("location_id", locationIds)
     .order("sort_priority", { ascending: true })
-    .order("property_created_at", { ascending: false })
+    .order("listing_updated_at", { ascending: false })
     .range(0, 19);
 
   const initialProperties = properties && properties.length > 0

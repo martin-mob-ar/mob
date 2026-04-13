@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2, Compass, Clock } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2, Compass, Clock, Toilet } from "lucide-react";
 import type { PublisherType } from "@/lib/publisher";
 import { getPublisherBadgeConfig } from "@/lib/publisher";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -67,6 +67,7 @@ interface PropertyDetailProps {
   isUnavailable?: boolean;
   isPendingVerification?: boolean;
   suiteAmount?: number | null;
+  toiletAmount?: number | null;
   roofedSurface?: number | null;
   ipcAdjustment?: string | null;
   publicationDate?: string | null;
@@ -86,7 +87,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescriptions = [], tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, showVerificationModal = false, relatedProperties }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescriptions = [], tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, toiletAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, showVerificationModal = false, relatedProperties }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -273,17 +274,26 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
     setGalleryIndex((prev) => (prev + 1) % galleryImages.length);
   }, [galleryImages.length]);
 
+  // Close gallery and sync carousel to the current gallery photo
+  const closeGallery = useCallback(() => {
+    setShowGallery(false);
+    // Scroll mobile carousel to the photo the user was viewing in the lightbox
+    if (carouselApi) {
+      carouselApi.scrollTo(galleryIndex, true);
+    }
+  }, [carouselApi, galleryIndex]);
+
   // Handle keyboard navigation for gallery
   useEffect(() => {
     if (!showGallery) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') handleGalleryPrev();
       if (e.key === 'ArrowRight') handleGalleryNext();
-      if (e.key === 'Escape') setShowGallery(false);
+      if (e.key === 'Escape') closeGallery();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showGallery, handleGalleryPrev, handleGalleryNext]);
+  }, [showGallery, handleGalleryPrev, handleGalleryNext, closeGallery]);
 
   // Lock body scroll when gallery is open
   useEffect(() => {
@@ -314,49 +324,53 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
     <div className="min-h-screen bg-background">
       {/* Gallery Modal */}
       {showGallery && (
-        <div 
-          className="fixed inset-0 top-[72px] z-40 bg-background flex flex-col"
-          onClick={() => setShowGallery(false)}
+        <div
+          className="fixed inset-0 top-0 md:top-[72px] z-50 md:z-40 bg-background flex flex-col overscroll-contain"
+          onClick={closeGallery}
+          style={{ touchAction: 'manipulation' }}
         >
           {/* Main image area */}
-          <div className="flex-1 flex items-center justify-center relative px-4">
-            {/* Navigation controls above image */}
-            <div className="absolute top-4 left-0 right-0 flex items-center px-6">
-              <div className="flex-1 flex justify-start">
-                <button
-                  onClick={() => setShowGallery(false)}
-                  className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                  <span className="text-sm font-medium">Volver</span>
-                </button>
-              </div>
+          <div className="flex-1 flex items-center justify-center relative">
+            {/* Top bar */}
+            <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-4 md:px-6 py-3 bg-gradient-to-b from-background/90 to-transparent">
+              <button
+                onClick={closeGallery}
+                aria-label="Cerrar galería"
+                className="flex items-center gap-1.5 text-foreground/80 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg px-2 py-1.5 -ml-2"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <ChevronLeft className="h-5 w-5" />
+                <span className="text-sm font-medium">Volver</span>
+              </button>
 
-              <div className="text-muted-foreground text-sm font-medium bg-background/80 backdrop-blur-sm px-3 py-2 rounded-xl">
+              <span className="text-sm font-medium text-muted-foreground tabular-nums">
                 {galleryIndex + 1} / {galleryImages.length}
-              </div>
+              </span>
 
-              <div className="flex-1 flex justify-end">
-                <button
-                  onClick={() => setShowGallery(false)}
-                  className="h-10 w-10 flex items-center justify-center bg-background/80 backdrop-blur-sm hover:bg-secondary rounded-xl transition-colors"
-                >
-                  <span className="text-foreground text-xl leading-none">&times;</span>
-                </button>
-              </div>
+              <button
+                onClick={closeGallery}
+                aria-label="Cerrar galería"
+                className="hidden md:flex h-9 w-9 items-center justify-center text-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+              >
+                <span className="text-lg leading-none">&times;</span>
+              </button>
+              {/* Spacer on mobile to keep counter centered */}
+              <div className="w-[52px] md:hidden" />
             </div>
 
             {/* Previous arrow */}
             <button
               onClick={(e) => { e.stopPropagation(); handleGalleryPrev(); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background border border-border hover:bg-secondary flex items-center justify-center transition-colors z-10 shadow-sm"
+              aria-label="Foto anterior"
+              className="absolute left-0 top-0 bottom-0 w-16 md:w-auto md:left-4 md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:h-11 md:w-11 md:rounded-full md:border md:border-border md:bg-background md:hover:bg-secondary md:shadow-sm flex items-center justify-start md:justify-center pl-3 md:pl-0 z-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:focus-visible:ring-offset-0 rounded-none md:rounded-full"
+              style={{ touchAction: 'manipulation' }}
             >
-              <ChevronLeft className="h-6 w-6 text-foreground" />
+              <ChevronLeft className="h-6 w-6 text-foreground/40 md:text-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] md:drop-shadow-none" />
             </button>
 
-            {/* Image container with swipe support — preloads adjacent images */}
+            {/* Image container with swipe support — preloads ±2 adjacent images */}
             <div
-              className="relative max-w-[90vw] max-h-[60vh] flex items-center justify-center mt-12"
+              className="relative max-w-[92vw] md:max-w-[85vw] max-h-[65vh] md:max-h-[60vh] flex items-center justify-center mt-10 mb-2"
               onClick={(e) => e.stopPropagation()}
               onTouchStart={(e) => {
                 const touchStartX = e.touches[0].clientX;
@@ -383,7 +397,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                     width={1200}
                     height={900}
                     sizes="90vw"
-                    className={`max-w-full max-h-[60vh] object-contain select-none rounded-xl transition-opacity duration-200 ${
+                    className={`max-w-full max-h-[65vh] md:max-h-[60vh] object-contain select-none rounded-xl transition-opacity duration-200 ${
                       isCurrent
                         ? "relative opacity-100"
                         : "absolute inset-0 m-auto opacity-0 pointer-events-none"
@@ -398,28 +412,33 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
             {/* Next arrow */}
             <button
               onClick={(e) => { e.stopPropagation(); handleGalleryNext(); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background border border-border hover:bg-secondary flex items-center justify-center transition-colors z-10 shadow-sm"
+              aria-label="Foto siguiente"
+              className="absolute right-0 top-0 bottom-0 w-16 md:w-auto md:right-4 md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:h-11 md:w-11 md:rounded-full md:border md:border-border md:bg-background md:hover:bg-secondary md:shadow-sm flex items-center justify-end md:justify-center pr-3 md:pr-0 z-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:focus-visible:ring-offset-0 rounded-none md:rounded-full"
+              style={{ touchAction: 'manipulation' }}
             >
-              <ChevronRight className="h-6 w-6 text-foreground" />
+              <ChevronRight className="h-6 w-6 text-foreground/40 md:text-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] md:drop-shadow-none" />
             </button>
           </div>
 
           {/* Thumbnail strip */}
-          <div className="flex items-center gap-2 border-t border-border px-2 py-4">
+          <div className="flex items-center gap-1.5 md:gap-2 border-t border-border px-2 py-3 md:py-4">
             <button
               onClick={(e) => { e.stopPropagation(); thumbnailStripRef.current?.scrollBy({ left: -200, behavior: 'smooth' }); }}
-              className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors"
+              aria-label="Desplazar miniaturas a la izquierda"
+              className="hidden md:flex flex-shrink-0 h-8 w-8 items-center justify-center rounded-full border border-border hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <ChevronLeft className="h-4 w-4 text-foreground" />
             </button>
-            <div ref={thumbnailStripRef} className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-1">
+            <div ref={thumbnailStripRef} className="flex gap-1.5 md:gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-1 px-1 md:px-0">
               {galleryImages.map((img, index) => (
                 <button
                   key={index}
                   onClick={(e) => { e.stopPropagation(); setGalleryIndex(index); }}
-                  className={`flex-shrink-0 w-16 h-12 rounded-xl overflow-hidden border-2 transition-all relative ${
-                    index === galleryIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-80'
+                  aria-label={`Ver foto ${index + 1}`}
+                  className={`flex-shrink-0 w-12 h-9 md:w-16 md:h-12 rounded-lg md:rounded-xl overflow-hidden border-2 transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 ${
+                    index === galleryIndex ? 'border-primary opacity-100' : 'border-transparent opacity-50 hover:opacity-75'
                   }`}
+                  style={{ touchAction: 'manipulation' }}
                 >
                   <Image src={img} alt={getPhotoAlt(index)} fill sizes="64px" className="object-cover" />
                 </button>
@@ -427,7 +446,8 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); thumbnailStripRef.current?.scrollBy({ left: 200, behavior: 'smooth' }); }}
-              className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors"
+              aria-label="Desplazar miniaturas a la derecha"
+              className="hidden md:flex flex-shrink-0 h-8 w-8 items-center justify-center rounded-full border border-border hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <ChevronRight className="h-4 w-4 text-foreground" />
             </button>
@@ -523,7 +543,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
           </div>
 
           {/* Carousel */}
-          <Carousel 
+          <Carousel
             setApi={setCarouselApi}
             className="w-full"
             opts={{ loop: true }}
@@ -531,7 +551,10 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
             <CarouselContent className="ml-0">
               {galleryImages.map((image, index) => (
                 <CarouselItem key={index} className="pl-0">
-                  <div className="aspect-[4/3] relative">
+                  <div
+                    className="aspect-[4/3] relative cursor-pointer"
+                    onClick={() => { setGalleryIndex(index); setShowGallery(true); }}
+                  >
                     <Image
                       src={image}
                       alt={getPhotoAlt(index)}
@@ -545,6 +568,13 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
               ))}
             </CarouselContent>
           </Carousel>
+
+          {/* Photo counter */}
+          {galleryImages.length > 1 && (
+            <div className="absolute bottom-4 right-4 z-10 bg-black/60 text-white text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur-sm">
+              {currentSlide + 1} / {galleryImages.length}
+            </div>
+          )}
 
           {/* Publisher Badge - Bottom left */}
           <div className="absolute bottom-4 left-4 z-10">
@@ -857,6 +887,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
           if (suiteAmount != null) chars.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dormitorio' : 'dormitorios'}` });
           if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
           if (property.bathrooms != null) chars.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
+          if (toiletAmount != null && toiletAmount > 0) chars.push({ Icon: Toilet, label: `${toiletAmount} ${toiletAmount === 1 ? 'toilette' : 'toilettes'}` });
           if (property.parking != null) {
             if (property.parking > 0) chars.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
             else chars.push({ Icon: Car, label: 'Sin cochera' });
@@ -1157,6 +1188,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
               if (suiteAmount != null) chars.push({ Icon: Bed, label: `${suiteAmount} ${suiteAmount === 1 ? 'dormitorio' : 'dormitorios'}` });
               if (property.rooms != null) chars.push({ Icon: Home, label: `${property.rooms} ${property.rooms === 1 ? 'ambiente' : 'ambientes'}` });
               if (property.bathrooms != null) chars.push({ Icon: Bath, label: `${property.bathrooms} ${property.bathrooms === 1 ? 'baño' : 'baños'}` });
+              if (toiletAmount != null && toiletAmount > 0) chars.push({ Icon: Toilet, label: `${toiletAmount} ${toiletAmount === 1 ? 'toilette' : 'toilettes'}` });
               if (property.parking != null) {
                 if (property.parking > 0) chars.push({ Icon: Car, label: `${property.parking} ${property.parking === 1 ? 'cochera' : 'cocheras'}` });
                 else chars.push({ Icon: Car, label: 'Sin cochera' });

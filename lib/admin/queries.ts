@@ -276,58 +276,125 @@ export interface PlanCount {
   count: number;
 }
 
-export async function getPlanDistribution(): Promise<PlanCount[]> {
+export interface PlanDistribution {
+  todas: PlanCount[];
+  duenoDir: PlanCount[];
+}
+
+export async function getPlanDistribution(): Promise<PlanDistribution> {
   const { data } = await supabaseAdmin
-    .from('operaciones')
-    .select('planMobElegido')
-    .not('planMobElegido', 'is', null);
+    .from('properties_read')
+    .select('mob_plan, owner_account_type')
+    .eq('owner_verified', true)
+    .not('mob_plan', 'is', null);
 
-  if (!data?.length) return [];
+  if (!data?.length) return { todas: [], duenoDir: [] };
 
-  const counts = new Map<string, number>();
+  const todasCounts = new Map<string, number>();
+  const duenoCounts = new Map<string, number>();
+
   for (const row of data) {
-    const plan = row.planMobElegido || 'sin plan';
-    counts.set(plan, (counts.get(plan) ?? 0) + 1);
+    const plan = row.mob_plan || 'sin plan';
+    todasCounts.set(plan, (todasCounts.get(plan) ?? 0) + 1);
+    if (row.owner_account_type === 1 || row.owner_account_type === 2) {
+      duenoCounts.set(plan, (duenoCounts.get(plan) ?? 0) + 1);
+    }
   }
 
-  return Array.from(counts.entries())
-    .map(([plan, count]) => ({ plan, count }))
-    .sort((a, b) => b.count - a.count);
+  const toSorted = (m: Map<string, number>) =>
+    Array.from(m.entries())
+      .map(([plan, count]) => ({ plan, count }))
+      .sort((a, b) => b.count - a.count);
+
+  return { todas: toSorted(todasCounts), duenoDir: toSorted(duenoCounts) };
 }
 
 // ── Price stats ──────────────────────────────────────────────────────────────
 
-export interface PriceStats {
+export interface CurrencyCount {
   currency: string;
   count: number;
-  avg: number;
-  min: number;
-  max: number;
 }
 
-export async function getPriceStats(): Promise<PriceStats[]> {
+export interface BoxplotData {
+  whiskerLow: number;
+  q1: number;
+  median: number;
+  q3: number;
+  whiskerHigh: number;
+  avg: number;
+  count: number;
+  outliers: number;
+}
+
+export interface CurrencyBoxplot {
+  currency: string;
+  boxplot: BoxplotData;
+}
+
+export interface PriceStatsData {
+  boxplots: CurrencyBoxplot[];
+}
+
+function percentile(sorted: number[], p: number): number {
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+function buildBoxplot(values: number[]): BoxplotData | null {
+  const sorted = values.filter((v) => v > 0).sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+
+  const q1 = Math.round(percentile(sorted, 25));
+  const q3 = Math.round(percentile(sorted, 75));
+  const iqr = q3 - q1;
+  const lowerFence = q1 - 1.5 * iqr;
+  const upperFence = q3 + 1.5 * iqr;
+  const whiskerLow = sorted.find((v) => v >= lowerFence) ?? sorted[0];
+  const whiskerHigh = [...sorted].reverse().find((v) => v <= upperFence) ?? sorted[sorted.length - 1];
+
+  return {
+    whiskerLow,
+    q1,
+    median: Math.round(percentile(sorted, 50)),
+    q3,
+    whiskerHigh,
+    avg: Math.round(sorted.reduce((a, b) => a + b, 0) / sorted.length),
+    count: sorted.length,
+    outliers: sorted.filter((v) => v < lowerFence || v > upperFence).length,
+  };
+}
+
+export async function getPriceStats(): Promise<PriceStatsData> {
   const { data } = await supabaseAdmin
-    .from('operaciones')
-    .select('price, currency')
-    .eq('status', 'available')
-    .gt('price', 0);
+    .from('properties_read')
+    .select('currency, valor_total_primary')
+    .eq('owner_verified', true);
 
-  if (!data?.length) return [];
+  if (!data?.length) return { boxplots: [] };
 
+  // Group valor_total_primary by currency
   const byCurrency = new Map<string, number[]>();
   for (const row of data) {
     const cur = row.currency || 'ARS';
     if (!byCurrency.has(cur)) byCurrency.set(cur, []);
-    byCurrency.get(cur)!.push(Number(row.price));
+    byCurrency.get(cur)!.push(Number(row.valor_total_primary));
   }
 
-  return Array.from(byCurrency.entries()).map(([currency, prices]) => ({
-    currency,
-    count: prices.length,
-    avg: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
-    min: Math.min(...prices),
-    max: Math.max(...prices),
-  }));
+  const boxplots: CurrencyBoxplot[] = [];
+  // Show ARS first, then USD, then any others
+  const order = ['ARS', 'USD'];
+  const keys = [...order.filter((k) => byCurrency.has(k)), ...[...byCurrency.keys()].filter((k) => !order.includes(k))];
+
+  for (const currency of keys) {
+    const bp = buildBoxplot(byCurrency.get(currency)!);
+    if (bp) boxplots.push({ currency, boxplot: bp });
+  }
+
+  return { boxplots };
 }
 
 // ── Sync health ──────────────────────────────────────────────────────────────
@@ -335,36 +402,58 @@ export async function getPriceStats(): Promise<PriceStats[]> {
 export interface SyncDay {
   date: string;
   completed: number;
+  withErrors: number;
   failed: number;
   propertiesUpdated: number;
   errors: number;
 }
 
-export async function getSyncHealth(): Promise<{
+export interface SyncHealthData {
   days: SyncDay[];
   lastSync: { status: string; finishedAt: string } | null;
-}> {
+  recentErrors: { date: string; errors: string[] }[];
+}
+
+export async function getSyncHealth(): Promise<SyncHealthData> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
   const { data } = await supabaseAdmin
     .from('cron_sync_log')
-    .select('started_at, finished_at, status, properties_updated, errors')
+    .select('started_at, finished_at, status, properties_updated, errors, error_message')
     .gte('started_at', sevenDaysAgo)
     .order('started_at', { ascending: true });
 
-  if (!data?.length) return { days: [], lastSync: null };
+  if (!data?.length) return { days: [], lastSync: null, recentErrors: [] };
 
   const byDay = new Map<string, SyncDay>();
+  const recentErrors: { date: string; errors: string[] }[] = [];
+
   for (const row of data) {
     const date = row.started_at.slice(0, 10);
     if (!byDay.has(date)) {
-      byDay.set(date, { date, completed: 0, failed: 0, propertiesUpdated: 0, errors: 0 });
+      byDay.set(date, { date, completed: 0, withErrors: 0, failed: 0, propertiesUpdated: 0, errors: 0 });
     }
     const day = byDay.get(date)!;
-    if (row.status === 'completed') day.completed++;
-    else if (row.status === 'failed') day.failed++;
+    const errorsList = Array.isArray(row.errors) ? row.errors as string[] : [];
+    const hasErrors = errorsList.length > 0 || !!row.error_message;
+
+    if (row.status === 'failed') day.failed++;
+    else if (row.status === 'completed' && hasErrors) day.withErrors++;
+    else if (row.status === 'completed') day.completed++;
+
     day.propertiesUpdated += row.properties_updated ?? 0;
-    day.errors += Array.isArray(row.errors) ? row.errors.length : 0;
+    day.errors += errorsList.length;
+
+    // Collect error details
+    const runErrors: string[] = [];
+    if (row.error_message) runErrors.push(row.error_message);
+    if (errorsList.length > 0) runErrors.push(...errorsList);
+    if (runErrors.length > 0) {
+      const ts = new Date(row.started_at).toLocaleString('es-AR', {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+      });
+      recentErrors.push({ date: ts, errors: runErrors });
+    }
   }
 
   const lastRow = data[data.length - 1];
@@ -375,6 +464,7 @@ export async function getSyncHealth(): Promise<{
       status: lastRow.status,
       finishedAt: lastRow.finished_at ?? lastRow.started_at,
     },
+    recentErrors: recentErrors.reverse(),
   };
 }
 
@@ -389,6 +479,7 @@ export interface CronJobDay {
 export interface CronJobHealth {
   days: CronJobDay[];
   lastRun: { status: string; finishedAt: string; stats: Record<string, unknown> | null } | null;
+  recentErrors: { date: string; message: string }[];
 }
 
 export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> {
@@ -396,14 +487,16 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
 
   const { data } = await supabaseAdmin
     .from('cron_job_log')
-    .select('started_at, finished_at, status, stats')
+    .select('started_at, finished_at, status, stats, error_message')
     .eq('job_name', jobName)
     .gte('started_at', sevenDaysAgo)
     .order('started_at', { ascending: true });
 
-  if (!data?.length) return { days: [], lastRun: null };
+  if (!data?.length) return { days: [], lastRun: null, recentErrors: [] };
 
   const byDay = new Map<string, CronJobDay>();
+  const recentErrors: { date: string; message: string }[] = [];
+
   for (const row of data) {
     const date = row.started_at.slice(0, 10);
     if (!byDay.has(date)) {
@@ -412,6 +505,25 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
     const day = byDay.get(date)!;
     if (row.status === 'completed') day.completed++;
     else if (row.status === 'failed') day.failed++;
+
+    // Collect errors from failed runs
+    if (row.status === 'failed') {
+      const ts = new Date(row.started_at).toLocaleString('es-AR', {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+      });
+      // error_message for top-level failures
+      if (row.error_message) {
+        recentErrors.push({ date: ts, message: row.error_message });
+      }
+      // errorDetails from stats JSONB (visitas cron stores per-item errors here)
+      const stats = row.stats as Record<string, unknown> | null;
+      const details = stats?.errorDetails;
+      if (Array.isArray(details)) {
+        for (const d of details) {
+          recentErrors.push({ date: ts, message: String(d) });
+        }
+      }
+    }
   }
 
   const lastRow = data[data.length - 1];
@@ -422,5 +534,6 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
       finishedAt: lastRow.finished_at ?? lastRow.started_at,
       stats: lastRow.stats as Record<string, unknown> | null,
     },
+    recentErrors: recentErrors.reverse(),
   };
 }

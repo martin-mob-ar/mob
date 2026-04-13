@@ -23,7 +23,7 @@ function verifyCronSecret(request: NextRequest): boolean {
  * Uses native fetch (Node 18+) with proper SSL handling.
  * Validates response is within reasonable bounds.
  */
-async function fetchBCRARate(): Promise<number | null> {
+async function fetchBCRARate(): Promise<{ rate: number } | { error: string }> {
   try {
     const res = await fetch(
       'https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones/USD',
@@ -34,26 +34,31 @@ async function fetchBCRARate(): Promise<number | null> {
     );
 
     if (!res.ok) {
-      console.error(`[cron/exchange-rate] BCRA API returned ${res.status}`);
-      return null;
+      const msg = `BCRA API returned HTTP ${res.status}`;
+      console.error(`[cron/exchange-rate] ${msg}`);
+      return { error: msg };
     }
 
     const data = await res.json();
     const detalle = data?.results?.[0]?.detalle;
-    if (!Array.isArray(detalle) || detalle.length === 0) return null;
+    if (!Array.isArray(detalle) || detalle.length === 0) {
+      return { error: 'BCRA response missing detalle array' };
+    }
 
     const rate = parseFloat(String(detalle[detalle.length - 1]?.tipoCotizacion));
 
     // Sanity check: rate should be between 100 and 50000 ARS per USD
     if (isNaN(rate) || rate < 100 || rate > 50000) {
-      console.error(`[cron/exchange-rate] BCRA rate out of bounds: ${rate}`);
-      return null;
+      const msg = `BCRA rate out of bounds: ${rate}`;
+      console.error(`[cron/exchange-rate] ${msg}`);
+      return { error: msg };
     }
 
-    return rate;
+    return { rate };
   } catch (e) {
-    console.error('[cron/exchange-rate] BCRA fetch failed:', e);
-    return null;
+    const msg = `BCRA fetch failed: ${e instanceof Error ? e.message : String(e)}`;
+    console.error(`[cron/exchange-rate] ${msg}`);
+    return { error: msg };
   }
 }
 
@@ -80,24 +85,26 @@ export async function GET(request: NextRequest) {
     .single();
   const logId = logRow?.id ?? null;
 
-  const rate = await fetchBCRARate();
+  const bcraResult = await fetchBCRARate();
 
-  if (!rate) {
+  if ('error' in bcraResult) {
     if (logId) {
       await supabaseAdmin
         .from('cron_job_log')
         .update({
           finished_at: new Date().toISOString(),
           status: 'failed',
-          error_message: 'Could not fetch exchange rate from BCRA',
+          error_message: bcraResult.error,
         })
         .eq('id', logId);
     }
     return NextResponse.json(
-      { error: 'Could not fetch exchange rate from BCRA' },
+      { error: bcraResult.error },
       { status: 502 }
     );
   }
+
+  const rate = bcraResult.rate;
 
   // Store in DB
   const { error: upsertError } = await supabaseAdmin

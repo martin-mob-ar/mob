@@ -18,9 +18,10 @@ import { PropertiesCumulativeChart } from "@/components/admin/charts/PropertiesC
 import { PropertyTypeBar } from "@/components/admin/charts/PropertyTypeBar";
 import { LocationBar } from "@/components/admin/charts/LocationBar";
 import { LeadsChart } from "@/components/admin/charts/LeadsChart";
-import { PlanDonut } from "@/components/admin/charts/PlanDonut";
+import { PlanDonutToggle } from "@/components/admin/charts/PlanDonutToggle";
 import { SyncHealthChart } from "@/components/admin/charts/SyncHealthChart";
 import { CronJobChart } from "@/components/admin/charts/CronJobChart";
+import { CronErrors } from "@/components/admin/CronErrors";
 import {
   getKpis,
   getSignupsByDay,
@@ -224,51 +225,77 @@ export default async function AdminPage({
             <CardTitle className="text-base">Distribución de planes</CardTitle>
           </CardHeader>
           <CardContent>
-            <PlanDonut data={plans} />
+            <PlanDonutToggle todas={plans.todas} duenoDir={plans.duenoDir} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Precios por moneda</CardTitle>
+            <CardTitle className="text-base">Precios de alquiler</CardTitle>
           </CardHeader>
           <CardContent>
-            {prices.length === 0 ? (
+            {prices.boxplots.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 Sin datos de precios
               </p>
             ) : (
-              <div className="space-y-4">
-                {prices.map((p) => (
-                  <div key={p.currency} className="rounded-lg border p-4">
-                    <div className="mb-2 text-sm font-medium">{p.currency}</div>
-                    <div className="grid grid-cols-4 gap-2 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Propiedades</p>
-                        <p className="font-medium tabular-nums">
-                          {p.count.toLocaleString("es-AR")}
-                        </p>
+              <div className="space-y-6">
+                {prices.boxplots.map(({ currency, boxplot: b }) => {
+                  const range = b.whiskerHigh - b.whiskerLow;
+                  const pct = (v: number) => Math.min(100, Math.max(0, ((v - b.whiskerLow) / range) * 100));
+                  const fmt = (v: number) => `$${v.toLocaleString("es-AR")}`;
+                  return (
+                    <div key={currency} className="space-y-2">
+                      <p className="text-sm font-medium">
+                        {currency}{" "}
+                        <span className="font-normal text-muted-foreground">
+                          · {b.count.toLocaleString("es-AR")} propiedades · valor total en ARS
+                        </span>
+                      </p>
+                      {/* Visual boxplot */}
+                      <div className="relative mx-2 h-10">
+                        <div className="absolute top-1/2 h-px w-full -translate-y-1/2 bg-muted-foreground/40" />
+                        <div className="absolute left-0 top-1/2 h-4 w-px -translate-y-1/2 bg-muted-foreground/40" />
+                        <div className="absolute right-0 top-1/2 h-4 w-px -translate-y-1/2 bg-muted-foreground/40" />
+                        <div
+                          className="absolute top-1/2 h-8 -translate-y-1/2 rounded-sm border border-blue-400 bg-blue-100 dark:border-blue-600 dark:bg-blue-950"
+                          style={{ left: `${pct(b.q1)}%`, width: `${pct(b.q3) - pct(b.q1)}%` }}
+                        />
+                        <div
+                          className="absolute top-1/2 h-8 w-0.5 -translate-y-1/2 bg-blue-600 dark:bg-blue-400"
+                          style={{ left: `${pct(b.median)}%` }}
+                        />
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Promedio</p>
-                        <p className="font-medium tabular-nums">
-                          ${p.avg.toLocaleString("es-AR")}
-                        </p>
+                      {/* Labels */}
+                      <div className="grid grid-cols-5 gap-1 text-center text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Mín</p>
+                          <p className="font-medium tabular-nums">{fmt(b.whiskerLow)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Q1</p>
+                          <p className="font-medium tabular-nums">{fmt(b.q1)}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600 dark:text-blue-400">Mediana</p>
+                          <p className="font-semibold tabular-nums">{fmt(b.median)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Q3</p>
+                          <p className="font-medium tabular-nums">{fmt(b.q3)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Máx</p>
+                          <p className="font-medium tabular-nums">{fmt(b.whiskerHigh)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Mínimo</p>
-                        <p className="font-medium tabular-nums">
-                          ${p.min.toLocaleString("es-AR")}
+                      {b.outliers > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {b.outliers} outlier{b.outliers > 1 ? "s" : ""} fuera del rango
                         </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Máximo</p>
-                        <p className="font-medium tabular-nums">
-                          ${p.max.toLocaleString("es-AR")}
-                        </p>
-                      </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -309,6 +336,7 @@ export default async function AdminPage({
             </CardHeader>
             <CardContent>
               <SyncHealthChart data={sync.days} />
+              <CronErrors errors={sync.recentErrors} />
             </CardContent>
           </Card>
 
@@ -343,6 +371,7 @@ export default async function AdminPage({
             </CardHeader>
             <CardContent>
               <CronJobChart data={visitasCron.days} />
+              <CronErrors errors={visitasCron.recentErrors} />
             </CardContent>
           </Card>
 
@@ -387,6 +416,7 @@ export default async function AdminPage({
             </CardHeader>
             <CardContent>
               <CronJobChart data={exchangeRateCron.days} />
+              <CronErrors errors={exchangeRateCron.recentErrors} />
             </CardContent>
           </Card>
         </div>

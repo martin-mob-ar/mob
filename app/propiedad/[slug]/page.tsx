@@ -33,7 +33,7 @@ async function fetchUnavailableProperty(propertyId: number) {
     .from("properties")
     .select(`id, user_id, tokko, tokko_id, status, description, address, publication_title,
       geo_lat, geo_long, room_amount, bathroom_amount, suite_amount,
-      parking_lot_amount, total_surface, roofed_surface, age, slug, company_id, contact_phone,
+      toilet_amount, parking_lot_amount, total_surface, roofed_surface, age, slug, company_id, contact_phone,
       type_id, location_id,
       tokko_property_type!type_id(id, name),
       tokko_location!location_id(id, name, parent_location_id,
@@ -70,6 +70,7 @@ function mapRawToPropertyData(raw: any) {
     room_amount: raw.room_amount,
     bathroom_amount: raw.bathroom_amount,
     suite_amount: raw.suite_amount,
+    toilet_amount: raw.toilet_amount,
     total_surface: raw.total_surface,
     roofed_surface: raw.roofed_surface,
     parking_lot_amount: raw.parking_lot_amount,
@@ -405,6 +406,7 @@ export default async function PropiedadDetailPage({
 
   // All these fields are now denormalized into properties_read
   const suiteAmount: number | null = propertyData.suite_amount ?? null;
+  const toiletAmount: number | null = propertyData.toilet_amount ?? null;
   const roofedSurface: number | null = propertyData.roofed_surface ? Number(propertyData.roofed_surface) : null;
   // Default availability: Mon–Sat 09:00–18:00 when owner hasn't configured specific days/hours
   const DEFAULT_VISIT_DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
@@ -536,6 +538,7 @@ export default async function PropiedadDetailPage({
       isUnavailable={isUnavailable}
       isPendingVerification={isPendingVerification}
       suiteAmount={suiteAmount}
+      toiletAmount={toiletAmount}
       roofedSurface={roofedSurface}
       ipcAdjustment={ipcAdjustment}
       publicationDate={publicationDate}

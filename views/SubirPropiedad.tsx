@@ -13,6 +13,7 @@ import {
   Minus,
   Sparkles,
   Trash2,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getGeometryFromPlace } from "@/lib/google-maps/places";
+import { generateFakeAddress } from "@/lib/utils/fake-address";
 import {
   Select,
   SelectContent,
@@ -160,6 +162,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   const [geoLong, setGeoLong] = useState("");
   const [piso, setPiso] = useState("");
   const [depto, setDepto] = useState("");
+  const [hideAddress, setHideAddress] = useState(false);
+  const [fakeAddress, setFakeAddress] = useState("");
+  const [missingAltura, setMissingAltura] = useState(false);
 
   // Step 3: Detalles
   const [ambientes, setAmbientes] = useState(0);
@@ -191,6 +196,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [descripcion, setDescripcion] = useState("");
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+  const [aiDescription, setAiDescription] = useState("");
+  const [originalDescription, setOriginalDescription] = useState("");
+  const [showDescComparison, setShowDescComparison] = useState(false);
 
   // Step 7: Logística
   const [noPuedeDefinirHorarios, setNoPuedeDefinirHorarios] = useState(false);
@@ -297,6 +305,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     }
     if (draftData.floor) setPiso(String(draftData.floor));
     if (draftData.apartment_door) setDepto(String(draftData.apartment_door));
+    if (draftData.fake_address) {
+      setHideAddress(true);
+      setFakeAddress(draftData.fake_address);
+    }
     if (draftData.room_amount != null) setAmbientes(draftData.room_amount);
     if (draftData.bathroom_amount != null) setBanos(draftData.bathroom_amount);
     if (draftData.toilet_amount != null) setToilettes(draftData.toilet_amount);
@@ -376,6 +388,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     }
     if (editData.floor) setPiso(String(editData.floor));
     if (editData.apartment_door) setDepto(String(editData.apartment_door));
+    if (editData.fake_address) {
+      setHideAddress(true);
+      setFakeAddress(editData.fake_address);
+    }
     if (editData.room_amount != null) setAmbientes(editData.room_amount);
     if (editData.bathroom_amount != null) setBanos(editData.bathroom_amount);
     if (editData.toilet_amount != null) setToilettes(editData.toilet_amount);
@@ -551,6 +567,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     setGeoLat("");
     setGeoLong("");
     setPlaceSelected(false);
+    setMissingAltura(false);
+    setHideAddress(false);
+    setFakeAddress("");
   };
 
   const onPlaceSelect = useCallback(() => {
@@ -567,12 +586,26 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     const streetNumber = components.find((c) => c.types.includes("street_number"))?.long_name || "";
     const streetAddress = streetNumber ? `${route} ${streetNumber}` : route;
 
-    setAddress(streetAddress || place.name || "");
+    const finalAddress = streetAddress || place.name || "";
+    setAddress(finalAddress);
     setGeoLat(String(geo.lat));
     setGeoLong(String(geo.lng));
+
+    if (!streetNumber) {
+      // Address has no altura — keep placeSelected false so user can't advance
+      setPlaceSelected(false);
+      setMissingAltura(true);
+      return;
+    }
+
     setPlaceSelected(true);
+    setMissingAltura(false);
     setShowErrors(false);
-  }, []);
+    // Recompute fake address if checkbox was already checked
+    if (hideAddress && finalAddress) {
+      setFakeAddress(generateFakeAddress(finalAddress));
+    }
+  }, [hideAddress]);
 
   const getTomorrowDateString = () => {
     const d = new Date();
@@ -642,6 +675,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
             draft_step: effectiveDraftStep,
             type_id: typeId,
             address: address || null,
+            fake_address: hideAddress ? fakeAddress || null : null,
             geo_lat: geoLat || null,
             geo_long: geoLong || null,
             location_id: locationId,
@@ -696,7 +730,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
     return promise;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    userId, typeId, address, geoLat, geoLong, locationId,
+    userId, typeId, address, hideAddress, fakeAddress, geoLat, geoLong, locationId,
     piso, depto, ambientes, banos, toilettes, dormitorios, cocheras,
     superficieCubierta, superficieTotal, antiguedad, disposicion,
     fechaDisponible, diasVisita, horariosVisita, descripcion, selectedTagIds,
@@ -883,6 +917,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   };
 
   const handleGenerateDescription = async () => {
+    const isImproveMode = descripcion.trim().length > 0;
     setIsGeneratingDesc(true);
     try {
       const tagLabels = selectedTagIds
@@ -911,6 +946,10 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           disposicion,
           amoblado,
           tags: tagLabels,
+          ...(isImproveMode && {
+            mode: "improve" as const,
+            existingDescription: descripcion,
+          }),
         }),
       });
 
@@ -921,7 +960,13 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
 
       const { description } = await res.json();
       if (description) {
-        setDescripcion(description);
+        if (isImproveMode) {
+          setOriginalDescription(descripcion);
+          setAiDescription(description);
+          setShowDescComparison(true);
+        } else {
+          setDescripcion(description);
+        }
       }
     } catch {
       toast.error("No se pudo generar la descripción. Intentá de nuevo.");
@@ -960,6 +1005,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         const body = {
           type_id: typeId,
           address: address || null,
+          fake_address: hideAddress ? fakeAddress || null : null,
           address_complement: null,
           geo_lat: geoLat || null,
           geo_long: geoLong || null,
@@ -1020,6 +1066,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           draftId: draftPropertyId,
           type_id: typeId,
           address: address || null,
+          fake_address: hideAddress ? fakeAddress || null : null,
           geo_lat: geoLat || null,
           geo_long: geoLong || null,
           location_id: locationId,
@@ -1321,7 +1368,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                   <Input
                     type="tel"
                     inputMode="numeric"
-                    placeholder="(11) 0000-0000"
+                    placeholder="Ej: 1126373290"
                     autoComplete="tel-national"
                     value={guestPhone}
                     onChange={(e) => {
@@ -1335,6 +1382,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                     )}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">Sin 0 y sin 15. Ej: 1126373290</p>
                 {showErrors && !isAuthenticated && guestPhone.length < 6 && (
                   <p className="text-sm text-red-500">Ingresá tu número de WhatsApp</p>
                 )}
@@ -1410,6 +1458,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                       onChange={(e) => {
                         setAddress(e.target.value);
                         setPlaceSelected(false);
+                        setMissingAltura(false);
                       }}
                       ref={(el) => {
                         if (!el || !isLoaded || typeof google === "undefined") return;
@@ -1430,12 +1479,41 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                     />
                     {!placeSelected && address && (
                       <p className="text-sm text-red-500">
-                        Seleccioná una dirección de las sugerencias de Google Maps
+                        {missingAltura
+                          ? "La dirección que seleccionaste no tiene altura. Ingresá la calle con altura (ej: Honduras 5734)"
+                          : "Seleccioná una dirección de las sugerencias de Google Maps"}
                       </p>
                     )}
                     {showErrors && !address && (
                       <p className="text-sm text-red-500">Ingresá una dirección</p>
                     )}
+
+                    <AnimateHeight show={placeSelected}>
+                      <div className="flex items-start gap-3 mt-4 p-3 rounded-xl bg-muted/50">
+                        <Checkbox
+                          id="hide-address"
+                          checked={hideAddress}
+                          onCheckedChange={(checked) => {
+                            const val = !!checked;
+                            setHideAddress(val);
+                            if (val && address) {
+                              setFakeAddress(generateFakeAddress(address));
+                            } else {
+                              setFakeAddress("");
+                            }
+                          }}
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="hide-address" className="text-sm cursor-pointer select-none">
+                          ¿Querés ocultar la dirección real?
+                        </label>
+                      </div>
+                      <AnimateHeight show={hideAddress && !!fakeAddress}>
+                        <p className="text-sm text-muted-foreground mt-2 ml-1">
+                          Los usuarios verán: <span className="font-medium text-foreground">{fakeAddress}</span>
+                        </p>
+                      </AnimateHeight>
+                    </AnimateHeight>
                   </div>
                 </AnimateHeight>
 
@@ -1836,54 +1914,145 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       // Step 6: Describí tu propiedad
       case 6:
         return (
-          <div className="max-w-xl mx-auto space-y-6">
+          <div className={cn(
+            "mx-auto space-y-6",
+            showDescComparison ? "max-w-3xl" : "max-w-xl"
+          )}>
             <h1 className="font-display text-xl sm:text-3xl font-bold">
               Describí tu propiedad
             </h1>
 
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Descripción (opcional)
-                </label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateDescription}
-                  disabled={isGeneratingDesc}
-                  className="gap-1.5 text-xs"
-                >
-                  {isGeneratingDesc ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Generando...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Crear descripción con IA
-                    </>
-                  )}
-                </Button>
+            <AnimateHeight show={!showDescComparison}>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Descripción (opcional)
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateDescription}
+                    disabled={isGeneratingDesc || showDescComparison}
+                    className="gap-1.5 text-xs"
+                  >
+                    {isGeneratingDesc ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Generando...
+                      </>
+                    ) : descripcion.trim().length > 0 ? (
+                      <>
+                        <Wand2 className="h-3.5 w-3.5" />
+                        Mejorar descripción con IA
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Crear descripción con IA
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <textarea
+                  ref={(el) => {
+                    if (el) {
+                      el.style.height = "auto";
+                      el.style.height = `${Math.max(el.scrollHeight, 120)}px`;
+                    }
+                  }}
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder="Contá lo mejor de tu propiedad: luminosidad, vistas, estado, cercanía a transporte..."
+                  rows={3}
+                  className="flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none overflow-hidden"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {descripcion.length > 0 ? `${descripcion.length} caracteres` : "Una buena descripción ayuda a conseguir más consultas"}
+                </p>
               </div>
-              <textarea
-                ref={(el) => {
-                  if (el) {
-                    el.style.height = "auto";
-                    el.style.height = `${Math.max(el.scrollHeight, 120)}px`;
-                  }
-                }}
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                placeholder="Contá lo mejor de tu propiedad: luminosidad, vistas, estado, cercanía a transporte..."
-                rows={3}
-                className="flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none overflow-hidden"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                {descripcion.length > 0 ? `${descripcion.length} caracteres` : "Una buena descripción ayuda a conseguir más consultas"}
-              </p>
-            </div>
+            </AnimateHeight>
+
+            {/* Side-by-side comparison after AI improve */}
+            <AnimateHeight show={showDescComparison}>
+              <div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Podés editar cualquiera de las dos antes de elegir.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 h-[calc(100dvh-20rem)] sm:h-[calc(100dvh-22rem)] min-h-48">
+                  {/* Original description card */}
+                  <div className="flex flex-col rounded-xl border border-border bg-background p-4 min-h-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Tu descripción
+                      </span>
+                    </div>
+                    <textarea
+                      value={originalDescription}
+                      onChange={(e) => setOriginalDescription(e.target.value)}
+                      onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300)}
+                      rows={3}
+                      className="flex-1 min-h-0 w-full overflow-y-auto rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                    />
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-muted-foreground">
+                        {originalDescription.length} caracteres
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => {
+                          setDescripcion(originalDescription);
+                          setShowDescComparison(false);
+                          setAiDescription("");
+                          setOriginalDescription("");
+                        }}
+                      >
+                        Elegir descripción original
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* AI-improved description card */}
+                  <div className="flex flex-col rounded-xl border border-primary/30 bg-accent/30 p-4 min-h-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-medium text-primary uppercase tracking-wider">
+                        Mejorada con IA
+                      </span>
+                    </div>
+                    <textarea
+                      value={aiDescription}
+                      onChange={(e) => setAiDescription(e.target.value)}
+                      onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300)}
+                      rows={3}
+                      className="flex-1 min-h-0 w-full overflow-y-auto rounded-lg border border-primary/20 bg-background px-3 py-2.5 text-sm leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                    />
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-muted-foreground">
+                        {aiDescription.length} caracteres
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => {
+                          setDescripcion(aiDescription);
+                          setShowDescComparison(false);
+                          setAiDescription("");
+                          setOriginalDescription("");
+                        }}
+                      >
+                        Elegir descripción con IA
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AnimateHeight>
           </div>
         );
 

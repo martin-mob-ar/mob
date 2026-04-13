@@ -25,7 +25,7 @@ export default async function AlquileresPage() {
       .select("*", { count: "exact" })
       .eq("owner_verified", true)
       .order("sort_priority", { ascending: true })
-      .order("property_created_at", { ascending: false })
+      .order("listing_updated_at", { ascending: false })
       .range(0, 19);
 
     if (data && data.length > 0) {

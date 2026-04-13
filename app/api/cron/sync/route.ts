@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
           properties_deleted: totals.propertiesDeleted,
           photos_added: totals.photosAdded,
           photos_removed: totals.photosRemoved,
-          errors: totals.errors.slice(0, 50),
+          errors: totals.errors,
         })
         .eq('id', currentLogId);
     }
@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
         properties_deleted: totals.propertiesDeleted,
         photos_added: totals.photosAdded,
         photos_removed: totals.photosRemoved,
-        errors: totals.errors.slice(0, 50),
+        errors: totals.errors,
       })
       .eq('id', currentLogId);
 
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
       properties_deleted: totals.propertiesDeleted,
       photos_added: totals.photosAdded,
       photos_removed: totals.photosRemoved,
-      errors: totals.errors.slice(0, 50),
+      errors: totals.errors,
     })
     .eq('id', currentLogId);
 

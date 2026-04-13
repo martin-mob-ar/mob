@@ -36,8 +36,12 @@ export async function POST(request: Request) {
 
     // Build the phone number for Truora (digits only, with country code)
     // Argentine mobile numbers need '9' after country code for WhatsApp
+    // Strip leading '0' (national trunk prefix) and '15' (old mobile prefix) for AR numbers
     const codeDigits = country_code.replace(/[^0-9]/g, '');
-    const rawPhone = phone.replace(/[^0-9]/g, '');
+    let rawPhone = phone.replace(/[^0-9]/g, '');
+    if (codeDigits === '54') {
+      rawPhone = rawPhone.replace(/^0/, '').replace(/^(\d{2,4})15(\d{8})$/, '$1$2');
+    }
     const phoneDigits = codeDigits === '54' && !rawPhone.startsWith('9')
       ? codeDigits + '9' + rawPhone
       : codeDigits + rawPhone;

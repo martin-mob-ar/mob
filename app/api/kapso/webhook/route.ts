@@ -346,7 +346,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     confirmed_date, confirmed_time,
     owner_wa_context, requester_wa_context,
     owner_feedback, requester_feedback,
-    properties:property_id ( address ),
+    properties:property_id ( address, fake_address ),
     owners:owner_user_id ( name, telefono, telefono_country_code )
   `;
 
@@ -404,7 +404,9 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     : null;
   const inquilinoName = visita.requester_name ?? 'Inquilino';
 
-  const address: string = (visita.properties as unknown as { address: string } | null)?.address ?? '';
+  const propData = visita.properties as unknown as { address: string; fake_address: string | null } | null;
+  const realAddress: string = propData?.address ?? '';
+  const publicAddress: string = propData?.fake_address || propData?.address || '';
 
   const pendingProposalId = visita.whatsapp_pending_proposal_id as number | null;
 
@@ -576,7 +578,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
         .eq('id', visita.id);
 
       if (ownerPhone) await sendOwnerConfirmationThankYou({ ownerPhone, dayLabel, time });
-      if (inquilinoPhone) await sendInquilinoConfirmation({ inquilinoPhone, inquilinoName, address, dayLabel, time });
+      if (inquilinoPhone) await sendInquilinoConfirmation({ inquilinoPhone, inquilinoName, address: realAddress, dayLabel, time });
 
     } else if (buttonId === BTN.REJECT) {
       await supabaseAdmin
@@ -590,7 +592,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
         .eq('id', visita.id);
 
       if (ownerPhone) await sendOwnerRejectionAck(ownerPhone);
-      if (inquilinoPhone) await sendInquilinoRejected({ inquilinoPhone, address });
+      if (inquilinoPhone) await sendInquilinoRejected({ inquilinoPhone, address: publicAddress });
 
     } else if (buttonId === BTN.SUGGEST) {
       await supabaseAdmin
@@ -729,7 +731,7 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
         .eq('id', visita.id);
 
       if (inquilinoPhone) await sendInquilinoRejectionAck({ inquilinoPhone });
-      if (ownerPhone) await sendOwnerRejectionByInquilino({ ownerPhone, address });
+      if (ownerPhone) await sendOwnerRejectionByInquilino({ ownerPhone, address: realAddress });
 
     } else if (buttonId === BTN.SUGGEST) {
       await supabaseAdmin

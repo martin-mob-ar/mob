@@ -156,6 +156,136 @@ export async function sendLeadEmail(
   }
 }
 
+/**
+ * Send a welcome email to the property owner after they publish a property.
+ * Content varies by selected plan (basico, acompanado, experiencia).
+ */
+export async function sendWelcomeEmail(
+  to: string,
+  userName: string,
+  plan: 'basico' | 'acompanado' | 'experiencia'
+): Promise<{ success: boolean; error?: string }> {
+  const tosUrl = 'https://mob.ar/terminos-de-servicio';
+  const whatsappUrl = 'https://wa.me/5492236000055';
+  const displayName = userName || 'propietario';
+
+  let subject: string;
+  let benefitsHtml: string;
+  let closingHtml: string;
+
+  if (plan === 'experiencia') {
+    subject = 'Tu propiedad ya está publicada';
+    benefitsHtml = `
+      <p style="margin: 0 0 12px 0;">Con el plan <strong>Experiencia mob</strong> obtenés:</p>
+      <ul style="margin: 0 0 20px 0; padding-left: 20px; line-height: 1.8;">
+        <li>Publicación destacada en mob y en redes sociales</li>
+        <li>Fotógrafo profesional para las fotos de tu propiedad</li>
+        <li>Precio sugerido basado en el mercado</li>
+        <li>Verificación de propietario y propiedad</li>
+        <li>Aviso mejorado con IA</li>
+        <li>Interesados verificados y calificados — solo te llegan personas que pasaron por identidad, scoring financiero y garantía aprobada</li>
+        <li>Coordinación y seguimiento completo de visitas</li>
+        <li>Confección del contrato</li>
+        <li>Firma electrónica incluida</li>
+        <li>50% de descuento en la garantía para tu inquilino</li>
+      </ul>`;
+    closingHtml = `
+      <p style="font-size: 15px; line-height: 1.6;">
+        A partir de acá nos encargamos nosotros. Cuando haya novedades, te avisamos.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        El costo de USD 299 se cobra únicamente cuando el alquiler se concreta. No hay ningún cargo inicial de ningún tipo.
+      </p>`;
+  } else if (plan === 'acompanado') {
+    subject = 'Tu propiedad ya está publicada';
+    benefitsHtml = `
+      <p style="margin: 0 0 12px 0;">Con el plan <strong>Acompañado</strong> obtenés:</p>
+      <ul style="margin: 0 0 20px 0; padding-left: 20px; line-height: 1.8;">
+        <li>Publicación destacada en mob</li>
+        <li>Verificación de propietario</li>
+        <li>Aviso mejorado con IA</li>
+        <li>Interesados verificados y calificados - solo te llegan personas que pasaron el scoring financiero</li>
+        <li>Coordinación y seguimiento de visitas</li>
+        <li>Plantilla de contrato</li>
+        <li>Firma electrónica incluida</li>
+        <li>30% de descuento en la garantía para tu inquilino</li>
+      </ul>`;
+    closingHtml = `
+      <p style="font-size: 15px; line-height: 1.6;">
+        Cuando haya un interesado calificado, te avisamos y coordinamos la visita.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        El costo de USD 99 se cobra únicamente cuando el alquiler se concreta. No hay ningún cargo inicial.
+      </p>`;
+  } else {
+    // basico (default)
+    subject = 'Tu propiedad ya está en mob';
+    benefitsHtml = `
+      <p style="margin: 0 0 12px 0;">Con el plan <strong>Básico</strong> obtenés:</p>
+      <ul style="margin: 0 0 20px 0; padding-left: 20px; line-height: 1.8;">
+        <li>Publicación básica en mob</li>
+        <li>Verificación de propietario</li>
+        <li>Aviso mejorado con IA</li>
+        <li>20% de descuento en la garantía para tu inquilino</li>
+      </ul>`;
+    closingHtml = `
+      <p style="font-size: 15px; line-height: 1.6;">
+        Cuando alguien se interese, te vamos a avisar por email.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        Si en algún momento querés más visibilidad o que mob gestione las visitas y el contrato por vos, podés contactarnos para cambiar tu plan.
+      </p>`;
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <p style="font-size: 16px; line-height: 1.6;">
+        Hola ${displayName}, te habla Iñaki de mob.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        Muchas gracias por publicar tu propiedad.
+      </p>
+
+      ${benefitsHtml}
+
+      <p style="font-size: 15px; line-height: 1.6;">
+        Podés ver el detalle de los <a href="${tosUrl}" style="color: #2563eb;">términos de servicio acá</a>.
+      </p>
+
+      ${closingHtml}
+
+      <p style="font-size: 15px; line-height: 1.6;">
+        Cualquier duda, podés <a href="${whatsappUrl}" style="color: #25D366;">escribirnos por WhatsApp</a>.
+      </p>
+
+      <p style="font-size: 15px; line-height: 1.6; margin-top: 24px;">
+        Saludos,<br/>Iñaki
+      </p>
+    </div>
+  `;
+
+  try {
+    const fromEmail = process.env.LEAD_FROM_EMAIL || 'onboarding@resend.dev';
+    console.log(`[Resend] Sending welcome email to: ${to}, plan: ${plan}`);
+    const result = await getResend().emails.send({
+      from: `mob <${fromEmail}>`,
+      to,
+      subject,
+      html,
+    });
+
+    if (result.error) {
+      console.error('[Resend] Welcome email error:', result.error);
+      return { success: false, error: result.error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Resend] Welcome email exception:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 interface InmobiliariaLeadEmailData {
   name: string;
   email: string;

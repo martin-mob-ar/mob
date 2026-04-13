@@ -36,8 +36,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const sortOptions = [
-  { value: "recent", label: "Más recientes" },
   { value: "relevant", label: "Más relevantes" },
+  { value: "recent", label: "Más recientes" },
   { value: "price-low", label: "Precio: menor a mayor" },
   { value: "price-high", label: "Precio: mayor a menor" },
 ];

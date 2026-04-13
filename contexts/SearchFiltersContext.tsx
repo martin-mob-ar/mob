@@ -101,7 +101,7 @@ const defaultFilters: SearchFilters = {
   availabilityFilter: "",
   availabilityDate: "",
   ownerType: "",
-  sort: "recent",
+  sort: "relevant",
 };
 
 const SearchFiltersContext = createContext<SearchFiltersContextValue | null>(null);
@@ -348,7 +348,7 @@ export function SearchFiltersProvider({
     if (f.availabilityFilter) params.set("availabilityFilter", f.availabilityFilter);
     if (f.availabilityDate) params.set("availabilityDate", f.availabilityDate);
     if (f.ownerType) params.set("ownerType", f.ownerType);
-    if (f.sort && f.sort !== "recent") params.set("sort", f.sort);
+    if (f.sort && f.sort !== "relevant") params.set("sort", f.sort);
     return params;
   }, []);
 

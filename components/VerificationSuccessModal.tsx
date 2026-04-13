@@ -155,7 +155,7 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
                 <Input
                   type="tel"
                   inputMode="numeric"
-                  placeholder="(11) 0000-0000"
+                  placeholder="Ej: 1126373290"
                   autoComplete="tel-national"
                   value={editPhone}
                   onChange={(e) => {
@@ -165,6 +165,7 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
                   className="h-12 rounded-xl flex-1"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">Sin 0 y sin 15. Ej: 1126373290</p>
               <Button
                 onClick={handleResend}
                 disabled={isSending || editPhone.length < 6}

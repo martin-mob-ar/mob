@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
 
   const now = new Date();
   const stats = { reminder24h: 0, reminder2h: 0, postvisit: 0, errors: 0 };
+  const errorDetails: string[] = [];
 
   // Log cron start
   const { data: logRow } = await supabaseAdmin
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     .select(`
       id, confirmed_date, confirmed_time,
       owner_user_id, requester_user_id, requester_name, requester_phone, requester_country_code,
-      properties:property_id ( address ),
+      properties:property_id ( address, fake_address ),
       owners:owner_user_id ( name, telefono, telefono_country_code )
     `)
     .eq('status', 'accepted')
@@ -89,8 +90,10 @@ export async function GET(request: NextRequest) {
           .eq('id', v.id);
         stats.reminder24h++;
       } catch (err) {
-        console.error(`[CronVisitas] 24h reminder error for visita ${v.id}:`, err);
+        const msg = `24h visita ${v.id}: ${err instanceof Error ? err.message : String(err)}`;
+        console.error(`[CronVisitas] ${msg}`);
         stats.errors++;
+        errorDetails.push(msg);
       }
     }
   }
@@ -105,7 +108,7 @@ export async function GET(request: NextRequest) {
     .select(`
       id, confirmed_date, confirmed_time,
       owner_user_id, requester_user_id, requester_name, requester_phone, requester_country_code,
-      properties:property_id ( address ),
+      properties:property_id ( address, fake_address ),
       owners:owner_user_id ( name, telefono, telefono_country_code )
     `)
     .eq('status', 'accepted')
@@ -130,8 +133,10 @@ export async function GET(request: NextRequest) {
           .eq('id', v.id);
         stats.reminder2h++;
       } catch (err) {
-        console.error(`[CronVisitas] 2h reminder error for visita ${v.id}:`, err);
+        const msg = `2h visita ${v.id}: ${err instanceof Error ? err.message : String(err)}`;
+        console.error(`[CronVisitas] ${msg}`);
         stats.errors++;
+        errorDetails.push(msg);
       }
     }
   }
@@ -146,7 +151,7 @@ export async function GET(request: NextRequest) {
     .select(`
       id, confirmed_date, confirmed_time,
       owner_user_id, requester_user_id, requester_name, requester_phone, requester_country_code,
-      properties:property_id ( address ),
+      properties:property_id ( address, fake_address ),
       owners:owner_user_id ( name, telefono, telefono_country_code )
     `)
     .eq('status', 'accepted')
@@ -171,8 +176,10 @@ export async function GET(request: NextRequest) {
           .eq('id', v.id);
         stats.postvisit++;
       } catch (err) {
-        console.error(`[CronVisitas] Post-visit error for visita ${v.id}:`, err);
+        const msg = `postvisit visita ${v.id}: ${err instanceof Error ? err.message : String(err)}`;
+        console.error(`[CronVisitas] ${msg}`);
         stats.errors++;
+        errorDetails.push(msg);
       }
     }
   }
@@ -185,7 +192,7 @@ export async function GET(request: NextRequest) {
       .update({
         finished_at: new Date().toISOString(),
         status: stats.errors > 0 ? 'failed' : 'completed',
-        stats,
+        stats: { ...stats, errorDetails },
       })
       .eq('id', logId);
   }
@@ -218,28 +225,29 @@ type VisitaRow = Record<string, any>;
 
 async function sendReminders(v: VisitaRow): Promise<void> {
   const ownerData = v.owners as { name: string; telefono: string; telefono_country_code: string } | null;
-  const address = (v.properties as { address: string } | null)?.address ?? '';
+  const propData = v.properties as { address: string; fake_address: string | null } | null;
+  const realAddress = propData?.address ?? '';
   const { dayLabel, time } = formatVisitDateTime(v.confirmed_date, v.confirmed_time);
 
-  // Send to owner
+  // Send to owner (always real address)
   if (ownerData?.telefono) {
     const ownerPhone = toKapsoPhone(ownerData.telefono_country_code ?? '', ownerData.telefono);
     await sendOwnerReminder({
       ownerPhone,
       ownerName: ownerData.name ?? 'Propietario',
-      address,
+      address: realAddress,
       dayLabel,
       time,
     });
   }
 
-  // Send to inquilino
+  // Send to inquilino (real address — they need to know where to go)
   if (v.requester_phone) {
     const inquilinoPhone = toKapsoPhone(v.requester_country_code ?? '', v.requester_phone);
     await sendInquilinoReminder({
       inquilinoPhone,
       inquilinoName: v.requester_name ?? 'Inquilino',
-      address,
+      address: realAddress,
       dayLabel,
       time,
     });
@@ -248,25 +256,26 @@ async function sendReminders(v: VisitaRow): Promise<void> {
 
 async function sendPostVisitMessages(v: VisitaRow): Promise<void> {
   const ownerData = v.owners as { name: string; telefono: string; telefono_country_code: string } | null;
-  const address = (v.properties as { address: string } | null)?.address ?? '';
+  const propData = v.properties as { address: string; fake_address: string | null } | null;
+  const realAddress = propData?.address ?? '';
 
-  // Send to owner
+  // Send to owner (always real address)
   if (ownerData?.telefono) {
     const ownerPhone = toKapsoPhone(ownerData.telefono_country_code ?? '', ownerData.telefono);
     await sendOwnerPostVisitFeedback({
       ownerPhone,
       ownerName: ownerData.name ?? 'Propietario',
-      address,
+      address: realAddress,
     });
   }
 
-  // Send to inquilino
+  // Send to inquilino (real address — they already visited)
   if (v.requester_phone) {
     const inquilinoPhone = toKapsoPhone(v.requester_country_code ?? '', v.requester_phone);
     await sendInquilinoPostVisitFeedback({
       inquilinoPhone,
       inquilinoName: v.requester_name ?? 'Inquilino',
-      address,
+      address: realAddress,
     });
   }
 }

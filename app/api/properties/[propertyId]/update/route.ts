@@ -62,6 +62,7 @@ export async function PUT(
       currency,
       expenses,
       address,
+      fake_address,
       address_complement,
       geo_lat,
       geo_long,
@@ -103,6 +104,7 @@ export async function PUT(
       .update({
         type_id: type_id ?? null,
         address: address ?? null,
+        fake_address: fake_address ?? null,
         address_complement: address_complement ?? null,
         geo_lat: geo_lat ?? null,
         geo_long: geo_long ?? null,

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   const priceType = searchParams.get("priceType") || "total"; // "total" | "alquiler"
   const ownerType = searchParams.get("ownerType"); // "dueno" | "inmobiliaria"
   const tier = searchParams.get("tier"); // "free" = inmobiliarias + plan basico
-  const sort = searchParams.get("sort") || "recent";
+  const sort = searchParams.get("sort") || "relevant";
   const page = parseInt(searchParams.get("page") || "1");
   const rawLimit = parseInt(searchParams.get("limit") || "20");
   const limit = Math.min(Math.max(1, rawLimit), 100);
@@ -250,24 +250,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Apply sort — premium plans (acompanado/experiencia) always shown first by default
+  // Apply sort — premium plans (acompanado/experiencia) prioritized only for "relevant"
   switch (sort) {
     case "price-low":
       query = query
-        .order("sort_priority", { ascending: true })
         .order("valor_total_primary", { ascending: true, nullsFirst: false });
       break;
     case "price-high":
       query = query
-        .order("sort_priority", { ascending: true })
         .order("valor_total_primary", { ascending: false, nullsFirst: false });
       break;
     case "recent":
       query = query
-        .order("sort_priority", { ascending: true })
         .order("property_created_at", { ascending: false });
       break;
     default:
+      // "relevant" — premium plans shown first
       query = query
         .order("sort_priority", { ascending: true })
         .order("listing_updated_at", { ascending: false });

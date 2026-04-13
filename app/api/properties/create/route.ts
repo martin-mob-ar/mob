@@ -3,6 +3,7 @@ import { supabaseAdmin, getOrCreateUserFromAuth } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/supabase/auth';
 import { movePhoto, getPublicUrl } from '@/lib/storage/gcs';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { sendWelcomeEmail } from '@/lib/integrations/resend';
 
 export async function POST(request: Request) {
   try {
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
       currency,
       expenses,
       address,
+      fake_address,
       address_complement,
       geo_lat,
       geo_long,
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
           draft_step: null,
           type_id: type_id ?? null,
           address: address ?? null,
+          fake_address: fake_address ?? null,
           address_complement: address_complement ?? null,
           geo_lat: geo_lat ?? null,
           geo_long: geo_long ?? null,
@@ -136,6 +139,7 @@ export async function POST(request: Request) {
           user_id: resolvedUserId,
           type_id: type_id ?? null,
           address: address ?? null,
+          fake_address: fake_address ?? null,
           address_complement: address_complement ?? null,
           geo_lat: geo_lat ?? null,
           geo_long: geo_long ?? null,
@@ -229,6 +233,10 @@ export async function POST(request: Request) {
       }
 
       console.log('[properties/create] Done (draft publish). Property ID:', propertyId);
+
+      // Fire-and-forget welcome email
+      dispatchWelcomeEmail(resolvedUserId, selectedPlan);
+
       return NextResponse.json({ id: propertyId });
     }
 
@@ -332,6 +340,10 @@ export async function POST(request: Request) {
     }
 
     console.log('[properties/create] Done. Property ID:', propertyId);
+
+    // Fire-and-forget welcome email
+    dispatchWelcomeEmail(resolvedUserId, selectedPlan);
+
     return NextResponse.json({ id: propertyId });
   } catch (e) {
     console.error('[properties/create] Unhandled error:', e);
@@ -340,4 +352,27 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+/** Fire-and-forget: fetch user email/name and send welcome email */
+function dispatchWelcomeEmail(userId: string, plan?: string) {
+  const effectivePlan = (plan === 'acompanado' || plan === 'experiencia') ? plan : 'basico' as const;
+
+  (async () => {
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('name, email')
+      .eq('id', userId)
+      .single();
+
+    if (!user?.email) {
+      console.warn('[properties/create] No email found for welcome email, user:', userId);
+      return;
+    }
+
+    const result = await sendWelcomeEmail(user.email, user.name || '', effectivePlan);
+    console.log('[properties/create] Welcome email result:', result.success ? 'sent' : result.error);
+  })().catch((err) => {
+    console.error('[properties/create] Welcome email dispatch error:', err);
+  });
 }

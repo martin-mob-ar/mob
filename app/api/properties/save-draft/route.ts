@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       draft_step,
       type_id,
       address,
+      fake_address,
       geo_lat,
       geo_long,
       location_id,
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       };
       if (type_id !== undefined) updateData.type_id = type_id ?? null;
       if (address !== undefined) updateData.address = address ?? null;
+      if (fake_address !== undefined) updateData.fake_address = fake_address ?? null;
       if (geo_lat !== undefined) updateData.geo_lat = geo_lat ?? null;
       if (geo_long !== undefined) updateData.geo_long = geo_long ?? null;
       if (location_id !== undefined) updateData.location_id = location_id ?? null;
@@ -118,6 +120,7 @@ export async function POST(request: Request) {
           draft_step: draft_step ?? 2,
           type_id: type_id ?? null,
           address: address ?? null,
+          fake_address: fake_address ?? null,
           geo_lat: geo_lat ?? null,
           geo_long: geo_long ?? null,
           location_id: location_id ?? null,

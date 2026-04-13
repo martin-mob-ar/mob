@@ -212,7 +212,7 @@ export async function sendInquilinoConfirmation(params: {
 }): Promise<void> {
   await sendTextMessage(
     params.inquilinoPhone,
-    `Hola ${params.inquilinoName}, El propietario confirmó tu visita para el departamento en ${params.address}.\n\n🗓️ ${params.dayLabel}\n⏰ ${params.time}\n\nSuerte en tu futura casa!`,
+    `Hola ${params.inquilinoName}, El propietario confirmó tu visita!\n\n📍 La dirección real de la propiedad es: ${params.address}\n🗓️ ${params.dayLabel}\n⏰ ${params.time}\n\nSuerte en tu futura casa!`,
   );
 }
 
