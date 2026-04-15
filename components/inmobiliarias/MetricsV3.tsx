@@ -15,7 +15,7 @@ const AnimatedMetric = ({ value, label, delay }: { value: string; label: string;
 
   return (
     <motion.div
-      className="flex min-h-[132px] flex-col items-center justify-center text-center p-6"
+      className="flex min-h-[132px] flex-col items-center justify-center text-center px-6 py-8"
       initial={{ opacity: 0, scale: 0.9 }}
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true, amount: 0.5 }}
@@ -23,7 +23,7 @@ const AnimatedMetric = ({ value, label, delay }: { value: string; label: string;
       onViewportEnter={() => setHasAnimated(true)}
     >
       <motion.span
-        className="font-display text-4xl md:text-5xl font-extrabold text-primary block mb-2"
+        className="font-display text-4xl md:text-5xl font-extrabold text-primary mb-2"
         initial={{ opacity: 0, y: 20 }}
         animate={hasAnimated ? { opacity: 1, y: 0 } : {}}
         transition={{ delay: delay + 0.2, duration: 0.5 }}

@@ -254,7 +254,7 @@ const FunnelComparison = () => {
   return (
     <section
       ref={sectionRef}
-      className="py-20 md:py-[60px] relative overflow-hidden"
+      className="relative overflow-hidden py-[46px]"
       onMouseMove={handleMouseMove}
     >
       {!isMobile && (
@@ -269,6 +269,21 @@ const FunnelComparison = () => {
       )}
 
       <div className="container relative z-10">
+        <motion.div
+          className="mb-10 text-center md:mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="font-display mb-3 text-3xl font-bold md:text-4xl">
+            Conectá tus propiedades a <span className="font-ubuntu text-primary">mob</span>
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            sincronizadas de Tokko Broker
+          </p>
+        </motion.div>
+
         {/* Mobile: Combined compact view */}
         {isMobile && (
           <div className="max-w-4xl mx-auto">
