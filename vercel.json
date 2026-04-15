@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app/ components/ lib/ types/ views/ public/ next.config.ts package.json package-lock.json",
+  "ignoreCommand": "! git diff --quiet HEAD^ HEAD -- app/ components/ lib/ types/ views/ public/ next.config.ts package.json package-lock.json vercel.json",
   "crons": [
     {
       "path": "/api/cron/sync",
