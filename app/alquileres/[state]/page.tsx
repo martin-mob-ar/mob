@@ -26,6 +26,8 @@ async function getStateData(stateSlug: string) {
 }
 
 export async function generateStaticParams() {
+  if (process.env.VERCEL_ENV !== "production") return [];
+
   const { data: propsWithLoc } = await supabaseAdmin
     .from("properties_read")
     .select("location_id")

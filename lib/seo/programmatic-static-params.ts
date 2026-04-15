@@ -1,14 +1,19 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { PROPERTY_TYPES, type PropertyTypeSlug } from "./programmatic-constants";
 
+const isProduction = process.env.VERCEL_ENV === "production";
+
 /**
  * Generate { state, location } tuples for a given property type and/or room count.
  * Only returns combos with 2+ verified properties to avoid thin pages.
+ * On non-production builds, returns empty to skip static generation (pages served via ISR on-demand).
  */
 export async function buildStaticParamsForFilter(options: {
   propertyTypeSlug?: PropertyTypeSlug;
   roomCount?: number;
 }): Promise<{ state: string; location: string }[]> {
+  if (!isProduction) return [];
+
   const { propertyTypeSlug, roomCount } = options;
 
   // Build base query for properties matching the filter

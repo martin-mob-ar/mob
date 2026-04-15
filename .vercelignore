@@ -1,0 +1,4 @@
+scripts/
+supabase/
+geotree build/
+*.md

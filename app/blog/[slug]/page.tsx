@@ -20,6 +20,8 @@ import { ArrowLeft } from "lucide-react";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.mob.ar";
 
 export async function generateStaticParams() {
+  if (process.env.VERCEL_ENV !== "production") return [];
+
   const slugs = await sanityFetch<string[]>({
     query: allPostSlugsQuery,
     tags: ["post"],

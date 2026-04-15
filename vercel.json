@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app/ components/ lib/ types/ views/ public/ next.config.ts package.json package-lock.json",
   "crons": [
     {
       "path": "/api/cron/sync",

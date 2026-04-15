@@ -31,8 +31,8 @@ const HeroV4 = () => {
             </div>
 
             <div className="space-y-[26px] px-6 md:space-y-8 md:px-0">
-              <h1 className="font-display text-[1.56rem] font-extrabold leading-tight text-foreground md:text-[2rem] lg:text-[2.5rem]">
-                <span className="block">Cerrá alquileres más rápido</span>
+              <h1 className="font-display text-[1.56rem] font-extrabold leading-tight text-foreground md:text-[2rem] lg:text-[1.85rem] xl:text-[2.5rem]">
+                <span className="block whitespace-nowrap">Cerrá alquileres más rápido</span>
                 <span className="block text-primary">y con más seguridad</span>
               </h1>
 

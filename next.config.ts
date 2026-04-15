@@ -51,11 +51,16 @@ const nextConfig: NextConfig = {
   },
 };
 
+const isProduction = process.env.VERCEL_ENV === "production";
+
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  widenClientFileUpload: true,
+  widenClientFileUpload: isProduction,
+  sourcemaps: {
+    disable: !isProduction,
+  },
   tunnelRoute: "/monitoring",
   silent: !process.env.CI,
 });
