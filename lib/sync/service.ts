@@ -96,11 +96,12 @@ function extractBranchContactInfo(branches: TokkoBranch[]): {
 }
 
 /**
- * Find existing user by auth_id, email, or tokko_api_hash.
+ * Find existing user by id, email, or tokko_api_hash.
  * The user MUST already exist (created by the DB trigger on auth signup).
  */
 async function findUser(authId: string, authEmail: string, apiKeyHash: string): Promise<string> {
-  // 1. By auth_id (should always hit — trigger creates the row on signup)
+  // 1. By id (should always hit — trigger creates the row on signup;
+  //    since public.users.id = auth.users.id, authId IS the public user id)
   const { data: byAuth } = await supabaseAdmin
     .from('users')
     .select('id')

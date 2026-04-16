@@ -29,6 +29,97 @@ export type Database = {
         }
         Relationships: []
       }
+      certificados_inquilino: {
+        Row: {
+          created_at: string
+          estado: string
+          fecha_emision: string
+          fecha_vencimiento: string
+          id: string
+          monto_aprobado: number
+          nombre_completo: string
+          user_id: string
+          verificacion_hoggax_id: string | null
+          verificacion_truora_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          fecha_emision?: string
+          fecha_vencimiento: string
+          id: string
+          monto_aprobado: number
+          nombre_completo: string
+          user_id: string
+          verificacion_hoggax_id?: string | null
+          verificacion_truora_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          fecha_emision?: string
+          fecha_vencimiento?: string
+          id?: string
+          monto_aprobado?: number
+          nombre_completo?: string
+          user_id?: string
+          verificacion_hoggax_id?: string | null
+          verificacion_truora_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificados_inquilino_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificados_inquilino_verificacion_hoggax_id_fkey"
+            columns: ["verificacion_hoggax_id"]
+            isOneToOne: false
+            referencedRelation: "verificaciones_hoggax"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificados_inquilino_verificacion_truora_id_fkey"
+            columns: ["verificacion_truora_id"]
+            isOneToOne: false
+            referencedRelation: "verificaciones_truora"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cron_job_log: {
+        Row: {
+          error_message: string | null
+          finished_at: string | null
+          id: number
+          job_name: string
+          started_at: string
+          stats: Json | null
+          status: string
+        }
+        Insert: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: never
+          job_name: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+        }
+        Update: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: never
+          job_name?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
       cron_sync_log: {
         Row: {
           chain_index: number
@@ -635,17 +726,22 @@ export type Database = {
           cover_photo_url: string | null
           currency: string | null
           description: string | null
+          duration_months: number | null
           expenses: number | null
           geo_lat: number | null
           geo_long: number | null
+          ipc_adjustment: string | null
           listing_updated_at: string | null
           location_id: number | null
           location_name: string | null
+          location_slug: string | null
           min_start_date: string | null
           mob_plan: string
           operacion_id: number | null
           operacion_status: string | null
+          orientation: string | null
           owner_account_type: number | null
+          owner_name: string | null
           owner_verified: boolean
           parent_location_name: string | null
           parking_lot_amount: number | null
@@ -662,16 +758,21 @@ export type Database = {
           secondary_price: number | null
           slug: string | null
           sort_priority: number
+          state_id: number | null
           state_name: string | null
+          state_slug: string | null
           suite_amount: number | null
           tag_names_type_1: string[] | null
           tag_names_type_2: string[] | null
           tag_names_type_3: string[] | null
+          toilet_amount: number | null
           tokko_id: number | null
           total_surface: number | null
           user_id: string
           valor_total_primary: number | null
           valor_total_secondary: number | null
+          visit_days: string[] | null
+          visit_hours: string[] | null
         }
         Insert: {
           address?: string | null
@@ -686,17 +787,22 @@ export type Database = {
           cover_photo_url?: string | null
           currency?: string | null
           description?: string | null
+          duration_months?: number | null
           expenses?: number | null
           geo_lat?: number | null
           geo_long?: number | null
+          ipc_adjustment?: string | null
           listing_updated_at?: string | null
           location_id?: number | null
           location_name?: string | null
+          location_slug?: string | null
           min_start_date?: string | null
           mob_plan?: string
           operacion_id?: number | null
           operacion_status?: string | null
+          orientation?: string | null
           owner_account_type?: number | null
+          owner_name?: string | null
           owner_verified?: boolean
           parent_location_name?: string | null
           parking_lot_amount?: number | null
@@ -713,16 +819,21 @@ export type Database = {
           secondary_price?: number | null
           slug?: string | null
           sort_priority?: number
+          state_id?: number | null
           state_name?: string | null
+          state_slug?: string | null
           suite_amount?: number | null
           tag_names_type_1?: string[] | null
           tag_names_type_2?: string[] | null
           tag_names_type_3?: string[] | null
+          toilet_amount?: number | null
           tokko_id?: number | null
           total_surface?: number | null
           user_id: string
           valor_total_primary?: number | null
           valor_total_secondary?: number | null
+          visit_days?: string[] | null
+          visit_hours?: string[] | null
         }
         Update: {
           address?: string | null
@@ -737,17 +848,22 @@ export type Database = {
           cover_photo_url?: string | null
           currency?: string | null
           description?: string | null
+          duration_months?: number | null
           expenses?: number | null
           geo_lat?: number | null
           geo_long?: number | null
+          ipc_adjustment?: string | null
           listing_updated_at?: string | null
           location_id?: number | null
           location_name?: string | null
+          location_slug?: string | null
           min_start_date?: string | null
           mob_plan?: string
           operacion_id?: number | null
           operacion_status?: string | null
+          orientation?: string | null
           owner_account_type?: number | null
+          owner_name?: string | null
           owner_verified?: boolean
           parent_location_name?: string | null
           parking_lot_amount?: number | null
@@ -764,16 +880,21 @@ export type Database = {
           secondary_price?: number | null
           slug?: string | null
           sort_priority?: number
+          state_id?: number | null
           state_name?: string | null
+          state_slug?: string | null
           suite_amount?: number | null
           tag_names_type_1?: string[] | null
           tag_names_type_2?: string[] | null
           tag_names_type_3?: string[] | null
+          toilet_amount?: number | null
           tokko_id?: number | null
           total_surface?: number | null
           user_id?: string
           valor_total_primary?: number | null
           valor_total_secondary?: number | null
+          visit_days?: string[] | null
+          visit_hours?: string[] | null
         }
         Relationships: []
       }
@@ -864,6 +985,7 @@ export type Database = {
           name_search: string | null
           parent_location_id: number | null
           resource_uri: string | null
+          slug: string | null
           state_id: number | null
           type_code: string | null
           updated_at: string
@@ -879,6 +1001,7 @@ export type Database = {
           name_search?: string | null
           parent_location_id?: number | null
           resource_uri?: string | null
+          slug?: string | null
           state_id?: number | null
           type_code?: string | null
           updated_at?: string
@@ -894,6 +1017,7 @@ export type Database = {
           name_search?: string | null
           parent_location_id?: number | null
           resource_uri?: string | null
+          slug?: string | null
           state_id?: number | null
           type_code?: string | null
           updated_at?: string
@@ -1105,16 +1229,19 @@ export type Database = {
           code: string
           id: number
           name: string
+          slug: string | null
         }
         Insert: {
           code: string
           id: number
           name: string
+          slug?: string | null
         }
         Update: {
           code?: string
           id?: number
           name?: string
+          slug?: string | null
         }
         Relationships: []
       }
@@ -1161,6 +1288,7 @@ export type Database = {
           name_search: string | null
           resource_uri: string | null
           sap_code: string | null
+          slug: string | null
         }
         Insert: {
           country_id: number
@@ -1169,6 +1297,7 @@ export type Database = {
           name_search?: string | null
           resource_uri?: string | null
           sap_code?: string | null
+          slug?: string | null
         }
         Update: {
           country_id?: number
@@ -1177,6 +1306,7 @@ export type Database = {
           name_search?: string | null
           resource_uri?: string | null
           sap_code?: string | null
+          slug?: string | null
         }
         Relationships: [
           {
@@ -1191,7 +1321,6 @@ export type Database = {
       users: {
         Row: {
           account_type: number | null
-          auth_id: string
           created_at: string
           dni: string | null
           email: string
@@ -1219,7 +1348,6 @@ export type Database = {
         }
         Insert: {
           account_type?: number | null
-          auth_id: string
           created_at?: string
           dni?: string | null
           email: string
@@ -1247,7 +1375,6 @@ export type Database = {
         }
         Update: {
           account_type?: number | null
-          auth_id?: string
           created_at?: string
           dni?: string | null
           email?: string
@@ -1619,6 +1746,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_slug: { Args: { input_name: string }; Returns: string }
       get_unique_tags_from_listings: {
         Args: { p_user_id: string }
         Returns: string[]
@@ -1630,14 +1758,11 @@ export type Database = {
         Args: { p_property_id: number }
         Returns: undefined
       }
+      rebuild_usd_property_listings: { Args: never; Returns: number }
       rebuild_user_property_listings: {
         Args: { p_user_id: string }
         Returns: number
       }
-      reset_user_data: { Args: never; Returns: undefined }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
-      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

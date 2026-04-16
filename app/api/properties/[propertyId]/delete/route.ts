@@ -19,7 +19,7 @@ export async function POST(
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
-  // Resolve auth_id → public users.id
+  // Verify the public.users row exists (id is the same as auth.users.id)
   const { data: publicUser } = await supabaseAdmin
     .from('users')
     .select('id')

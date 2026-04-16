@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     // Use the authenticated user's ID, ignoring any profile_id from the body
     const effectiveAuthId = authUser.id;
 
-    console.log('[properties/create] Resolving user for auth_id:', effectiveAuthId);
+    console.log('[properties/create] Resolving user for id:', effectiveAuthId);
     const resolvedUserId = await getOrCreateUserFromAuth(effectiveAuthId);
     console.log('[properties/create] Resolved user_id:', resolvedUserId);
 
