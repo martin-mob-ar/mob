@@ -1,5 +1,4 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app components contexts hooks lib public types views next.config.ts package.json package-lock.json tsconfig.json vercel.json .vercelignore middleware.ts instrumentation.ts instrumentation-client.ts sentry.client.config.ts sentry.server.config.ts sentry.edge.config.ts",
   "crons": [
     {
       "path": "/api/cron/sync",
