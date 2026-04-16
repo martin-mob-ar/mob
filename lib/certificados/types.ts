@@ -13,6 +13,13 @@ export interface CertificadoInquilino {
 
 export type CertificadoState = 'valid' | 'expired' | 'revoked' | 'not_found';
 
+/**
+ * Legal disclaimer shown on the /certificado/[id] page AND appended below the
+ * card in the downloaded PDF. Single source of truth.
+ */
+export const CERTIFICADO_DISCLAIMER =
+  'Este certificado es meramente informativo sobre el estado crediticio actual, carece de efectos vinculantes y no constituye obligación alguna de Mob u Hoggax de actuar como fiador ni genera derecho alguno a favor de terceros. La concesión de fianza queda sujeta a aprobación, pago y firma del contrato de fianza correspondiente. Cualquier modificación o variación en las condiciones que constituyen el valor de la garantía será causa de nulidad del presente certificado.';
+
 export function computeCertificadoState(
   cert: Pick<CertificadoInquilino, 'estado' | 'fecha_vencimiento'> | null
 ): CertificadoState {

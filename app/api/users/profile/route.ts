@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, telefono, telefono_country_code, dni } = body;
+    const { name, telefono, telefono_country_code, dni, account_type } = body;
 
     // Normalize Argentine phone: strip leading '9' mobile prefix so we store consistently
     let normalizedPhone = telefono;
@@ -56,17 +56,39 @@ export async function POST(request: Request) {
     }
 
     // Update public.users row
-    const updateData: Record<string, string | null> = {};
+    const updateData: Record<string, string | number | null> = {};
     if (name !== undefined) updateData.name = name || null;
     if (telefono !== undefined) updateData.telefono = normalizedPhone || null;
     if (telefono_country_code !== undefined) updateData.telefono_country_code = telefono_country_code || null;
     if (dni !== undefined) updateData.dni = dni || null;
 
+    // account_type: only set if it's currently null (never overwrite an existing
+    // dueño / inmobiliaria / red-inmobiliaria classification). Valid values 1..4.
+    if (
+      typeof account_type === 'number' &&
+      account_type >= 1 &&
+      account_type <= 4
+    ) {
+      const { data: currentAccountType } = await supabaseAdmin
+        .from('users')
+        .select('account_type')
+        .eq('auth_id', authUser.id)
+        .single();
+      if (currentAccountType?.account_type == null) {
+        updateData.account_type = account_type;
+      }
+    }
+
+    // No-op guard: nothing to update.
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ success: true, noop: true });
+    }
+
     const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('auth_id', authUser.id)
-      .select('id, name, telefono, telefono_country_code, dni, email')
+      .select('id, name, telefono, telefono_country_code, dni, email, account_type')
       .single();
 
     if (updateError) {

@@ -78,8 +78,11 @@ export default function VerificatePage() {
       // Refresh auth context to pick up new name/phone
       await refreshUser();
 
-      // Fire-and-forget: trigger Truora outbound WhatsApp
-      fetch("/api/truora/outbound", {
+      // Await the outbound so we can surface a real error if the WhatsApp
+      // message can't be sent (e.g. Truora template not configured). We still
+      // don't block for long — the request is quick — and we avoid showing the
+      // confirmation screen when nothing was actually sent.
+      const outboundRes = await fetch("/api/truora/outbound", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,7 +95,16 @@ export default function VerificatePage() {
           accountType: user?.accountType,
           certificado: fromCertificado,
         }),
-      }).catch(() => {}); // Don't block UX on failure
+      });
+
+      if (!outboundRes.ok) {
+        const data = await outboundRes.json().catch(() => ({}));
+        const msg =
+          data?.error ||
+          "No pudimos enviarte el WhatsApp. Intentá de nuevo o contactanos.";
+        console.error("[verificate] Truora outbound failed", outboundRes.status, data);
+        throw new Error(msg);
+      }
 
       setSubmitted(true);
     } catch (error) {

@@ -121,12 +121,45 @@ export async function POST(request: Request) {
     //   - plain verification (no property) → NO_PROPERTY template
     // Flow IDs: certificate reuses NO_PROPERTY (same underlying inquilino flow,
     // only the WhatsApp intro message differs).
-    const outboundId = isCertificadoFlow
-      ? TRUORA_OUTBOUND_ID_CERTIFICADO
-      : propertyId
-        ? TRUORA_OUTBOUND_ID
-        : TRUORA_OUTBOUND_ID_NO_PROPERTY;
+    // Fallback: if the certificate template isn't configured, fall back to the
+    // standard no-property template so the user still gets a WhatsApp.
+    let outboundId: string;
+    if (isCertificadoFlow) {
+      if (TRUORA_OUTBOUND_ID_CERTIFICADO) {
+        outboundId = TRUORA_OUTBOUND_ID_CERTIFICADO;
+      } else {
+        console.warn(
+          '[TruoraOutbound] TRUORA_OUTBOUND_ID_CERTIFICADO not configured — falling back to TRUORA_OUTBOUND_ID_NO_PROPERTY'
+        );
+        outboundId = TRUORA_OUTBOUND_ID_NO_PROPERTY;
+      }
+    } else if (propertyId) {
+      outboundId = TRUORA_OUTBOUND_ID;
+    } else {
+      outboundId = TRUORA_OUTBOUND_ID_NO_PROPERTY;
+    }
     const flowId = propertyId ? TRUORA_FLOW_ID : TRUORA_FLOW_ID_NO_PROPERTY;
+
+    // Fail loudly when required env vars are missing so operators catch the
+    // problem in Vercel logs (we used to let Truora reject us with an unhelpful
+    // "invalid outbound_id" error).
+    if (!outboundId) {
+      console.error('[TruoraOutbound] Missing outbound template id', {
+        isCertificadoFlow,
+        propertyId: !!propertyId,
+      });
+      return NextResponse.json(
+        { error: 'Plantilla de WhatsApp no configurada en el servidor' },
+        { status: 503 }
+      );
+    }
+    if (!flowId) {
+      console.error('[TruoraOutbound] Missing flow id');
+      return NextResponse.json(
+        { error: 'Flow de WhatsApp no configurado en el servidor' },
+        { status: 503 }
+      );
+    }
 
     const result = await sendOutbound({
       phone: phoneDigits,

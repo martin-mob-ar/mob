@@ -7,17 +7,14 @@ import {
   QrCode,
   Building2,
   ShieldCheck,
-  Twitter,
   Home,
-  BadgeCheck,
-  Check,
 } from 'lucide-react';
 import { CertificadoCredencial } from './CertificadoCredencial';
 import { CertificadoLandingCTA } from './CertificadoLandingCTA';
 
 // --- Fake example data for the hero card ---
-const EXAMPLE_NAME = 'Juana Martínez';
-const EXAMPLE_MONTO = 1_500_000;
+const EXAMPLE_NAME = 'Lionel Messi';
+const EXAMPLE_MONTO = 2_000_000;
 // Fake dates: emitted today-ish, valid 90 days out (set relative so the card
 // always looks fresh without hard-coded strings going stale).
 const nowExample = new Date();
@@ -61,51 +58,14 @@ export function CertificadoLandingContent() {
           }}
         />
 
-        <div className="relative container mx-auto px-6 py-16 md:py-24">
+        <div className="relative container mx-auto px-6 py-20 md:py-28">
           <div className="max-w-3xl mx-auto text-center">
-            {/* Eyebrow */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary"
-            >
-              <BadgeCheck className="h-3.5 w-3.5" />
-              Certificado de inquilino · Mob + Hoggax
-            </motion.div>
-
-            {/* H1 */}
-            <motion.h1
-              initial="hidden"
-              animate="visible"
-              custom={1}
-              variants={fadeUp}
-              className="mt-6 font-display text-[2.2rem] md:text-6xl lg:text-7xl font-extrabold leading-[1.02] tracking-tight text-foreground"
-            >
-              El certificado que te abre la puerta del{' '}
-              <span className="text-primary">alquiler</span>.
-            </motion.h1>
-
-            {/* Subtext */}
-            <motion.p
-              initial="hidden"
-              animate="visible"
-              custom={2}
-              variants={fadeUp}
-              className="mt-5 md:mt-6 text-base md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto"
-            >
-              Verificate una vez y recibí un certificado público con QR.
-              Compartilo en X, presentálo en inmobiliarias o llevalo a la
-              visita — tu aprobación de inquilino calificado, siempre a mano.
-            </motion.p>
-
             {/* The credential card (glowing spotlight) */}
             <motion.div
               initial="hidden"
               animate="visible"
-              custom={3}
               variants={fadeUp}
-              className="relative mt-12 md:mt-16 flex justify-center"
+              className="relative flex justify-center"
             >
               {/* Card-level glow */}
               <div
@@ -185,24 +145,24 @@ export function CertificadoLandingContent() {
       {/* ═══════════════════════════════════════════════════════════════
           CÓMO FUNCIONA — 3 steps, editorial numerals
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative py-20 md:py-28 bg-background">
+      <section className="relative py-12 md:py-16 bg-background">
         <div className="container mx-auto px-6">
           <motion.div
-            className="text-center mb-14 md:mb-20 max-w-2xl mx-auto"
+            className="text-center mb-8 md:mb-10 max-w-2xl mx-auto"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
             variants={fadeUp}
           >
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary mb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary mb-2">
               Cómo funciona
             </div>
-            <h2 className="font-display text-3xl md:text-5xl font-extrabold text-foreground leading-[1.05]">
+            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-foreground leading-tight">
               Tres pasos. Dos minutos.
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-4 max-w-5xl mx-auto">
             {[
               {
                 num: '01',
@@ -232,145 +192,26 @@ export function CertificadoLandingContent() {
                 custom={i}
                 variants={fadeUp}
               >
-                {/* Oversized background numeral */}
-                <div
-                  aria-hidden
-                  className="absolute -top-6 -left-2 font-display text-[8rem] md:text-[9rem] font-black leading-none text-primary/10 select-none pointer-events-none"
-                >
-                  {step.num}
-                </div>
-
-                <div className="relative pt-14 pl-6">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-5">
-                    <step.icon className="h-6 w-6" />
+                {/* Header row: icon pill + "PASO 01" eyebrow + thin rule */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                    <step.icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
                   </div>
-                  <h3 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm">
-                    {step.desc}
-                  </p>
+                  <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                    Paso {step.num}
+                  </span>
+                  <div aria-hidden className="h-px flex-1 bg-border/60" />
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          PARA QUÉ SIRVE — dark section, 3 use cases
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative py-20 md:py-28 bg-warm-navy text-white overflow-hidden">
-        {/* Subtle primary accent glow */}
-        <div
-          aria-hidden
-          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full pointer-events-none opacity-30"
-          style={{
-            background:
-              'radial-gradient(closest-side, rgba(81,112,255,0.45), transparent 70%)',
-          }}
-        />
-
-        <div className="relative container mx-auto px-6">
-          <motion.div
-            className="text-center mb-14 md:mb-20 max-w-2xl mx-auto"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeUp}
-          >
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary mb-3">
-              Para qué sirve
-            </div>
-            <h2 className="font-display text-3xl md:text-5xl font-extrabold leading-[1.05]">
-              Tu aprobación, donde la necesites.
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                icon: Twitter,
-                kicker: 'Hacete viral',
-                title: 'Compartilo en X',
-                desc: 'Mostrale al mundo que ya sos un inquilino calificado. Link + QR listos para postear.',
-              },
-              {
-                icon: Building2,
-                kicker: 'Acelerá el alquiler',
-                title: 'Presentalo en inmobiliarias',
-                desc: 'Llevalo a la visita y la inmobiliaria ve al instante que calificás.',
-              },
-              {
-                icon: ShieldCheck,
-                kicker: 'Sin papeleos',
-                title: 'Probá tu capacidad',
-                desc: 'Identidad verificada, scoring aprobado y garantía lista. Todo en un QR.',
-              },
-            ].map((card, i) => (
-              <motion.div
-                key={card.title}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-7 md:p-8 hover:bg-white/[0.06] transition-colors"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                custom={i}
-                variants={fadeUp}
-              >
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 text-primary mb-5">
-                  <card.icon className="h-6 w-6" />
-                </div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary/80 mb-1">
-                  {card.kicker}
-                </div>
-                <h3 className="font-display text-xl md:text-2xl font-bold mb-3">
-                  {card.title}
+                <h3 className="font-display text-base md:text-lg font-bold text-foreground mb-1">
+                  {step.title}
                 </h3>
-                <p className="text-sm md:text-base text-white/70 leading-relaxed">
-                  {card.desc}
+                <p className="text-sm text-muted-foreground leading-snug max-w-sm">
+                  {step.desc}
                 </p>
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          FINAL CTA
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative py-24 md:py-32 bg-background">
-        <div className="container mx-auto px-6">
-          <motion.div
-            className="max-w-3xl mx-auto text-center"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeUp}
-          >
-            <h2 className="font-display text-4xl md:text-6xl font-extrabold leading-[1.05] text-foreground mb-5">
-              Empezá ahora.
-              <br className="hidden md:block" />{' '}
-              <span className="text-primary">Tardás 2 minutos.</span>
-            </h2>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10">
-              Verificate una vez, llevá tu certificado para siempre.
-            </p>
-            <CertificadoLandingCTA />
-            <div className="mt-8 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                Gratis
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                Sin compromiso
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                Vigencia 90 días
-              </span>
-            </div>
-          </motion.div>
         </div>
       </section>
     </>

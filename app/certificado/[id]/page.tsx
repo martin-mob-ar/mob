@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
 import { getCertificadoById } from '@/lib/certificados/create';
-import { computeCertificadoState } from '@/lib/certificados/types';
+import { computeCertificadoState, CERTIFICADO_DISCLAIMER } from '@/lib/certificados/types';
 import { CertificadoPage } from '@/components/certificado/CertificadoPage';
 import {
   CertificadoExpirado,
@@ -122,14 +122,7 @@ export default async function CertificadoPageRoute({ params }: PageProps) {
 
           {state === 'valid' && (
             <p className="mt-12 text-[11px] leading-relaxed text-muted-foreground text-center max-w-[560px] mx-auto">
-              Este certificado es meramente informativo sobre el estado
-              crediticio actual, carece de efectos vinculantes y no constituye
-              obligación alguna de Mob de actuar como fiador ni genera derecho
-              alguno a favor de terceros. La concesión de fianza queda sujeta a
-              aprobación, pago y firma del contrato de fianza correspondiente.
-              Cualquier modificación o variación en las condiciones que
-              constituyen el valor de la garantía será causa de nulidad del
-              presente certificado.
+              {CERTIFICADO_DISCLAIMER}
             </p>
           )}
         </div>
