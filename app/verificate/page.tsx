@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { MessageCircle, Search, PenLine, Home } from "lucide-react";
+import { MessageCircle, Search, PenLine, Home, BadgeCheck } from "lucide-react";
 import Header from "@/components/Header";
 import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import {
@@ -43,6 +43,9 @@ export default function VerificatePage() {
   const propertyId = searchParams.get("propertyId");
   const date = searchParams.get("date");
   const time = searchParams.get("time");
+  // When true the user is entering from the /certificado landing page. We route
+  // them through a certificate-specific Truora template + tailored confirmation copy.
+  const fromCertificado = searchParams.get("certificado") === "true";
 
   const form = useForm<VerificateFormValues>({
     resolver: zodResolver(verificateFormSchema),
@@ -87,6 +90,7 @@ export default function VerificatePage() {
           date,
           time,
           accountType: user?.accountType,
+          certificado: fromCertificado,
         }),
       }).catch(() => {}); // Don't block UX on failure
 
@@ -112,25 +116,44 @@ export default function VerificatePage() {
         <Header />
         <div className="min-h-[60vh] flex items-center justify-center px-4 py-12">
           <div className="max-w-md w-full text-center space-y-6">
-            <div className="h-14 w-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-              <MessageCircle className="h-7 w-7 text-green-600" />
+            <div className={`h-14 w-14 rounded-full flex items-center justify-center mx-auto ${fromCertificado ? 'bg-primary/10' : 'bg-green-100'}`}>
+              {fromCertificado ? (
+                <BadgeCheck className="h-7 w-7 text-primary" />
+              ) : (
+                <MessageCircle className="h-7 w-7 text-green-600" />
+              )}
             </div>
             <div className="space-y-2">
               <h1 className="font-display text-2xl font-bold text-foreground">
                 ¡Listo, {submittedName}!
               </h1>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                En breve te contactaremos por WhatsApp al{" "}
-                <span className="font-semibold text-foreground">
-                  {submittedCode} {submittedPhone}
-                </span>{" "}
-                para completar tu verificación.
-              </p>
+              {fromCertificado ? (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Ya te mandamos un mensaje por WhatsApp al{" "}
+                  <span className="font-semibold text-foreground">
+                    {submittedCode} {submittedPhone}
+                  </span>{" "}
+                  para que puedas verificarte y obtener tu{" "}
+                  <span className="font-semibold text-foreground">
+                    certificado de inquilino calificado
+                  </span>
+                  .
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  En breve te contactaremos por WhatsApp al{" "}
+                  <span className="font-semibold text-foreground">
+                    {submittedCode} {submittedPhone}
+                  </span>{" "}
+                  para completar tu verificación.
+                </p>
+              )}
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Si no recibís el mensaje, verificá que tu número de teléfono
-              sea correcto.
+              {fromCertificado
+                ? "Completá los pasos y al terminar vas a recibir el link de tu certificado. Si no recibís el mensaje, verificá que tu número sea correcto."
+                : "Si no recibís el mensaje, verificá que tu número de teléfono sea correcto."}
             </p>
 
             <div className="space-y-3">
@@ -153,7 +176,15 @@ export default function VerificatePage() {
                 </Button>
               )}
 
-              {user?.accountType === 2 ? (
+              {fromCertificado ? (
+                <Button
+                  onClick={() => router.push("/alquileres")}
+                  className="w-full h-12 rounded-xl text-sm font-semibold"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Mientras tanto, explorá propiedades
+                </Button>
+              ) : user?.accountType === 2 ? (
                 <Button
                   onClick={() => router.push("/gestion-inmobiliaria/propiedades")}
                   className="w-full h-12 rounded-xl text-sm font-semibold"
@@ -185,9 +216,20 @@ export default function VerificatePage() {
           {/* Heading */}
           <div className="space-y-3">
             <h1 className="font-display text-3xl font-bold text-foreground">
-              Verificate como {user?.accountType === 2 ? 'propietario verificado' : 'inquilino calificado'}
+              {fromCertificado
+                ? 'Generá tu certificado de inquilino'
+                : `Verificate como ${user?.accountType === 2 ? 'propietario verificado' : 'inquilino calificado'}`}
             </h1>
-            {user?.accountType === 2 ? (
+            {fromCertificado ? (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Completá la verificación para obtener tu{" "}
+                <span className="font-semibold text-foreground">
+                  certificado de inquilino calificado
+                </span>
+                , un link público con QR que podés compartir o llevar a
+                cualquier inmobiliaria.
+              </p>
+            ) : user?.accountType === 2 ? (
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Completá tu verificación para que tus inquilinos puedan{" "}
                 <span className="font-semibold text-foreground">

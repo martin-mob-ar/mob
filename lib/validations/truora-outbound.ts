@@ -8,6 +8,8 @@ export const truoraOutboundSchema = z.object({
   date: z.string().nullish(),
   time: z.string().nullish(),
   accountType: z.number().nullable().optional(),
+  /** When true, use the certificate-specific outbound template. */
+  certificado: z.boolean().optional(),
 });
 
 export type TruoraOutboundPayload = z.infer<typeof truoraOutboundSchema>;

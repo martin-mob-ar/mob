@@ -6,6 +6,7 @@ import { getAuthUser } from '@/lib/supabase/auth';
 
 const TRUORA_OUTBOUND_ID = process.env.TRUORA_OUTBOUND_ID ?? '';
 const TRUORA_OUTBOUND_ID_NO_PROPERTY = process.env.TRUORA_OUTBOUND_ID_NO_PROPERTY ?? '';
+const TRUORA_OUTBOUND_ID_CERTIFICADO = process.env.TRUORA_OUTBOUND_ID_CERTIFICADO ?? '';
 const TRUORA_FLOW_ID = process.env.TRUORA_FLOW_ID ?? '';
 const TRUORA_FLOW_ID_NO_PROPERTY = process.env.TRUORA_FLOW_ID_NO_PROPERTY ?? '';
 
@@ -32,7 +33,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const { phone, country_code, name, propertyId, date, time, accountType } = parsed.data;
+    const { phone, country_code, name, propertyId, date, time, accountType, certificado } = parsed.data;
+    // Certificate flow: only when explicitly requested AND no property is involved
+    const isCertificadoFlow = certificado === true && !propertyId;
 
     // Build the phone number for Truora (digits only, with country code)
     // Argentine mobile numbers need '9' after country code for WhatsApp
@@ -55,7 +58,12 @@ export async function POST(request: Request) {
 
     const variables: Record<string, string> = { nombre_usuario: name };
 
-    if (accountType != null && ACCOUNT_TYPE_LABELS[accountType]) {
+    // In the certificate flow the user is always a tenant (the certificate is for
+    // inquilinos). Regardless of the user's current accountType, the Truora flow
+    // treats them as tenant so the WhatsApp copy matches the landing page.
+    if (isCertificadoFlow) {
+      variables.tipo_usuario = 'inquilino';
+    } else if (accountType != null && ACCOUNT_TYPE_LABELS[accountType]) {
       variables.tipo_usuario = ACCOUNT_TYPE_LABELS[accountType];
     }
 
@@ -107,10 +115,23 @@ export async function POST(request: Request) {
       }
     }
 
+    // Pick the right outbound template:
+    //   - certificate flow (no property, certificado=true) → CERTIFICADO template
+    //   - with property → property template
+    //   - plain verification (no property) → NO_PROPERTY template
+    // Flow IDs: certificate reuses NO_PROPERTY (same underlying inquilino flow,
+    // only the WhatsApp intro message differs).
+    const outboundId = isCertificadoFlow
+      ? TRUORA_OUTBOUND_ID_CERTIFICADO
+      : propertyId
+        ? TRUORA_OUTBOUND_ID
+        : TRUORA_OUTBOUND_ID_NO_PROPERTY;
+    const flowId = propertyId ? TRUORA_FLOW_ID : TRUORA_FLOW_ID_NO_PROPERTY;
+
     const result = await sendOutbound({
       phone: phoneDigits,
-      outboundId: propertyId ? TRUORA_OUTBOUND_ID : TRUORA_OUTBOUND_ID_NO_PROPERTY,
-      flowId: propertyId ? TRUORA_FLOW_ID : TRUORA_FLOW_ID_NO_PROPERTY,
+      outboundId,
+      flowId,
       variables,
     });
 

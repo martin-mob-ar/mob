@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { BadgeCheck, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CertificadoCredencial } from './CertificadoCredencial';
-import { CertificadoTarjeta } from './CertificadoTarjeta';
 import { CertificadoActions } from './CertificadoActions';
 
 interface CertificadoPageProps {
@@ -15,15 +14,9 @@ interface CertificadoPageProps {
   fechaEmision: string;
   fechaVencimiento: string;
   url: string;
-  /** When true, hide the internal-only layout toggle. Defaults false. */
-  hideLayoutToggle?: boolean;
 }
 
-type Layout = 'credencial' | 'tarjeta';
-
 export function CertificadoPage(props: CertificadoPageProps) {
-  const [layout, setLayout] = useState<Layout>('credencial');
-
   const cardProps = {
     nombreCompleto: props.nombreCompleto,
     montoAprobado: props.montoAprobado,
@@ -33,74 +26,74 @@ export function CertificadoPage(props: CertificadoPageProps) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full">
+    <div className="flex flex-col items-center gap-8 w-full">
       {/* Verified banner */}
-      <div className="w-full max-w-[540px] flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
-        <BadgeCheck className="h-5 w-5 shrink-0" />
-        <div className="text-sm font-medium">
-          Certificado válido — Validación por Mob
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-[540px] flex items-center gap-2.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-emerald-900"
+      >
+        <BadgeCheck className="h-4 w-4 shrink-0" />
+        <div className="text-xs md:text-sm font-medium">
+          Certificado válido · Validación por Mob + Hoggax
         </div>
-      </div>
+      </motion.div>
 
-      {/* Layout toggle (internal) */}
-      {!props.hideLayoutToggle && (
-        <div className="inline-flex rounded-full bg-muted p-1 text-sm">
-          <button
-            type="button"
-            onClick={() => setLayout('credencial')}
-            className={`rounded-full px-4 py-1.5 transition-colors ${
-              layout === 'credencial'
-                ? 'bg-background shadow-sm font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
-            Credencial
-          </button>
-          <button
-            type="button"
-            onClick={() => setLayout('tarjeta')}
-            className={`rounded-full px-4 py-1.5 transition-colors ${
-              layout === 'tarjeta'
-                ? 'bg-background shadow-sm font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
-            Tarjeta
-          </button>
-        </div>
-      )}
-
-      {/* Certificate */}
-      <div className="w-full flex justify-center">
-        {layout === 'credencial' ? (
+      {/* Certificate card with gentle float animation */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="w-full flex justify-center"
+      >
+        <motion.div
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+          className="w-full max-w-[540px]"
+        >
           <CertificadoCredencial {...cardProps} />
-        ) : (
-          <CertificadoTarjeta {...cardProps} />
-        )}
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Actions */}
-      <CertificadoActions
-        url={props.url}
-        nombreCompleto={props.nombreCompleto}
-        montoAprobado={props.montoAprobado}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
+        <CertificadoActions
+          url={props.url}
+          nombreCompleto={props.nombreCompleto}
+          montoAprobado={props.montoAprobado}
+        />
+      </motion.div>
 
       {/* CTA */}
-      <div className="w-full max-w-[540px] border-t pt-6 mt-2 text-center">
-        <p className="text-sm text-muted-foreground mb-3">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        className="w-full max-w-[540px] border-t border-border/60 pt-8 mt-2 text-center"
+      >
+        <p className="text-sm text-muted-foreground mb-4">
           ¿Listo para encontrar tu próximo hogar?
         </p>
-        <Button asChild size="lg" className="w-full sm:w-auto">
+        <Button
+          asChild
+          size="lg"
+          className="rounded-full px-8 shadow-lg shadow-primary/20"
+        >
           <Link
             href={`/alquileres?precio_max=${props.montoAprobado}`}
             className="gap-2"
           >
-            <Search />
-            Buscar propiedades hasta ${props.montoAprobado.toLocaleString('es-AR')}
+            <Search className="h-4 w-4" />
+            Buscar propiedades hasta $
+            {props.montoAprobado.toLocaleString('es-AR')}
           </Link>
         </Button>
-      </div>
+      </motion.div>
     </div>
   );
 }

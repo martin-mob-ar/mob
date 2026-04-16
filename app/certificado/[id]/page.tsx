@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
+import Footer from '@/components/Footer';
 import { getCertificadoById } from '@/lib/certificados/create';
 import { computeCertificadoState } from '@/lib/certificados/types';
 import { CertificadoPage } from '@/components/certificado/CertificadoPage';
@@ -64,51 +66,76 @@ export default async function CertificadoPageRoute({ params }: PageProps) {
   const url = `${APP_URL}/certificado/${id}`;
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
-      <header className="w-full border-b bg-white">
-        <div className="max-w-[640px] mx-auto px-5 py-4 flex items-center justify-between">
-          <Link
-            href="/"
-            className="font-black text-2xl tracking-tight"
-            style={{ fontFamily: `'Ubuntu', system-ui, sans-serif` }}
-          >
-            mob
-          </Link>
-          <div className="text-xs text-muted-foreground">
-            Validación por <span className="font-semibold text-foreground">Mob</span>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col">
+      <main className="flex-1 relative overflow-hidden">
+        {/* Ambient primary glow behind the card — same visual language as /certificado */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-0 -translate-x-1/2 w-[900px] h-[900px] rounded-full pointer-events-none opacity-70"
+          style={{
+            background:
+              'radial-gradient(closest-side, rgba(81,112,255,0.12), transparent 70%)',
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.25] pointer-events-none"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle, rgba(81,112,255,0.12) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+          }}
+        />
 
-      <main className="max-w-[640px] mx-auto px-5 py-8">
-        {state === 'not_found' && <CertificadoNoEncontrado />}
-        {state === 'revoked' && <CertificadoRevocado />}
-        {state === 'expired' && cert && (
-          <CertificadoExpirado fechaVencimiento={cert.fecha_vencimiento} />
-        )}
-        {state === 'valid' && cert && (
-          <CertificadoPage
-            id={cert.id}
-            nombreCompleto={cert.nombre_completo}
-            montoAprobado={cert.monto_aprobado}
-            fechaEmision={cert.fecha_emision}
-            fechaVencimiento={cert.fecha_vencimiento}
-            url={url}
+        {/* Floating mob logo — top-left, overlapping content (no header bar). */}
+        <Link
+          href="/"
+          aria-label="Ir a Mob"
+          className="absolute top-5 left-5 md:top-7 md:left-8 z-10 inline-flex items-center transition-opacity hover:opacity-80"
+        >
+          <Image
+            src="/assets/mob-logo-new.png"
+            alt="mob"
+            width={112}
+            height={44}
+            priority
+            className="h-8 md:h-10 w-auto"
           />
-        )}
+        </Link>
+
+        <div className="relative max-w-[680px] mx-auto px-5 pt-20 md:pt-24 pb-12 md:pb-16">
+          {state === 'not_found' && <CertificadoNoEncontrado />}
+          {state === 'revoked' && <CertificadoRevocado />}
+          {state === 'expired' && cert && (
+            <CertificadoExpirado fechaVencimiento={cert.fecha_vencimiento} />
+          )}
+          {state === 'valid' && cert && (
+            <CertificadoPage
+              id={cert.id}
+              nombreCompleto={cert.nombre_completo}
+              montoAprobado={cert.monto_aprobado}
+              fechaEmision={cert.fecha_emision}
+              fechaVencimiento={cert.fecha_vencimiento}
+              url={url}
+            />
+          )}
+
+          {state === 'valid' && (
+            <p className="mt-12 text-[11px] leading-relaxed text-muted-foreground text-center max-w-[560px] mx-auto">
+              Este certificado es meramente informativo sobre el estado
+              crediticio actual, carece de efectos vinculantes y no constituye
+              obligación alguna de Mob de actuar como fiador ni genera derecho
+              alguno a favor de terceros. La concesión de fianza queda sujeta a
+              aprobación, pago y firma del contrato de fianza correspondiente.
+              Cualquier modificación o variación en las condiciones que
+              constituyen el valor de la garantía será causa de nulidad del
+              presente certificado.
+            </p>
+          )}
+        </div>
       </main>
 
-      <footer className="max-w-[640px] mx-auto px-5 py-10">
-        <p className="text-[11px] leading-relaxed text-muted-foreground text-center">
-          Este certificado es meramente informativo sobre el estado crediticio
-          actual, carece de efectos vinculantes y no constituye obligación alguna
-          de Mob de actuar como fiador ni genera derecho alguno a favor de
-          terceros. La concesión de fianza queda sujeta a aprobación, pago y
-          firma del contrato de fianza correspondiente. Cualquier modificación o
-          variación en las condiciones que constituyen el valor de la garantía
-          será causa de nulidad del presente certificado.
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }
