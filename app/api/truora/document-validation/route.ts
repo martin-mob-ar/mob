@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraDocumentValidationSchema } from '@/lib/validations/truora-document-validation';
 import { findUserByPhone } from '@/lib/truora/find-user-by-phone';
+import { createCertificadoInquilino } from '@/lib/certificados/create';
 
 function verifyWebhookSecret(request: Request): boolean {
   const webhookSecret = process.env.TRUORA_WEBHOOK_SECRET;
@@ -103,10 +104,23 @@ export async function POST(request: Request) {
       });
     }
 
+    // --- Issue/reuse tenant certificate if eligible (Hoggax + Truora both ok) ---
+    // Fails soft: a certificate issue problem never breaks the webhook response.
+    let certificado: { id: string; url: string; reused: boolean } | null = null;
+    if (documentVerified) {
+      try {
+        certificado = await createCertificadoInquilino({ userId: user.id });
+      } catch (err) {
+        console.error('[TruoraDocValidation] Certificate issue failed:', err);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       userId: user.id,
       truora_document_verified: documentVerified,
+      certificado_url: certificado?.url ?? null,
+      certificado_id: certificado?.id ?? null,
     });
   } catch (error) {
     console.error('[TruoraDocValidation] Unexpected error:', error);

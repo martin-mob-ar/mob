@@ -106,7 +106,7 @@ export async function generateMetadata({
   const { data } = await supabase
     .from("properties_read")
     .select(
-      "property_id, property_type_id, property_type_name, room_amount, location_name, parent_location_name, address, description, cover_photo_url, currency, price, expenses, valor_total_primary, total_surface, slug"
+      "property_id, property_type_id, property_type_name, room_amount, location_name, parent_location_name, address, description, currency, price, expenses, valor_total_primary, total_surface, slug"
     )
     .eq("property_id", propertyId)
     .single();
@@ -213,24 +213,11 @@ export async function generateMetadata({
       url: canonicalUrl,
       siteName: "mob",
       type: "article",
-      ...(data.cover_photo_url && {
-        images: [
-          {
-            url: data.cover_photo_url,
-            width: 1200,
-            height: 630,
-            alt: title,
-          },
-        ],
-      }),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      ...(data.cover_photo_url && {
-        images: [data.cover_photo_url],
-      }),
     },
   };
 }
