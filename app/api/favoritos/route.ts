@@ -12,7 +12,7 @@ async function getPublicUserId(): Promise<string | null> {
     const { data: publicUser } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('auth_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     return publicUser?.id ?? null;

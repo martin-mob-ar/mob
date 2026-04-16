@@ -24,7 +24,7 @@ export async function POST() {
   const { data: publicUser } = await supabaseAdmin
     .from('users')
     .select('id, name, tokko_api_key_enc, tokko_last_sync_at, sync_status')
-    .eq('auth_id', authUser.id)
+    .eq('id', authUser.id)
     .single();
 
   if (!publicUser) {

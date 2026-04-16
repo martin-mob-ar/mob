@@ -104,7 +104,7 @@ async function findUser(authId: string, authEmail: string, apiKeyHash: string): 
   const { data: byAuth } = await supabaseAdmin
     .from('users')
     .select('id')
-    .eq('auth_id', authId)
+    .eq('id', authId)
     .maybeSingle();
   if (byAuth) return byAuth.id;
 

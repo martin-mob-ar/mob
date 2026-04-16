@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CertificadoCredencial } from './CertificadoCredencial';
 import { CertificadoActions } from './CertificadoActions';
@@ -35,19 +35,6 @@ export function CertificadoPage(props: CertificadoPageProps) {
 
   return (
     <div className="flex flex-col items-center gap-7 w-full">
-      {/* Verified banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-[560px] flex items-center gap-2.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-emerald-900"
-      >
-        <BadgeCheck className="h-4 w-4 shrink-0" />
-        <div className="text-xs md:text-sm font-medium">
-          Certificado válido · Validación por Mob + Hoggax
-        </div>
-      </motion.div>
-
       {/* Certificate card with gentle float animation. Amount toggle lives on the card itself. */}
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}

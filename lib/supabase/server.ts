@@ -20,10 +20,11 @@ export const supabaseAdmin = createClient(
 
 /**
  * Resolve a user identifier to the database user UUID.
- * Accepts either a user UUID (direct lookup) or a raw API key (hashed lookup).
+ * Accepts either a user UUID (direct lookup on public.users.id, which now
+ * equals auth.users.id) or a raw Tokko API key (hashed lookup).
  */
 export async function resolveUserId(input: string): Promise<string> {
-  // First try direct UUID lookup on users.id
+  // Direct UUID lookup on users.id (which = auth.users.id since the unification migration)
   const { data: directUser } = await supabaseAdmin
     .from('users')
     .select('id')
@@ -32,16 +33,7 @@ export async function resolveUserId(input: string): Promise<string> {
 
   if (directUser) return directUser.id;
 
-  // Try lookup by auth_id (Supabase Auth UUID)
-  const { data: authUser } = await supabaseAdmin
-    .from('users')
-    .select('id')
-    .eq('auth_id', input)
-    .maybeSingle();
-
-  if (authUser) return authUser.id;
-
-  // Fall back to hashing as API key
+  // Fall back to hashing as Tokko API key
   const apiKeyHash = createHash('sha256').update(input).digest('hex');
   const { data: user, error } = await supabaseAdmin
     .from('users')
@@ -57,42 +49,40 @@ export async function resolveUserId(input: string): Promise<string> {
 }
 
 /**
- * Return the public users row for a given auth user ID.
- * The row is auto-created by a DB trigger on auth.users INSERT,
- * so this should always find an existing row.
+ * Return the public.users.id for a given auth user ID.
+ *
+ * Since the ID unification migration, `public.users.id = auth.users.id`, so
+ * `authId` IS the public user id. We still verify the row exists (and create
+ * it if the `on_auth_user_created` trigger raced).
  */
 export async function getOrCreateUserFromAuth(authId: string): Promise<string> {
-  // The DB trigger auto-creates the public.users row on signup,
-  // so we just need to find it
   const { data: existing } = await supabaseAdmin
     .from('users')
     .select('id')
-    .eq('auth_id', authId)
+    .eq('id', authId)
     .maybeSingle();
 
-  if (existing) return existing.id;
+  if (existing) return authId;
 
-  // Fallback: trigger may not have fired yet (race condition) — create manually
+  // Fallback: trigger didn't fire yet (race) — create manually.
   const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.admin.getUserById(authId);
   if (authError || !authUser) {
     throw new Error('Auth user not found');
   }
 
-  const { data: newUser, error } = await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('users')
     .upsert({
-      auth_id: authId,
+      id: authId,
       email: authUser.email || '',
       name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
-    }, { onConflict: 'auth_id' })
-    .select('id')
-    .single();
+    }, { onConflict: 'id' });
 
-  if (error || !newUser) {
-    throw new Error(`Failed to create user: ${error?.message || 'Unknown error'}`);
+  if (error) {
+    throw new Error(`Failed to create user: ${error.message}`);
   }
 
-  return newUser.id;
+  return authId;
 }
 
 // Client-side Supabase client (for read operations if needed)

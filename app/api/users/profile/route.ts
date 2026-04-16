@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       const { data: currentUser } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('auth_id', authUser.id)
+        .eq('id', authUser.id)
         .single();
 
       // For +54 numbers, check both with and without leading '9' to prevent duplicates
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       const { data: currentAccountType } = await supabaseAdmin
         .from('users')
         .select('account_type')
-        .eq('auth_id', authUser.id)
+        .eq('id', authUser.id)
         .single();
       if (currentAccountType?.account_type == null) {
         updateData.account_type = account_type;
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
-      .eq('auth_id', authUser.id)
+      .eq('id', authUser.id)
       .select('id, name, telefono, telefono_country_code, dni, email, account_type')
       .single();
 
@@ -140,7 +140,7 @@ export async function GET() {
     const { data: profile, error } = await supabaseAdmin
       .from('users')
       .select('id, name, email, telefono, telefono_country_code, dni')
-      .eq('auth_id', authUser.id)
+      .eq('id', authUser.id)
       .single();
 
     if (error) {

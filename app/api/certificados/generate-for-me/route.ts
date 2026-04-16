@@ -25,7 +25,7 @@ export async function POST() {
     const { data: publicUser, error: userErr } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('auth_id', authUser.id)
+      .eq('id', authUser.id)
       .maybeSingle();
 
     if (userErr || !publicUser) {

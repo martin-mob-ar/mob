@@ -69,6 +69,10 @@ export function CertificadoCredencial({
         boxShadow:
           '0 24px 60px -20px rgba(81,112,255,0.18), 0 8px 24px -8px rgba(11,18,32,0.08)',
         fontFamily: DISPLAY_FONT,
+        // Left-align text explicitly so the card doesn't inherit centered
+        // alignment from parent containers (e.g. the /certificado landing hero
+        // which uses text-center for its CTA + trust line).
+        textAlign: 'left',
         position: 'relative',
         overflow: 'hidden',
       }}

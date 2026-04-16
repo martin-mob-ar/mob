@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const { data: publicUser } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('auth_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     if (!publicUser) {

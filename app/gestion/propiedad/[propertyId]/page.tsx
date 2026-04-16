@@ -25,7 +25,7 @@ export default async function GestionPropertyDetailPage({
           await supabaseAdmin
             .from("users")
             .select("email")
-            .eq("auth_id", authUser.id)
+            .eq("id", authUser.id)
             .maybeSingle()
         ).data?.email
       : undefined;
@@ -54,7 +54,7 @@ export default async function GestionPropertyDetailPage({
   const { data: publicUser } = await supabaseAdmin
     .from("users")
     .select("id, email")
-    .eq("auth_id", authUser.id)
+    .eq("id", authUser.id)
     .maybeSingle();
 
   if (!publicUser) redirect("/gestion");

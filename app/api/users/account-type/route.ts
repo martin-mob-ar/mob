@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const { error } = await supabaseAdmin
       .from('users')
       .update({ account_type })
-      .eq('auth_id', authUser.id);
+      .eq('id', authUser.id);
 
     if (error) {
       console.error('[Account Type] Update error:', error);

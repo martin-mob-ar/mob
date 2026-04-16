@@ -18,7 +18,7 @@ export default async function MisBusquedasPage() {
   const { data: publicUser } = await supabaseAdmin
     .from("users")
     .select("id, name")
-    .eq("auth_id", authUser.id)
+    .eq("id", authUser.id)
     .maybeSingle();
 
   if (!publicUser) {

@@ -205,7 +205,7 @@ export function CertificadoActions({
         ) : (
           <FileText />
         )}
-        PDF
+        Descargar como PDF
       </Button>
       <Button
         variant="outline"
@@ -225,7 +225,7 @@ export function CertificadoActions({
         className="bg-[#25D366] text-white hover:bg-[#1fb257] hover:text-white border-[#25D366]"
       >
         <WhatsAppIcon />
-        WhatsApp
+        Compartir por WhatsApp
       </Button>
       <Button
         variant="outline"

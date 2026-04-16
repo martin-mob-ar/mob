@@ -261,7 +261,7 @@ export default async function PropiedadDetailPage({
         const { data: publicUser } = await supabaseAdmin
           .from("users")
           .select("id")
-          .eq("auth_id", authUser.id)
+          .eq("id", authUser.id)
           .single();
         isOwner = publicUser?.id === activePropertyData.user_id;
       }
@@ -290,7 +290,7 @@ export default async function PropiedadDetailPage({
       const { data: publicUser } = await supabaseAdmin
         .from("users")
         .select("id")
-        .eq("auth_id", authUser.id)
+        .eq("id", authUser.id)
         .single();
       isOwner = publicUser?.id === rawProperty.user_id;
     }

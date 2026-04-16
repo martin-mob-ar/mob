@@ -68,7 +68,7 @@ export default async function RootLayout({
     const { data: publicUser } = await supabaseAdmin
       .from("users")
       .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type, logo")
-      .eq("auth_id", authUser.id)
+      .eq("id", authUser.id)
       .maybeSingle();
 
     const isInmobiliaria = publicUser?.account_type === 3 || publicUser?.account_type === 4;

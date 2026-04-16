@@ -129,7 +129,7 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
         const queryPromise = supabase
           .from("users")
           .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type, logo")
-          .eq("auth_id", authId)
+          .eq("id", authId)
           .maybeSingle();
         const timeoutPromise = new Promise<{ data: null }>((resolve) =>
           setTimeout(() => resolve({ data: null }), 5000)

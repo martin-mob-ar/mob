@@ -21,27 +21,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user exists and belongs to the authenticated user
-    const { data: user, error: fetchError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('id', userId.trim())
-      .eq('auth_id', authUser.id)
-      .single();
-
-    if (fetchError || !user) {
+    // Authorization: the submitted userId must match the authenticated user's id.
+    // Since public.users.id = auth.users.id, authUser.id IS the public user id.
+    if (userId.trim() !== authUser.id) {
       return NextResponse.json(
         { error: 'User not found or access denied' },
         { status: 403 }
       );
     }
 
-    // Delete user (CASCADE will remove all related data)
-    const { error: deleteError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', userId.trim())
-      .eq('auth_id', authUser.id);
+    // Delete the auth user. The FK public.users.id -> auth.users(id)
+    // ON DELETE CASCADE propagates to public.users and, from there,
+    // through all user-owned FK tables (properties, favoritos, etc.).
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authUser.id);
 
     if (deleteError) {
       console.error('[Tokko Account Delete] Delete failed:', deleteError);

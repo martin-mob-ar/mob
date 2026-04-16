@@ -25,12 +25,12 @@ export default async function PerfilPage() {
     supabaseAdmin
       .from("users")
       .select("name, email, telefono, telefono_country_code, dni, account_type, tokko_api_hash, tokko_api_key_enc, sync_status, tokko_last_sync_at, hoggax_last_verification_date, truora_last_verification_date")
-      .eq("auth_id", authUser.id)
+      .eq("id", authUser.id)
       .single(),
     supabaseAdmin
       .from("users")
       .select("id")
-      .eq("auth_id", authUser.id)
+      .eq("id", authUser.id)
       .maybeSingle(),
   ]);
 
