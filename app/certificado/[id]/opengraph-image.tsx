@@ -1,4 +1,6 @@
 import { ImageResponse } from 'next/og';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { getCertificadoById } from '@/lib/certificados/create';
 import { computeCertificadoState } from '@/lib/certificados/types';
 
@@ -14,8 +16,21 @@ const INK = '#0B1220';
 const INK_MUTED = '#6B7280';
 const SUCCESS = '#059669';
 
+const FONT_DIR = join(process.cwd(), 'assets/fonts');
+
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+async function getFonts() {
+  const [bold, extraBold] = await Promise.all([
+    readFile(join(FONT_DIR, 'montserrat-latin-700-normal.woff')),
+    readFile(join(FONT_DIR, 'montserrat-latin-800-normal.woff')),
+  ]);
+  return [
+    { name: 'Montserrat', data: bold, weight: 700 as const, style: 'normal' as const },
+    { name: 'Montserrat', data: extraBold, weight: 800 as const, style: 'normal' as const },
+  ];
 }
 
 export default async function Image({ params }: Props) {
@@ -28,6 +43,7 @@ export default async function Image({ params }: Props) {
   }
 
   const monto = `$${cert.monto_aprobado.toLocaleString('es-AR')}`;
+  const fonts = await getFonts();
 
   return new ImageResponse(
     (
@@ -39,7 +55,7 @@ export default async function Image({ params }: Props) {
           flexDirection: 'column',
           background: '#FFFFFF',
           color: INK,
-          fontFamily: 'sans-serif',
+          fontFamily: 'Montserrat',
           padding: '56px 72px',
           position: 'relative',
         }}
@@ -69,7 +85,7 @@ export default async function Image({ params }: Props) {
           <span
             style={{
               fontSize: 72,
-              fontWeight: 900,
+              fontWeight: 800,
               letterSpacing: '-0.03em',
               color: MOB_BLUE,
               display: 'flex',
@@ -155,7 +171,7 @@ export default async function Image({ params }: Props) {
             style={{
               fontSize: 24,
               color: INK_MUTED,
-              fontWeight: 600,
+              fontWeight: 700,
               display: 'flex',
             }}
           >
@@ -211,11 +227,13 @@ export default async function Image({ params }: Props) {
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, fonts }
   );
 }
 
-function defaultImage() {
+async function defaultImage() {
+  const fonts = await getFonts();
+
   return new ImageResponse(
     (
       <div
@@ -228,7 +246,7 @@ function defaultImage() {
           justifyContent: 'center',
           background:
             'linear-gradient(135deg, #4F5FFF 0%, #6B7AFF 50%, #8B96FF 100%)',
-          fontFamily: 'sans-serif',
+          fontFamily: 'Montserrat',
         }}
       >
         <span
@@ -248,13 +266,13 @@ function defaultImage() {
             display: 'flex',
             fontSize: 36,
             color: 'rgba(255, 255, 255, 0.9)',
-            fontWeight: 500,
+            fontWeight: 700,
           }}
         >
           Certificado de inquilino calificado
         </span>
       </div>
     ),
-    { width: 1200, height: 630 }
+    { width: 1200, height: 630, fonts }
   );
 }

@@ -85,7 +85,6 @@ export function CertificadoPage(props: CertificadoPageProps) {
         <CertificadoActions
           url={props.url}
           nombreCompleto={props.nombreCompleto}
-          montoAprobado={props.montoAprobado}
         />
 
         {/* Hide amount toggle */}
