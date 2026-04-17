@@ -59,18 +59,18 @@ export function CertificadoPage(props: CertificadoPageProps) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-wrap justify-center items-center gap-1.5 md:gap-2"
+        className="flex flex-wrap md:flex-nowrap justify-center gap-1.5 md:gap-2"
       >
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 md:px-3 md:py-1.5 text-[11px] md:text-xs font-medium text-emerald-700">
-          <Home className="h-3 w-3 md:h-3.5 md:w-3.5" />
+        <span className="inline-flex w-56 md:w-60 whitespace-nowrap items-center justify-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 md:px-4 md:py-1.5 text-[11px] md:text-xs font-medium text-emerald-700">
+          <Home className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
           Apto para alquilar en mob
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/8 px-2.5 py-1 md:px-3 md:py-1.5 text-[11px] md:text-xs font-medium text-primary">
-          <ShieldCheck className="h-3 w-3 md:h-3.5 md:w-3.5" />
+        <span className="inline-flex w-56 md:w-60 whitespace-nowrap items-center justify-center gap-1.5 rounded-full border border-primary/15 bg-primary/8 px-3 py-1 md:px-4 md:py-1.5 text-[11px] md:text-xs font-medium text-primary">
+          <ShieldCheck className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
           Aprobado para garantía online
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 md:px-3 md:py-1.5 text-[11px] md:text-xs font-medium text-stone-700">
-          <Building2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
+        <span className="inline-flex w-56 md:w-60 whitespace-nowrap items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1 md:px-4 md:py-1.5 text-[11px] md:text-xs font-medium text-stone-700">
+          <Building2 className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
           Presentalo en inmobiliarias
         </span>
       </motion.div>
@@ -85,6 +85,7 @@ export function CertificadoPage(props: CertificadoPageProps) {
         <CertificadoActions
           url={props.url}
           nombreCompleto={props.nombreCompleto}
+          montoAprobado={props.montoAprobado}
         />
 
         {/* Hide amount toggle */}

@@ -352,7 +352,7 @@ const AuthModal = () => {
           <div className="space-y-5">
             <div className="text-center">
               <h2 className="font-display text-xl font-semibold text-foreground">
-                Ingresá a tu cuenta
+                Iniciar sesión o registrarse
               </h2>
             </div>
 

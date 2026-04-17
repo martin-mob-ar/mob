@@ -56,23 +56,6 @@ export function CertificadoTarjeta({
         overflow: 'hidden',
       }}
     >
-      {/* Decorative glow */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: -120,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 360,
-          height: 360,
-          borderRadius: '50%',
-          background:
-            'radial-gradient(circle, rgba(81,112,255,0.3) 0%, rgba(81,112,255,0) 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-
       {/* TOP */}
       <div
         style={{

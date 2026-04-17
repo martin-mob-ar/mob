@@ -8,8 +8,23 @@ import { CERTIFICADO_DISCLAIMER } from '@/lib/certificados/types';
 interface CertificadoActionsProps {
   url: string;
   nombreCompleto: string;
+  montoAprobado: number;
   /** DOM id of the element to capture — defaults to "certificado-mob" */
   targetId?: string;
+}
+
+function buildShareText(montoAprobado: number, url: string): string {
+  const monto = `$${montoAprobado.toLocaleString('es-AR')}`;
+  return [
+    'Ya soy un inquilino verificado por @MobAlquileres 🏠✓',
+    '',
+    `Calificado para alquilar hasta ${monto}/mes.`,
+    '',
+    'Y aprobado para una garantía de Hoggax.',
+    '',
+    'Mirá mi certificado 👇',
+    url,
+  ].join('\n');
 }
 
 type BusyState = null | 'png' | 'pdf' | 'share';
@@ -17,6 +32,7 @@ type BusyState = null | 'png' | 'pdf' | 'share';
 export function CertificadoActions({
   url,
   nombreCompleto,
+  montoAprobado,
   targetId = 'certificado-mob',
 }: CertificadoActionsProps) {
   const [busy, setBusy] = useState<BusyState>(null);
@@ -135,6 +151,15 @@ export function CertificadoActions({
     }
   }
 
+  function handleTweet() {
+    const text = buildShareText(montoAprobado, url);
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  }
+
   async function handleShare() {
     try {
       setBusy('share');
@@ -155,8 +180,8 @@ export function CertificadoActions({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 w-full max-w-[600px]">
-      <Button variant="outline" size="sm" onClick={handlePng} disabled={!!busy} className="w-full sm:w-auto">
+    <div className="inline-grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <Button variant="outline" size="sm" onClick={handlePng} disabled={!!busy}>
         {busy === 'png' ? (
           <Loader2 className="animate-spin" />
         ) : (
@@ -164,7 +189,7 @@ export function CertificadoActions({
         )}
         Descargar imagen
       </Button>
-      <Button variant="outline" size="sm" onClick={handlePdf} disabled={!!busy} className="w-full sm:w-auto">
+      <Button variant="outline" size="sm" onClick={handlePdf} disabled={!!busy}>
         {busy === 'pdf' ? (
           <Loader2 className="animate-spin" />
         ) : (
@@ -177,14 +202,14 @@ export function CertificadoActions({
         size="sm"
         onClick={handleShare}
         disabled={!!busy}
-        className="col-span-2 sm:col-span-1 w-full sm:w-auto"
+        className="sm:col-span-2"
       >
         {busy === 'share' ? (
           <Loader2 className="animate-spin" />
         ) : (
           <Share2 />
         )}
-        Compartir
+        Compartir (WhatsApp, Twitter, etc)
       </Button>
     </div>
   );

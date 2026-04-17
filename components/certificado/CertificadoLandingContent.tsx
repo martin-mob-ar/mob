@@ -40,36 +40,18 @@ export function CertificadoLandingContent() {
       {/* ═══════════════════════════════════════════════════════════════
           HERO — centered, card as the focal point
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative bg-white">
-        {/* Atmospheric background: faint dotted grid + primary radial glow */}
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle, rgba(81,112,255,0.12) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div
-          aria-hidden
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/3 w-[900px] h-[900px] rounded-full pointer-events-none"
-          style={{
-            background:
-              'radial-gradient(closest-side, rgba(81,112,255,0.18), transparent 70%)',
-          }}
-        />
-
-        <div className="relative container mx-auto px-6 py-12 md:py-16">
+      <section className="bg-white">
+        <div className="container mx-auto px-6 py-8 md:py-10">
           <div className="max-w-3xl mx-auto text-center">
             {/* Hero title */}
             <motion.h1
               initial="hidden"
               animate="visible"
               variants={fadeUp}
-              className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-8 md:mb-10"
+              className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-6 md:mb-8"
             >
-              Mostrate como <span className="text-primary">Inquilino Calificado</span>
+              Mostrate como{' '}
+              <span className="text-primary whitespace-nowrap">Inquilino Calificado</span>
               <br />
               con garantía aprobada
             </motion.h1>
@@ -81,15 +63,6 @@ export function CertificadoLandingContent() {
               variants={fadeUp}
               className="relative flex justify-center"
             >
-              {/* Card-level glow */}
-              <div
-                aria-hidden
-                className="absolute inset-0 -m-8 rounded-[32px] blur-2xl opacity-60"
-                style={{
-                  background:
-                    'radial-gradient(closest-side, rgba(81,112,255,0.35), transparent 70%)',
-                }}
-              />
               <motion.div
                 animate={{ y: [0, -6, 0] }}
                 transition={{
@@ -105,7 +78,7 @@ export function CertificadoLandingContent() {
                     montoAprobado={EXAMPLE_MONTO}
                     fechaEmision={EXAMPLE_EMISION}
                     fechaVencimiento={EXAMPLE_VENCIMIENTO}
-                    url="https://www.mob.ar/certificado/ejemplo"
+                    url="https://www.mob.ar/certificado"
                   />
                 </CertificadoCardWrapper>
               </motion.div>
@@ -117,7 +90,7 @@ export function CertificadoLandingContent() {
               animate="visible"
               custom={4}
               variants={fadeUp}
-              className="mt-10 md:mt-12 flex justify-center"
+              className="mt-6 md:mt-8 flex justify-center"
             >
               <CertificadoLandingCTA />
             </motion.div>
@@ -128,18 +101,18 @@ export function CertificadoLandingContent() {
               animate="visible"
               custom={5}
               variants={fadeUp}
-              className="mt-6 flex flex-wrap justify-center items-center gap-2"
+              className="mt-4 flex flex-wrap justify-center gap-2"
             >
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-                <Home className="h-3.5 w-3.5" />
+              <span className="inline-flex w-60 whitespace-nowrap items-center justify-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-700">
+                <Home className="h-3.5 w-3.5 shrink-0" />
                 Apto para alquilar en mob
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/8 px-3 py-1.5 text-xs font-medium text-primary">
-                <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="inline-flex w-60 whitespace-nowrap items-center justify-center gap-1.5 rounded-full border border-primary/15 bg-primary/8 px-4 py-1.5 text-xs font-medium text-primary">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
                 Aprobado para garantía online
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700">
-                <Building2 className="h-3.5 w-3.5" />
+              <span className="inline-flex w-60 whitespace-nowrap items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-4 py-1.5 text-xs font-medium text-stone-700">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
                 Presentalo en inmobiliarias
               </span>
             </motion.div>
@@ -150,7 +123,7 @@ export function CertificadoLandingContent() {
               animate="visible"
               custom={6}
               variants={fadeUp}
-              className="mt-8 text-xs text-muted-foreground"
+              className="mt-4 text-xs text-muted-foreground"
             >
               Validación por Mob + Hoggax · Vigencia de 90 días · 100% gratis
             </motion.p>
@@ -161,7 +134,7 @@ export function CertificadoLandingContent() {
       {/* ═══════════════════════════════════════════════════════════════
           CÓMO FUNCIONA — 3 steps, editorial numerals
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative py-12 md:py-16">
+      <section className="relative pt-2 pb-12 md:pt-4 md:pb-16">
         <div className="container mx-auto px-6">
           <motion.div
             className="text-center mb-8 md:mb-10 max-w-2xl mx-auto"

@@ -67,26 +67,7 @@ export default async function CertificadoPageRoute({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1 relative overflow-hidden">
-        {/* Ambient primary glow behind the card — same visual language as /certificado */}
-        <div
-          aria-hidden
-          className="absolute left-1/2 top-0 -translate-x-1/2 w-[900px] h-[900px] rounded-full pointer-events-none opacity-70"
-          style={{
-            background:
-              'radial-gradient(closest-side, rgba(81,112,255,0.12), transparent 70%)',
-          }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.25] pointer-events-none"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle, rgba(81,112,255,0.12) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-
+      <main className="flex-1">
         {/* Logo row */}
         <div className="relative px-4 sm:px-5 md:px-6 pt-5 md:pt-7">
           <Link
