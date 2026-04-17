@@ -15,7 +15,6 @@ interface CertificadoCredencialProps {
 }
 
 const DISPLAY_FONT = `'Montserrat', system-ui, -apple-system, sans-serif`;
-const BRAND_FONT = `'Ubuntu', 'Montserrat', system-ui, sans-serif`;
 
 // Mob brand colors (inline so html2canvas captures them reliably — CSS variables
 // sometimes don't resolve during canvas rendering).
@@ -96,18 +95,15 @@ export function CertificadoCredencial({
           marginTop: 2,
         }}
       >
-        <span
+        <img
+          src="/assets/mob-logo-new.png"
+          alt="mob"
           style={{
-            fontFamily: BRAND_FONT,
-            fontSize: 42,
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            color: MOB_BLUE,
-            lineHeight: 1,
+            height: 36,
+            width: 'auto',
+            objectFit: 'contain',
           }}
-        >
-          mob
-        </span>
+        />
         <span
           style={{
             fontSize: 12,

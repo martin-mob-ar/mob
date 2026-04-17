@@ -350,4 +350,40 @@
     transition: opacity 0.3s ease;
   }
 
+  /* Certificado card responsive scaling via container queries.
+     The outer container measures its own inline size; the inner div
+     is always 600px and zoomed to fit. Pure CSS — no JS needed. */
+  .certificado-card-container {
+    container-type: inline-size;
+  }
+  .certificado-card-inner {
+    width: 600px;
+  }
+
+  /* When container is < 600px, scale down proportionally */
+  @container (max-width: 599px) {
+    .certificado-card-inner { zoom: 0.95; }
+  }
+  @container (max-width: 560px) {
+    .certificado-card-inner { zoom: 0.9; }
+  }
+  @container (max-width: 520px) {
+    .certificado-card-inner { zoom: 0.83; }
+  }
+  @container (max-width: 480px) {
+    .certificado-card-inner { zoom: 0.76; }
+  }
+  @container (max-width: 440px) {
+    .certificado-card-inner { zoom: 0.7; }
+  }
+  @container (max-width: 400px) {
+    .certificado-card-inner { zoom: 0.63; }
+  }
+  @container (max-width: 360px) {
+    .certificado-card-inner { zoom: 0.57; }
+  }
+  @container (max-width: 320px) {
+    .certificado-card-inner { zoom: 0.5; }
+  }
+
 }

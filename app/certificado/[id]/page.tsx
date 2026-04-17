@@ -87,23 +87,25 @@ export default async function CertificadoPageRoute({ params }: PageProps) {
           }}
         />
 
-        {/* Floating mob logo — top-left, overlapping content (no header bar). */}
-        <Link
-          href="/"
-          aria-label="Ir a Mob"
-          className="absolute top-5 left-5 md:top-7 md:left-8 z-10 inline-flex items-center transition-opacity hover:opacity-80"
-        >
-          <Image
-            src="/assets/mob-logo-new.png"
-            alt="mob"
-            width={112}
-            height={44}
-            priority
-            className="h-8 md:h-10 w-auto"
-          />
-        </Link>
+        {/* Logo row */}
+        <div className="relative px-4 sm:px-5 md:px-6 pt-5 md:pt-7">
+          <Link
+            href="/"
+            aria-label="Ir a Mob"
+            className="inline-flex items-center transition-opacity hover:opacity-80"
+          >
+            <Image
+              src="/assets/mob-logo-new.png"
+              alt="mob"
+              width={112}
+              height={44}
+              priority
+              className="h-8 md:h-10 w-auto"
+            />
+          </Link>
+        </div>
 
-        <div className="relative max-w-[680px] mx-auto px-5 pt-20 md:pt-24 pb-12 md:pb-16">
+        <div className="relative max-w-[680px] mx-auto px-4 sm:px-5 md:px-6 pt-6 md:pt-10 pb-10 md:pb-16">
           {state === 'not_found' && <CertificadoNoEncontrado />}
           {state === 'revoked' && <CertificadoRevocado />}
           {state === 'expired' && cert && (
@@ -121,7 +123,7 @@ export default async function CertificadoPageRoute({ params }: PageProps) {
           )}
 
           {state === 'valid' && (
-            <p className="mt-12 text-[11px] leading-relaxed text-muted-foreground text-center max-w-[560px] mx-auto">
+            <p className="mt-8 md:mt-12 text-[10px] md:text-[11px] leading-relaxed text-muted-foreground text-center max-w-[560px] mx-auto">
               {CERTIFICADO_DISCLAIMER}
             </p>
           )}

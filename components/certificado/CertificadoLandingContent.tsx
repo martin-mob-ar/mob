@@ -10,6 +10,7 @@ import {
   Home,
 } from 'lucide-react';
 import { CertificadoCredencial } from './CertificadoCredencial';
+import { CertificadoCardWrapper } from './CertificadoCardWrapper';
 import { CertificadoLandingCTA } from './CertificadoLandingCTA';
 import { CERTIFICADO_DISCLAIMER } from '@/lib/certificados/types';
 
@@ -39,7 +40,7 @@ export function CertificadoLandingContent() {
       {/* ═══════════════════════════════════════════════════════════════
           HERO — centered, card as the focal point
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-white">
+      <section className="relative bg-white">
         {/* Atmospheric background: faint dotted grid + primary radial glow */}
         <div
           aria-hidden
@@ -59,16 +60,18 @@ export function CertificadoLandingContent() {
           }}
         />
 
-        <div className="relative container mx-auto px-6 py-20 md:py-28">
+        <div className="relative container mx-auto px-6 py-12 md:py-16">
           <div className="max-w-3xl mx-auto text-center">
             {/* Hero title */}
             <motion.h1
               initial="hidden"
               animate="visible"
               variants={fadeUp}
-              className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-10 md:mb-14"
+              className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-8 md:mb-10"
             >
-              Mostrate como <span className="text-primary">Inquilino Calificado</span> con garantía aprobada
+              Mostrate como <span className="text-primary">Inquilino Calificado</span>
+              <br />
+              con garantía aprobada
             </motion.h1>
 
             {/* The credential card (glowing spotlight) */}
@@ -94,15 +97,17 @@ export function CertificadoLandingContent() {
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
-                className="relative w-full max-w-[600px]"
+                className="relative w-full"
               >
-                <CertificadoCredencial
-                  nombreCompleto={EXAMPLE_NAME}
-                  montoAprobado={EXAMPLE_MONTO}
-                  fechaEmision={EXAMPLE_EMISION}
-                  fechaVencimiento={EXAMPLE_VENCIMIENTO}
-                  url="https://www.mob.ar/certificado/ejemplo"
-                />
+                <CertificadoCardWrapper>
+                  <CertificadoCredencial
+                    nombreCompleto={EXAMPLE_NAME}
+                    montoAprobado={EXAMPLE_MONTO}
+                    fechaEmision={EXAMPLE_EMISION}
+                    fechaVencimiento={EXAMPLE_VENCIMIENTO}
+                    url="https://www.mob.ar/certificado/ejemplo"
+                  />
+                </CertificadoCardWrapper>
               </motion.div>
             </motion.div>
 
@@ -156,7 +161,7 @@ export function CertificadoLandingContent() {
       {/* ═══════════════════════════════════════════════════════════════
           CÓMO FUNCIONA — 3 steps, editorial numerals
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative py-12 md:py-16 bg-background">
+      <section className="relative py-12 md:py-16">
         <div className="container mx-auto px-6">
           <motion.div
             className="text-center mb-8 md:mb-10 max-w-2xl mx-auto"
