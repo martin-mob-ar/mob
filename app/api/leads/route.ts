@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { leadApiSchema } from '@/lib/validations/lead';
 import { createTokkoWebContact } from '@/lib/integrations/tokko-contact';
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { propertyId, type, name, email, phone, country_code, message, source, submitterUserId } = parsed.data;
+    const { propertyId, type, name, email, phone, country_code, message, source, submitterUserId, analyticsContext, analyticsSessionId } = parsed.data;
 
     // Fetch property details (include company_id for webcontact key lookup)
     const { data: property, error: propError } = await supabaseAdmin
@@ -244,6 +245,54 @@ export async function POST(request: Request) {
     Promise.allSettled(dispatches).catch((err) => {
       console.error('[Leads] Dispatch error:', err);
     });
+
+    // Log agendar_visita_submit event when lead came from the visita CTA
+    if (analyticsContext === 'agendar_visita') {
+      try {
+        const cookieStore = await cookies();
+        const anonId = cookieStore.get('mob_anon_id')?.value ?? analyticsSessionId ?? null;
+        const userId = submitterUserId ?? null;
+        const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        let attributionStatus: 'recovered_via_user' | 'direct_session' | 'unattributed' = 'unattributed';
+        let clickEventId: number | null = null;
+
+        if (userId) {
+          const { data } = await supabaseAdmin
+            .from('property_events')
+            .select('id')
+            .eq('property_id', propertyId)
+            .eq('event_type', 'agendar_visita_click')
+            .eq('user_id', userId)
+            .gte('created_at', cutoff)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (data?.[0]) { attributionStatus = 'recovered_via_user'; clickEventId = data[0].id; }
+        }
+        if (attributionStatus === 'unattributed' && anonId) {
+          const { data } = await supabaseAdmin
+            .from('property_events')
+            .select('id')
+            .eq('property_id', propertyId)
+            .eq('event_type', 'agendar_visita_click')
+            .eq('session_id', anonId)
+            .gte('created_at', cutoff)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (data?.[0]) { attributionStatus = 'direct_session'; clickEventId = data[0].id; }
+        }
+
+        await supabaseAdmin.from('property_events').insert({
+          property_id: propertyId,
+          event_type: 'agendar_visita_submit',
+          user_id: userId,
+          session_id: anonId,
+          metadata: { lead_id: leadId, source: 'lead_form', attribution_status: attributionStatus, click_event_id: clickEventId },
+        });
+      } catch (err) {
+        console.error('[Leads] Analytics event insert error:', err);
+      }
+    }
 
     return NextResponse.json({ success: true, leadId });
   } catch (error) {

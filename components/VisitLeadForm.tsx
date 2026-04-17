@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { clarityEvent } from "@/lib/analytics/clarity";
+import { trackPropertyEvent, getAnalyticsSessionId } from "@/lib/analytics/track";
 
 import { Button } from "@/components/ui/button";
 import VisitSchedulePicker from "@/components/VisitSchedulePicker";
@@ -59,6 +60,14 @@ export default function VisitLeadForm({
   const handleSubmit = async () => {
     if (!selectedDate || !selectedTime) return;
 
+    // Track submit intent BEFORE auth/verification redirects
+    trackPropertyEvent(propertyId, 'agendar_visita_submit_started', {
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      time: selectedTime,
+      was_authenticated: isAuthenticated,
+      was_verified: isVerified,
+    });
+
     if (!isAuthenticated) {
       // Unlogged: open auth modal with redirect to /verificate
       const verificateUrl = buildVerificateUrl();
@@ -91,10 +100,11 @@ export default function VisitLeadForm({
           phone: user!.phone ?? undefined,
           country_code: user!.phoneCountryCode ?? "+54",
           submitterUserId: user!.publicUserId,
+          analyticsSessionId: getAnalyticsSessionId(),
         }),
       });
       if (res.ok) {
-        clarityEvent("cta_visita");
+        clarityEvent("agendar_visita_submit");
         setSubmitted(true);
         setShowModal(true);
       } else {

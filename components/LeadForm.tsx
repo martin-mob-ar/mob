@@ -7,6 +7,8 @@ import { ArrowLeft, Send, ShieldCheck, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import Link from "next/link";
+import { clarityEvent } from "@/lib/analytics/clarity";
+import { trackPropertyEvent, getAnalyticsSessionId } from "@/lib/analytics/track";
 
 import {
   Form,
@@ -84,6 +86,8 @@ interface LeadFormProps {
   propertyPlan?: "basico" | "acompanado" | "experiencia";
   /** Whether the property was published by an inmobiliaria (true) or a propietario (false). */
   isInmobiliaria?: boolean;
+  /** Clarity event name to fire on successful submission (e.g. 'agendar_visita_submit'). */
+  submitEventName?: string;
 }
 
 export default function LeadForm({
@@ -94,6 +98,7 @@ export default function LeadForm({
   inmobiliariaPhone,
   propertyPlan = "basico",
   isInmobiliaria = false,
+  submitEventName,
 }: LeadFormProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -143,6 +148,14 @@ export default function LeadForm({
     const valid = await form.trigger();
     if (!valid) return;
 
+    // Track submit intent for the visita CTA path
+    if (submitEventName === 'agendar_visita_submit') {
+      trackPropertyEvent(propertyId, 'agendar_visita_submit_started', {
+        was_authenticated: !!user,
+        was_verified: isVerified,
+      });
+    }
+
     const values = form.getValues();
     setIsSubmitting(true);
 
@@ -160,6 +173,10 @@ export default function LeadForm({
           message: getDefaultMessage(type, propertyAddress),
           source: "web",
           submitterUserId: user?.publicUserId || undefined,
+          ...(submitEventName === 'agendar_visita_submit' ? {
+            analyticsContext: 'agendar_visita',
+            analyticsSessionId: getAnalyticsSessionId(),
+          } : {}),
         }),
       });
 
@@ -176,6 +193,8 @@ export default function LeadForm({
           country_code: values.country_code,
         });
       }
+
+      if (submitEventName) clarityEvent(submitEventName);
 
       toast.success("¡Consulta enviada!", {
         description: "Nos pondremos en contacto pronto.",

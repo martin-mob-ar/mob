@@ -21,6 +21,7 @@ export const visitaApiSchema = z.object({
   phone: z.string().optional(),
   country_code: z.string().optional().default('+54'),
   submitterUserId: z.string().uuid().optional(),
+  analyticsSessionId: z.string().optional(),
 });
 
 export type VisitaApiInput = z.infer<typeof visitaApiSchema>;

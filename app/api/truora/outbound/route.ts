@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { truoraOutboundSchema } from '@/lib/validations/truora-outbound';
 import { sendOutbound } from '@/lib/truora/outbound';
@@ -167,6 +168,23 @@ export async function POST(request: Request) {
       flowId,
       variables,
     });
+
+    // Log agendar_visita_verification_requested event when propertyId is present
+    if (propertyId) {
+      try {
+        const cookieStore = await cookies();
+        const anonId = cookieStore.get('mob_anon_id')?.value ?? null;
+        await supabaseAdmin.from('property_events').insert({
+          property_id: propertyId,
+          event_type: 'agendar_visita_verification_requested',
+          user_id: authUser.id,
+          session_id: anonId,
+          metadata: { date: date ?? null, time: time ?? null },
+        });
+      } catch (err) {
+        console.error('[TruoraOutbound] Analytics event insert error:', err);
+      }
+    }
 
     return NextResponse.json({ success: true, truora: result });
   } catch (error) {

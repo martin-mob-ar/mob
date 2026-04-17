@@ -19,7 +19,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ExploreRentals from "@/components/ExploreRentals";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { claritySet } from "@/lib/analytics/clarity";
+import { claritySet, clarityEvent } from "@/lib/analytics/clarity";
+import { trackPropertyEvent } from "@/lib/analytics/track";
 import PropertyCard, { Property } from "@/components/PropertyCard";
 import Image from "next/image";
 const KeyRoundIcon = "/assets/key-round-icon.svg";
@@ -98,7 +99,24 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
 
   useEffect(() => {
     if (propProperty?.propertyType) claritySet('property_type', propProperty.propertyType);
-  }, [propProperty?.propertyType]);
+    if (propPropertyId) claritySet('property_id', String(propPropertyId));
+  }, [propProperty?.propertyType, propPropertyId]);
+
+  // Track property view (once per session per property)
+  useEffect(() => {
+    if (!propPropertyId) return;
+    const key = `pv:${propPropertyId}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    trackPropertyEvent(propPropertyId, 'property_view');
+  }, [propPropertyId]);
+
+  const handleAgendarVisitaClick = (opts?: { scrollToCta?: boolean }) => {
+    clarityEvent('agendar_visita_click');
+    trackPropertyEvent(propPropertyId!, 'agendar_visita_click');
+    setLeadFormType('visita');
+    if (opts?.scrollToCta) mainCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const [verificationModalDismissed, setVerificationModalDismissed] = useState(false);
   const showVerificationBanner = isPendingVerification && isCurrentUserOwner;
@@ -840,7 +858,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
             <div className="space-y-2 mt-5">
               <Button
                 className="w-full rounded-xl h-12 font-semibold text-base"
-                onClick={() => setLeadFormType("visita")}
+                onClick={() => handleAgendarVisitaClick()}
               >
                 <Calendar className="h-5 w-5 mr-2" />
                 Agendar visita
@@ -868,6 +886,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                     inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
                     propertyPlan={propertyPlan}
                     isInmobiliaria={isInmobiliaria}
+                    submitEventName={leadFormType === 'visita' ? 'agendar_visita_submit' : undefined}
                   />
                 )
               )}
@@ -1165,10 +1184,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
           </div>
           <Button
               className="rounded-xl h-11 px-6 font-semibold"
-              onClick={() => {
-                setLeadFormType("visita");
-                mainCtaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
+              onClick={() => handleAgendarVisitaClick({ scrollToCta: true })}
             >
               Agendar visita
             </Button>
@@ -1411,7 +1427,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                   <div className="space-y-2 mt-5">
                     <Button
                       className="w-full rounded-xl py-5 font-medium text-sm"
-                      onClick={() => setLeadFormType("visita")}
+                      onClick={() => handleAgendarVisitaClick()}
                     >
                       <Calendar className="h-4 w-4 mr-2" />
                       Agendar visita
@@ -1439,6 +1455,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                           inmobiliariaPhone={isTokko ? (contactPhone ?? undefined) : undefined}
                           propertyPlan={propertyPlan}
                           isInmobiliaria={isInmobiliaria}
+                          submitEventName={leadFormType === 'visita' ? 'agendar_visita_submit' : undefined}
                         />
                       )
                     )}

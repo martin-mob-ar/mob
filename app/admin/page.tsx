@@ -22,6 +22,7 @@ import { PlanDonutToggle } from "@/components/admin/charts/PlanDonutToggle";
 import { SyncHealthChart } from "@/components/admin/charts/SyncHealthChart";
 import { CronJobChart } from "@/components/admin/charts/CronJobChart";
 import { CronErrors } from "@/components/admin/CronErrors";
+import TopPropertiesTable from "@/components/admin/TopPropertiesTable";
 import {
   getKpis,
   getSignupsByDay,
@@ -34,6 +35,7 @@ import {
   getPriceStats,
   getSyncHealth,
   getCronJobHealth,
+  getTopPropertiesByEngagement,
 } from "@/lib/admin/queries";
 
 function parsePeriod(raw: string | undefined): number | null {
@@ -64,6 +66,7 @@ export default async function AdminPage({
     sync,
     visitasCron,
     exchangeRateCron,
+    topProperties,
   ] = await Promise.all([
     getKpis(periodDays),
     getSignupsByDay(periodDays),
@@ -77,6 +80,12 @@ export default async function AdminPage({
     getSyncHealth(),
     getCronJobHealth("visitas"),
     getCronJobHealth("exchange-rate"),
+    getTopPropertiesByEngagement(
+      periodDays
+        ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString()
+        : '2020-01-01T00:00:00Z',
+      50,
+    ),
   ]);
 
   const periodLabel = periodDays ? `últimos ${periodDays} días` : "todo el tiempo";
@@ -420,6 +429,16 @@ export default async function AdminPage({
             </CardContent>
           </Card>
         </div>
+
+        {/* Property Engagement */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Propiedades con más interacción</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TopPropertiesTable data={topProperties} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

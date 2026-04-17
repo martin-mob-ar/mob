@@ -101,8 +101,9 @@ const AuthModal = () => {
       openAuthModal();
       // Apply guest contact profile (same as email registration)
       applyGuestContactToProfile();
-      // Claim guest leads
+      // Claim guest leads + stitch anonymous analytics events
       fetch("/api/leads/claim", { method: "POST" }).catch(() => {});
+      fetch('/api/events/stitch', { method: 'POST', keepalive: true }).catch(() => {});
       // Clean the param from URL
       const params = new URLSearchParams(searchParams.toString());
       params.delete("select_account_type");
@@ -185,6 +186,8 @@ const AuthModal = () => {
       // Login flow
       try {
         await login(email, password);
+        // Stitch anonymous analytics events to this user
+        fetch('/api/events/stitch', { method: 'POST', keepalive: true }).catch(() => {});
         // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
         const redirectTo = searchParams.get("redirect")
           || new URLSearchParams(window.location.search).get("redirect");
@@ -208,8 +211,9 @@ const AuthModal = () => {
         const { confirmed } = await register(email, password, false);
         if (confirmed) {
           await applyGuestContactToProfile();
-          // Claim guest leads
+          // Claim guest leads + stitch anonymous analytics events
           fetch("/api/leads/claim", { method: "POST" }).catch(() => {});
+          fetch('/api/events/stitch', { method: 'POST', keepalive: true }).catch(() => {});
           // Auto-infer account type from landing page or redirect destination
           // Read from window.location as fallback — useSearchParams() may lag behind router.replace()
           const redirectTo = searchParams.get("redirect")

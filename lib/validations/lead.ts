@@ -19,6 +19,8 @@ export const leadApiSchema = z.object({
   message: z.string().min(1),
   source: z.enum(['web', 'whatsapp']).default('web'),
   submitterUserId: z.string().uuid().optional(),
+  analyticsContext: z.enum(['agendar_visita']).optional(),
+  analyticsSessionId: z.string().optional(),
 });
 
 export type LeadApiInput = z.infer<typeof leadApiSchema>;
