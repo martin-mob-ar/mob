@@ -252,16 +252,12 @@ export function CertificadoCredencial({
             </div>
           </div>
 
-          {/* Inline badges — two rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              <Chip label="Identidad" />
-              <Chip label="Perfil Financiero" />
-            </div>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              <Chip label="Inquilino Calificado" />
-              <Chip label="Garantía Aprobada" accent />
-            </div>
+          {/* Inline badges */}
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+            <Chip label="Identidad" />
+            <Chip label="Perfil Financiero" />
+            <Chip label="Inquilino Calificado" />
+            <Chip label="Garantía Aprobada" accent />
           </div>
         </div>
 
