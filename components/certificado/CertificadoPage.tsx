@@ -45,7 +45,7 @@ export function CertificadoPage(props: CertificadoPageProps) {
         <motion.div
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-full max-w-[560px]"
+          className="w-full max-w-[600px]"
         >
           <CertificadoCredencial {...cardProps} />
         </motion.div>
@@ -56,12 +56,36 @@ export function CertificadoPage(props: CertificadoPageProps) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
+        className="flex flex-col items-center gap-4"
       >
         <CertificadoActions
           url={props.url}
           nombreCompleto={props.nombreCompleto}
           montoAprobado={props.montoAprobado}
         />
+
+        {/* Hide amount toggle */}
+        <button
+          type="button"
+          onClick={() => setHideAmount((v) => !v)}
+          className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
+          <span>Ocultar monto (para compartir en redes)</span>
+          <span
+            className="relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200"
+            style={{
+              backgroundColor: hideAmount ? '#5170FF' : '#D1D5DB',
+            }}
+          >
+            <span
+              className="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200"
+              style={{
+                transform: hideAmount ? 'translateX(22px)' : 'translateX(2px)',
+                marginTop: 2,
+              }}
+            />
+          </span>
+        </button>
       </motion.div>
 
       {/* CTA */}
@@ -69,7 +93,7 @@ export function CertificadoPage(props: CertificadoPageProps) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.25 }}
-        className="w-full max-w-[560px] border-t border-border/60 pt-8 mt-2 text-center"
+        className="w-full max-w-[600px] border-t border-border/60 pt-8 mt-2 text-center"
       >
         <p className="text-sm text-muted-foreground mb-4">
           ¿Listo para encontrar tu próximo hogar?

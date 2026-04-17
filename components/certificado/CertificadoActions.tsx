@@ -33,9 +33,12 @@ function buildShareText(montoAprobado: number, url: string): string {
     '',
     'Y aprobado para una garantía de Hoggax.',
     '',
-    `Mirá mi certificado 👇 ${url}`,
+    'Mirá mi certificado 👇',
+    url,
   ].join('\n');
 }
+
+type BusyState = null | 'png' | 'pdf' | 'share';
 
 export function CertificadoActions({
   url,
@@ -43,35 +46,44 @@ export function CertificadoActions({
   montoAprobado,
   targetId = 'certificado-mob',
 }: CertificadoActionsProps) {
-  const [busy, setBusy] = useState<null | 'png' | 'pdf' | 'share'>(null);
+  const [busy, setBusy] = useState<BusyState>(null);
   const [copied, setCopied] = useState(false);
 
-  async function captureCanvas() {
+  /** Capture the card as a PNG blob using html-to-image (SVG foreignObject).
+   *  This renders exactly what the browser shows — no CSS re-interpretation. */
+  async function captureBlob(): Promise<Blob> {
     const el = document.getElementById(targetId);
     if (!el) throw new Error('No se encontró el certificado para exportar');
-    // Dynamic import keeps html2canvas out of the initial bundle
-    const { default: html2canvas } = await import('html2canvas');
-    return html2canvas(el, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true,
-      // Strip elements tagged with data-export-hide from the capture
-      // (e.g. the eye toggle next to the approved amount).
-      ignoreElements: (node) =>
-        node instanceof HTMLElement && node.hasAttribute('data-export-hide'),
+    const { toBlob } = await import('html-to-image');
+
+    // Hide elements tagged with data-export-hide (e.g. eye toggle)
+    const filter = (node: Node) => {
+      if (node instanceof HTMLElement && node.hasAttribute('data-export-hide')) {
+        return false;
+      }
+      return true;
+    };
+
+    const blob = await toBlob(el, {
+      pixelRatio: 2,
+      filter,
     });
+    if (!blob) throw new Error('toBlob returned null');
+    return blob;
   }
 
   async function handlePng() {
     try {
       setBusy('png');
-      const canvas = await captureCanvas();
+      const blob = await captureBlob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `certificado-mob-${nombreCompleto
         .replace(/\s+/g, '-')
         .toLowerCase()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = url;
       link.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('[CertificadoActions] PNG export failed', err);
     } finally {
@@ -82,7 +94,20 @@ export function CertificadoActions({
   async function handlePdf() {
     try {
       setBusy('pdf');
-      const canvas = await captureCanvas();
+      const blob = await captureBlob();
+      const imgDataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+
+      // Get image dimensions to compute aspect ratio
+      const img = await new Promise<HTMLImageElement>((resolve) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.src = imgDataUrl;
+      });
+
       const { default: JsPDF } = await import('jspdf');
 
       // A4 portrait in points (pt) — gives us consistent sizing regardless of
@@ -99,20 +124,13 @@ export function CertificadoActions({
       const availableWidth = pageWidth - margin * 2;
 
       // Fit the card image into the available width while preserving aspect.
-      const cardAspect = canvas.width / canvas.height;
+      const cardAspect = img.naturalWidth / img.naturalHeight;
       const imgWidth = availableWidth;
       const imgHeight = imgWidth / cardAspect;
       const imgX = margin;
       const imgY = margin + 24; // small top pad to feel balanced
 
-      pdf.addImage(
-        canvas.toDataURL('image/png'),
-        'PNG',
-        imgX,
-        imgY,
-        imgWidth,
-        imgHeight
-      );
+      pdf.addImage(imgDataUrl, 'PNG', imgX, imgY, imgWidth, imgHeight);
 
       // Disclaimer block — placed below the card.
       const disclaimerY = imgY + imgHeight + 32;
@@ -168,9 +186,6 @@ export function CertificadoActions({
 
   function handleTweet() {
     const text = buildShareText(montoAprobado, url);
-    // Note: we include the URL inside `text` already (as the viral copy
-    // requires it to sit under "Mirá mi certificado 👇"). X's intent handler
-    // still adds a card preview based on the URL it finds in the tweet body.
     const params = new URLSearchParams({ text });
     window.open(
       `https://twitter.com/intent/tweet?${params.toString()}`,
@@ -211,7 +226,6 @@ export function CertificadoActions({
         variant="outline"
         size="sm"
         onClick={handleTweet}
-        disabled={!!busy}
         className="bg-black text-white hover:bg-black/90 hover:text-white border-black"
       >
         <Twitter />
@@ -221,7 +235,6 @@ export function CertificadoActions({
         variant="outline"
         size="sm"
         onClick={handleWhatsApp}
-        disabled={!!busy}
         className="bg-[#25D366] text-white hover:bg-[#1fb257] hover:text-white border-[#25D366]"
       >
         <WhatsAppIcon />
@@ -233,7 +246,13 @@ export function CertificadoActions({
         onClick={handleShare}
         disabled={!!busy}
       >
-        {copied ? <Check /> : <Share2 />}
+        {busy === 'share' ? (
+          <Loader2 className="animate-spin" />
+        ) : copied ? (
+          <Check />
+        ) : (
+          <Share2 />
+        )}
         {copied ? 'Copiado' : 'Compartir'}
       </Button>
     </div>

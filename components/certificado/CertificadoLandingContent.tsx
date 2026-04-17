@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { CertificadoCredencial } from './CertificadoCredencial';
 import { CertificadoLandingCTA } from './CertificadoLandingCTA';
+import { CERTIFICADO_DISCLAIMER } from '@/lib/certificados/types';
 
 // --- Fake example data for the hero card ---
 const EXAMPLE_NAME = 'Lionel Messi';
@@ -60,6 +61,16 @@ export function CertificadoLandingContent() {
 
         <div className="relative container mx-auto px-6 py-20 md:py-28">
           <div className="max-w-3xl mx-auto text-center">
+            {/* Hero title */}
+            <motion.h1
+              initial="hidden"
+              animate="visible"
+              variants={fadeUp}
+              className="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-tight mb-10 md:mb-14"
+            >
+              Mostrate como <span className="text-primary">Inquilino Calificado</span> con garantía aprobada
+            </motion.h1>
+
             {/* The credential card (glowing spotlight) */}
             <motion.div
               initial="hidden"
@@ -83,7 +94,7 @@ export function CertificadoLandingContent() {
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
-                className="relative w-full max-w-[540px]"
+                className="relative w-full max-w-[600px]"
               >
                 <CertificadoCredencial
                   nombreCompleto={EXAMPLE_NAME}
@@ -212,6 +223,17 @@ export function CertificadoLandingContent() {
               </motion.div>
             ))}
           </div>
+
+          {/* Disclaimer */}
+          <motion.p
+            className="mt-10 text-[11px] leading-relaxed text-muted-foreground text-center max-w-3xl mx-auto"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fadeUp}
+          >
+            {CERTIFICADO_DISCLAIMER}
+          </motion.p>
         </div>
       </section>
     </>

@@ -9,6 +9,11 @@ export const alt = 'Certificado Mob de inquilino calificado';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
+const MOB_BLUE = '#5170FF';
+const INK = '#0B1220';
+const INK_MUTED = '#6B7280';
+const SUCCESS = '#059669';
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -32,165 +37,158 @@ export default async function Image({ params }: Props) {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          background: '#0A0A0A',
-          color: '#fff',
+          background: '#FFFFFF',
+          color: INK,
           fontFamily: 'sans-serif',
-          padding: 72,
+          padding: '56px 72px',
           position: 'relative',
         }}
       >
-        {/* Blue glow */}
+        {/* Top blue strip */}
         <div
           style={{
             position: 'absolute',
-            top: -200,
-            right: -100,
-            width: 600,
-            height: 600,
-            borderRadius: '50%',
-            background:
-              'radial-gradient(circle, rgba(81,112,255,0.4) 0%, rgba(81,112,255,0) 70%)',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 8,
+            background: `linear-gradient(90deg, #3B52E5 0%, ${MOB_BLUE} 50%, #8FA1FF 100%)`,
             display: 'flex',
           }}
         />
 
-        {/* Top row: mob wordmark + tag */}
+        {/* Header: mob wordmark + eyebrow */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
+            marginBottom: 40,
           }}
         >
           <span
             style={{
-              fontSize: 76,
+              fontSize: 72,
               fontWeight: 900,
               letterSpacing: '-0.03em',
-              color: '#fff',
+              color: MOB_BLUE,
+              display: 'flex',
             }}
           >
             mob
           </span>
           <span
             style={{
-              fontSize: 20,
-              fontWeight: 600,
-              letterSpacing: '0.2em',
-              color: '#9CA3AF',
+              fontSize: 24,
+              fontWeight: 800,
+              letterSpacing: '0.1em',
+              color: MOB_BLUE,
+              textAlign: 'right',
+              lineHeight: 1.35,
+              display: 'flex',
             }}
           >
-            CERTIFICADO DE INQUILINO
+            CERTIFICADO DE INQUILINO APTO
           </span>
         </div>
 
-        {/* Spacer */}
-        <div style={{ flex: 1, display: 'flex' }} />
+        {/* Name */}
+        <div
+          style={{
+            display: 'flex',
+            fontSize: 18,
+            letterSpacing: '0.12em',
+            color: INK_MUTED,
+            fontWeight: 700,
+            marginBottom: 4,
+          }}
+        >
+          A NOMBRE DE
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontSize: 52,
+            fontWeight: 700,
+            lineHeight: 1.15,
+            marginBottom: 24,
+            color: INK,
+          }}
+        >
+          {cert.nombre_completo}
+        </div>
 
-        {/* Name + amount */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div
+        {/* Amount */}
+        <div
+          style={{
+            display: 'flex',
+            fontSize: 18,
+            letterSpacing: '0.12em',
+            color: INK_MUTED,
+            fontWeight: 700,
+            marginBottom: 4,
+          }}
+        >
+          MONTO APROBADO
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            marginBottom: 28,
+          }}
+        >
+          <span
             style={{
-              display: 'flex',
-              fontSize: 22,
-              letterSpacing: '0.12em',
-              color: '#9CA3AF',
-              fontWeight: 600,
-              marginBottom: 12,
-            }}
-          >
-            ESTE CERTIFICADO ACREDITA QUE
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              fontSize: 64,
+              fontSize: 72,
               fontWeight: 800,
-              lineHeight: 1.1,
-              marginBottom: 20,
-              color: '#fff',
+              color: MOB_BLUE,
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              marginRight: 12,
+              display: 'flex',
             }}
           >
-            {cert.nombre_completo}
-          </div>
-          <div
+            {monto}
+          </span>
+          <span
             style={{
-              display: 'flex',
               fontSize: 24,
-              color: '#9CA3AF',
-              marginBottom: 6,
-            }}
-          >
-            está calificado para alquilar hasta
-          </div>
-          <div
-            style={{
+              color: INK_MUTED,
+              fontWeight: 600,
               display: 'flex',
-              alignItems: 'baseline',
-              marginBottom: 32,
             }}
           >
-            <span
-              style={{
-                fontSize: 104,
-                fontWeight: 900,
-                color: '#8FA1FF',
-                letterSpacing: '-0.03em',
-                lineHeight: 1,
-                marginRight: 16,
-              }}
-            >
-              {monto}
-            </span>
-            <span style={{ fontSize: 28, color: '#9CA3AF', fontWeight: 500 }}>
-              / mes
-            </span>
-          </div>
+            / mes
+          </span>
+        </div>
 
-          {/* Badges */}
-          <div style={{ display: 'flex' }}>
+        {/* Badges */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          {[
+            { label: 'Identidad', color: SUCCESS },
+            { label: 'Perfil Financiero', color: SUCCESS },
+            { label: 'Inquilino Calificado', color: SUCCESS },
+            { label: 'Garantía Aprobada', color: MOB_BLUE },
+          ].map((badge) => (
             <span
+              key={badge.label}
               style={{
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: 700,
-                color: '#10B981',
-                background: '#10B98122',
-                padding: '12px 24px',
-                borderRadius: 999,
-                marginRight: 12,
-                display: 'flex',
-              }}
-            >
-              ✓ Identidad verificada
-            </span>
-            <span
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: '#10B981',
-                background: '#10B98122',
-                padding: '12px 24px',
-                borderRadius: 999,
-                marginRight: 12,
-                display: 'flex',
-              }}
-            >
-              ✓ Scoring aprobado
-            </span>
-            <span
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: '#5170FF',
-                background: '#5170FF22',
-                padding: '12px 24px',
+                color: badge.color,
+                background:
+                  badge.color === MOB_BLUE
+                    ? 'rgba(81,112,255,0.09)'
+                    : '#ECFDF5',
+                padding: '8px 18px',
                 borderRadius: 999,
                 display: 'flex',
               }}
             >
-              ✓ Garantía aprobada
+              ✓ {badge.label}
             </span>
-          </div>
+          ))}
         </div>
 
         {/* Footer */}
@@ -199,15 +197,15 @@ export default async function Image({ params }: Props) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginTop: 48,
-            paddingTop: 24,
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            fontSize: 20,
-            color: '#9CA3AF',
+            marginTop: 'auto',
+            paddingTop: 20,
+            borderTop: '1px solid #E5E7EB',
+            fontSize: 18,
+            color: INK_MUTED,
           }}
         >
           <span style={{ display: 'flex' }}>
-            Validación por Mob + Hoggax
+            Aprobado por Mob + Hoggax
           </span>
           <span style={{ display: 'flex' }}>mob.ar/certificado/{cert.id}</span>
         </div>
