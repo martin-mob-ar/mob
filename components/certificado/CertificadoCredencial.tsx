@@ -252,12 +252,16 @@ export function CertificadoCredencial({
             </div>
           </div>
 
-          {/* Inline badges */}
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            <Chip label="Identidad" />
-            <Chip label="Perfil Financiero" />
-            <Chip label="Inquilino Calificado" />
-            <Chip label="Garantía Aprobada" accent />
+          {/* Inline badges — 2×2 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ display: 'flex', gap: 5 }}>
+              <Chip label="Identidad" />
+              <Chip label="Perfil Financiero" />
+            </div>
+            <div style={{ display: 'flex', gap: 5 }}>
+              <Chip label="Inquilino Calificado" />
+              <Chip label="Garantía Aprobada" accent />
+            </div>
           </div>
         </div>
 
@@ -348,12 +352,12 @@ function Chip({ label, accent = false }: { label: string; accent?: boolean }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 4,
-        fontSize: 11,
+        gap: 3,
+        fontSize: 10,
         fontWeight: 700,
         color,
         background: bg,
-        padding: '4px 10px',
+        padding: '3px 8px',
         borderRadius: 999,
         border: `1px solid ${color}20`,
         whiteSpace: 'nowrap' as const,
