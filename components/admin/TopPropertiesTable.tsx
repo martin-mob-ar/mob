@@ -18,19 +18,24 @@ export default function TopPropertiesTable({ data }: TopPropertiesTableProps) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-fixed">
+        <colgroup>
+          <col />
+          <col className="w-24" />
+          <col className="w-24" />
+        </colgroup>
         <thead>
           <tr className="border-b text-left text-muted-foreground">
             <th className="py-2 pr-3 font-medium">Propiedad</th>
-            <th className="py-2 px-2 font-medium text-right tabular-nums">Vistas</th>
-            <th className="py-2 px-2 font-medium text-right tabular-nums">Visitantes</th>
+            <th className="py-2 px-2 font-medium text-right">Vistas</th>
+            <th className="py-2 px-2 font-medium text-right">Visitantes</th>
           </tr>
         </thead>
         <tbody>
           {data.map((row) => {
             return (
               <tr key={row.property_id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                <td className="py-2 pr-3 max-w-[280px] truncate">
+                <td className="py-2 pr-3 truncate">
                   <Link
                     href={`/admin/properties/${row.property_id}`}
                     className="text-primary hover:underline font-medium"

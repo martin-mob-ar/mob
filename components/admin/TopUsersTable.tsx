@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, User, Globe } from "lucide-react";
@@ -58,10 +58,18 @@ export default function TopUsersTable({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-6" />
+            <col />
+            <col className="w-20" />
+            <col className="w-24" />
+            <col className="w-24" />
+            <col className="w-20" />
+          </colgroup>
           <thead>
             <tr className="border-b text-left text-muted-foreground">
-              <th className="py-2 pr-3 font-medium w-6"></th>
+              <th className="py-2 font-medium"></th>
               <th className="py-2 pr-3 font-medium">Usuario</th>
               <th className="py-2 px-2 font-medium text-right">Vistas</th>
               <th className="py-2 px-2 font-medium text-right">Envío inic.</th>
@@ -75,22 +83,21 @@ export default function TopUsersTable({
               const propertyRows = breakdowns[row.actorKey] ?? [];
 
               return (
-                <tr key={row.actorKey} className="group">
-                  <td colSpan={7} className="p-0">
-                    {/* Main row */}
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(row.actorKey)}
-                      className="w-full flex items-center border-b border-border/50 hover:bg-muted/30 transition-colors text-left"
-                    >
-                      <span className="py-2 pr-1 pl-1 flex-shrink-0">
-                        <ChevronRight
-                          className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${
-                            isExpanded ? "rotate-90" : ""
-                          }`}
-                        />
-                      </span>
-                      <span className="py-2 pr-3 flex items-center gap-1.5 min-w-0 flex-1">
+                <Fragment key={row.actorKey}>
+                  {/* Main row */}
+                  <tr
+                    onClick={() => toggleExpand(row.actorKey)}
+                    className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                  >
+                    <td className="py-2 pl-1">
+                      <ChevronRight
+                        className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${
+                          isExpanded ? "rotate-90" : ""
+                        }`}
+                      />
+                    </td>
+                    <td className="py-2 pr-3">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         {row.isAuthenticated ? (
                           <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                         ) : (
@@ -98,53 +105,64 @@ export default function TopUsersTable({
                         )}
                         <span className="truncate">{row.displayName}</span>
                       </span>
-                      <span className="py-2 px-2 text-right tabular-nums w-16">{fmt(row.property_view)}</span>
-                      <span className="py-2 px-2 text-right tabular-nums w-16">{fmt(row.agendar_visita_submit_started)}</span>
-                      <span className="py-2 px-2 text-right tabular-nums w-16">{fmt(row.agendar_visita_submit)}</span>
-                      <span className="py-2 px-2 text-right tabular-nums font-semibold w-16">{fmt(row.total)}</span>
-                    </button>
+                    </td>
+                    <td className="py-2 px-2 text-right tabular-nums">{fmt(row.property_view)}</td>
+                    <td className="py-2 px-2 text-right tabular-nums">{fmt(row.agendar_visita_submit_started)}</td>
+                    <td className="py-2 px-2 text-right tabular-nums">{fmt(row.agendar_visita_submit)}</td>
+                    <td className="py-2 px-2 text-right tabular-nums font-semibold">{fmt(row.total)}</td>
+                  </tr>
 
-                    {/* Expanded property breakdown */}
-                    <AnimateHeight show={isExpanded}>
-                      <div className="bg-muted/20 border-b border-border/50">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="text-muted-foreground">
-                              <th className="py-1.5 pl-10 pr-3 font-medium text-left">Propiedad</th>
-                              <th className="py-1.5 px-2 font-medium text-right">Vistas</th>
-                              <th className="py-1.5 px-2 font-medium text-right">Envío</th>
-                              <th className="py-1.5 px-2 font-medium text-right">Comp.</th>
-                              <th className="py-1.5 px-2 font-medium text-right">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {propertyRows.map((prop) => (
-                              <tr key={prop.property_id} className="border-t border-border/30 hover:bg-muted/30 transition-colors">
-                                <td className="py-1.5 pl-10 pr-3 max-w-[220px] truncate">
-                                  <Link
-                                    href={`/admin/properties/${prop.property_id}`}
-                                    className="text-primary hover:underline"
-                                  >
-                                    {prop.address || `#${prop.property_id}`}
-                                  </Link>
-                                  {prop.location_name && (
-                                    <span className="text-muted-foreground ml-1">
-                                      · {prop.location_name}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-1.5 px-2 text-right tabular-nums">{fmt(prop.property_view)}</td>
-                                <td className="py-1.5 px-2 text-right tabular-nums">{fmt(prop.agendar_visita_submit_started)}</td>
-                                <td className="py-1.5 px-2 text-right tabular-nums">{fmt(prop.agendar_visita_submit)}</td>
-                                <td className="py-1.5 px-2 text-right tabular-nums font-medium">{fmt(prop.total)}</td>
+                  {/* Expanded property breakdown */}
+                  <tr>
+                    <td colSpan={6} className="p-0">
+                      <AnimateHeight show={isExpanded}>
+                        <div className="bg-muted/20 border-b border-border/50">
+                          <table className="w-full text-xs table-fixed">
+                            <colgroup>
+                              <col />
+                              <col className="w-20" />
+                              <col className="w-24" />
+                              <col className="w-24" />
+                              <col className="w-20" />
+                            </colgroup>
+                            <thead>
+                              <tr className="text-muted-foreground">
+                                <th className="py-1.5 pl-10 pr-3 font-medium text-left">Propiedad</th>
+                                <th className="py-1.5 px-2 font-medium text-right">Vistas</th>
+                                <th className="py-1.5 px-2 font-medium text-right">Envío</th>
+                                <th className="py-1.5 px-2 font-medium text-right">Comp.</th>
+                                <th className="py-1.5 px-2 font-medium text-right">Total</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </AnimateHeight>
-                  </td>
-                </tr>
+                            </thead>
+                            <tbody>
+                              {propertyRows.map((prop) => (
+                                <tr key={prop.property_id} className="border-t border-border/30 hover:bg-muted/30 transition-colors">
+                                  <td className="py-1.5 pl-10 pr-3 truncate">
+                                    <Link
+                                      href={`/admin/properties/${prop.property_id}`}
+                                      className="text-primary hover:underline"
+                                    >
+                                      {prop.address || `#${prop.property_id}`}
+                                    </Link>
+                                    {prop.location_name && (
+                                      <span className="text-muted-foreground ml-1">
+                                        · {prop.location_name}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-right tabular-nums">{fmt(prop.property_view)}</td>
+                                  <td className="py-1.5 px-2 text-right tabular-nums">{fmt(prop.agendar_visita_submit_started)}</td>
+                                  <td className="py-1.5 px-2 text-right tabular-nums">{fmt(prop.agendar_visita_submit)}</td>
+                                  <td className="py-1.5 px-2 text-right tabular-nums font-medium">{fmt(prop.total)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </AnimateHeight>
+                    </td>
+                  </tr>
+                </Fragment>
               );
             })}
           </tbody>

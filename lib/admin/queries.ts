@@ -845,6 +845,8 @@ export async function getTopUsersByEvents(
     counts: Record<EventType, number>;
     total: number;
     byProperty: Map<number, { counts: Record<EventType, number>; total: number }>;
+    leadId: number | null;
+    visitaId: number | null;
   }>();
 
   for (const e of events) {
@@ -860,6 +862,8 @@ export async function getTopUsersByEvents(
         counts: emptyCounts(),
         total: 0,
         byProperty: new Map(),
+        leadId: null,
+        visitaId: null,
       };
       byActor.set(key, actor);
     }
@@ -867,6 +871,12 @@ export async function getTopUsersByEvents(
     const meta = e.metadata as Record<string, unknown> | null;
     const count = e.event_type === 'property_view' && meta?.source === 'clarity_backfill' && typeof meta.count === 'number'
       ? meta.count : 1;
+
+    // Capture lead/visita ID from submit events for email lookup
+    if (e.event_type === 'agendar_visita_submit' && meta) {
+      if (typeof meta.lead_id === 'number' && !actor.leadId) actor.leadId = meta.lead_id;
+      if (typeof meta.visita_id === 'number' && !actor.visitaId) actor.visitaId = meta.visita_id;
+    }
 
     if (e.event_type in actor.counts) {
       actor.counts[e.event_type as EventType] += count;
@@ -908,6 +918,47 @@ export async function getTopUsersByEvents(
     }
   }
 
+  // Fetch emails for anonymous actors from leads/visitas
+  const anonEmailMap = new Map<string, string>();
+  const leadIds: number[] = [];
+  const visitaIds: number[] = [];
+  const leadIdToActor = new Map<number, string>();
+  const visitaIdToActor = new Map<number, string>();
+
+  for (const [key, actor] of pageSlice) {
+    if (actor.isAuthenticated) continue;
+    if (actor.leadId) {
+      leadIds.push(actor.leadId);
+      leadIdToActor.set(actor.leadId, key);
+    } else if (actor.visitaId) {
+      visitaIds.push(actor.visitaId);
+      visitaIdToActor.set(actor.visitaId, key);
+    }
+  }
+
+  if (leadIds.length > 0) {
+    const { data: leads } = await supabaseAdmin
+      .from('leads')
+      .select('id, email')
+      .in('id', leadIds);
+    for (const l of leads ?? []) {
+      const actorKey = leadIdToActor.get(l.id);
+      if (actorKey && l.email) anonEmailMap.set(actorKey, l.email);
+    }
+  }
+  if (visitaIds.length > 0) {
+    const { data: visitas } = await supabaseAdmin
+      .from('visitas')
+      .select('id, requester_email')
+      .in('id', visitaIds);
+    for (const v of visitas ?? []) {
+      const actorKey = visitaIdToActor.get(v.id);
+      if (actorKey && v.requester_email && !anonEmailMap.has(actorKey)) {
+        anonEmailMap.set(actorKey, v.requester_email);
+      }
+    }
+  }
+
   // Fetch property info for breakdowns
   const allPropertyIds = new Set<number>();
   for (const [, actor] of pageSlice) {
@@ -934,7 +985,7 @@ export async function getTopUsersByEvents(
     if (actor.isAuthenticated && userInfo) {
       displayName = userInfo.name || userInfo.email || key.slice(0, 8);
     } else {
-      displayName = key.slice(0, 8) + '...';
+      displayName = anonEmailMap.get(key) || key.slice(0, 8) + '...';
     }
 
     return {
