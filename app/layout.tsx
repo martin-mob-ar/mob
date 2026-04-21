@@ -67,7 +67,7 @@ export default async function RootLayout({
   if (authUser) {
     const { data: publicUser } = await supabaseAdmin
       .from("users")
-      .select("id, name, telefono, telefono_country_code, hoggax_last_verification_date, truora_last_verification_date, account_type, logo")
+      .select("id, name, telefono, telefono_country_code, truora_document_verified, hoggax_approved, hoggax_max_rent_plus_expenses, account_type, logo")
       .eq("id", authUser.id)
       .maybeSingle();
 
@@ -88,7 +88,7 @@ export default async function RootLayout({
         : (authUser.user_metadata?.isOwner ?? false),
       accountType: publicUser?.account_type ?? null,
       publicUserId: publicUser?.id ?? null,
-      isVerified: !!publicUser?.hoggax_last_verification_date && !!publicUser?.truora_last_verification_date,
+      isVerified: !!publicUser?.truora_document_verified && !!publicUser?.hoggax_approved && publicUser?.hoggax_max_rent_plus_expenses != null,
       avatarUrl: isInmobiliaria
         ? (publicUser?.logo || null)
         : (authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null),

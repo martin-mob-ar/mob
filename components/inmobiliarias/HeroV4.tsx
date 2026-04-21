@@ -11,6 +11,7 @@ const heroTags = [
   { icon: PenLine, label: "Firma electrónica integrada" },
 ];
 
+const tallyUrl = "https://tally.so/r/5Bk4y6";
 const whatsappUrl = "https://wa.me/5492236000055";
 
 const HeroV4 = () => {
@@ -57,7 +58,7 @@ const HeroV4 = () => {
                   asChild
                 >
                   <a
-                    href={whatsappUrl}
+                    href={tallyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -69,11 +70,15 @@ const HeroV4 = () => {
                   size="lg"
                   variant="outline"
                   className="h-12 rounded-full px-6 text-sm font-medium sm:w-auto"
-                  onClick={() => {
-                    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  asChild
                 >
-                  Hablá con nuestro equipo
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Hablá con nuestro equipo
+                  </a>
                 </Button>
               </div>
             </div>

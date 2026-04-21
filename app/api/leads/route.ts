@@ -86,10 +86,10 @@ export async function POST(request: Request) {
     if (submitterUserId) {
       const { data: submitter } = await supabaseAdmin
         .from('users')
-        .select('hoggax_last_verification_date, truora_last_verification_date')
+        .select('truora_document_verified, hoggax_approved, hoggax_max_rent_plus_expenses')
         .eq('id', submitterUserId)
         .single();
-      inquilinoVerified = !!submitter?.hoggax_last_verification_date && !!submitter?.truora_last_verification_date;
+      inquilinoVerified = !!submitter?.truora_document_verified && !!submitter?.hoggax_approved && submitter?.hoggax_max_rent_plus_expenses != null;
     }
 
     // Get mob plan from the property's latest operacion

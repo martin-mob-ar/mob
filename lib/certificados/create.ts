@@ -43,16 +43,15 @@ export async function createCertificadoInquilino({
   const { data: user, error: userErr } = await supabaseAdmin
     .from('users')
     .select(
-      'id, name, hoggax_approved, hoggax_max_rent_plus_expenses, hoggax_last_verification_date, truora_last_verification_date'
+      'id, name, hoggax_approved, hoggax_max_rent_plus_expenses, truora_document_verified'
     )
     .eq('id', userId)
     .maybeSingle();
 
   if (userErr || !user) return null;
+  if (!user.truora_document_verified) return null;
   if (!user.hoggax_approved) return null;
   if (!user.hoggax_max_rent_plus_expenses || user.hoggax_max_rent_plus_expenses <= 0) return null;
-  if (!user.hoggax_last_verification_date) return null;
-  if (!user.truora_last_verification_date) return null;
 
   // 2. Idempotency: reuse active non-expired certificate if present
   const nowIso = new Date().toISOString();
