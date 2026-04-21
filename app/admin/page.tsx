@@ -23,6 +23,7 @@ import { SyncHealthChart } from "@/components/admin/charts/SyncHealthChart";
 import { CronJobChart } from "@/components/admin/charts/CronJobChart";
 import { CronErrors } from "@/components/admin/CronErrors";
 import TopPropertiesTable from "@/components/admin/TopPropertiesTable";
+import TopUsersTable from "@/components/admin/TopUsersTable";
 import {
   getKpis,
   getSignupsByDay,
@@ -36,6 +37,7 @@ import {
   getSyncHealth,
   getCronJobHealth,
   getTopPropertiesByEngagement,
+  getTopUsersByEvents,
 } from "@/lib/admin/queries";
 
 function parsePeriod(raw: string | undefined): number | null {
@@ -47,10 +49,11 @@ function parsePeriod(raw: string | undefined): number | null {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; usersPage?: string }>;
 }) {
-  const { period: rawPeriod } = await searchParams;
+  const { period: rawPeriod, usersPage: rawUsersPage } = await searchParams;
   const periodDays = parsePeriod(rawPeriod);
+  const usersPage = Math.max(1, parseInt(rawUsersPage ?? "1", 10) || 1);
 
   // Fetch all data in parallel
   const [
@@ -66,7 +69,9 @@ export default async function AdminPage({
     sync,
     visitasCron,
     exchangeRateCron,
+    mailingCron,
     topProperties,
+    topUsers,
   ] = await Promise.all([
     getKpis(periodDays),
     getSignupsByDay(periodDays),
@@ -74,18 +79,20 @@ export default async function AdminPage({
     getPropertiesByType(),
     getPropertiesByLocation(),
     getLeadsByDay(periodDays),
-    getConversionFunnel(),
+    getConversionFunnel(periodDays),
     getPlanDistribution(),
     getPriceStats(),
     getSyncHealth(),
     getCronJobHealth("visitas"),
     getCronJobHealth("exchange-rate"),
+    getCronJobHealth("mailing-novedades"),
     getTopPropertiesByEngagement(
       periodDays
         ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString()
         : '2020-01-01T00:00:00Z',
       50,
     ),
+    getTopUsersByEvents(periodDays, usersPage, 20),
   ]);
 
   const periodLabel = periodDays ? `últimos ${periodDays} días` : "todo el tiempo";
@@ -220,7 +227,10 @@ export default async function AdminPage({
       {/* Conversion */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Embudo de conversión</CardTitle>
+          <div className="flex items-baseline gap-2">
+            <CardTitle className="text-base">Embudo de conversión</CardTitle>
+            <span className="text-xs text-muted-foreground">desde 17 abr 2026</span>
+          </div>
         </CardHeader>
         <CardContent>
           <FunnelChart data={funnel} />
@@ -339,6 +349,7 @@ export default async function AdminPage({
                     month: "2-digit",
                     hour: "2-digit",
                     minute: "2-digit",
+                    timeZone: "America/Argentina/Buenos_Aires",
                   })}
                 </p>
               )}
@@ -373,6 +384,7 @@ export default async function AdminPage({
                       month: "2-digit",
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: "America/Argentina/Buenos_Aires",
                     }
                   )}
                 </p>
@@ -408,6 +420,7 @@ export default async function AdminPage({
                       month: "2-digit",
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: "America/Argentina/Buenos_Aires",
                     }
                   )}
                   {exchangeRateCron.lastRun.stats &&
@@ -428,6 +441,49 @@ export default async function AdminPage({
               <CronErrors errors={exchangeRateCron.recentErrors} />
             </CardContent>
           </Card>
+
+          {/* Mailing novedades cron */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Cron mailing novedades</CardTitle>
+                {mailingCron.lastRun && (
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      mailingCron.lastRun.status === "completed"
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                )}
+              </div>
+              {mailingCron.lastRun && (
+                <p className="text-xs text-muted-foreground">
+                  {new Date(mailingCron.lastRun.finishedAt).toLocaleString(
+                    "es-AR",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: "America/Argentina/Buenos_Aires",
+                    }
+                  )}
+                  {mailingCron.lastRun.stats &&
+                    "emailsSent" in mailingCron.lastRun.stats && (
+                      <>
+                        {" "}
+                        · {Number(mailingCron.lastRun.stats.emailsSent)} emails
+                      </>
+                    )}
+                </p>
+              )}
+            </CardHeader>
+            <CardContent>
+              <CronJobChart data={mailingCron.days} />
+              <CronErrors errors={mailingCron.recentErrors} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Property Engagement */}
@@ -437,6 +493,22 @@ export default async function AdminPage({
           </CardHeader>
           <CardContent>
             <TopPropertiesTable data={topProperties} />
+          </CardContent>
+        </Card>
+
+        {/* User Engagement */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Usuarios con más interacción</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TopUsersTable
+              data={topUsers.rows}
+              breakdowns={topUsers.breakdowns}
+              totalActors={topUsers.totalActors}
+              currentPage={usersPage}
+              pageSize={20}
+            />
           </CardContent>
         </Card>
       </div>

@@ -11,7 +11,6 @@ const SESSION_KEY = 'mob:analytics_sid';
 
 export type ClientEventType =
   | 'property_view'
-  | 'agendar_visita_click'
   | 'agendar_visita_submit_started';
 
 /** Get or create a per-session analytics ID (sessionStorage-backed). */

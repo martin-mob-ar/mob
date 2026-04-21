@@ -159,6 +159,7 @@ export async function POST(request: Request) {
                 name,
                 email,
                 phone: fullPhone,
+                message,
                 propertyAddress: property.address || 'Dirección no disponible',
               });
               emailStatus = result.success ? 'sent' : 'failed';
@@ -246,6 +247,15 @@ export async function POST(request: Request) {
       console.error('[Leads] Dispatch error:', err);
     });
 
+    // Recompute mailing preferences (fire-and-forget)
+    if (submitterUserId) {
+      import('@/lib/mailing/preferences').then(({ recomputeMailingPreferences }) => {
+        recomputeMailingPreferences(submitterUserId).catch((err) => {
+          console.error('[Leads] Mailing preferences recompute error:', err);
+        });
+      });
+    }
+
     // Log agendar_visita_submit event when lead came from the visita CTA
     if (analyticsContext === 'agendar_visita') {
       try {
@@ -255,31 +265,31 @@ export async function POST(request: Request) {
         const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
         let attributionStatus: 'recovered_via_user' | 'direct_session' | 'unattributed' = 'unattributed';
-        let clickEventId: number | null = null;
+        let viewEventId: number | null = null;
 
         if (userId) {
           const { data } = await supabaseAdmin
             .from('property_events')
             .select('id')
             .eq('property_id', propertyId)
-            .eq('event_type', 'agendar_visita_click')
+            .eq('event_type', 'property_view')
             .eq('user_id', userId)
             .gte('created_at', cutoff)
             .order('created_at', { ascending: false })
             .limit(1);
-          if (data?.[0]) { attributionStatus = 'recovered_via_user'; clickEventId = data[0].id; }
+          if (data?.[0]) { attributionStatus = 'recovered_via_user'; viewEventId = data[0].id; }
         }
         if (attributionStatus === 'unattributed' && anonId) {
           const { data } = await supabaseAdmin
             .from('property_events')
             .select('id')
             .eq('property_id', propertyId)
-            .eq('event_type', 'agendar_visita_click')
+            .eq('event_type', 'property_view')
             .eq('session_id', anonId)
             .gte('created_at', cutoff)
             .order('created_at', { ascending: false })
             .limit(1);
-          if (data?.[0]) { attributionStatus = 'direct_session'; clickEventId = data[0].id; }
+          if (data?.[0]) { attributionStatus = 'direct_session'; viewEventId = data[0].id; }
         }
 
         await supabaseAdmin.from('property_events').insert({
@@ -287,7 +297,7 @@ export async function POST(request: Request) {
           event_type: 'agendar_visita_submit',
           user_id: userId,
           session_id: anonId,
-          metadata: { lead_id: leadId, source: 'lead_form', attribution_status: attributionStatus, click_event_id: clickEventId },
+          metadata: { lead_id: leadId, source: 'lead_form', attribution_status: attributionStatus, view_event_id: viewEventId },
         });
       } catch (err) {
         console.error('[Leads] Analytics event insert error:', err);

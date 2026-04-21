@@ -17,7 +17,7 @@ interface VisitLeadFormProps {
   propertyAddress: string;
   visitDays: string[];
   visitHours: string[];
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export default function VisitLeadForm({
@@ -129,16 +129,18 @@ export default function VisitLeadForm({
               Te avisaremos por WhatsApp cuando el propietario confirme o proponga otro horario.
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSubmitted(false);
-              onClose();
-            }}
-          >
-            Volver
-          </Button>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSubmitted(false);
+                onClose();
+              }}
+            >
+              Volver
+            </Button>
+          )}
         </div>
         <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} isVisitRequest />
       </>
@@ -149,16 +151,18 @@ export default function VisitLeadForm({
 
   return (
     <div className="space-y-3">
-      {/* Header with back button */}
+      {/* Header */}
       <div className="flex items-center gap-2 -ml-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
-          aria-label="Volver"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
+            aria-label="Volver"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        )}
         <h3 className="font-semibold text-sm">Agendar visita</h3>
       </div>
 

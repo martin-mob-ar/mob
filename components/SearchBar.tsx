@@ -201,7 +201,7 @@ const SearchBar = () => {
       ambientesMin !== "sin-minimo" ||
       ambientesMax !== "sin-minimo";
 
-    if (!hasSelection) return "Ambientes";
+    if (!hasSelection) return "Dormitorios";
 
     const parts: string[] = [];
     if (ambientesMin !== "sin-minimo" || ambientesMax !== "sin-minimo") {
@@ -222,7 +222,7 @@ const SearchBar = () => {
         parts.push(`≤${dormitoriosMax} dorm.`);
       }
     }
-    return parts.join(", ") || "Ambientes";
+    return parts.join(", ") || "Dormitorios";
   };
 
   const locationDropdown = showLocationDropdown ? (
@@ -361,7 +361,7 @@ const SearchBar = () => {
                 <PopoverTrigger asChild>
                   <div className="cursor-pointer">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Ambientes
+                      Dormitorios
                     </label>
                     <button type="button" className="w-full flex items-center justify-between text-foreground mt-1">
                       <span>{getRoomsLabel()}</span>

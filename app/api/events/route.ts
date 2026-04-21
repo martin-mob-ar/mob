@@ -4,10 +4,10 @@ import { createHash } from 'crypto';
 import { createClient } from '@/lib/supabase/server-component';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { ADMIN_AUTH_IDS } from '@/lib/constants/admin-users';
 
 const CLIENT_EVENT_TYPES = [
   'property_view',
-  'agendar_visita_click',
   'agendar_visita_submit_started',
 ] as const;
 
@@ -51,6 +51,11 @@ export async function POST(request: Request) {
 
     // 3. Auth (optional — anonymous is OK)
     const userId = await getPublicUserId();
+
+    // 3b. Skip events from admin users
+    if (userId && ADMIN_AUTH_IDS.includes(userId)) {
+      return new Response(null, { status: 204 });
+    }
 
     // 4. Cookie: canonical anon identity
     const cookieStore = await cookies();

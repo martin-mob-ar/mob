@@ -79,7 +79,7 @@ interface LeadFormProps {
   type: "visita" | "reserva";
   propertyId: number;
   propertyAddress: string;
-  onClose: () => void;
+  onClose?: () => void;
   /** The inmobiliaria's contact phone — shown after submission for WhatsApp/call. Unrelated to the submitter's phone field. */
   inmobiliariaPhone?: string;
   /** The Mob plan the property is listed under. Controls verification requirements. */
@@ -221,14 +221,16 @@ export default function LeadForm({
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 -ml-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
-            aria-label="Volver"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
+              aria-label="Volver"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
           <h3 className="font-semibold text-sm">{title}</h3>
         </div>
 
@@ -265,16 +267,18 @@ export default function LeadForm({
                 Verificate para que {publisherLabel} pueda conocer tu perfil y priorizarte.
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSubmitted(false);
-                onClose();
-              }}
-            >
-              Volver
-            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSubmitted(false);
+                  onClose();
+                }}
+              >
+                Volver
+              </Button>
+            )}
           </div>
           <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} isInmobiliaria={isInmobiliaria} />
         </>
@@ -316,16 +320,18 @@ export default function LeadForm({
               </a>
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSubmitted(false);
-              onClose();
-            }}
-          >
-            Volver
-          </Button>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSubmitted(false);
+                onClose();
+              }}
+            >
+              Volver
+            </Button>
+          )}
         </div>
         <ConsultaEnviadaModal open={showModal} onOpenChange={setShowModal} isInmobiliaria={isInmobiliaria} />
       </>
@@ -337,14 +343,16 @@ export default function LeadForm({
     <div className="space-y-3">
       {/* Header with back button */}
       <div className="flex items-center gap-2 -ml-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
-          aria-label="Volver"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors"
+            aria-label="Volver"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        )}
         <h3 className="font-semibold text-sm">{title}</h3>
       </div>
 

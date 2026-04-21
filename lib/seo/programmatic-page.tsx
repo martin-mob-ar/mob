@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server-component";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { transformPropertyReadList } from "@/lib/transforms/property";
 import SearchResults from "@/views/SearchResults";
@@ -76,9 +75,8 @@ export default async function ProgrammaticSearchPage({
     if (data) propertyTypeId = data.id;
   }
 
-  // Build property query
-  const supabase = await createClient();
-  let query = supabase
+  // Build property query (use admin client — no cookies() needed; RLS is open for SELECT)
+  let query = supabaseAdmin
     .from("properties_read")
     .select("*", { count: "exact" })
     .eq("owner_verified", true);

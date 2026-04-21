@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { ADMIN_AUTH_IDS } from '@/lib/constants/admin-users';
 
 // ── KPIs ─────────────────────────────────────────────────────────────────────
 
@@ -244,29 +245,68 @@ export async function getLeadsByDay(periodDays: number | null): Promise<LeadDay[
 // ── Conversion funnel ────────────────────────────────────────────────────────
 
 export interface FunnelData {
-  leads: number;
-  visitas: number;
-  visitasConfirmed: number;
-  visitasCompleted: number;
-  reservas: number;
+  views: number;
+  submits_started: number;
+  verifications_requested: number;
+  submits: number;
 }
 
-export async function getConversionFunnel(): Promise<FunnelData> {
-  const [leads, visitas, confirmed, completed, rented] = await Promise.all([
-    supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('visitas').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('visitas').select('*', { count: 'exact', head: true }).eq('status', 'confirmed'),
-    supabaseAdmin.from('visitas').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-    supabaseAdmin.from('operaciones').select('*', { count: 'exact', head: true }).eq('status', 'rented'),
-  ]);
+export interface FunnelPair {
+  consulta: FunnelData;
+  visita: FunnelData;
+}
 
-  return {
-    leads: leads.count ?? 0,
-    visitas: visitas.count ?? 0,
-    visitasConfirmed: confirmed.count ?? 0,
-    visitasCompleted: completed.count ?? 0,
-    reservas: rented.count ?? 0,
-  };
+export async function getConversionFunnel(periodDays: number | null): Promise<FunnelPair> {
+  const cutoff = periodDays
+    ? new Date(Date.now() - periodDays * 86400000).toISOString()
+    : '2020-01-01T00:00:00Z';
+
+  const { data: events } = await supabaseAdmin
+    .from('property_events')
+    .select('property_id, event_type, metadata')
+    .gte('created_at', cutoff);
+
+  if (!events || events.length === 0) {
+    const empty: FunnelData = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
+    return { consulta: { ...empty }, visita: { ...empty } };
+  }
+
+  // Fetch property info to classify each property's form type
+  const propertyIds = [...new Set(events.map(e => e.property_id))];
+  const { data: properties } = await supabaseAdmin
+    .from('properties_read')
+    .select('property_id, mob_plan, owner_account_type')
+    .in('property_id', propertyIds);
+
+  const propMap = new Map(properties?.map(p => [p.property_id, p]) ?? []);
+
+  // Classify: VisitLeadForm when plan is acompanado/experiencia + owner is inquilino/dueño
+  function isVisitaFlow(propertyId: number): boolean {
+    const p = propMap.get(propertyId);
+    if (!p) return false;
+    return (p.mob_plan === 'acompanado' || p.mob_plan === 'experiencia')
+      && (p.owner_account_type === 1 || p.owner_account_type === 2);
+  }
+
+  const consulta: FunnelData = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
+  const visita: FunnelData = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
+
+  for (const e of events) {
+    const target = isVisitaFlow(e.property_id) ? visita : consulta;
+    const meta = e.metadata as Record<string, unknown> | null;
+    switch (e.event_type) {
+      case 'property_view': {
+        const count = meta?.source === 'clarity_backfill' && typeof meta.count === 'number' ? meta.count : 1;
+        target.views += count;
+        break;
+      }
+      case 'agendar_visita_submit_started': target.submits_started++; break;
+      case 'agendar_visita_verification_requested': target.verifications_requested++; break;
+      case 'agendar_visita_submit': target.submits++; break;
+    }
+  }
+
+  return { consulta, visita };
 }
 
 // ── Plan distribution ────────────────────────────────────────────────────────
@@ -451,6 +491,7 @@ export async function getSyncHealth(): Promise<SyncHealthData> {
     if (runErrors.length > 0) {
       const ts = new Date(row.started_at).toLocaleString('es-AR', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+        timeZone: 'America/Argentina/Buenos_Aires',
       });
       recentErrors.push({ date: ts, errors: runErrors });
     }
@@ -510,6 +551,7 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
     if (row.status === 'failed') {
       const ts = new Date(row.started_at).toLocaleString('es-AR', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+        timeZone: 'America/Argentina/Buenos_Aires',
       });
       // error_message for top-level failures
       if (row.error_message) {
@@ -545,7 +587,6 @@ export interface PropertyEngagementRow {
   address: string | null;
   location_name: string | null;
   views: number;
-  clicks: number;
   submits_started: number;
   verifications_requested: number;
   submits: number;
@@ -586,7 +627,7 @@ export async function getTopPropertiesByEngagement(cutoff: string, limit = 50): 
 
   // Aggregate in JS
   const byProperty = new Map<number, {
-    views: number; clicks: number; submits_started: number;
+    views: number; submits_started: number;
     verifications_requested: number; submits: number;
     visitors: Set<string>;
   }>();
@@ -594,7 +635,7 @@ export async function getTopPropertiesByEngagement(cutoff: string, limit = 50): 
   for (const e of filtered) {
     let entry = byProperty.get(e.property_id);
     if (!entry) {
-      entry = { views: 0, clicks: 0, submits_started: 0, verifications_requested: 0, submits: 0, visitors: new Set() };
+      entry = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0, visitors: new Set() };
       byProperty.set(e.property_id, entry);
     }
     const visitorKey = e.user_id ?? e.session_id ?? 'anon';
@@ -607,7 +648,6 @@ export async function getTopPropertiesByEngagement(cutoff: string, limit = 50): 
         entry.views += count;
         break;
       }
-      case 'agendar_visita_click': entry.clicks++; break;
       case 'agendar_visita_submit_started': entry.submits_started++; break;
       case 'agendar_visita_verification_requested': entry.verifications_requested++; break;
       case 'agendar_visita_submit': entry.submits++; break;
@@ -622,7 +662,6 @@ export async function getTopPropertiesByEngagement(cutoff: string, limit = 50): 
       address: propMap.get(pid)?.address ?? null,
       location_name: propMap.get(pid)?.location_name ?? null,
       views: stats.views,
-      clicks: stats.clicks,
       submits_started: stats.submits_started,
       verifications_requested: stats.verifications_requested,
       submits: stats.submits,
@@ -633,7 +672,6 @@ export async function getTopPropertiesByEngagement(cutoff: string, limit = 50): 
 export interface PropertyEventStats {
   totals: {
     views: number;
-    clicks: number;
     submits_started: number;
     verifications_requested: number;
     submits: number;
@@ -642,7 +680,6 @@ export interface PropertyEventStats {
   daily: Array<{
     date: string;
     views: number;
-    clicks: number;
     submits_started: number;
     verifications_requested: number;
     submits: number;
@@ -657,21 +694,28 @@ export async function getPropertyEventStats(propertyId: number, cutoff: string):
     .gte('created_at', cutoff)
     .order('created_at', { ascending: true });
 
-  const totals = { views: 0, clicks: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
-  const visitors = new Set<string>();
-  const byDay = new Map<string, { date: string; views: number; clicks: number; submits_started: number; verifications_requested: number; submits: number }>();
+  // Fetch property owner to filter out self-views
+  const { data: property } = await supabaseAdmin
+    .from('properties')
+    .select('user_id')
+    .eq('id', propertyId)
+    .single();
+  const ownerId = property?.user_id;
 
-  for (const e of events ?? []) {
+  const totals = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
+  const visitors = new Set<string>();
+  const byDay = new Map<string, { date: string; views: number; submits_started: number; verifications_requested: number; submits: number }>();
+
+  for (const e of (events ?? []).filter(ev => !ev.user_id || ev.user_id !== ownerId)) {
     const day = (e.created_at as string).slice(0, 10);
     if (!byDay.has(day)) {
-      byDay.set(day, { date: day, views: 0, clicks: 0, submits_started: 0, verifications_requested: 0, submits: 0 });
+      byDay.set(day, { date: day, views: 0, submits_started: 0, verifications_requested: 0, submits: 0 });
     }
     const dayEntry = byDay.get(day)!;
     visitors.add(e.user_id ?? e.session_id ?? 'anon');
 
     switch (e.event_type) {
       case 'property_view': totals.views++; dayEntry.views++; break;
-      case 'agendar_visita_click': totals.clicks++; dayEntry.clicks++; break;
       case 'agendar_visita_submit_started': totals.submits_started++; dayEntry.submits_started++; break;
       case 'agendar_visita_verification_requested': totals.verifications_requested++; dayEntry.verifications_requested++; break;
       case 'agendar_visita_submit': totals.submits++; dayEntry.submits++; break;
@@ -726,6 +770,196 @@ export async function getPropertyRecentEvents(propertyId: number, limit = 100): 
     metadata: e.metadata as Record<string, unknown> | null,
     created_at: e.created_at,
   }));
+}
+
+// ── Top Users by Events ─────────────────────────────────────────────────────
+
+export interface UserEventRow {
+  actorKey: string;
+  isAuthenticated: boolean;
+  displayName: string;
+  property_view: number;
+  agendar_visita_submit_started: number;
+  agendar_visita_verification_requested: number;
+  agendar_visita_submit: number;
+  total: number;
+}
+
+export interface UserPropertyBreakdownRow {
+  property_id: number;
+  address: string | null;
+  location_name: string | null;
+  property_view: number;
+  agendar_visita_submit_started: number;
+  agendar_visita_verification_requested: number;
+  agendar_visita_submit: number;
+  total: number;
+}
+
+export interface TopUsersResult {
+  rows: UserEventRow[];
+  totalActors: number;
+  breakdowns: Record<string, UserPropertyBreakdownRow[]>;
+}
+
+const EVENT_TYPES = [
+  'property_view',
+  'agendar_visita_submit_started',
+  'agendar_visita_verification_requested',
+  'agendar_visita_submit',
+] as const;
+
+type EventType = (typeof EVENT_TYPES)[number];
+
+function emptyCounts(): Record<EventType, number> {
+  return {
+    property_view: 0,
+    agendar_visita_submit_started: 0,
+    agendar_visita_verification_requested: 0,
+    agendar_visita_submit: 0,
+  };
+}
+
+export async function getTopUsersByEvents(
+  periodDays: number | null,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<TopUsersResult> {
+  const cutoff = periodDays
+    ? new Date(Date.now() - periodDays * 86400000).toISOString()
+    : '2020-01-01T00:00:00Z';
+
+  const { data: events } = await supabaseAdmin
+    .from('property_events')
+    .select('user_id, session_id, event_type, property_id, metadata')
+    .gte('created_at', cutoff);
+
+  if (!events || events.length === 0) {
+    return { rows: [], totalActors: 0, breakdowns: {} };
+  }
+
+  // Aggregate by actor
+  const byActor = new Map<string, {
+    isAuthenticated: boolean;
+    userId: string | null;
+    counts: Record<EventType, number>;
+    total: number;
+    byProperty: Map<number, { counts: Record<EventType, number>; total: number }>;
+  }>();
+
+  for (const e of events) {
+    const key = e.user_id ?? e.session_id;
+    if (!key) continue;
+    if (e.user_id && ADMIN_AUTH_IDS.includes(e.user_id)) continue;
+
+    let actor = byActor.get(key);
+    if (!actor) {
+      actor = {
+        isAuthenticated: !!e.user_id,
+        userId: e.user_id,
+        counts: emptyCounts(),
+        total: 0,
+        byProperty: new Map(),
+      };
+      byActor.set(key, actor);
+    }
+
+    const meta = e.metadata as Record<string, unknown> | null;
+    const count = e.event_type === 'property_view' && meta?.source === 'clarity_backfill' && typeof meta.count === 'number'
+      ? meta.count : 1;
+
+    if (e.event_type in actor.counts) {
+      actor.counts[e.event_type as EventType] += count;
+    }
+    actor.total += count;
+
+    // Per-property sub-aggregation
+    let propEntry = actor.byProperty.get(e.property_id);
+    if (!propEntry) {
+      propEntry = { counts: emptyCounts(), total: 0 };
+      actor.byProperty.set(e.property_id, propEntry);
+    }
+    if (e.event_type in propEntry.counts) {
+      propEntry.counts[e.event_type as EventType] += count;
+    }
+    propEntry.total += count;
+  }
+
+  // Sort and paginate
+  const sorted = Array.from(byActor.entries())
+    .sort((a, b) => b[1].total - a[1].total);
+
+  const totalActors = sorted.length;
+  const pageSlice = sorted.slice((page - 1) * pageSize, page * pageSize);
+
+  // Fetch user names for authenticated actors in page
+  const authUserIds = pageSlice
+    .filter(([, a]) => a.isAuthenticated && a.userId)
+    .map(([, a]) => a.userId!);
+
+  const userMap = new Map<string, { name: string | null; email: string | null }>();
+  if (authUserIds.length > 0) {
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('id, name, email')
+      .in('id', authUserIds);
+    for (const u of users ?? []) {
+      userMap.set(u.id, { name: u.name, email: u.email });
+    }
+  }
+
+  // Fetch property info for breakdowns
+  const allPropertyIds = new Set<number>();
+  for (const [, actor] of pageSlice) {
+    for (const pid of actor.byProperty.keys()) {
+      allPropertyIds.add(pid);
+    }
+  }
+
+  const propMap = new Map<number, { address: string | null; location_name: string | null }>();
+  if (allPropertyIds.size > 0) {
+    const { data: props } = await supabaseAdmin
+      .from('properties_read')
+      .select('property_id, address, location_name')
+      .in('property_id', [...allPropertyIds]);
+    for (const p of props ?? []) {
+      propMap.set(p.property_id, { address: p.address, location_name: p.location_name });
+    }
+  }
+
+  // Build result
+  const rows: UserEventRow[] = pageSlice.map(([key, actor]) => {
+    const userInfo = actor.userId ? userMap.get(actor.userId) : null;
+    let displayName: string;
+    if (actor.isAuthenticated && userInfo) {
+      displayName = userInfo.name || userInfo.email || key.slice(0, 8);
+    } else {
+      displayName = key.slice(0, 8) + '...';
+    }
+
+    return {
+      actorKey: key,
+      isAuthenticated: actor.isAuthenticated,
+      displayName,
+      ...actor.counts,
+      total: actor.total,
+    };
+  });
+
+  const breakdowns: Record<string, UserPropertyBreakdownRow[]> = {};
+  for (const [key, actor] of pageSlice) {
+    breakdowns[key] = Array.from(actor.byProperty.entries())
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([pid, entry]) => ({
+        property_id: pid,
+        address: propMap.get(pid)?.address ?? null,
+        location_name: propMap.get(pid)?.location_name ?? null,
+        ...entry.counts,
+        total: entry.total,
+      }));
+  }
+
+  return { rows, totalActors, breakdowns };
 }
 
 export interface AttributionBreakdown {

@@ -166,7 +166,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
       ambientesMin !== "sin-minimo" ||
       ambientesMax !== "sin-minimo";
 
-    if (!hasSelection) return "Ambientes";
+    if (!hasSelection) return "Dormitorios";
 
     const parts: string[] = [];
     if (ambientesMin !== "sin-minimo" || ambientesMax !== "sin-minimo") {
@@ -187,7 +187,7 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
         parts.push(`≤${dormitoriosMax} dorm.`);
       }
     }
-    return parts.join(", ") || "Ambientes";
+    return parts.join(", ") || "Dormitorios";
   };
 
   // Handle scroll to show/hide header search bar

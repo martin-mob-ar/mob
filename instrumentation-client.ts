@@ -25,6 +25,11 @@ Sentry.init({
     /AbortError/,
     /signal is aborted/,
     /The user aborted a request/,
+    // RSC streaming connection drops (mobile network, tab close, quick bounces)
+    /Connection closed\./,
+    // Google Maps library loading failures in constrained browsers
+    /Could not load "marker"/,
+    /Could not load "util"/,
     // Third-party: Twitter/X in-app browser WebView scroll handler
     /webkit\.messageHandlers/,
     // Third-party: Microsoft Clarity internal errors

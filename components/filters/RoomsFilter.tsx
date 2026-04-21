@@ -137,7 +137,7 @@ const RoomsFilter = () => {
       }
     }
 
-    return parts.length > 0 ? parts.join(", ") : "Ambientes";
+    return parts.length > 0 ? parts.join(", ") : "Dormitorios";
   };
 
   const handleClear = () => {

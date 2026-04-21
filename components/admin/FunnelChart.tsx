@@ -1,15 +1,14 @@
-import type { FunnelData } from "@/lib/admin/queries";
+import type { FunnelData, FunnelPair } from "@/lib/admin/queries";
 
 const STEPS = [
-  { key: "leads", label: "Leads" },
-  { key: "visitas", label: "Visitas" },
-  { key: "visitasConfirmed", label: "Confirmadas" },
-  { key: "visitasCompleted", label: "Completadas" },
-  { key: "reservas", label: "Reservas" },
+  { key: "views", label: "Vistas" },
+  { key: "submits_started", label: "Envío iniciado" },
+  { key: "verifications_requested", label: "Verificación" },
+  { key: "submits", label: "Completado" },
 ] as const;
 
-export function FunnelChart({ data }: { data: FunnelData }) {
-  const max = Math.max(data.leads, 1);
+function FunnelBars({ data }: { data: FunnelData }) {
+  const max = Math.max(data.views, 1);
 
   return (
     <div className="space-y-2">
@@ -44,6 +43,25 @@ export function FunnelChart({ data }: { data: FunnelData }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+export function FunnelChart({ data }: { data: FunnelPair }) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div>
+        <h4 className="mb-3 text-sm font-medium text-muted-foreground">
+          Consulta directa
+        </h4>
+        <FunnelBars data={data.consulta} />
+      </div>
+      <div>
+        <h4 className="mb-3 text-sm font-medium text-muted-foreground">
+          Visita agendada
+        </h4>
+        <FunnelBars data={data.visita} />
+      </div>
     </div>
   );
 }

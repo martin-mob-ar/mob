@@ -36,7 +36,11 @@ export default function PropertyMap({ lat, lng, className }: PropertyMapProps) {
         ],
       });
 
-      new google.maps.Marker({ position: center, map });
+      try {
+        new google.maps.Marker({ position: center, map });
+      } catch {
+        // Marker library may fail to load in constrained browsers (e.g. in-app WebViews)
+      }
       mapInstanceRef.current = map;
 
       // Trigger resize after layout settles to fix grey screen

@@ -771,6 +771,7 @@ export type Database = {
           user_id: string
           valor_total_primary: number | null
           valor_total_secondary: number | null
+          views_count: number
           visit_days: string[] | null
           visit_hours: string[] | null
         }
@@ -832,6 +833,7 @@ export type Database = {
           user_id: string
           valor_total_primary?: number | null
           valor_total_secondary?: number | null
+          views_count?: number
           visit_days?: string[] | null
           visit_hours?: string[] | null
         }
@@ -893,10 +895,62 @@ export type Database = {
           user_id?: string
           valor_total_primary?: number | null
           valor_total_secondary?: number | null
+          views_count?: number
           visit_days?: string[] | null
           visit_hours?: string[] | null
         }
         Relationships: []
+      }
+      property_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: number
+          ip_hash: string | null
+          metadata: Json | null
+          property_id: number
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: number
+          ip_hash?: string | null
+          metadata?: Json | null
+          property_id: number
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: number
+          ip_hash?: string | null
+          metadata?: Json | null
+          property_id?: number
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_events_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tokko_company: {
         Row: {
@@ -1314,6 +1368,47 @@ export type Database = {
             columns: ["country_id"]
             isOneToOne: false
             referencedRelation: "tokko_country"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_mailing_preferences: {
+        Row: {
+          avg_price_ars: number | null
+          created_at: string
+          interactions_count: number
+          last_email_sent_at: string | null
+          last_recomputed_at: string
+          state_ids: number[]
+          unsubscribed: boolean
+          user_id: string
+        }
+        Insert: {
+          avg_price_ars?: number | null
+          created_at?: string
+          interactions_count?: number
+          last_email_sent_at?: string | null
+          last_recomputed_at?: string
+          state_ids?: number[]
+          unsubscribed?: boolean
+          user_id: string
+        }
+        Update: {
+          avg_price_ars?: number | null
+          created_at?: string
+          interactions_count?: number
+          last_email_sent_at?: string | null
+          last_recomputed_at?: string
+          state_ids?: number[]
+          unsubscribed?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mailing_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

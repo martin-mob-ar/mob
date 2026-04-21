@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Eye, MousePointer, Send, ShieldCheck, CheckCircle, Users } from "lucide-react";
+import { ArrowLeft, Eye, Send, ShieldCheck, CheckCircle, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/admin/KpiCard";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -18,7 +18,6 @@ function parsePeriod(raw: string | undefined): number | null {
 
 const EVENT_LABELS: Record<string, string> = {
   property_view: "Vista",
-  agendar_visita_click: "Click CTA",
   agendar_visita_submit_started: "Envío iniciado",
   agendar_visita_verification_requested: "Verificación",
   agendar_visita_submit: "Visita creada",
@@ -57,7 +56,6 @@ export default async function PropertyDetailAdminPage({
   if (!property) notFound();
 
   const { totals } = stats;
-  const clickRate = totals.views > 0 ? ((totals.clicks / totals.views) * 100).toFixed(1) : "–";
   const verifCompletionRate =
     totals.verifications_requested > 0
       ? ((totals.submits / totals.verifications_requested) * 100).toFixed(1)
@@ -68,7 +66,6 @@ export default async function PropertyDetailAdminPage({
   // Funnel data
   const funnelSteps = [
     { label: "Vistas", value: totals.views },
-    { label: "Clicks CTA", value: totals.clicks },
     { label: "Envío iniciado", value: totals.submits_started },
     { label: "Verificación", value: totals.verifications_requested },
     { label: "Completado", value: totals.submits },
@@ -110,14 +107,12 @@ export default async function PropertyDetailAdminPage({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiCard icon={Eye} label="Vistas" value={totals.views} />
-        <KpiCard icon={MousePointer} label="Clicks CTA" value={totals.clicks} />
         <KpiCard icon={Send} label="Envíos" value={totals.submits_started} />
         <KpiCard icon={ShieldCheck} label="Verificaciones" value={totals.verifications_requested} />
         <KpiCard icon={CheckCircle} label="Completados" value={totals.submits} />
-        <KpiCard icon={Users} label="Visitantes únicos" value={totals.unique_visitors} />
-        <KpiCard icon={MousePointer} label="% Click" value={clickRate as unknown as number} subtitle={verifCompletionRate !== "–" ? `${verifCompletionRate}% verif.` : undefined} />
+        <KpiCard icon={Users} label="Visitantes únicos" value={totals.unique_visitors} subtitle={verifCompletionRate !== "–" ? `${verifCompletionRate}% verif.` : undefined} />
       </div>
 
       {/* Funnel */}
@@ -207,7 +202,6 @@ export default async function PropertyDetailAdminPage({
                     <tr className="border-b text-muted-foreground">
                       <th className="py-1 pr-2 text-left font-medium">Fecha</th>
                       <th className="py-1 px-1 text-right font-medium">Vistas</th>
-                      <th className="py-1 px-1 text-right font-medium">Clicks</th>
                       <th className="py-1 px-1 text-right font-medium">Envíos</th>
                       <th className="py-1 px-1 text-right font-medium">Verif.</th>
                       <th className="py-1 pl-1 text-right font-medium">Comp.</th>
@@ -218,7 +212,6 @@ export default async function PropertyDetailAdminPage({
                       <tr key={day.date} className="border-b border-border/30">
                         <td className="py-1 pr-2 tabular-nums">{day.date}</td>
                         <td className="py-1 px-1 text-right tabular-nums">{day.views}</td>
-                        <td className="py-1 px-1 text-right tabular-nums">{day.clicks}</td>
                         <td className="py-1 px-1 text-right tabular-nums">{day.submits_started}</td>
                         <td className="py-1 px-1 text-right tabular-nums">{day.verifications_requested}</td>
                         <td className="py-1 pl-1 text-right tabular-nums">{day.submits}</td>
@@ -265,6 +258,7 @@ export default async function PropertyDetailAdminPage({
                             month: "2-digit",
                             hour: "2-digit",
                             minute: "2-digit",
+                            timeZone: "America/Argentina/Buenos_Aires",
                           })}
                         </td>
                         <td className="py-1 px-2">

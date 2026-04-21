@@ -156,6 +156,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   const [locationId, setLocationId] = useState<number | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
   const [placeSelected, setPlaceSelected] = useState(false);
   const [address, setAddress] = useState("");
   const [geoLat, setGeoLat] = useState("");
@@ -220,10 +221,13 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
   // Step 8: Plan elegido
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
 
-  // Guest phone (unauthenticated users, step 2)
+  // Phone input (shown for guests AND authenticated users without a phone)
   const [guestPhone, setGuestPhone] = useState("");
   const [guestCountryCode, setGuestCountryCode] = useState("+54");
   const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  // Show phone input for guests OR authenticated users missing a phone number
+  const needsPhoneInput = !isAuthenticated || (isAuthenticated && !authUser?.phone);
 
   // Inline auth gate (shown between step 2 and 3 for unauthenticated users)
   const [showInlineAuth, setShowInlineAuth] = useState(false);
@@ -579,7 +583,25 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
 
     const components = place.address_components || [];
     const route = components.find((c) => c.types.includes("route"))?.long_name || "";
-    const streetNumber = components.find((c) => c.types.includes("street_number"))?.long_name || "";
+    let streetNumber = components.find((c) => c.types.includes("street_number"))?.long_name || "";
+
+    // Fallback: Google sometimes omits street_number component for Argentine addresses
+    // even when the number is clearly present in the address/input.
+    if (!streetNumber) {
+      const candidates = [
+        place.formatted_address,
+        place.name,
+        addressInputRef.current?.value,
+      ].filter(Boolean);
+      for (const candidate of candidates) {
+        const match = candidate!.match(/\b(\d{1,5})\b/);
+        if (match) {
+          streetNumber = match[1];
+          break;
+        }
+      }
+    }
+
     const streetAddress = streetNumber ? `${route} ${streetNumber}` : route;
 
     const finalAddress = streetAddress || place.name || "";
@@ -615,8 +637,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       case 2:
         if (!typeId || !selectedLocation || !address || !placeSelected) return false;
         if ((typeId === 2 || typeId === 13) && (!piso || !depto)) return false;
-        // Require phone for unauthenticated users
-        if (!isAuthenticated && guestPhone.length < 6) return false;
+        // Require phone for users who don't already have one on their account
+        if (needsPhoneInput && guestPhone.length < 6) return false;
         return true;
       case 3:
         if (!antiguedad || !superficieCubierta || !superficieTotal) return false;
@@ -740,7 +762,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         setShowErrors(false);
 
         // Check phone uniqueness before advancing from step 2
-        if (currentStep === 2 && !isAuthenticated && guestPhone) {
+        if (currentStep === 2 && needsPhoneInput && guestPhone) {
           setPhoneError(null);
           try {
             // Normalize: strip leading '9' for Argentine numbers
@@ -759,6 +781,18 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
               }
             }
           } catch { /* allow to proceed if check fails */ }
+
+          // Save phone to profile for authenticated users who didn't have one
+          if (isAuthenticated) {
+            fetch("/api/users/profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                telefono: guestPhone,
+                telefono_country_code: guestCountryCode,
+              }),
+            }).then(() => refreshUser()).catch(() => {});
+          }
         }
 
         // Auth gate: show inline auth before advancing to step 3
@@ -1339,8 +1373,8 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       case 2:
         return (
           <div className="max-w-xl mx-auto space-y-5 sm:space-y-8">
-            {/* WhatsApp phone input for unauthenticated users */}
-            <AnimateHeight show={!isAuthenticated}>
+            {/* WhatsApp phone input for users who don't have a phone on file */}
+            <AnimateHeight show={needsPhoneInput}>
               <div className="space-y-4 pb-2">
                 <h1 className="font-display text-xl sm:text-3xl font-bold">
                   Decinos tu WhatsApp
@@ -1374,12 +1408,12 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                     }}
                     className={cn(
                       "h-12 rounded-xl flex-1",
-                      (phoneError || (showErrors && !isAuthenticated && guestPhone.length < 6)) && "border-red-500"
+                      (phoneError || (showErrors && needsPhoneInput && guestPhone.length < 6)) && "border-red-500"
                     )}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">Sin 0 y sin 15. Ej: 1126373290</p>
-                {showErrors && !isAuthenticated && guestPhone.length < 6 && (
+                {showErrors && needsPhoneInput && guestPhone.length < 6 && (
                   <p className="text-sm text-red-500">Ingresá tu número de WhatsApp</p>
                 )}
                 {phoneError && (
@@ -1457,7 +1491,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                         setMissingAltura(false);
                       }}
                       ref={(el) => {
-                        if (!el || !isLoaded || typeof google === "undefined") return;
+                        if (!el) return;
+                        addressInputRef.current = el;
+                        if (!isLoaded || typeof google === "undefined") return;
                         if ((el as HTMLInputElement & { _autocompleteAttached?: boolean })._autocompleteAttached) return;
                         (el as HTMLInputElement & { _autocompleteAttached?: boolean })._autocompleteAttached = true;
                         const autocomplete = new google.maps.places.Autocomplete(el, {

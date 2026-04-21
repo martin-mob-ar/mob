@@ -37,8 +37,8 @@ export interface SyncCache {
   propertyTypes: Set<number>;
   tags: Set<number>;
   operationTypes: Set<number>;
-  /** location_id → exists in DB (true/false) */
-  locations: Map<number, boolean>;
+  /** location_id → { countryId } if found, false if missing */
+  locations: Map<number, { countryId: number | null } | false>;
 }
 
 export function createSyncCache(): SyncCache {
@@ -302,6 +302,25 @@ export async function syncTargetIncremental(
 }
 
 // ============================================================
+// Coordinate helpers
+// ============================================================
+
+const ARGENTINA_COUNTRY_ID = 1;
+
+/** Argentina coords are always negative (Southern/Western hemisphere).
+ *  Tokko occasionally returns positive values — negate them. */
+function fixArgentinaCoord(
+  value: string | number | null | undefined,
+  countryId: number | null,
+): string | null {
+  if (value == null) return null;
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num) || num === 0) return String(value);
+  if (countryId === ARGENTINA_COUNTRY_ID && num > 0) return String(-Math.abs(num));
+  return String(num);
+}
+
+// ============================================================
 // Single Property Sync
 // ============================================================
 
@@ -320,23 +339,27 @@ async function syncSingleProperty(
   // ── Step 0: Resolve location FIRST (skip early if unknown) ──
   let locationId: number | null = null;
   let parentDivisionLocationId: number | null = null;
+  let countryId: number | null = null;
 
   if (tkkProp.location?.id) {
     const locId = tkkProp.location.id;
 
     if (cache && cache.locations.has(locId)) {
-      if (!cache.locations.get(locId)) return null; // Known missing location
+      const cached = cache.locations.get(locId);
+      if (!cached) return null; // Known missing location
       locationId = locId;
+      countryId = cached.countryId;
     } else {
       const { data: loc } = await supabaseAdmin
         .from('tokko_location')
-        .select('id')
+        .select('id, country_id')
         .eq('id', locId)
         .maybeSingle();
 
-      cache?.locations.set(locId, !!loc);
+      cache?.locations.set(locId, loc ? { countryId: loc.country_id } : false);
       if (!loc) return null;
       locationId = loc.id;
+      countryId = loc.country_id;
     }
 
     // Parse parent_division URL: "/location/12345/"
@@ -350,10 +373,10 @@ async function syncSingleProperty(
         } else {
           const { data: parentLoc } = await supabaseAdmin
             .from('tokko_location')
-            .select('id')
+            .select('id, country_id')
             .eq('id', parentId)
             .maybeSingle();
-          cache?.locations.set(parentId, !!parentLoc);
+          cache?.locations.set(parentId, parentLoc ? { countryId: parentLoc.country_id } : false);
           if (parentLoc) parentDivisionLocationId = parentLoc.id;
         }
       }
@@ -415,8 +438,8 @@ async function syncSingleProperty(
     address_complement: tkkProp.address_complement ?? null,
     real_address: tkkProp.real_address ?? null,
     fake_address: tkkProp.fake_address ?? null,
-    geo_lat: tkkProp.geo_lat ?? null,
-    geo_long: tkkProp.geo_long ?? null,
+    geo_lat: fixArgentinaCoord(tkkProp.geo_lat, countryId),
+    geo_long: fixArgentinaCoord(tkkProp.geo_long, countryId),
     gm_location_type: tkkProp.gm_location_type ?? null,
     block_number: tkkProp.block_number ?? null,
     lot_number: tkkProp.lot_number ?? null,

@@ -23,7 +23,6 @@ export default function TopPropertiesTable({ data }: TopPropertiesTableProps) {
           <tr className="border-b text-left text-muted-foreground">
             <th className="py-2 pr-3 font-medium">Propiedad</th>
             <th className="py-2 px-2 font-medium text-right tabular-nums">Vistas</th>
-            <th className="py-2 px-2 font-medium text-right tabular-nums">Clicks</th>
             <th className="py-2 px-2 font-medium text-right tabular-nums">Visitantes</th>
           </tr>
         </thead>
@@ -45,7 +44,6 @@ export default function TopPropertiesTable({ data }: TopPropertiesTableProps) {
                   )}
                 </td>
                 <td className="py-2 px-2 text-right tabular-nums">{row.views.toLocaleString("es-AR")}</td>
-                <td className="py-2 px-2 text-right tabular-nums">{row.clicks.toLocaleString("es-AR")}</td>
                 <td className="py-2 px-2 text-right tabular-nums">{row.unique_visitors.toLocaleString("es-AR")}</td>
               </tr>
             );

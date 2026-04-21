@@ -6,18 +6,13 @@ import Link from "next/link";
 import {
   ArrowLeft,
   FileText,
-  DollarSign,
-  MessageCircle,
-  Info,
+  Eye,
+  Heart,
+  BarChart3,
   MapPin,
   Calendar,
   User,
-  Download,
   ExternalLink,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Users,
   History,
   DoorOpen,
   BedDouble,
@@ -27,12 +22,14 @@ import {
   Trash2,
   Loader2,
   FlaskConical,
-  Phone,
-  Mail,
   CalendarDays,
-  Star,
   PauseCircle,
   PlayCircle,
+  ArrowRight,
+  CalendarCheck,
+  CheckCircle2,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -42,12 +39,11 @@ import type {
   OperationHistoryEntry,
   OperacionStatus,
 } from "@/lib/transforms/property";
+import { getMockPropertyDetail } from "@/lib/mock/gestion-mock-data";
 import {
-  getMockPropertyDetail,
-  mockConsultasByProperty,
-  type MockConsulta,
-} from "@/lib/mock/gestion-mock-data";
-import type { LeadStage } from "@/lib/lead-stages";
+  InteresadosChart,
+  type ViewSeriesPoint,
+} from "@/components/panel/InteresadosChart";
 
 // ─── Config ──────────────────────────────────────────────────────────
 
@@ -77,16 +73,6 @@ const statusConfig: Record<
   },
 };
 
-const leadStageConfig: Record<
-  LeadStage,
-  { label: string; className: string }
-> = {
-  sin_verificar: { label: "Sin verificar", className: "bg-muted text-muted-foreground" },
-  verificado: { label: "Verificado", className: "bg-primary/10 text-primary" },
-  en_seguimiento: { label: "En seguimiento", className: "bg-amber-500/10 text-amber-600" },
-  calificado: { label: "Calificado", className: "bg-green-500/10 text-green-600" },
-  no_avanza: { label: "No avanza", className: "bg-destructive/10 text-destructive" },
-};
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -116,94 +102,34 @@ function formatFullDate(dateStr: string | null): string {
   });
 }
 
-// ─── Consulta Card ────────────────────────────────────────────────────
-
-function ConsultaCard({ consulta }: { consulta: MockConsulta }) {
-  const stageConf = leadStageConfig[consulta.leadStage];
-  return (
-    <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-            <span className="text-sm font-semibold text-muted-foreground">
-              {consulta.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-sm">{consulta.name}</p>
-              {consulta.highCloseProbability && (
-                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-              )}
-            </div>
-            {consulta.occupation && (
-              <p className="text-xs text-muted-foreground">{consulta.occupation}</p>
-            )}
-          </div>
-        </div>
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${stageConf.className}`}
-        >
-          {stageConf.label}
-        </span>
-      </div>
-
-      {consulta.message && (
-        <p className="text-sm text-muted-foreground italic border-l-2 border-border pl-3">
-          "{consulta.message}"
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-        {consulta.paymentCapacity && (
-          <span className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3" />
-            {consulta.paymentCapacity}
-          </span>
-        )}
-        {consulta.age && (
-          <span className="flex items-center gap-1">
-            <User className="h-3 w-3" />
-            {consulta.age} años
-          </span>
-        )}
-        <span className="flex items-center gap-1">
-          <CalendarDays className="h-3 w-3" />
-          {consulta.date}
-        </span>
-        {consulta.pendingResponse && consulta.daysWithoutResponse && (
-          <span className="flex items-center gap-1 text-amber-600">
-            <Clock className="h-3 w-3" />
-            {consulta.daysWithoutResponse}d sin respuesta
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2 pt-1">
-        {consulta.phone && (
-          <a
-            href={`tel:${consulta.phone}`}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors"
-          >
-            <Phone className="h-3 w-3" />
-            {consulta.phone}
-          </a>
-        )}
-        <a
-          href={`mailto:${consulta.email}`}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors"
-        >
-          <Mail className="h-3 w-3" />
-          {consulta.email}
-        </a>
-      </div>
-    </div>
-  );
-}
-
 // ─── Types ────────────────────────────────────────────────────────────
 
 const MOCK_ALLOWED_EMAILS = ["tutequijano@gmail.com", "martin@mob.ar"];
+
+export interface InteresadosStats {
+  uniqueViewers: number;
+  totalViews: number;
+  savesCount: number;
+  viewsSeries: ViewSeriesPoint[];
+}
+
+export interface VisitaItem {
+  id: number;
+  status: string;
+  requester_name: string;
+  requester_email: string;
+  requester_phone: string | null;
+  requester_country_code: string | null;
+  confirmed_date: string | null;
+  confirmed_time: string | null;
+  created_at: string;
+}
+
+const visitaStatusConfig: Record<string, { label: string; className: string; dotColor: string }> = {
+  pending: { label: "Pendiente", className: "bg-amber-500/10 text-amber-600", dotColor: "bg-amber-500" },
+  accepted: { label: "Confirmada", className: "bg-green-500/10 text-green-600", dotColor: "bg-green-500" },
+  rejected: { label: "Rechazada", className: "bg-destructive/10 text-destructive", dotColor: "bg-destructive" },
+};
 
 interface PropertyDetailViewProps {
   property: any;
@@ -214,6 +140,9 @@ interface PropertyDetailViewProps {
   tokkoId?: number | null;
   userEmail?: string;
   propertyStatus?: number;
+  interesadosStats?: InteresadosStats;
+  mobPlan?: string;
+  visitas?: VisitaItem[];
 }
 
 // ─── Main Component ───────────────────────────────────────────────────
@@ -227,6 +156,9 @@ const PropertyDetailView = ({
   tokkoId: realTokkoId,
   userEmail,
   propertyStatus: initialPropertyStatus = 2,
+  interesadosStats,
+  mobPlan = "basico",
+  visitas = [],
 }: PropertyDetailViewProps) => {
   const router = useRouter();
   const [useMock, setUseMock] = useState(mockMode ?? false);
@@ -246,11 +178,8 @@ const PropertyDetailView = ({
   const tokkoId = useMock ? (mockData?.tokkoId ?? null) : (realTokkoId ?? null);
   const tokko = tokkoId != null;
 
-  // Mock consultas keyed by property ID string
-  const propertyIdStr = String(property.property_id);
-  const consultas: MockConsulta[] = useMock
-    ? (mockConsultasByProperty[propertyIdStr] ?? mockConsultasByProperty["5005"] ?? [])
-    : [];
+  const stats = interesadosStats ?? { uniqueViewers: 0, totalViews: 0, savesCount: 0, viewsSeries: [] };
+  const hasInteresadosData = stats.totalViews > 0 || stats.savesCount > 0;
 
   // ─── Derived values ─────────────────────────────────────────────
   const handleDelete = async () => {
@@ -589,27 +518,22 @@ const PropertyDetailView = ({
         )}
       </div>
 
-      {/* Tabs: consultas / visitas / contrato */}
+      {/* Tabs: interesados / visitas presenciales / contrato */}
       <Tabs defaultValue="consultas" className="space-y-6">
         <TabsList className="bg-card border border-border p-1 rounded-xl flex-wrap h-auto gap-1">
           <TabsTrigger
             value="consultas"
             className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            <MessageCircle className="h-4 w-4" />
-            Consultas
-            {consultas.length > 0 && (
-              <span className="ml-1 h-5 min-w-5 px-1 rounded-full bg-primary/20 text-primary data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground text-xs font-bold flex items-center justify-center">
-                {consultas.length}
-              </span>
-            )}
+            <BarChart3 className="h-4 w-4" />
+            Interesados
           </TabsTrigger>
           <TabsTrigger
             value="visitas"
             className="rounded-xl gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <CalendarDays className="h-4 w-4" />
-            Visitas
+            Visitas presenciales
           </TabsTrigger>
           <TabsTrigger
             value="contrato"
@@ -620,57 +544,223 @@ const PropertyDetailView = ({
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Consultas Tab ──────────────────────────────────────────── */}
+        {/* ── Interesados Tab ─────────────────────────────────────────── */}
         <TabsContent value="consultas" className="space-y-4">
           <div>
-            <h3 className="font-display font-semibold">Consultas recibidas</h3>
+            <h3 className="font-display font-semibold">Interesados</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Personas interesadas en esta propiedad
+              Estadísticas de interés en tu propiedad
             </p>
           </div>
 
-          {consultas.length > 0 ? (
-            <div className="space-y-3">
-              {consultas.map((consulta) => (
-                <ConsultaCard key={consulta.id} consulta={consulta} />
-              ))}
-            </div>
+          {hasInteresadosData ? (
+            <>
+              {/* Stats cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Eye className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Personas que vieron
+                      </p>
+                      <p className="font-display text-2xl font-bold">
+                        {stats.uniqueViewers.toLocaleString("es-AR")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {stats.totalViews.toLocaleString("es-AR")} vistas totales
+                  </p>
+                </div>
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                      <Heart className="h-5 w-5 text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                        Guardados
+                      </p>
+                      <p className="font-display text-2xl font-bold">
+                        {stats.savesCount.toLocaleString("es-AR")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    personas guardaron esta propiedad
+                  </p>
+                </div>
+              </div>
+
+              {/* Trend chart */}
+              {stats.viewsSeries.length > 1 && (
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <h4 className="font-display font-semibold text-sm mb-4">
+                    Vistas desde la publicación
+                  </h4>
+                  <InteresadosChart data={stats.viewsSeries} />
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-card rounded-xl border border-border p-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
-                <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                <BarChart3 className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="font-display font-semibold text-lg">
-                Sin consultas todavía
+                Sin interesados todavía
               </h3>
               <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                {useMock
-                  ? "Esta propiedad no tiene consultas en los datos de demo."
-                  : "Cuando alguien se interese en tu propiedad, las consultas aparecerán aquí."}
+                Cuando tu propiedad empiece a recibir visitas, las estadísticas aparecerán aquí.
               </p>
             </div>
           )}
         </TabsContent>
 
-        {/* ── Visitas Tab ────────────────────────────────────────────── */}
+        {/* ── Visitas presenciales Tab ─────────────────────────────────── */}
         <TabsContent value="visitas" className="space-y-4">
-          <div>
-            <h3 className="font-display font-semibold">Visitas coordinadas</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestión de disponibilidad y coordinación de visitas
-            </p>
-          </div>
-          <div className="bg-card rounded-xl border border-border p-12 text-center">
-            <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
-              <CalendarDays className="h-8 w-8 text-muted-foreground" />
+          {mobPlan === "basico" ? (
+            /* ── State 1: Upgrade prompt (plan básico) ── */
+            <div className="bg-card rounded-xl border border-border py-12 px-8 text-center flex flex-col items-center">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                <CalendarCheck className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="font-display font-bold text-lg">
+                Coordiná visitas presenciales
+              </h3>
+              <p className="text-sm text-muted-foreground mt-2 max-w-[380px] leading-relaxed">
+                Recibí solicitudes de visita de inquilinos verificados y coordiná horarios automáticamente por WhatsApp.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 mt-5">
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border px-3 py-1.5 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  Coordinación automática
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border px-3 py-1.5 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  Recordatorios
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 border border-border px-3 py-1.5 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  Inquilinos verificados
+                </span>
+              </div>
+              <Button asChild className="rounded-full gap-2 mt-6">
+                <Link href={`/subir-propiedad?editId=${propertyId}`}>
+                  Mejorá tu plan
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <p className="text-xs text-muted-foreground/60 mt-3">
+                Disponible en planes Acompañado y Experiencia Mob
+              </p>
             </div>
-            <h3 className="font-display font-semibold text-lg">
-              Próximamente
-            </h3>
-            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-              Podrás coordinar y hacer seguimiento de todas las visitas desde acá.
-            </p>
-          </div>
+          ) : visitas.length > 0 ? (
+            /* ── State 2: Visit list (acompañado/experiencia) ── */
+            <>
+              <div>
+                <h3 className="font-display font-semibold">Visitas presenciales</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Solicitudes de visita para esta propiedad
+                </p>
+              </div>
+              <div className="space-y-3">
+                {visitas.map((visita) => {
+                  const cfg = visitaStatusConfig[visita.status] ?? visitaStatusConfig.pending;
+                  const initials = visita.requester_name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
+                  const createdDate = new Date(visita.created_at);
+                  const now = new Date();
+                  const isToday = createdDate.toDateString() === now.toDateString();
+                  const isYesterday =
+                    createdDate.toDateString() ===
+                    new Date(now.getTime() - 86400000).toDateString();
+                  const dateLabel = isToday
+                    ? `Hoy, ${createdDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                    : isYesterday
+                      ? `Ayer, ${createdDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                      : createdDate.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+                  return (
+                    <div
+                      key={visita.id}
+                      className="bg-card rounded-xl border border-border p-4 transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex gap-3 items-center min-w-0">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="font-display text-sm font-bold text-primary">
+                              {initials}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">
+                              {visita.requester_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground/60">
+                              {dateLabel}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${cfg.className}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${cfg.dotColor}`} />
+                          {cfg.label}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-border/50">
+                        {visita.confirmed_date && (
+                          <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/60" />
+                            {new Date(visita.confirmed_date).toLocaleDateString("es-AR", {
+                              weekday: "short",
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
+                            {visita.confirmed_time && `, ${visita.confirmed_time.slice(0, 5)}`}
+                          </span>
+                        )}
+                        {visita.requester_phone && (
+                          <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground/60" />
+                            {visita.requester_country_code ? `+${visita.requester_country_code} ` : ""}
+                            {visita.requester_phone}
+                          </span>
+                        )}
+                        {visita.requester_email && (
+                          <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground/60" />
+                            {visita.requester_email}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            /* ── State 3: Empty state (eligible plan, no visits) ── */
+            <div className="bg-card rounded-xl border border-border py-12 px-8 text-center">
+              <div className="h-14 w-14 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
+                <CalendarDays className="h-6 w-6 text-muted-foreground/60" />
+              </div>
+              <h3 className="font-display font-semibold text-base">
+                Sin visitas todavía
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-[340px] mx-auto leading-relaxed">
+                Cuando alguien solicite visitar esta propiedad, aparecerá aquí.
+              </p>
+            </div>
+          )}
         </TabsContent>
 
         {/* ── Contrato Tab ───────────────────────────────────────────── */}
@@ -764,20 +854,7 @@ const PropertyDetailView = ({
                 </div>
               </div>
             </>
-          ) : (
-            <div className="bg-card rounded-xl border border-border p-12 text-center">
-              <div className="h-16 w-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-display font-semibold text-lg">
-                Sin contrato activo
-              </h3>
-              <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                Esta propiedad no tiene un contrato activo. Cuando se alquile,
-                verás aquí la información del contrato.
-              </p>
-            </div>
-          )}
+          ) : null}
 
           {/* Historical operations — only shown if there are past contracts */}
           {hasHistory && (

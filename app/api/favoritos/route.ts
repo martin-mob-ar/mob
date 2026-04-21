@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server-component';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { recomputeMailingPreferences } from '@/lib/mailing/preferences';
 
 async function getPublicUserId(): Promise<string | null> {
   try {
@@ -70,12 +71,24 @@ export async function POST(request: Request) {
       .delete()
       .eq('user_id', publicUserId)
       .eq('property_id', propertyId);
+
+    // Recompute mailing preferences (fire-and-forget)
+    recomputeMailingPreferences(publicUserId).catch((err) => {
+      console.error('[Favoritos] Mailing preferences recompute error:', err);
+    });
+
     return NextResponse.json({ action: 'removed' });
   } else {
     // Add favorite
     await supabaseAdmin
       .from('favoritos')
       .insert({ user_id: publicUserId, property_id: propertyId });
+
+    // Recompute mailing preferences (fire-and-forget)
+    recomputeMailingPreferences(publicUserId).catch((err) => {
+      console.error('[Favoritos] Mailing preferences recompute error:', err);
+    });
+
     return NextResponse.json({ action: 'added' });
   }
 }

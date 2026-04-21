@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 import { useLoadScript } from "@react-google-maps/api";
 
-const LIBRARIES: ("places")[] = ["places"];
+const LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
 
 interface GoogleMapsContextValue {
   isLoaded: boolean;

@@ -7,8 +7,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { InitialAuthUser } from "@/contexts/AuthContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
-import { ReservationProvider } from "@/contexts/ReservationContext";
-import { VisitaProvider } from "@/contexts/VisitaContext";
 import AuthModal from "@/components/AuthModal";
 import { useState, useEffect, Suspense } from "react";
 import { toast } from "sonner";
@@ -45,19 +43,15 @@ export function Providers({ children, initialUser }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider initialUser={initialUser}>
         <FavoritesProvider>
-          <ReservationProvider>
-            <VisitaProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <AuthExpiredNotifier />
-                <Suspense fallback={null}>
-                  <AuthModal />
-                </Suspense>
-                {children}
-              </TooltipProvider>
-            </VisitaProvider>
-          </ReservationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AuthExpiredNotifier />
+            <Suspense fallback={null}>
+              <AuthModal />
+            </Suspense>
+            {children}
+          </TooltipProvider>
         </FavoritesProvider>
       </AuthProvider>
     </QueryClientProvider>

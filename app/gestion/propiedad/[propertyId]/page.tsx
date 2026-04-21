@@ -189,6 +189,77 @@ export default async function GestionPropertyDetailPage({
     ? tenantMap.get(currentOp.tenant_id)
     : null;
 
+  // ─── Interesados stats ──────────────────────────────────────────────
+  const numericPropertyId = Number(propertyId);
+
+  let interesadosStats = {
+    uniqueViewers: 0,
+    totalViews: 0,
+    savesCount: 0,
+    viewsSeries: [] as { date: string; views: number }[],
+  };
+
+  try {
+    const [viewEventsResult, savesResult] = await Promise.all([
+      supabaseAdmin
+        .from("property_events")
+        .select("user_id, session_id, ip_hash, created_at")
+        .eq("property_id", numericPropertyId)
+        .eq("event_type", "property_view"),
+      supabaseAdmin
+        .from("favoritos")
+        .select("id", { count: "exact", head: true })
+        .eq("property_id", numericPropertyId),
+    ]);
+
+    const viewEvents = viewEventsResult.data || [];
+
+    // Unique viewers: deduplicate by user_id > session_id > ip_hash
+    const uniqueViewerIds = new Set(
+      viewEvents.map((e) => e.user_id || e.session_id || e.ip_hash).filter(Boolean)
+    );
+
+    const savesCount = savesResult.count ?? 0;
+
+    // Daily view series for chart
+    const viewsByDay = new Map<string, number>();
+    for (const e of viewEvents) {
+      const day = e.created_at ? e.created_at.slice(0, 10) : null;
+      if (day) viewsByDay.set(day, (viewsByDay.get(day) || 0) + 1);
+    }
+    const viewsSeries = Array.from(viewsByDay.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, views]) => ({ date, views }));
+
+    interesadosStats = {
+      uniqueViewers: uniqueViewerIds.size,
+      totalViews: viewEvents.length,
+      savesCount,
+      viewsSeries,
+    };
+  } catch {
+    // Stats queries failed (table may not exist) — continue with zeros
+  }
+
+  // ─── Visitas presenciales ─────────────────────────────────────────────
+  // Get plan from properties_read (mob_plan) or operaciones (planMobElegido)
+  const mobPlan: string =
+    property.mob_plan ??
+    (operations || []).find((op: any) => op.planMobElegido)?.planMobElegido ??
+    "basico";
+
+  let visitasData: any[] = [];
+  try {
+    const { data } = await supabaseAdmin
+      .from("visitas")
+      .select("id, status, requester_name, requester_email, requester_phone, requester_country_code, confirmed_date, confirmed_time, created_at")
+      .eq("property_id", numericPropertyId)
+      .order("created_at", { ascending: false });
+    visitasData = data || [];
+  } catch {
+    // visitas table may not exist on test DB
+  }
+
   return (
     <PropertyDetailView
       property={property}
@@ -198,6 +269,9 @@ export default async function GestionPropertyDetailPage({
       tokkoId={property.tokko_id ?? null}
       userEmail={publicUser.email}
       propertyStatus={propertyStatus}
+      interesadosStats={interesadosStats}
+      mobPlan={mobPlan}
+      visitas={visitasData}
     />
   );
 }
