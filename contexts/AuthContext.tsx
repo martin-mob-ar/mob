@@ -87,7 +87,7 @@ function mapSupabaseUser(
       : (supabaseUser.user_metadata?.isOwner ?? false),
     accountType,
     publicUserId: publicUser?.id ?? null,
-    isVerified: !!publicUser?.truora_document_verified && !!publicUser?.hoggax_approved && publicUser?.hoggax_max_rent_plus_expenses != null,
+    isVerified: !!publicUser?.truora_document_verified && !!publicUser?.hoggax_approved,
     avatarUrl,
   };
 }

@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-TEST_PROJECT_ID="jzrbggszdoskeuzoyuyk"
+TEST_PROJECT_ID="mkxtgoqwbjxsuszcqcan"
 PROD_PROJECT_ID="ktuzzygtknginlzgksrj"
 MIGRATIONS_DIR="supabase/migrations"
 

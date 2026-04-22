@@ -88,7 +88,7 @@ export default async function RootLayout({
         : (authUser.user_metadata?.isOwner ?? false),
       accountType: publicUser?.account_type ?? null,
       publicUserId: publicUser?.id ?? null,
-      isVerified: !!publicUser?.truora_document_verified && !!publicUser?.hoggax_approved && publicUser?.hoggax_max_rent_plus_expenses != null,
+      isVerified: !!publicUser?.truora_document_verified && !!publicUser?.hoggax_approved,
       avatarUrl: isInmobiliaria
         ? (publicUser?.logo || null)
         : (authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null),

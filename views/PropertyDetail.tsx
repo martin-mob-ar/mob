@@ -14,7 +14,6 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { properties as mockProperties } from "@/data/properties";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ExploreRentals from "@/components/ExploreRentals";
@@ -178,9 +177,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
   };
 
   const leadFormType = 'visita' as const;
-  // Extract numeric ID from slug for mock data fallback
-  const idFromSlug = (slug as string)?.match(/(\d+)$/)?.[1] || (slug as string);
-  const property = propProperty || mockProperties.find((p) => p.id === idFromSlug) || mockProperties[0];
+  const property = propProperty;
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showBottomBar, setShowBottomBar] = useState(false);
   const mainCtaRef = useRef<HTMLDivElement>(null);
@@ -202,16 +199,10 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
     return `${typeName}${rooms} en ${loc} - foto ${index + 1}`;
   };
 
-  // Gallery images: use real photos if available, otherwise mock
+  // Gallery images: use real photos if available, otherwise property main image
   const galleryImages = propPhotos && propPhotos.length > 0
     ? propPhotos
-    : [
-        property.image,
-        mockProperties[1]?.image,
-        mockProperties[2]?.image,
-        mockProperties[3]?.image,
-        mockProperties[4]?.image,
-      ].filter(Boolean);
+    : [property?.image].filter(Boolean);
 
   // Preload adjacent gallery images so navigation feels instant
   useEffect(() => {

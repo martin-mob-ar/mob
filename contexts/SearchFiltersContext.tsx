@@ -56,6 +56,7 @@ export interface SearchFilters {
   availabilityFilter: "" | "immediate" | "next-month" | "custom";
   availabilityDate: string;
   ownerType: "" | "dueno" | "inmobiliaria";
+  tier: "" | "free";
   sort: string;
 }
 
@@ -101,6 +102,7 @@ const defaultFilters: SearchFilters = {
   availabilityFilter: "",
   availabilityDate: "",
   ownerType: "",
+  tier: "",
   sort: "relevant",
 };
 
@@ -207,6 +209,8 @@ function getInitialFiltersFromParams(searchParams: URLSearchParams): Partial<Sea
   if (availabilityDate) updates.availabilityDate = availabilityDate;
   const ownerType = searchParams.get("ownerType");
   if (ownerType) updates.ownerType = ownerType as "" | "dueno" | "inmobiliaria";
+  const tier = searchParams.get("tier");
+  if (tier === "free") updates.tier = "free";
   if (sort) updates.sort = sort;
 
   return updates;
@@ -348,6 +352,7 @@ export function SearchFiltersProvider({
     if (f.availabilityFilter) params.set("availabilityFilter", f.availabilityFilter);
     if (f.availabilityDate) params.set("availabilityDate", f.availabilityDate);
     if (f.ownerType) params.set("ownerType", f.ownerType);
+    if (f.tier) params.set("tier", f.tier);
     if (f.sort && f.sort !== "relevant") params.set("sort", f.sort);
     return params;
   }, []);

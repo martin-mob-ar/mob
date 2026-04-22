@@ -10,7 +10,6 @@ import DualCTA from "@/components/DualCTA";
 import ExploreRentals from "@/components/ExploreRentals";
 import Footer from "@/components/Footer";
 import LatestPosts from "@/components/blog/LatestPosts";
-import { properties as mockProperties } from "@/data/properties";
 import { Property } from "@/components/PropertyCard";
 import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
 import type { Post } from "@/lib/sanity/types";
@@ -28,8 +27,8 @@ interface IndexProps {
 }
 
 const Index = ({ featuredProperties, latestProperties, latestPosts }: IndexProps) => {
-  const displayFeatured = featuredProperties && featuredProperties.length > 0 ? featuredProperties : mockProperties;
-  const displayLatest = latestProperties && latestProperties.length > 0 ? latestProperties : mockProperties;
+  const displayFeatured = featuredProperties ?? [];
+  const displayLatest = latestProperties ?? [];
   const enrichedFeatured = usePropertyPhotos(displayFeatured);
   const enrichedLatest = usePropertyPhotos(displayLatest);
 
@@ -40,9 +39,9 @@ const Index = ({ featuredProperties, latestProperties, latestPosts }: IndexProps
       <HeroSection />
 
       {/* Properties Sections */}
-      <PropertySection title="Propiedades destacadas" properties={enrichedFeatured} />
+      {enrichedFeatured.length > 0 && <PropertySection title="Propiedades destacadas" properties={enrichedFeatured} />}
 
-      <PropertySection title="Últimas propiedades" properties={enrichedLatest} />
+      {enrichedLatest.length > 0 && <PropertySection title="Últimas propiedades" properties={enrichedLatest} />}
 
       {/* How it works */}
       <Timeline />
