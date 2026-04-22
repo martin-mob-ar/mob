@@ -44,8 +44,16 @@ export async function POST(request: Request) {
 
     if (!user) {
       console.error(`[VisitaConfirmed] User not found for phone: ${phone}`);
+      console.error(`[VisitaConfirmed] SUPABASE_URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`);
       // Return success=false with 200 so Truora doesn't break
-      return NextResponse.json({ success: false, error: 'Usuario no encontrado' });
+      return NextResponse.json({
+        success: false,
+        error: 'Usuario no encontrado',
+        debug: {
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+          phoneReceived: phone,
+        },
+      });
     }
 
     const propertyId = parseInt(property_id, 10);
