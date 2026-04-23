@@ -46,8 +46,8 @@ export default async function IndexPage() {
     if (latest && latest.length > 0) {
       latestProperties = transformPropertyReadList(latest);
     }
-  } catch {
-    // Fall back to mock data if DB fetch fails
+  } catch (error) {
+    console.error('[homepage] Failed to fetch properties:', error);
   }
 
   try {
