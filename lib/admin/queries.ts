@@ -903,12 +903,27 @@ export async function getPropertyRecentEvents(
   propertyId: number,
   page: number = 1,
   pageSize: number = 50,
+  filters?: { eventType?: string; attribution?: string; userType?: string },
 ): Promise<PropertyRecentEventsResult> {
-  // Count total events for this property
-  const { count } = await supabaseAdmin
+  // Count query -- apply same filters for accurate pagination totals
+  let countQuery = supabaseAdmin
     .from('property_events')
     .select('id', { count: 'exact', head: true })
     .eq('property_id', propertyId);
+
+  if (filters?.eventType && filters.eventType !== "all") {
+    countQuery = countQuery.eq('event_type', filters.eventType);
+  }
+  if (filters?.attribution && filters.attribution !== "all") {
+    countQuery = countQuery.filter('metadata->>attribution_status', 'eq', filters.attribution);
+  }
+  if (filters?.userType === "auth") {
+    countQuery = countQuery.not('user_id', 'is', null);
+  } else if (filters?.userType === "anon") {
+    countQuery = countQuery.is('user_id', null);
+  }
+
+  const { count } = await countQuery;
 
   const total = count ?? 0;
   if (total === 0) return { events: [], total: 0 };
@@ -916,12 +931,26 @@ export async function getPropertyRecentEvents(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data: events } = await supabaseAdmin
+  // Data query -- same filters
+  let dataQuery = supabaseAdmin
     .from('property_events')
     .select('id, event_type, user_id, session_id, metadata, created_at')
     .eq('property_id', propertyId)
-    .order('created_at', { ascending: false })
-    .range(from, to);
+    .order('created_at', { ascending: false });
+
+  if (filters?.eventType && filters.eventType !== "all") {
+    dataQuery = dataQuery.eq('event_type', filters.eventType);
+  }
+  if (filters?.attribution && filters.attribution !== "all") {
+    dataQuery = dataQuery.filter('metadata->>attribution_status', 'eq', filters.attribution);
+  }
+  if (filters?.userType === "auth") {
+    dataQuery = dataQuery.not('user_id', 'is', null);
+  } else if (filters?.userType === "anon") {
+    dataQuery = dataQuery.is('user_id', null);
+  }
+
+  const { data: events } = await dataQuery.range(from, to);
 
   if (!events || events.length === 0) return { events: [], total };
 
