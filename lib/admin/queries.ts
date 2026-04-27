@@ -753,42 +753,81 @@ export interface PropertyRecentEvent {
   user_id: string | null;
   session_id: string | null;
   user_name: string | null;
+  user_email: string | null;
+  user_phone: string | null;
+  user_phone_country_code: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
 }
 
-export async function getPropertyRecentEvents(propertyId: number, limit = 100): Promise<PropertyRecentEvent[]> {
+export interface PropertyRecentEventsResult {
+  events: PropertyRecentEvent[];
+  total: number;
+}
+
+export async function getPropertyRecentEvents(
+  propertyId: number,
+  page: number = 1,
+  pageSize: number = 50,
+  sortCol: 'created_at' | 'event_type' = 'created_at',
+  sortDir: 'asc' | 'desc' = 'desc',
+): Promise<PropertyRecentEventsResult> {
+  // Count total events for this property
+  const { count } = await supabaseAdmin
+    .from('property_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('property_id', propertyId);
+
+  const total = count ?? 0;
+  if (total === 0) return { events: [], total: 0 };
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   const { data: events } = await supabaseAdmin
     .from('property_events')
     .select('id, event_type, user_id, session_id, metadata, created_at')
     .eq('property_id', propertyId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+    .order(sortCol, { ascending: sortDir === 'asc' })
+    .range(from, to);
 
-  if (!events || events.length === 0) return [];
+  if (!events || events.length === 0) return { events: [], total };
 
-  // Fetch user names for any events with user_id
+  // Fetch user info for any events with user_id
   const userIds = [...new Set(events.filter(e => e.user_id).map(e => e.user_id!))];
-  const userMap = new Map<string, string>();
+  const userMap = new Map<string, { name: string | null; email: string | null; phone: string | null; phone_cc: string | null }>();
   if (userIds.length > 0) {
     const { data: users } = await supabaseAdmin
       .from('users')
-      .select('id, name')
+      .select('id, name, email, telefono, telefono_country_code')
       .in('id', userIds);
     for (const u of users ?? []) {
-      if (u.name) userMap.set(u.id, u.name);
+      userMap.set(u.id, {
+        name: u.name ?? null,
+        email: u.email ?? null,
+        phone: u.telefono ?? null,
+        phone_cc: u.telefono_country_code ?? null,
+      });
     }
   }
 
-  return events.map(e => ({
-    id: e.id as number,
-    event_type: e.event_type,
-    user_id: e.user_id,
-    session_id: e.session_id,
-    user_name: e.user_id ? userMap.get(e.user_id) ?? null : null,
-    metadata: e.metadata as Record<string, unknown> | null,
-    created_at: e.created_at,
-  }));
+  const mappedEvents: PropertyRecentEvent[] = events.map(e => {
+    const userInfo = e.user_id ? userMap.get(e.user_id) : undefined;
+    return {
+      id: e.id as number,
+      event_type: e.event_type,
+      user_id: e.user_id,
+      session_id: e.session_id,
+      user_name: userInfo?.name ?? null,
+      user_email: userInfo?.email ?? null,
+      user_phone: userInfo?.phone ?? null,
+      user_phone_country_code: userInfo?.phone_cc ?? null,
+      metadata: e.metadata as Record<string, unknown> | null,
+      created_at: e.created_at,
+    };
+  });
+
+  return { events: mappedEvents, total };
 }
 
 // ── Top Users by Events ─────────────────────────────────────────────────────

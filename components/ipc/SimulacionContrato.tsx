@@ -37,17 +37,16 @@ export default function SimulacionContrato() {
   const [frequency, setFrequency] = useState("3");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
-  const [usedSample, setUsedSample] = useState(false);
   const [missingMonths, setMissingMonths] = useState<string[]>([]);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [allIPCData, setAllIPCData] = useState<IPCDataPoint[]>([]);
-  const [allIPCSource, setAllIPCSource] = useState<"api" | "sample" | "loading">("loading");
+  const [allIPCLoaded, setAllIPCLoaded] = useState(false);
 
   // Load all IPC data on mount for the reference table
   useEffect(() => {
     fetchAllIPCData().then((res) => {
       setAllIPCData(res.data);
-      setAllIPCSource(res.usedSample ? "sample" : "api");
+      setAllIPCLoaded(true);
     });
   }, []);
 
@@ -85,7 +84,6 @@ export default function SimulacionContrato() {
       const { firstMonth, lastMonth } = getSimulationMonthRange(startDate, freq, computedEnd);
       const fetchResult = await fetchIPCData(firstMonth, lastMonth);
 
-      setUsedSample(fetchResult.usedSample);
       setMissingMonths(fetchResult.missingMonths);
 
       const sim = computeContractSimulation(
@@ -299,12 +297,12 @@ export default function SimulacionContrato() {
       )}
 
       {/* IPC Reference Data Table */}
-      <IPCReferenceTable data={allIPCData} source={allIPCSource} />
+      <IPCReferenceTable data={allIPCData} loaded={allIPCLoaded} />
     </div>
   );
 }
 
-function IPCReferenceTable({ data, source }: { data: IPCDataPoint[]; source: "api" | "sample" | "loading" }) {
+function IPCReferenceTable({ data, loaded }: { data: IPCDataPoint[]; loaded: boolean }) {
   const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
   // Group by year
@@ -316,7 +314,7 @@ function IPCReferenceTable({ data, source }: { data: IPCDataPoint[]; source: "ap
   }
   const years = Object.keys(byYear).map(Number).filter(y => y >= 2022).sort();
 
-  if (source === "loading") {
+  if (!loaded) {
     return (
       <Card className="mt-6">
         <CardContent className="p-6">
@@ -336,7 +334,7 @@ function IPCReferenceTable({ data, source }: { data: IPCDataPoint[]; source: "ap
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Variación mensual del IPC según INDEC, desde 2022. Fuente: Argenstats.
+          Variación mensual del IPC según INDEC, desde 2022. Fuente: datos.gob.ar
         </p>
       </CardHeader>
       <CardContent className="p-0 sm:p-6 sm:pt-0">

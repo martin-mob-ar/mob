@@ -4,12 +4,11 @@ import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import SimulacionContrato from "@/components/ipc/SimulacionContrato";
 import IPCInfoSections from "@/components/ipc/IPCInfoSections";
-import { getLastAvailableMonth, parseMonthLabel, formatRate, getMonthKey, monthBefore, fetchIPCData } from "@/services/ipcService";
+import { parseMonthLabel, formatRate, getMonthKey, monthBefore, fetchIPCData } from "@/services/ipcService";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 export default function CalculadoraIPC() {
-  const fallback = getLastAvailableMonth();
-  const [lastMonth, setLastMonth] = useState(fallback.month);
+  const [lastMonth, setLastMonth] = useState("");
   const [lastRate, setLastRate] = useState<number | null>(null);
   const [loadingLast, setLoadingLast] = useState(true);
   useEffect(() => {
@@ -28,11 +27,9 @@ export default function CalculadoraIPC() {
           const last = result.data[result.data.length - 1];
           setLastMonth(last.month);
           setLastRate(last.rate);
-        } else {
-          setLastRate(fallback.rate);
         }
       } catch {
-        setLastRate(fallback.rate);
+        // DB unavailable — leave as null, UI shows "—"
       } finally {
         setLoadingLast(false);
       }

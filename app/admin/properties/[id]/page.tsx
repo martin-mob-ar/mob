@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, Send, ShieldCheck, CheckCircle, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/admin/KpiCard";
+import { PropertyEventsTable } from "@/components/admin/PropertyEventsTable";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   getPropertyEventStats,
@@ -16,39 +17,36 @@ function parsePeriod(raw: string | undefined): number | null {
   return isNaN(n) ? 30 : n;
 }
 
-const EVENT_LABELS: Record<string, string> = {
-  property_view: "Vista",
-  agendar_visita_submit_started: "Envío iniciado",
-  agendar_visita_verification_requested: "Verificación",
-  agendar_visita_submit: "Visita creada",
-};
-
 export default async function PropertyDetailAdminPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; eventsPage?: string; eventsSort?: string; eventsDir?: string }>;
 }) {
   const { id: rawId } = await params;
   const propertyId = parseInt(rawId, 10);
   if (isNaN(propertyId)) notFound();
 
-  const { period: rawPeriod } = await searchParams;
+  const { period: rawPeriod, eventsPage: rawEventsPage, eventsSort: rawEventsSort, eventsDir: rawEventsDir } = await searchParams;
   const periodDays = parsePeriod(rawPeriod);
   const cutoff = periodDays
     ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString()
     : "2020-01-01T00:00:00Z";
 
+  const eventsPage = Math.max(1, parseInt(rawEventsPage ?? "1", 10) || 1);
+  const eventsSort = (rawEventsSort === "event_type" ? "event_type" : "created_at") as "created_at" | "event_type";
+  const eventsDir = (rawEventsDir === "asc" ? "asc" : "desc") as "asc" | "desc";
+
   // Fetch property info + analytics in parallel
-  const [propertyResult, stats, recentEvents, attribution] = await Promise.all([
+  const [propertyResult, stats, eventsResult, attribution] = await Promise.all([
     supabaseAdmin
       .from("properties_read")
       .select("property_id, address, location_name, parent_location_name, slug, property_type_name, cover_photo_thumb, owner_name, user_id")
       .eq("property_id", propertyId)
       .maybeSingle(),
     getPropertyEventStats(propertyId, cutoff),
-    getPropertyRecentEvents(propertyId, 100),
+    getPropertyRecentEvents(propertyId, eventsPage, 50, eventsSort, eventsDir),
     getPropertyAttributionBreakdown(propertyId, cutoff),
   ]);
 
@@ -226,64 +224,14 @@ export default async function PropertyDetailAdminPage({
       </div>
 
       {/* Recent Events */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Eventos recientes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Sin eventos registrados.
-            </p>
-          ) : (
-            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-background">
-                  <tr className="border-b text-muted-foreground">
-                    <th className="py-1 pr-2 text-left font-medium">Fecha</th>
-                    <th className="py-1 px-2 text-left font-medium">Tipo</th>
-                    <th className="py-1 px-2 text-left font-medium">Usuario</th>
-                    <th className="py-1 px-2 text-left font-medium">Session</th>
-                    <th className="py-1 pl-2 text-left font-medium">Atribución</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentEvents.map((event) => {
-                    const attrStatus = (event.metadata as Record<string, unknown>)?.attribution_status;
-                    return (
-                      <tr key={event.id} className="border-b border-border/30">
-                        <td className="py-1 pr-2 tabular-nums whitespace-nowrap">
-                          {new Date(event.created_at).toLocaleString("es-AR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            timeZone: "America/Argentina/Buenos_Aires",
-                          })}
-                        </td>
-                        <td className="py-1 px-2">
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted">
-                            {EVENT_LABELS[event.event_type] ?? event.event_type}
-                          </span>
-                        </td>
-                        <td className="py-1 px-2 max-w-[120px] truncate">
-                          {event.user_name ?? (event.user_id ? event.user_id.slice(0, 8) : "Anónimo")}
-                        </td>
-                        <td className="py-1 px-2 text-muted-foreground tabular-nums">
-                          {event.session_id?.slice(0, 8) ?? "–"}
-                        </td>
-                        <td className="py-1 pl-2 text-muted-foreground">
-                          {attrStatus ? String(attrStatus).replace(/_/g, " ") : "–"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <PropertyEventsTable
+        events={eventsResult.events}
+        total={eventsResult.total}
+        currentPage={eventsPage}
+        pageSize={50}
+        sortCol={eventsSort}
+        sortDir={eventsDir}
+      />
     </div>
   );
 }

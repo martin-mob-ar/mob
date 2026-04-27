@@ -35,7 +35,6 @@ export default function AjustePuntual() {
   const [rounding, setRounding] = useState<RoundingOption>("none");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AdjustmentResult | null>(null);
-  const [usedSample, setUsedSample] = useState(false);
   const [missingMonths, setMissingMonths] = useState<string[]>([]);
 
   const rentNumber = parseInt(rent.replace(/\D/g, ""), 10) || 0;
@@ -75,7 +74,6 @@ export default function AjustePuntual() {
       const lastNeeded = monthBefore(targetMonth);
 
       const fetchResult = await fetchIPCData(baseMonth, lastNeeded);
-      setUsedSample(fetchResult.usedSample);
       setMissingMonths(fetchResult.missingMonths);
 
       const adj = computeSingleAdjustment(rentNumber, baseMonth, targetMonth, fetchResult.data, rounding);

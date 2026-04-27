@@ -127,36 +127,6 @@ function getMonthsInRange(from: string, to: string): string[] {
   return months;
 }
 
-// === Sample IPC Data (fallback) ===
-function generateSampleData(): IPCDataPoint[] {
-  const rates: Record<number, number[]> = {
-    2020: [2.3, 2.0, 3.3, 1.5, 1.5, 2.2, 1.9, 2.7, 2.8, 3.8, 3.2, 4.0],
-    2021: [3.9, 3.6, 4.8, 4.1, 3.3, 3.2, 3.0, 2.5, 3.5, 3.5, 2.5, 3.8],
-    2022: [3.9, 4.7, 6.7, 6.0, 5.1, 5.3, 7.4, 7.0, 6.2, 6.3, 4.9, 5.1],
-    2023: [6.0, 6.6, 7.7, 8.4, 7.8, 6.0, 6.3, 12.4, 12.7, 8.3, 12.8, 25.5],
-    2024: [20.6, 13.2, 11.0, 8.8, 4.2, 4.6, 4.0, 4.2, 3.5, 2.7, 2.4, 2.7],
-    2025: [2.2, 2.4, 3.7, 2.8, 1.5, 1.6, 1.9, 1.9, 2.1, 2.3, 2.5, 2.8],
-    2026: [2.9, 2.9, 3.4],
-  };
-  const data: IPCDataPoint[] = [];
-  for (const year of Object.keys(rates).map(Number)) {
-    for (let m = 0; m < rates[year].length; m++) {
-      data.push({
-        month: `${year}-${String(m + 1).padStart(2, "0")}`,
-        rate: rates[year][m],
-      });
-    }
-  }
-  return data;
-}
-
-const SAMPLE_DATA = generateSampleData();
-
-export function getLastAvailableMonth(): { month: string; rate: number } {
-  const last = SAMPLE_DATA[SAMPLE_DATA.length - 1];
-  return { month: last.month, rate: last.rate };
-}
-
 export const MIN_DATE = new Date(2020, 0, 1);
 
 /** Fetch all IPC data from 2020-01 to current month for the reference table */
@@ -168,7 +138,6 @@ export async function fetchAllIPCData(): Promise<FetchResult> {
 
 export interface FetchResult {
   data: IPCDataPoint[];
-  usedSample: boolean;
   missingMonths: string[];
 }
 
@@ -177,7 +146,7 @@ const ipcCache: Record<string, IPCDataPoint[]> = {};
 export async function fetchIPCData(fromMonth: string, toMonth: string): Promise<FetchResult> {
   const cacheKey = `${fromMonth}_${toMonth}`;
   if (ipcCache[cacheKey]) {
-    return { data: ipcCache[cacheKey], usedSample: false, missingMonths: [] };
+    return { data: ipcCache[cacheKey], missingMonths: [] };
   }
 
   try {
@@ -190,22 +159,14 @@ export async function fetchIPCData(fromMonth: string, toMonth: string): Promise<
       (a: IPCDataPoint, b: IPCDataPoint) => a.month.localeCompare(b.month)
     );
 
-    if (result.length > 0) {
-      ipcCache[cacheKey] = result;
-      const missing = findMissingMonths(fromMonth, toMonth, result);
-      if (missing.length > 0) console.log("Meses faltantes:", missing);
-      return { data: result, usedSample: false, missingMonths: missing };
-    }
+    ipcCache[cacheKey] = result;
+    const missing = findMissingMonths(fromMonth, toMonth, result);
+    if (missing.length > 0) console.log("Meses faltantes:", missing);
+    return { data: result, missingMonths: missing };
   } catch (err) {
-    console.warn("IPC API fetch falló, usando datos de ejemplo:", err);
+    console.warn("IPC API fetch falló:", err);
+    return { data: [], missingMonths: [fromMonth] };
   }
-
-  // Fallback: hardcoded sample data (used when API/DB is unavailable)
-  const filtered = SAMPLE_DATA.filter(
-    (d) => d.month >= fromMonth && d.month <= toMonth
-  );
-  const missing = findMissingMonths(fromMonth, toMonth, filtered);
-  return { data: filtered, usedSample: true, missingMonths: missing };
 }
 
 function findMissingMonths(from: string, to: string, data: IPCDataPoint[]): string[] {

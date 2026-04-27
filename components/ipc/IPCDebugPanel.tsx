@@ -12,7 +12,6 @@ interface RawDataPoint {
 
 interface DebugResult {
   data: RawDataPoint[];
-  usedSample: boolean;
   missingMonths: string[];
 }
 
@@ -33,7 +32,6 @@ export default function IPCDebugPanel() {
           label: parseMonthLabel(d.month),
           rate: d.rate,
         })),
-        usedSample: res.usedSample,
         missingMonths: res.missingMonths,
       });
     } catch (err: any) {
@@ -64,8 +62,8 @@ export default function IPCDebugPanel() {
               <span>Datos IPC (2020–2025)</span>
               <div className="flex items-center gap-2">
                 {result && (
-                  <span className={`text-xs px-2 py-0.5 rounded ${result.usedSample ? "bg-warning/20 text-warning" : "bg-green-500/20 text-green-700"}`}>
-                    {result.usedSample ? "⚠ Datos de fallback (sample)" : "✓ Datos de API"}
+                  <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-700">
+                    ✓ Datos de API
                   </span>
                 )}
                 <Button size="sm" variant="outline" onClick={handleFetch} disabled={loading} className="text-xs h-7">
