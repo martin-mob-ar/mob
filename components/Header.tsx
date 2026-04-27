@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart, Home, Megaphone } from "lucide-react";
+import { User, LogOut, Search, ChevronDown, MapPin, Menu, BadgeCheck, ArrowRight, Loader2, ArrowRightLeft, Building2, Heart, Home, Megaphone, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublishModal from "./PublishModal";
 import { useState, useRef, useEffect } from "react";
@@ -623,6 +623,12 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                         Mis búsquedas
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/certificado">
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        Certificado
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout} className="cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
@@ -807,6 +813,17 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                             Favoritos
                           </Link>
                         </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                          asChild
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Link href="/certificado">
+                            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                            Certificado
+                          </Link>
+                        </Button>
                       </div>
 
                       <div className="border-t border-border" />
@@ -889,6 +906,17 @@ const Header = ({ hideSearch = false, sticky = true, landingCta }: HeaderProps) 
                               <Link href="/mis-busquedas">
                                 <Heart className="h-4 w-4 text-muted-foreground" />
                                 Favoritos
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start rounded-xl h-12 font-medium text-foreground gap-3 px-4"
+                              asChild
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Link href="/certificado">
+                                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                                Certificado
                               </Link>
                             </Button>
                             <Button

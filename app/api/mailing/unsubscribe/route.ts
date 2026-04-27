@@ -27,21 +27,22 @@ function htmlPage(title: string, message: string, status: number = 200): NextRes
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const userId = searchParams.get('uid');
+  // uid is always the subscriber's email (works for both guests and registered users)
+  const uid = searchParams.get('uid');
   const token = searchParams.get('token');
 
-  if (!userId || !token) {
+  if (!uid || !token) {
     return htmlPage('Enlace inv\u00E1lido', 'El enlace de desuscripci\u00F3n no es v\u00E1lido.', 400);
   }
 
-  if (!verifyUnsubscribeToken(userId, token)) {
+  if (!verifyUnsubscribeToken(uid, token)) {
     return htmlPage('Enlace inv\u00E1lido', 'El enlace de desuscripci\u00F3n no es v\u00E1lido o ya expir\u00F3.', 403);
   }
 
   await supabaseAdmin
-    .from('user_mailing_preferences')
+    .from('mailing_preferences')
     .update({ unsubscribed: true })
-    .eq('user_id', userId);
+    .eq('email', uid);
 
   return htmlPage('Te desuscribiste', 'No vas a recibir m\u00E1s emails de novedades de propiedades.');
 }

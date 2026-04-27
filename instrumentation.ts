@@ -10,4 +10,21 @@ export async function register() {
   }
 }
 
-export const onRequestError = Sentry.captureRequestError;
+// Filter out Next.js navigation errors (notFound / redirect) before sending to Sentry.
+// Sentry.captureRequestError does not filter these, causing noisy false-positive alerts.
+export const onRequestError: typeof Sentry.captureRequestError = (
+  error,
+  request,
+  context
+) => {
+  const digest = (error as Error & { digest?: string }).digest;
+  if (
+    typeof digest === "string" &&
+    (digest === "NEXT_NOT_FOUND" ||
+      digest === "NEXT_HTTP_ERROR_FALLBACK;404" ||
+      digest.startsWith("NEXT_REDIRECT;"))
+  ) {
+    return;
+  }
+  Sentry.captureRequestError(error, request, context);
+};

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { leadApiSchema } from '@/lib/validations/lead';
@@ -247,14 +247,11 @@ export async function POST(request: Request) {
       console.error('[Leads] Dispatch error:', err);
     });
 
-    // Recompute mailing preferences (fire-and-forget)
-    if (submitterUserId) {
-      import('@/lib/mailing/preferences').then(({ recomputeMailingPreferences }) => {
-        recomputeMailingPreferences(submitterUserId).catch((err) => {
-          console.error('[Leads] Mailing preferences recompute error:', err);
-        });
-      });
-    }
+    // Recompute mailing preferences after response is sent
+    after(async () => {
+      const { recomputeMailingPreferences } = await import('@/lib/mailing/preferences');
+      await recomputeMailingPreferences({ email, name, userId: submitterUserId ?? undefined });
+    });
 
     // Log agendar_visita_submit event when lead came from the visita CTA
     if (analyticsContext === 'agendar_visita') {

@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2, Compass, Clock, Toilet } from "lucide-react";
+import { ArrowLeft, Share2, Heart, MapPin, CheckCircle, Shield, Calendar, BadgeCheck, ChevronRight, Grid3X3, Bed, Square, Bath, Car, Home, ChevronLeft, FileText, User, Link2, Check, Info, Settings2, Compass, Clock, Toilet, Armchair } from "lucide-react";
 import type { PublisherType } from "@/lib/publisher";
 import { getPublisherBadgeConfig } from "@/lib/publisher";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -76,6 +76,7 @@ interface PropertyDetailProps {
   ownerAccountType?: number | null;
   contractDuration?: number | null;
   orientation?: string | null;
+  amoblado?: boolean | null;
   showVerificationModal?: boolean;
   relatedProperties?: Property[];
 }
@@ -87,7 +88,7 @@ function formatDescription(text: string): string {
     .trim();
 }
 
-const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescriptions = [], tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, toiletAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, showVerificationModal = false, relatedProperties }: PropertyDetailProps) => {
+const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescriptions = [], tags: propTags, description: propDescription, publisherName: propPublisherName, publisherLogo: propPublisherLogo, isTokko, locationFull: propLocationFull, geoLat, geoLong, propertyId: propPropertyId, contactPhone, ownerId, age: propAge, propertyPlan = "basico", isInmobiliaria = false, isUnavailable = false, isPendingVerification = false, suiteAmount, toiletAmount, roofedSurface, ipcAdjustment, publicationDate, visitDays, visitHours, ownerAccountType, contractDuration, orientation, amoblado, showVerificationModal = false, relatedProperties }: PropertyDetailProps) => {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -876,6 +877,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
           }
           if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
           if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
+          if (amoblado != null) chars.push({ Icon: Armchair, label: amoblado ? "Amoblado" : "No amoblado" });
           return chars.length > 0 ? (
             <div className="px-4 py-5 border-b border-border">
               <h2 className="font-display text-lg font-bold text-foreground mb-4">
@@ -1174,6 +1176,7 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
               }
               if (propAge != null) chars.push({ Icon: Calendar, label: propAge === 0 ? "A estrenar" : `${propAge} ${propAge === 1 ? "año" : "años"} de antigüedad` });
               if (orientation) chars.push({ Icon: Compass, label: `Orientación ${orientation}` });
+              if (amoblado != null) chars.push({ Icon: Armchair, label: amoblado ? "Amoblado" : "No amoblado" });
               return (
                 <div>
                   <h2 className="font-display text-lg font-bold text-foreground mb-4">

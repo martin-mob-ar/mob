@@ -594,18 +594,31 @@ export interface PropertyEngagementRow {
 }
 
 export async function getTopPropertiesByEngagement(cutoff: string, limit = 50): Promise<PropertyEngagementRow[]> {
-  // Query property_events directly (views may not be exposed via PostgREST)
-  const { data: events, error } = await supabaseAdmin
-    .from('property_events')
-    .select('property_id, event_type, user_id, session_id, metadata')
-    .gte('created_at', cutoff);
+  // Fetch all events with pagination (PostgREST default limit is 1000 rows)
+  const PAGE_SIZE = 1000;
+  let allEvents: { property_id: number; event_type: string; user_id: string | null; session_id: string | null; metadata: unknown }[] = [];
+  let from = 0;
 
-  if (error) {
-    console.error('[Admin] getTopPropertiesByEngagement error:', error.message);
-    return [];
+  for (;;) {
+    const { data: page, error } = await supabaseAdmin
+      .from('property_events')
+      .select('property_id, event_type, user_id, session_id, metadata')
+      .gte('created_at', cutoff)
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error('[Admin] getTopPropertiesByEngagement error:', error.message);
+      return [];
+    }
+
+    if (!page || page.length === 0) break;
+    allEvents = allEvents.concat(page);
+    if (page.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
 
-  if (!events || events.length === 0) return [];
+  const events = allEvents;
+  if (events.length === 0) return [];
 
   // Fetch property owners to filter out self-clicks
   const propertyIds = [...new Set(events.map(e => e.property_id))];
@@ -689,7 +702,7 @@ export interface PropertyEventStats {
 export async function getPropertyEventStats(propertyId: number, cutoff: string): Promise<PropertyEventStats> {
   const { data: events } = await supabaseAdmin
     .from('property_events')
-    .select('event_type, user_id, session_id, created_at')
+    .select('event_type, user_id, session_id, created_at, metadata')
     .eq('property_id', propertyId)
     .gte('created_at', cutoff)
     .order('created_at', { ascending: true });
@@ -715,7 +728,13 @@ export async function getPropertyEventStats(propertyId: number, cutoff: string):
     visitors.add(e.user_id ?? e.session_id ?? 'anon');
 
     switch (e.event_type) {
-      case 'property_view': totals.views++; dayEntry.views++; break;
+      case 'property_view': {
+        const meta = e.metadata as Record<string, unknown> | null;
+        const count = meta?.source === 'clarity_backfill' && typeof meta.count === 'number' ? meta.count : 1;
+        totals.views += count;
+        dayEntry.views += count;
+        break;
+      }
       case 'agendar_visita_submit_started': totals.submits_started++; dayEntry.submits_started++; break;
       case 'agendar_visita_verification_requested': totals.verifications_requested++; dayEntry.verifications_requested++; break;
       case 'agendar_visita_submit': totals.submits++; dayEntry.submits++; break;
@@ -824,6 +843,7 @@ export async function getTopUsersByEvents(
   periodDays: number | null,
   page: number = 1,
   pageSize: number = 20,
+  search?: string,
 ): Promise<TopUsersResult> {
   const cutoff = periodDays
     ? new Date(Date.now() - periodDays * 86400000).toISOString()
@@ -895,12 +915,78 @@ export async function getTopUsersByEvents(
     propEntry.total += count;
   }
 
-  // Sort and paginate
+  // Sort actors by total interactions
   const sorted = Array.from(byActor.entries())
     .sort((a, b) => b[1].total - a[1].total);
 
-  const totalActors = sorted.length;
-  const pageSlice = sorted.slice((page - 1) * pageSize, page * pageSize);
+  // If searching, resolve matching actor keys before pagination
+  let filtered = sorted;
+  if (search && search.trim().length > 0) {
+    const term = search.trim().toLowerCase();
+
+    // Find matching authenticated user IDs by name/email
+    const matchingUserIds = new Set<string>();
+    const allAuthIds = sorted
+      .filter(([, a]) => a.isAuthenticated && a.userId)
+      .map(([, a]) => a.userId!);
+
+    if (allAuthIds.length > 0) {
+      const { data: matchedUsers } = await supabaseAdmin
+        .from('users')
+        .select('id, name, email')
+        .in('id', allAuthIds)
+        .or(`name.ilike.%${term}%,email.ilike.%${term}%`);
+      for (const u of matchedUsers ?? []) {
+        matchingUserIds.add(u.id);
+      }
+    }
+
+    // Find matching anonymous actors via leads email
+    const matchingLeadIds = new Set<number>();
+    const allLeadIds = sorted
+      .filter(([, a]) => !a.isAuthenticated && a.leadId)
+      .map(([, a]) => a.leadId!);
+
+    if (allLeadIds.length > 0) {
+      const { data: matchedLeads } = await supabaseAdmin
+        .from('leads')
+        .select('id')
+        .in('id', allLeadIds)
+        .ilike('email', `%${term}%`);
+      for (const l of matchedLeads ?? []) {
+        matchingLeadIds.add(l.id);
+      }
+    }
+
+    // Find matching anonymous actors via visitas email
+    const matchingVisitaIds = new Set<number>();
+    const allVisitaIds = sorted
+      .filter(([, a]) => !a.isAuthenticated && a.visitaId)
+      .map(([, a]) => a.visitaId!);
+
+    if (allVisitaIds.length > 0) {
+      const { data: matchedVisitas } = await supabaseAdmin
+        .from('visitas')
+        .select('id')
+        .in('id', allVisitaIds)
+        .ilike('requester_email', `%${term}%`);
+      for (const v of matchedVisitas ?? []) {
+        matchingVisitaIds.add(v.id);
+      }
+    }
+
+    filtered = sorted.filter(([key, actor]) => {
+      if (actor.isAuthenticated && actor.userId && matchingUserIds.has(actor.userId)) return true;
+      if (!actor.isAuthenticated && actor.leadId && matchingLeadIds.has(actor.leadId)) return true;
+      if (!actor.isAuthenticated && actor.visitaId && matchingVisitaIds.has(actor.visitaId)) return true;
+      // Also match on session key prefix for anonymous actors
+      if (key.toLowerCase().includes(term)) return true;
+      return false;
+    });
+  }
+
+  const totalActors = filtered.length;
+  const pageSlice = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   // Fetch user names for authenticated actors in page
   const authUserIds = pageSlice

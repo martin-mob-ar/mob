@@ -49,9 +49,9 @@ function parsePeriod(raw: string | undefined): number | null {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; usersPage?: string }>;
+  searchParams: Promise<{ period?: string; usersPage?: string; usersSearch?: string }>;
 }) {
-  const { period: rawPeriod, usersPage: rawUsersPage } = await searchParams;
+  const { period: rawPeriod, usersPage: rawUsersPage, usersSearch } = await searchParams;
   const periodDays = parsePeriod(rawPeriod);
   const usersPage = Math.max(1, parseInt(rawUsersPage ?? "1", 10) || 1);
 
@@ -70,6 +70,7 @@ export default async function AdminPage({
     visitasCron,
     exchangeRateCron,
     mailingCron,
+    ipcCron,
     topProperties,
     topUsers,
   ] = await Promise.all([
@@ -86,13 +87,14 @@ export default async function AdminPage({
     getCronJobHealth("visitas"),
     getCronJobHealth("exchange-rate"),
     getCronJobHealth("mailing-novedades"),
+    getCronJobHealth("ipc"),
     getTopPropertiesByEngagement(
       periodDays
         ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString()
         : '2020-01-01T00:00:00Z',
-      50,
+      20,
     ),
-    getTopUsersByEvents(periodDays, usersPage, 20),
+    getTopUsersByEvents(periodDays, usersPage, 20, usersSearch),
   ]);
 
   const periodLabel = periodDays ? `últimos ${periodDays} días` : "todo el tiempo";
@@ -484,6 +486,50 @@ export default async function AdminPage({
               <CronErrors errors={mailingCron.recentErrors} />
             </CardContent>
           </Card>
+
+          {/* IPC cron */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Cron IPC</CardTitle>
+                {ipcCron.lastRun && (
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      ipcCron.lastRun.status === "completed"
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                )}
+              </div>
+              {ipcCron.lastRun && (
+                <p className="text-xs text-muted-foreground">
+                  {new Date(ipcCron.lastRun.finishedAt).toLocaleString(
+                    "es-AR",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: "America/Argentina/Buenos_Aires",
+                    }
+                  )}
+                  {ipcCron.lastRun.stats &&
+                    "latestMonth" in ipcCron.lastRun.stats && (
+                      <>
+                        {" "}
+                        · {String(ipcCron.lastRun.stats.latestMonth)}{" "}
+                        {Number(ipcCron.lastRun.stats.latestRate).toFixed(1)}%
+                      </>
+                    )}
+                </p>
+              )}
+            </CardHeader>
+            <CardContent>
+              <CronJobChart data={ipcCron.days} />
+              <CronErrors errors={ipcCron.recentErrors} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Property Engagement */}
@@ -508,6 +554,7 @@ export default async function AdminPage({
               totalActors={topUsers.totalActors}
               currentPage={usersPage}
               pageSize={20}
+              currentSearch={usersSearch ?? ""}
             />
           </CardContent>
         </Card>

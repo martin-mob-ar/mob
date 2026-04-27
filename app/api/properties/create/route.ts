@@ -4,6 +4,7 @@ import { getAuthUser } from '@/lib/supabase/auth';
 import { movePhoto, getPublicUrl } from '@/lib/storage/gcs';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 import { sendWelcomeEmail } from '@/lib/integrations/resend';
+import { sendAlertNuevaPropiedad } from '@/lib/kapso/client';
 
 export async function POST(request: Request) {
   try {
@@ -234,8 +235,9 @@ export async function POST(request: Request) {
 
       console.log('[properties/create] Done (draft publish). Property ID:', propertyId);
 
-      // Fire-and-forget welcome email
+      // Fire-and-forget welcome email + internal alert
       dispatchWelcomeEmail(resolvedUserId, selectedPlan);
+      dispatchAlertNuevaPropiedad(resolvedUserId, propertyId, address);
 
       return NextResponse.json({ id: propertyId });
     }
@@ -341,8 +343,9 @@ export async function POST(request: Request) {
 
     console.log('[properties/create] Done. Property ID:', propertyId);
 
-    // Fire-and-forget welcome email
+    // Fire-and-forget welcome email + internal alert
     dispatchWelcomeEmail(resolvedUserId, selectedPlan);
+    dispatchAlertNuevaPropiedad(resolvedUserId, propertyId, address);
 
     return NextResponse.json({ id: propertyId });
   } catch (e) {
@@ -352,6 +355,26 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+/** Fire-and-forget: fetch user details and send internal WhatsApp alert */
+function dispatchAlertNuevaPropiedad(userId: string, propertyId: number, address: string | undefined) {
+  (async () => {
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('name, email, telefono, telefono_country_code')
+      .eq('id', userId)
+      .single();
+
+    await sendAlertNuevaPropiedad({
+      propertyId,
+      address: address ?? 'Sin dirección',
+      userName: user?.name ?? 'Sin nombre',
+      userEmail: user?.email ?? null,
+      userPhone: user?.telefono ?? null,
+      userCountryCode: user?.telefono_country_code ?? null,
+    });
+  })().catch((err) => console.error('[properties/create] Alert send failed:', err));
 }
 
 /** Fire-and-forget: fetch user email/name and send welcome email */

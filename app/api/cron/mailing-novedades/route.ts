@@ -27,7 +27,10 @@ const TIME_BUDGET_MS = 250_000; // Leave 50s buffer before maxDuration
  * GET /api/cron/mailing-novedades
  *
  * Daily at 12:35 UTC (9:35 AM ART). Sends personalized emails
- * with new properties matching each user's price range and state.
+ * with new properties matching each subscriber's price range and state.
+ *
+ * Processes the unified mailing_preferences table (guests + registered users).
+ * Email is the identifier; no join to users table needed.
  *
  * Self-chains via after() when processing exceeds time budget.
  * Secured via CRON_SECRET.
@@ -35,7 +38,7 @@ const TIME_BUDGET_MS = 250_000; // Leave 50s buffer before maxDuration
  * Query params (for self-chaining):
  *   - chain: chain link index
  *   - logId: cron_job_log ID to continue
- *   - offset: user pagination offset
+ *   - offset: pagination offset
  */
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -100,17 +103,18 @@ export async function GET(request: NextRequest) {
     currentLogId = newLog.id;
   }
 
-  // ── 5. Fetch eligible users ──
-  const { data: users } = await supabaseAdmin
-    .from('user_mailing_preferences')
-    .select('user_id, avg_price_ars, state_ids')
+  // ── 5. Fetch eligible subscribers ──
+  // email + name are stored directly — no join to users table needed
+  const { data: subscribers } = await supabaseAdmin
+    .from('mailing_preferences')
+    .select('email, name, avg_price_ars, state_ids')
     .eq('unsubscribed', false)
     .gte('interactions_count', 2)
     .not('avg_price_ars', 'is', null)
-    .order('user_id')
+    .order('email')
     .range(offsetParam, offsetParam + BATCH_SIZE - 1);
 
-  if (!users || users.length === 0) {
+  if (!subscribers || subscribers.length === 0) {
     await supabaseAdmin
       .from('cron_job_log')
       .update({
@@ -142,41 +146,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: 'completed', emailsSent: 0, noNewProperties: true });
   }
 
-  // ── 7. Fetch user emails ──
-  const userIds = users.map((u) => u.user_id);
-  const { data: userEmails } = await supabaseAdmin
-    .from('users')
-    .select('id, email, name')
-    .in('id', userIds);
-  const emailMap = new Map(
-    userEmails?.map((u) => [u.id, { email: u.email, name: u.name }]) ?? []
-  );
-
-  // ── 8. Process users ──
+  // ── 7. Process subscribers ──
   const hasTime = () => Date.now() - startTime < TIME_BUDGET_MS;
   const stats = { usersChecked: 0, emailsSent: 0, skipped: 0, errors: 0 };
-  const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
 
-  for (const user of users) {
+  for (const subscriber of subscribers) {
     if (!hasTime()) break;
     stats.usersChecked++;
 
-    const userInfo = emailMap.get(user.user_id);
-    if (!userInfo?.email) {
-      stats.skipped++;
-      continue;
-    }
-
     // Match properties: ±15% price AND same state
-    const avgPrice = Number(user.avg_price_ars);
+    const avgPrice = Number(subscriber.avg_price_ars);
     const priceLow = avgPrice * 0.85;
     const priceHigh = avgPrice * 1.15;
-    const userStateIds = new Set(user.state_ids as number[]);
+    const subscriberStateIds = new Set(subscriber.state_ids as number[]);
 
     const matching = newProperties.filter(
       (p) =>
         p.state_id &&
-        userStateIds.has(p.state_id) &&
+        subscriberStateIds.has(p.state_id) &&
         p.valor_total_primary &&
         Number(p.valor_total_primary) >= priceLow &&
         Number(p.valor_total_primary) <= priceHigh
@@ -187,7 +174,7 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    // Prioritize: inquilino (1) + dueno (2) first, then inmobiliaria (3/4)
+    // Prioritize: inquilino (1) + dueño (2) first, then inmobiliaria (3/4)
     matching.sort((a, b) => {
       const aScore = a.owner_account_type === 1 || a.owner_account_type === 2 ? 0 : 1;
       const bScore = b.owner_account_type === 1 || b.owner_account_type === 2 ? 0 : 1;
@@ -216,76 +203,73 @@ export async function GET(request: NextRequest) {
     }));
 
     try {
+      // Email is used as the unsubscribe uid (works for both guests and registered users)
       const result = await sendNovedadesEmail(
-        userInfo.email,
-        userInfo.name,
+        subscriber.email,
+        subscriber.name,
         topProperties,
-        user.user_id
+        subscriber.email
       );
 
       if (result.success) {
         stats.emailsSent++;
         await supabaseAdmin
-          .from('user_mailing_preferences')
+          .from('mailing_preferences')
           .update({ last_email_sent_at: new Date().toISOString() })
-          .eq('user_id', user.user_id);
+          .eq('email', subscriber.email);
       } else {
         stats.errors++;
-        console.error(`[Mailing Cron] Send failed for ${user.user_id}:`, result.error);
+        console.error(`[Mailing Cron] Send failed for ${subscriber.email}:`, result.error);
       }
     } catch (err) {
       stats.errors++;
-      console.error(`[Mailing Cron] Exception for ${user.user_id}:`, err);
+      console.error(`[Mailing Cron] Exception for ${subscriber.email}:`, err);
     }
 
     // Rate limit
     await new Promise((r) => setTimeout(r, SEND_DELAY_MS));
   }
 
-  // ── 9. Check if we need to chain ──
-  const allProcessed = stats.usersChecked >= users.length;
-  const needsChain = users.length === BATCH_SIZE && !hasTime();
+  // ── 8. Check if we need to chain ──
+  const needsChain = subscribers.length === BATCH_SIZE;
 
-  if (needsChain || (users.length === BATCH_SIZE && allProcessed)) {
-    // More users may exist — chain if we processed a full batch
-    if (users.length === BATCH_SIZE) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      const nextUrl = new URL(`${appUrl}/api/cron/mailing-novedades`);
-      nextUrl.searchParams.set('chain', String(chainIndex + 1));
-      nextUrl.searchParams.set('logId', String(currentLogId));
-      nextUrl.searchParams.set('offset', String(offsetParam + stats.usersChecked));
+  if (needsChain) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const nextUrl = new URL(`${appUrl}/api/cron/mailing-novedades`);
+    nextUrl.searchParams.set('chain', String(chainIndex + 1));
+    nextUrl.searchParams.set('logId', String(currentLogId));
+    nextUrl.searchParams.set('offset', String(offsetParam + stats.usersChecked));
 
-      // Update log with current progress
-      await supabaseAdmin
-        .from('cron_job_log')
-        .update({ stats })
-        .eq('id', currentLogId);
+    // Update log with current progress
+    await supabaseAdmin
+      .from('cron_job_log')
+      .update({ stats })
+      .eq('id', currentLogId);
 
-      after(async () => {
-        try {
-          await fetch(nextUrl.toString(), {
-            headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
-            signal: AbortSignal.timeout(10_000),
-          });
-        } catch {
-          // Expected — AbortError or network error
-        }
-      });
+    after(async () => {
+      try {
+        await fetch(nextUrl.toString(), {
+          headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+          signal: AbortSignal.timeout(10_000),
+        });
+      } catch {
+        // Expected — AbortError or network error
+      }
+    });
 
-      console.log(
-        `[Mailing Cron] Chaining to link #${chainIndex + 1}, ${stats.usersChecked} users processed in this link`
-      );
+    console.log(
+      `[Mailing Cron] Chaining to link #${chainIndex + 1}, ${stats.usersChecked} subscribers processed in this link`
+    );
 
-      return NextResponse.json({
-        status: 'chained',
-        chainIndex,
-        ...stats,
-        elapsed_ms: Date.now() - startTime,
-      });
-    }
+    return NextResponse.json({
+      status: 'chained',
+      chainIndex,
+      ...stats,
+      elapsed_ms: Date.now() - startTime,
+    });
   }
 
-  // ── 10. Finalize ──
+  // ── 9. Finalize ──
   await supabaseAdmin
     .from('cron_job_log')
     .update({

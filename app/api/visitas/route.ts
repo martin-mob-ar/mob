@@ -4,6 +4,7 @@ import { visitaApiSchema } from '@/lib/validations/visita';
 import { createVisita } from '@/lib/visitas/create';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { sendAlertNuevaVisita, formatVisitDateTime } from '@/lib/kapso/client';
 
 export async function POST(request: Request) {
   try {
@@ -89,6 +90,18 @@ export async function POST(request: Request) {
     } catch (err) {
       console.error('[Visitas] Analytics event insert error:', err);
     }
+
+    // Fire-and-forget internal alert
+    const { dayLabel, time: formattedTime } = formatVisitDateTime(proposedDate, proposedTime);
+    sendAlertNuevaVisita({
+      address: result.propertyAddress ?? 'Sin dirección',
+      requesterName: name,
+      requesterEmail: email ?? null,
+      requesterPhone: phone ?? null,
+      requesterCountryCode: country_code ?? null,
+      dayLabel,
+      time: formattedTime,
+    }).catch((err) => console.error('[Visitas] Alert send failed:', err));
 
     return NextResponse.json({ success: true, visitaId: result.visitaId });
   } catch (error) {

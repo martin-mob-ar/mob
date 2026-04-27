@@ -42,6 +42,16 @@ export function formatVisitDateTime(date: string, time: string): { dayLabel: str
   return { dayLabel, time };
 }
 
+/** Derive environment label from NEXT_PUBLIC_APP_URL */
+function getEnvLabel(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  if (url.includes('localhost')) return 'DEV';
+  if (url.includes('v0-mob-omega')) return 'PREVIEW';
+  return 'PROD';
+}
+
+const ALERT_PHONE = process.env.ALERT_WHATSAPP_PHONE ?? '';
+
 // ─── Low-level ────────────────────────────────────────────────────────────────
 
 async function sendWhatsApp(to: string, payload: object): Promise<void> {
@@ -363,4 +373,73 @@ export async function sendPostVisitAdvanceAck(phone: string): Promise<void> {
 /** Post-visit: user doesn't want to advance — ack */
 export async function sendPostVisitDeclineAck(phone: string): Promise<void> {
   await sendTextMessage(phone, 'Gracias por tu respuesta. Te invitamos a seguir buscando propiedades en mob.ar');
+}
+
+// ─── Internal alerts ──────────────────────────────────────────────────────────
+
+/** Internal alert: new visita lead submitted */
+export async function sendAlertNuevaVisita(params: {
+  address: string;
+  requesterName: string;
+  requesterEmail: string | null;
+  requesterPhone: string | null;
+  requesterCountryCode: string | null;
+  dayLabel: string;
+  time: string;
+}): Promise<void> {
+  const env = getEnvLabel();
+  const waLink = params.requesterPhone
+    ? `wa.me/${toKapsoPhone(params.requesterCountryCode ?? '54', params.requesterPhone)}`
+    : 'Sin teléfono';
+  const contacto = `${params.requesterName} — ${params.requesterEmail ?? 'Sin email'} — ${waLink}`;
+
+  await sendWhatsApp(ALERT_PHONE, {
+    type: 'template',
+    template: {
+      name: 'mob_alerta_nueva_visita',
+      language: { code: 'es_AR' },
+      components: [{
+        type: 'body',
+        parameters: [
+          { type: 'text', text: env },
+          { type: 'text', text: params.address },
+          { type: 'text', text: contacto },
+          { type: 'text', text: `${params.dayLabel}, ${params.time}` },
+        ],
+      }],
+    },
+  });
+}
+
+/** Internal alert: new property published */
+export async function sendAlertNuevaPropiedad(params: {
+  propertyId: number;
+  address: string;
+  userName: string;
+  userEmail: string | null;
+  userPhone: string | null;
+  userCountryCode: string | null;
+}): Promise<void> {
+  const env = getEnvLabel();
+  const waLink = params.userPhone
+    ? `wa.me/${toKapsoPhone(params.userCountryCode ?? '54', params.userPhone)}`
+    : 'Sin teléfono';
+  const contacto = `${params.userName} — ${params.userEmail ?? 'Sin email'} — ${waLink}`;
+
+  await sendWhatsApp(ALERT_PHONE, {
+    type: 'template',
+    template: {
+      name: 'mob_alerta_nueva_propiedad',
+      language: { code: 'es_AR' },
+      components: [{
+        type: 'body',
+        parameters: [
+          { type: 'text', text: env },
+          { type: 'text', text: params.address },
+          { type: 'text', text: contacto },
+          { type: 'text', text: String(params.propertyId) },
+        ],
+      }],
+    },
+  });
 }

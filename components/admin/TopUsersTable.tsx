@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, User, Globe } from "lucide-react";
+import { ChevronRight, User, Globe, Search, X } from "lucide-react";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { UserEventRow, UserPropertyBreakdownRow } from "@/lib/admin/queries";
 
 interface TopUsersTableProps {
@@ -14,6 +15,7 @@ interface TopUsersTableProps {
   totalActors: number;
   currentPage: number;
   pageSize: number;
+  currentSearch: string;
 }
 
 export default function TopUsersTable({
@@ -22,10 +24,41 @@ export default function TopUsersTable({
   totalActors,
   currentPage,
   pageSize,
+  currentSearch,
 }: TopUsersTableProps) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [searchValue, setSearchValue] = useState(currentSearch);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const params = useSearchParams();
+
+  // Keep local state in sync with server prop
+  useEffect(() => {
+    setSearchValue(currentSearch);
+  }, [currentSearch]);
+
+  function applySearch(value: string) {
+    const sp = new URLSearchParams(params.toString());
+    if (value.trim()) {
+      sp.set("usersSearch", value.trim());
+    } else {
+      sp.delete("usersSearch");
+    }
+    sp.delete("usersPage"); // reset to page 1 on new search
+    router.replace(`?${sp.toString()}`, { scroll: false });
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchValue(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => applySearch(value), 400);
+  }
+
+  function clearSearch() {
+    setSearchValue("");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    applySearch("");
+  }
 
   const totalPages = Math.max(1, Math.ceil(totalActors / pageSize));
 
@@ -45,7 +78,7 @@ export default function TopUsersTable({
     router.replace(`?${sp.toString()}`, { scroll: false });
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && !currentSearch) {
     return (
       <p className="text-sm text-muted-foreground text-center py-8">
         Sin datos de interacción en este período.
@@ -57,6 +90,32 @@ export default function TopUsersTable({
 
   return (
     <div>
+      {/* Search input */}
+      <div className="relative mb-3">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Buscar por nombre o email..."
+          value={searchValue}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="pl-8 pr-8 h-8 text-sm"
+        />
+        {searchValue && (
+          <button
+            onClick={clearSearch}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {data.length === 0 && currentSearch ? (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          Sin resultados para &ldquo;{currentSearch}&rdquo;
+        </p>
+      ) : (
+      <>
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-fixed">
           <colgroup>
@@ -194,6 +253,8 @@ export default function TopUsersTable({
             </Button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

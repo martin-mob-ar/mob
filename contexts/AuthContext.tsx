@@ -10,6 +10,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/auth/errors";
 import { clarityIdentify, claritySet } from "@/lib/analytics/clarity";
@@ -370,6 +371,16 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
       await resolveAndSetUser(supabaseUser);
     }
   }, [supabase, resolveAndSetUser]);
+
+  // Open auth modal when redirected with ?login=1 (e.g. from /mis-busquedas)
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("login") === "1" && !user && !isLoading) {
+      openAuthModal();
+      // Clean up the URL without triggering a navigation
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [searchParams, user, isLoading, openAuthModal]);
 
   const value = useMemo(
     () => ({

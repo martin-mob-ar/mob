@@ -24,6 +24,8 @@ Sentry.init({
     "ResizeObserver loop completed with undelivered notifications",
     // Navigation aborts
     "AbortError",
+    // Instagram/WebView internal errors
+    "Java object is gone",
     // Browser extensions
     /^chrome-extension:\/\//,
     /^moz-extension:\/\//,
@@ -42,5 +44,7 @@ Sentry.init({
     /clarity\.ms/i,
     // Anti-fraud / bot detection scripts
     /frame_ant/i,
+    // Instagram / WebView internal scripts
+    /^app:\/\//,
   ],
 });

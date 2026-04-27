@@ -136,7 +136,7 @@ function generateSampleData(): IPCDataPoint[] {
     2023: [6.0, 6.6, 7.7, 8.4, 7.8, 6.0, 6.3, 12.4, 12.7, 8.3, 12.8, 25.5],
     2024: [20.6, 13.2, 11.0, 8.8, 4.2, 4.6, 4.0, 4.2, 3.5, 2.7, 2.4, 2.7],
     2025: [2.2, 2.4, 3.7, 2.8, 1.5, 1.6, 1.9, 1.9, 2.1, 2.3, 2.5, 2.8],
-    2026: [2.9, 2.9],
+    2026: [2.9, 2.9, 3.4],
   };
   const data: IPCDataPoint[] = [];
   for (const year of Object.keys(rates).map(Number)) {
@@ -166,52 +166,6 @@ export async function fetchAllIPCData(): Promise<FetchResult> {
   return fetchIPCData("2020-01", currentMonth);
 }
 
-// === API ===
-const API_KEY = "as_prod_82yeZWumvKDQKiL4hCsUEmggPobVjgMP";
-const API_BASE_URL = "https://argenstats.com.ar/api/v1";
-
-// Multiple auth strategies to handle CORS preflight issues
-const AUTH_STRATEGIES = [
-  // Strategy 1: API key as query parameter (avoids CORS preflight entirely)
-  (url: string) => ({ url: `${url}&api_key=${API_KEY}`, headers: {} as Record<string, string> }),
-  // Strategy 2: x-api-key header
-  (url: string) => ({ url, headers: { "x-api-key": API_KEY } }),
-  // Strategy 3: Bearer token
-  (url: string) => ({ url, headers: { "Authorization": `Bearer ${API_KEY}` } }),
-];
-
-function normalizeResponse(raw: unknown): IPCDataPoint[] {
-  let arr = raw as any;
-  if (!Array.isArray(arr)) {
-    if (arr?.data && Array.isArray(arr.data)) arr = arr.data;
-    else if (arr?.results && Array.isArray(arr.results)) arr = arr.results;
-    else if (arr?.records && Array.isArray(arr.records)) arr = arr.records;
-    else throw new Error("Formato de respuesta no reconocido");
-  }
-
-  return (arr as any[])
-    .map((item: any) => {
-      const dateVal = item.date || item.month || item.period || item.fecha;
-      // Try multiple field names for the rate/value
-      const rateVal = item.monthly_rate ?? item.rate ?? item.variation ?? item.variacion
-        ?? item.ipc ?? item.ipc_value ?? item.value ?? item.valor ?? item.index;
-      if (!dateVal || rateVal == null) return null;
-
-      let month: string;
-      if (typeof dateVal === "string" && /^\d{4}-\d{2}$/.test(dateVal)) {
-        month = dateVal;
-      } else {
-        const d = new Date(dateVal);
-        month = getMonthKey(d);
-      }
-
-      const val = typeof rateVal === "string" ? parseFloat(rateVal) : rateVal;
-      if (isNaN(val)) return null;
-      return { month, rate: val } as IPCDataPoint;
-    })
-    .filter(Boolean) as IPCDataPoint[];
-}
-
 export interface FetchResult {
   data: IPCDataPoint[];
   usedSample: boolean;
@@ -226,55 +180,27 @@ export async function fetchIPCData(fromMonth: string, toMonth: string): Promise<
     return { data: ipcCache[cacheKey], usedSample: false, missingMonths: [] };
   }
 
-  const from = firstDayOfMonth(fromMonth);
-  const to = firstDayOfMonth(monthAfter(toMonth));
-  const baseUrl = `${API_BASE_URL}/inflation?view=historical&from=${from}&to=${to}`;
+  try {
+    const response = await fetch(`/api/ipc?from=${fromMonth}&to=${toMonth}`);
 
-  for (const strategy of AUTH_STRATEGIES) {
-    try {
-      const { url, headers } = strategy(baseUrl);
-      console.log("Intentando API con estrategia:", Object.keys(headers).join(",") || "query_param");
-      
-      const response = await fetch(url, {
-        headers,
-        mode: "cors",
-      });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      if (response.status === 401 || response.status === 403) {
-        console.log("Auth rechazado, probando siguiente estrategia...");
-        continue;
-      }
+    const json = await response.json();
+    const result: IPCDataPoint[] = (json.data ?? []).sort(
+      (a: IPCDataPoint, b: IPCDataPoint) => a.month.localeCompare(b.month)
+    );
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const raw = await response.json();
-      const normalized = normalizeResponse(raw);
-      const filtered = normalized
-        .filter((d) => d.month >= fromMonth && d.month <= toMonth)
-        .sort((a, b) => a.month.localeCompare(b.month));
-
-      const deduped = new Map<string, IPCDataPoint>();
-      for (const dp of filtered) deduped.set(dp.month, dp);
-      // Manual override: April 2025 official INDEC rate is 2.8%, API returns incorrectly
-      if (deduped.has("2025-04")) deduped.set("2025-04", { month: "2025-04", rate: 2.8 });
-      const result = Array.from(deduped.values());
-
-      console.log("✅ API conectada. Rango:", fromMonth, "a", toMonth);
-      console.log("Meses obtenidos:", result.map((r) => `${r.month}:${r.rate}%`));
-
+    if (result.length > 0) {
       ipcCache[cacheKey] = result;
       const missing = findMissingMonths(fromMonth, toMonth, result);
       if (missing.length > 0) console.log("Meses faltantes:", missing);
-
       return { data: result, usedSample: false, missingMonths: missing };
-    } catch (err) {
-      console.warn("Estrategia falló:", err);
-      continue;
     }
+  } catch (err) {
+    console.warn("IPC API fetch falló, usando datos de ejemplo:", err);
   }
 
-  // All strategies failed, use sample data
-  console.warn("⚠️ Todas las estrategias de API fallaron, usando datos de ejemplo.");
+  // Fallback: hardcoded sample data (used when API/DB is unavailable)
   const filtered = SAMPLE_DATA.filter(
     (d) => d.month >= fromMonth && d.month <= toMonth
   );

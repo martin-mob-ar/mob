@@ -391,6 +391,17 @@ export default async function PropiedadDetailPage({
   // Determine publisher type: company → inmobiliaria, else propietario
   const isInmobiliaria = !!propertyData.company_name;
 
+  // Fetch amoblado from extra_attributes for non-tokko properties
+  let amoblado: boolean | null = null;
+  if (!isTokko) {
+    const { data: extraData } = await supabaseAdmin
+      .from("properties")
+      .select("extra_attributes")
+      .eq("id", propertyId)
+      .single();
+    amoblado = extraData?.extra_attributes?.draft?.amoblado ?? null;
+  }
+
   // All these fields are now denormalized into properties_read
   const suiteAmount: number | null = propertyData.suite_amount ?? null;
   const toiletAmount: number | null = propertyData.toilet_amount ?? null;
@@ -534,6 +545,7 @@ export default async function PropiedadDetailPage({
       ownerAccountType={propertyData.owner_account_type ?? null}
       contractDuration={contractDuration}
       orientation={orientation}
+      amoblado={amoblado}
       showVerificationModal={showVerificationModal}
       relatedProperties={relatedProperties}
     />
