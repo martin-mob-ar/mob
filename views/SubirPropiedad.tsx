@@ -1157,8 +1157,9 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           }).catch(() => {});
         }
 
-        // Redirect to property detail — show verification modal only if not yet verified
-        router.push(`/propiedad/${result.id}${authUser?.isVerified ? "" : "?verification=true"}`);
+        // Use slug directly to avoid permanentRedirect dropping ?verification=true
+        const destination = result.slug ?? result.id;
+        router.push(`/propiedad/${destination}${authUser?.isVerified ? "" : "?verification=true"}`);
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error inesperado.");

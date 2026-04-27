@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mob.ar';
+const LOGO_URL = 'https://www.mob.ar/assets/mob-logo-new.png';
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -220,7 +221,7 @@ function buildEmailHtml(
         <tr>
           <td align="center" style="padding:32px 24px 20px;" bgcolor="#ffffff">
             <a href="${APP_URL}" target="_blank" style="text-decoration:none;">
-              <img src="${APP_URL}/assets/mob-logo-new.png" alt="mob" width="100" height="36" style="display:block;width:100px;height:auto;" />
+              <img src="${LOGO_URL}" alt="mob" width="100" height="36" style="display:block;width:100px;height:auto;" />
             </a>
           </td>
         </tr>

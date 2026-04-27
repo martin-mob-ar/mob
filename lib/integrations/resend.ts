@@ -9,6 +9,7 @@ function getResend() {
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.mob.ar';
+const LOGO_URL = 'https://www.mob.ar/assets/mob-logo-new.png';
 
 interface LeadEmailData {
   name: string;
@@ -58,7 +59,7 @@ function buildLeadEmailShell(bodyContent: string): string {
               <tr>
                 <td align="center" style="padding:32px 40px 0;">
                   <a href="${APP_URL}" target="_blank" style="text-decoration:none;">
-                    <img src="${APP_URL}/assets/mob-logo-new.png" alt="mob" width="88" style="display:block;width:88px;height:auto;" />
+                    <img src="${LOGO_URL}" alt="mob" width="88" style="display:block;width:88px;height:auto;" />
                   </a>
                 </td>
               </tr>
@@ -442,7 +443,7 @@ function buildWelcomeEmailHtml(
               <tr>
                 <td align="center" style="padding:32px 40px 0;">
                   <a href="${APP_URL}" target="_blank" style="text-decoration:none;">
-                    <img src="${APP_URL}/assets/mob-logo-new.png" alt="mob" width="88" style="display:block;width:88px;height:auto;" />
+                    <img src="${LOGO_URL}" alt="mob" width="88" style="display:block;width:88px;height:auto;" />
                   </a>
                 </td>
               </tr>
