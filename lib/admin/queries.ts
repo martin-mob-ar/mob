@@ -15,8 +15,10 @@ export interface KpiData {
   periodVisitas: number;
   totalFavoritos: number;
   periodFavoritos: number;
-  verifHoggaxUsers: number;
-  verifTruoraUsers: number;
+  verifHoggaxTotal: number;
+  verifHoggaxApproved: number;
+  verifTruoraTotal: number;
+  verifTruoraVerified: number;
   verifTotalUsers: number;
 }
 
@@ -37,6 +39,10 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
     visitasPeriod,
     favTotal,
     favPeriod,
+    vhTotal,
+    vhApproved,
+    vtTotal,
+    vtVerified,
     vhUsers,
     vtUsers,
   ] = await Promise.all([
@@ -51,13 +57,18 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
     supabaseAdmin.from('visitas').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
     supabaseAdmin.from('favoritos').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('favoritos').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
+    supabaseAdmin.from('verificaciones_hoggax').select('*', { count: 'exact', head: true }),
+    supabaseAdmin.from('verificaciones_hoggax').select('*', { count: 'exact', head: true }).eq('hoggax_approved', true),
+    supabaseAdmin.from('verificaciones_truora').select('*', { count: 'exact', head: true }),
+    supabaseAdmin.from('verificaciones_truora').select('*', { count: 'exact', head: true }).eq('truora_document_verified', true),
     supabaseAdmin.from('verificaciones_hoggax').select('user_id').eq('hoggax_approved', true),
     supabaseAdmin.from('verificaciones_truora').select('user_id').eq('truora_document_verified', true),
   ]);
 
-  const vhUserIds = new Set((vhUsers.data ?? []).map((r) => r.user_id));
-  const vtUserIds = new Set((vtUsers.data ?? []).map((r) => r.user_id));
-  const allVerifiedIds = new Set([...vhUserIds, ...vtUserIds]);
+  const allVerifiedIds = new Set([
+    ...(vhUsers.data ?? []).map((r) => r.user_id),
+    ...(vtUsers.data ?? []).map((r) => r.user_id),
+  ]);
 
   return {
     totalUsers: usersTotal.count ?? 0,
@@ -71,8 +82,10 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
     periodVisitas: visitasPeriod.count ?? 0,
     totalFavoritos: favTotal.count ?? 0,
     periodFavoritos: favPeriod.count ?? 0,
-    verifHoggaxUsers: vhUserIds.size,
-    verifTruoraUsers: vtUserIds.size,
+    verifHoggaxTotal: vhTotal.count ?? 0,
+    verifHoggaxApproved: vhApproved.count ?? 0,
+    verifTruoraTotal: vtTotal.count ?? 0,
+    verifTruoraVerified: vtVerified.count ?? 0,
     verifTotalUsers: allVerifiedIds.size,
   };
 }
@@ -955,6 +968,9 @@ export interface UserEventRow {
   actorKey: string;
   isAuthenticated: boolean;
   displayName: string;
+  email: string | null;
+  phone: string | null;
+  phone_country_code: string | null;
   property_view: number;
   agendar_visita_submit_started: number;
   agendar_visita_verification_requested: number;
@@ -1002,6 +1018,7 @@ export async function getTopUsersByEvents(
   page: number = 1,
   pageSize: number = 20,
   search?: string,
+  userType?: "all" | "auth" | "anon",
 ): Promise<TopUsersResult> {
   const cutoff = periodDays
     ? new Date(Date.now() - periodDays * 86400000).toISOString()
@@ -1077,8 +1094,15 @@ export async function getTopUsersByEvents(
   const sorted = Array.from(byActor.entries())
     .sort((a, b) => b[1].total - a[1].total);
 
-  // If searching, resolve matching actor keys before pagination
+  // Apply userType filter before search/pagination
   let filtered = sorted;
+  if (userType === "auth") {
+    filtered = filtered.filter(([, actor]) => actor.isAuthenticated);
+  } else if (userType === "anon") {
+    filtered = filtered.filter(([, actor]) => !actor.isAuthenticated);
+  }
+
+  // If searching, resolve matching actor keys before pagination
   if (search && search.trim().length > 0) {
     const term = search.trim().toLowerCase();
 
@@ -1151,14 +1175,14 @@ export async function getTopUsersByEvents(
     .filter(([, a]) => a.isAuthenticated && a.userId)
     .map(([, a]) => a.userId!);
 
-  const userMap = new Map<string, { name: string | null; email: string | null }>();
+  const userMap = new Map<string, { name: string | null; email: string | null; phone: string | null; phone_cc: string | null }>();
   if (authUserIds.length > 0) {
     const { data: users } = await supabaseAdmin
       .from('users')
-      .select('id, name, email')
+      .select('id, name, email, telefono, telefono_country_code')
       .in('id', authUserIds);
     for (const u of users ?? []) {
-      userMap.set(u.id, { name: u.name, email: u.email });
+      userMap.set(u.id, { name: u.name, email: u.email, phone: u.telefono ?? null, phone_cc: u.telefono_country_code ?? null });
     }
   }
 
@@ -1236,6 +1260,9 @@ export async function getTopUsersByEvents(
       actorKey: key,
       isAuthenticated: actor.isAuthenticated,
       displayName,
+      email: userInfo?.email ?? null,
+      phone: userInfo?.phone ?? null,
+      phone_country_code: userInfo?.phone_cc ?? null,
       ...actor.counts,
       total: actor.total,
     };
