@@ -769,8 +769,6 @@ export async function getPropertyRecentEvents(
   propertyId: number,
   page: number = 1,
   pageSize: number = 50,
-  sortCol: 'created_at' | 'event_type' = 'created_at',
-  sortDir: 'asc' | 'desc' = 'desc',
 ): Promise<PropertyRecentEventsResult> {
   // Count total events for this property
   const { count } = await supabaseAdmin
@@ -788,7 +786,7 @@ export async function getPropertyRecentEvents(
     .from('property_events')
     .select('id, event_type, user_id, session_id, metadata, created_at')
     .eq('property_id', propertyId)
-    .order(sortCol, { ascending: sortDir === 'asc' })
+    .order('created_at', { ascending: false })
     .range(from, to);
 
   if (!events || events.length === 0) return { events: [], total };

@@ -22,21 +22,19 @@ export default async function PropertyDetailAdminPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ period?: string; eventsPage?: string; eventsSort?: string; eventsDir?: string }>;
+  searchParams: Promise<{ period?: string; eventsPage?: string }>;
 }) {
   const { id: rawId } = await params;
   const propertyId = parseInt(rawId, 10);
   if (isNaN(propertyId)) notFound();
 
-  const { period: rawPeriod, eventsPage: rawEventsPage, eventsSort: rawEventsSort, eventsDir: rawEventsDir } = await searchParams;
+  const { period: rawPeriod, eventsPage: rawEventsPage } = await searchParams;
   const periodDays = parsePeriod(rawPeriod);
   const cutoff = periodDays
     ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString()
     : "2020-01-01T00:00:00Z";
 
   const eventsPage = Math.max(1, parseInt(rawEventsPage ?? "1", 10) || 1);
-  const eventsSort = (rawEventsSort === "event_type" ? "event_type" : "created_at") as "created_at" | "event_type";
-  const eventsDir = (rawEventsDir === "asc" ? "asc" : "desc") as "asc" | "desc";
 
   // Fetch property info + analytics in parallel
   const [propertyResult, stats, eventsResult, attribution] = await Promise.all([
@@ -46,7 +44,7 @@ export default async function PropertyDetailAdminPage({
       .eq("property_id", propertyId)
       .maybeSingle(),
     getPropertyEventStats(propertyId, cutoff),
-    getPropertyRecentEvents(propertyId, eventsPage, 50, eventsSort, eventsDir),
+    getPropertyRecentEvents(propertyId, eventsPage, 50),
     getPropertyAttributionBreakdown(propertyId, cutoff),
   ]);
 
@@ -229,8 +227,6 @@ export default async function PropertyDetailAdminPage({
         total={eventsResult.total}
         currentPage={eventsPage}
         pageSize={50}
-        sortCol={eventsSort}
-        sortDir={eventsDir}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,18 @@ const EVENT_LABELS: Record<string, string> = {
   agendar_visita_submit: "Visita creada",
 };
 
+type SortCol = "created_at" | "event_type" | "user";
+type SortState = { col: SortCol; dir: "asc" | "desc" } | null;
+
 interface PropertyEventsTableProps {
   events: PropertyRecentEvent[];
   total: number;
   currentPage: number;
   pageSize: number;
-  sortCol: "created_at" | "event_type";
-  sortDir: "asc" | "desc";
+}
+
+function getDisplayName(event: PropertyRecentEvent): string {
+  return event.user_name ?? (event.user_id ? event.user_id.slice(0, 8) : "Anónimo");
 }
 
 export function PropertyEventsTable({
@@ -27,49 +33,52 @@ export function PropertyEventsTable({
   total,
   currentPage,
   pageSize,
-  sortCol,
-  sortDir,
 }: PropertyEventsTableProps) {
   const router = useRouter();
   const params = useSearchParams();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  function updateParams(updates: Record<string, string | null>) {
-    const sp = new URLSearchParams(params.toString());
-    for (const [key, value] of Object.entries(updates)) {
-      if (value === null) sp.delete(key);
-      else sp.set(key, value);
-    }
-    router.replace(`?${sp.toString()}`, { scroll: false });
+  const [sort, setSort] = useState<SortState>(null);
+
+  const sortedEvents = useMemo(() => {
+    if (!sort) return events;
+    const { col, dir } = sort;
+    const mul = dir === "asc" ? 1 : -1;
+    return [...events].sort((a, b) => {
+      let av: string, bv: string;
+      if (col === "created_at") {
+        av = a.created_at;
+        bv = b.created_at;
+      } else if (col === "event_type") {
+        av = EVENT_LABELS[a.event_type] ?? a.event_type;
+        bv = EVENT_LABELS[b.event_type] ?? b.event_type;
+      } else {
+        av = getDisplayName(a).toLowerCase();
+        bv = getDisplayName(b).toLowerCase();
+      }
+      return av < bv ? -mul : av > bv ? mul : 0;
+    });
+  }, [events, sort]);
+
+  function handleSort(col: SortCol) {
+    setSort((prev) => {
+      if (prev?.col !== col) return { col, dir: "asc" };
+      if (prev.dir === "asc") return { col, dir: "desc" };
+      return null; // third click → no sort
+    });
+  }
+
+  function SortIcon({ col }: { col: SortCol }) {
+    if (sort?.col !== col) return <ChevronsUpDown className="h-3 w-3 opacity-40 inline ml-1" />;
+    if (sort.dir === "asc") return <ChevronUp className="h-3 w-3 inline ml-1" />;
+    return <ChevronDown className="h-3 w-3 inline ml-1" />;
   }
 
   function goToPage(p: number) {
-    updateParams({ eventsPage: p <= 1 ? null : String(p) });
-  }
-
-  function handleSort(col: "created_at" | "event_type") {
-    if (sortCol === col) {
-      // Toggle direction
-      const newDir = sortDir === "desc" ? "asc" : "desc";
-      updateParams({
-        eventsSort: col === "created_at" ? null : col,
-        eventsDir: newDir === "desc" ? null : "asc",
-        eventsPage: null, // reset to page 1
-      });
-    } else {
-      // Switch column, default desc
-      updateParams({
-        eventsSort: col === "created_at" ? null : col,
-        eventsDir: null,
-        eventsPage: null,
-      });
-    }
-  }
-
-  function SortIcon({ col }: { col: "created_at" | "event_type" }) {
-    if (sortCol !== col) return <ChevronsUpDown className="h-3 w-3 opacity-40 inline ml-1" />;
-    if (sortDir === "asc") return <ChevronUp className="h-3 w-3 inline ml-1" />;
-    return <ChevronDown className="h-3 w-3 inline ml-1" />;
+    const sp = new URLSearchParams(params.toString());
+    if (p <= 1) sp.delete("eventsPage");
+    else sp.set("eventsPage", String(p));
+    router.replace(`?${sp.toString()}`, { scroll: false });
   }
 
   return (
@@ -111,13 +120,20 @@ export function PropertyEventsTable({
                         Tipo <SortIcon col="event_type" />
                       </button>
                     </th>
-                    <th className="py-1 px-2 text-left font-medium">Usuario</th>
+                    <th className="py-1 px-2 text-left font-medium">
+                      <button
+                        onClick={() => handleSort("user")}
+                        className="flex items-center gap-0.5 hover:text-foreground transition-colors"
+                      >
+                        Usuario <SortIcon col="user" />
+                      </button>
+                    </th>
                     <th className="py-1 px-2 text-left font-medium">Session</th>
                     <th className="py-1 pl-2 text-left font-medium">Atribución</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {events.map((event) => {
+                  {sortedEvents.map((event) => {
                     const attrStatus = event.metadata?.attribution_status;
                     const waHref =
                       event.user_phone && event.user_phone_country_code
@@ -145,7 +161,7 @@ export function PropertyEventsTable({
                         <td className="py-1.5 px-2">
                           <div className="flex flex-col gap-0.5 min-w-0">
                             <span className="truncate max-w-[160px]">
-                              {event.user_name ?? (event.user_id ? event.user_id.slice(0, 8) : "Anónimo")}
+                              {getDisplayName(event)}
                             </span>
                             {event.user_id && (
                               <div className="flex items-center gap-2 flex-wrap">
