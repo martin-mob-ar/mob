@@ -47,21 +47,6 @@ function parsePeriod(raw: string | undefined): number | null {
   return isNaN(n) ? 30 : n;
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
-}
 
 export default async function AdminPage({
   searchParams,
@@ -166,8 +151,8 @@ export default async function AdminPage({
         <KpiCard
           icon={ShieldCheck}
           label="Verificaciones"
-          value={kpis.verifHoggaxApproved + kpis.verifTruoraVerified}
-          subtitle={`Hoggax: ${kpis.verifHoggaxApproved}/${kpis.verifHoggaxTotal} · Truora: ${kpis.verifTruoraVerified}/${kpis.verifTruoraTotal}`}
+          value={kpis.verifTotalUsers}
+          subtitle={`Hoggax: ${kpis.verifHoggaxUsers} · Truora: ${kpis.verifTruoraUsers}`}
         />
       </div>
 
@@ -384,12 +369,12 @@ export default async function AdminPage({
               <CronRunLog
                 runs={sync.runs}
                 columns={[
-                  { header: "Hora",   getValue: (r) => formatTime(r.startedAt),   color: "text-sky-400" },
-                  { header: "Nuevas", getValue: (r) => r.propertiesAdded,          color: "text-green-400" },
-                  { header: "Act.",   getValue: (r) => r.propertiesUpdated,         color: "text-sky-300" },
-                  { header: "Elim.",  getValue: (r) => r.propertiesDeleted,         color: "text-red-400" },
-                  { header: "Fotos+", getValue: (r) => r.photosAdded,              color: "text-purple-400" },
-                  { header: "Fotos−", getValue: (r) => r.photosRemoved,            color: "text-amber-400" },
+                  { header: "Hora",   field: "startedAt",        format: "time",  color: "text-sky-400" },
+                  { header: "Nuevas", field: "propertiesAdded",                    color: "text-green-400" },
+                  { header: "Act.",   field: "propertiesUpdated",                  color: "text-sky-300" },
+                  { header: "Elim.",  field: "propertiesDeleted",                  color: "text-red-400" },
+                  { header: "Fotos+", field: "photosAdded",                        color: "text-purple-400" },
+                  { header: "Fotos−", field: "photosRemoved",                      color: "text-amber-400" },
                 ] satisfies CronRunColumn[]}
               />
             </CardContent>
@@ -435,10 +420,10 @@ export default async function AdminPage({
               <CronRunLog
                 runs={visitasCron.runs}
                 columns={[
-                  { header: "Hora",        getValue: (r) => formatTime(r.startedAt),                    color: "text-sky-400" },
-                  { header: "24h",         getValue: (r) => r.stats?.reminder24h as number | undefined, color: "text-sky-300" },
-                  { header: "2h",          getValue: (r) => r.stats?.reminder2h as number | undefined,  color: "text-purple-300" },
-                  { header: "Post-visita", getValue: (r) => r.stats?.postvisit as number | undefined,   color: "text-green-400" },
+                  { header: "Hora",        field: "startedAt", format: "time",  color: "text-sky-400" },
+                  { header: "24h",         statsField: "reminder24h",            color: "text-sky-300" },
+                  { header: "2h",          statsField: "reminder2h",             color: "text-purple-300" },
+                  { header: "Post-visita", statsField: "postvisit",              color: "text-green-400" },
                 ] satisfies CronRunColumn[]}
               />
             </CardContent>
@@ -497,9 +482,9 @@ export default async function AdminPage({
               <CronRunLog
                 runs={exchangeRateCron.runs}
                 columns={[
-                  { header: "Fecha",        getValue: (r) => formatDate(r.startedAt) },
-                  { header: "ARS/USD",      getValue: (r) => r.stats?.rate != null ? Number(r.stats.rate).toLocaleString("es-AR") : null, color: "text-green-400" },
-                  { header: "Recalculados", getValue: (r) => r.stats?.rebuilt as number | undefined, color: "text-sky-300" },
+                  { header: "Fecha",        field: "startedAt", format: "date" },
+                  { header: "ARS/USD",      statsField: "rate",    format: "currency-ar", color: "text-green-400" },
+                  { header: "Recalculados", statsField: "rebuilt",                         color: "text-sky-300" },
                 ] satisfies CronRunColumn[]}
               />
             </CardContent>
@@ -554,11 +539,11 @@ export default async function AdminPage({
               <CronRunLog
                 runs={mailingCron.runs}
                 columns={[
-                  { header: "Hora",      getValue: (r) => formatTime(r.startedAt),                      color: "text-sky-400" },
-                  { header: "Emails",    getValue: (r) => r.stats?.emailsSent as number | undefined,     color: "text-green-400" },
-                  { header: "Revisados", getValue: (r) => r.stats?.usersChecked as number | undefined,   color: "text-sky-300" },
-                  { header: "Saltados",  getValue: (r) => r.stats?.skipped as number | undefined },
-                  { header: "Chain",     getValue: (r) => r.stats?.chain as number | undefined,          color: "text-amber-400" },
+                  { header: "Hora",      field: "startedAt", format: "time", color: "text-sky-400" },
+                  { header: "Emails",    statsField: "emailsSent",             color: "text-green-400" },
+                  { header: "Revisados", statsField: "usersChecked",           color: "text-sky-300" },
+                  { header: "Saltados",  statsField: "skipped" },
+                  { header: "Chain",     statsField: "chain",                  color: "text-amber-400" },
                 ] satisfies CronRunColumn[]}
               />
             </CardContent>
@@ -615,9 +600,9 @@ export default async function AdminPage({
               <CronRunLog
                 runs={ipcCron.runs}
                 columns={[
-                  { header: "Fecha",      getValue: (r) => formatDate(r.startedAt) },
-                  { header: "Último mes", getValue: (r) => r.stats?.latestMonth as string | undefined,  color: "text-sky-300" },
-                  { header: "IPC %",      getValue: (r) => r.stats?.latestRate != null ? `${Number(r.stats.latestRate).toFixed(1)}%` : null, color: "text-green-400" },
+                  { header: "Fecha",      field: "startedAt", format: "date" },
+                  { header: "Último mes", statsField: "latestMonth",                    color: "text-sky-300" },
+                  { header: "IPC %",      statsField: "latestRate", format: "percent1", color: "text-green-400" },
                 ] satisfies CronRunColumn[]}
               />
             </CardContent>

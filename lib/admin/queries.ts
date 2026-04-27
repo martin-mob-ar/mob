@@ -15,10 +15,9 @@ export interface KpiData {
   periodVisitas: number;
   totalFavoritos: number;
   periodFavoritos: number;
-  verifHoggaxTotal: number;
-  verifHoggaxApproved: number;
-  verifTruoraTotal: number;
-  verifTruoraVerified: number;
+  verifHoggaxUsers: number;
+  verifTruoraUsers: number;
+  verifTotalUsers: number;
 }
 
 export async function getKpis(periodDays: number | null): Promise<KpiData> {
@@ -38,10 +37,8 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
     visitasPeriod,
     favTotal,
     favPeriod,
-    vhTotal,
-    vhApproved,
-    vtTotal,
-    vtVerified,
+    vhUsers,
+    vtUsers,
   ] = await Promise.all([
     supabaseAdmin.from('users').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
@@ -54,11 +51,13 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
     supabaseAdmin.from('visitas').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
     supabaseAdmin.from('favoritos').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('favoritos').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
-    supabaseAdmin.from('verificaciones_hoggax').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('verificaciones_hoggax').select('*', { count: 'exact', head: true }).eq('hoggax_approved', true),
-    supabaseAdmin.from('verificaciones_truora').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('verificaciones_truora').select('*', { count: 'exact', head: true }).eq('truora_document_verified', true),
+    supabaseAdmin.from('verificaciones_hoggax').select('user_id').eq('hoggax_approved', true),
+    supabaseAdmin.from('verificaciones_truora').select('user_id').eq('truora_document_verified', true),
   ]);
+
+  const vhUserIds = new Set((vhUsers.data ?? []).map((r) => r.user_id));
+  const vtUserIds = new Set((vtUsers.data ?? []).map((r) => r.user_id));
+  const allVerifiedIds = new Set([...vhUserIds, ...vtUserIds]);
 
   return {
     totalUsers: usersTotal.count ?? 0,
@@ -72,10 +71,9 @@ export async function getKpis(periodDays: number | null): Promise<KpiData> {
     periodVisitas: visitasPeriod.count ?? 0,
     totalFavoritos: favTotal.count ?? 0,
     periodFavoritos: favPeriod.count ?? 0,
-    verifHoggaxTotal: vhTotal.count ?? 0,
-    verifHoggaxApproved: vhApproved.count ?? 0,
-    verifTruoraTotal: vtTotal.count ?? 0,
-    verifTruoraVerified: vtVerified.count ?? 0,
+    verifHoggaxUsers: vhUserIds.size,
+    verifTruoraUsers: vtUserIds.size,
+    verifTotalUsers: allVerifiedIds.size,
   };
 }
 

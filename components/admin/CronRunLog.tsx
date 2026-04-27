@@ -6,8 +6,44 @@ import type { CronRun } from '@/lib/admin/queries';
 
 export interface CronRunColumn {
   header: string;
-  getValue: (run: CronRun) => string | number | null | undefined;
+  /** Direct field on CronRun */
+  field?: keyof CronRun;
+  /** Nested field inside run.stats */
+  statsField?: string;
+  /** Optional formatting applied after reading the value */
+  format?: 'time' | 'date' | 'currency-ar' | 'percent1';
   color?: string;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  });
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  });
+}
+
+function getColValue(col: CronRunColumn, run: CronRun): string | number | null | undefined {
+  let raw: unknown;
+  if (col.field) {
+    raw = run[col.field];
+  } else if (col.statsField) {
+    raw = (run.stats as Record<string, unknown> | null | undefined)?.[col.statsField];
+  }
+  if (raw == null) return null;
+  if (col.format === 'time') return formatTime(String(raw));
+  if (col.format === 'date') return formatDate(String(raw));
+  if (col.format === 'currency-ar') return Number(raw).toLocaleString('es-AR');
+  if (col.format === 'percent1') return `${Number(raw).toFixed(1)}%`;
+  return raw as string | number;
 }
 
 interface CronRunLogProps {
@@ -65,7 +101,7 @@ export function CronRunLog({ runs, columns, pageSize = 5 }: CronRunLogProps) {
               {pageRuns.map((run) => (
                 <tr key={run.id} className="border-b border-border/40 last:border-0">
                   {columns.map((col, i) => {
-                    const val = col.getValue(run);
+                    const val = getColValue(col, run);
                     return (
                       <td
                         key={i}

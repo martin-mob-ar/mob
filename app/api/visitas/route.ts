@@ -106,10 +106,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, visitaId: result.visitaId });
   } catch (error) {
     const rawMessage = error instanceof Error ? error.message : '';
-    const isConflict = rawMessage.includes('visita confirmada');
+    const isConflict = rawMessage.includes('visita confirmada') || rawMessage.includes('visita pendiente');
     console.error('[Visitas] Unexpected error:', error);
     return NextResponse.json(
-      { error: isConflict ? 'Ya existe una visita confirmada para esta propiedad' : 'Error interno' },
+      { error: isConflict ? rawMessage : 'Error interno' },
       { status: isConflict ? 409 : 500 }
     );
   }
