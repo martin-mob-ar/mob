@@ -448,10 +448,58 @@ export interface SyncDay {
   errors: number;
 }
 
+// ── Shared run type ───────────────────────────────────────────────────────────
+
+export interface CronRun {
+  id: number;
+  startedAt: string;
+  finishedAt: string | null;
+  status: string;
+  stats?: Record<string, unknown> | null;
+  // sync-specific flat fields (undefined for cron_job_log runs):
+  propertiesAdded?: number;
+  propertiesUpdated?: number;
+  propertiesDeleted?: number;
+  photosAdded?: number;
+  photosRemoved?: number;
+}
+
+function todayART(): string {
+  return new Date().toLocaleDateString('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+  });
+}
+
+function sumRunField(runs: CronRun[], field: keyof CronRun): number {
+  return runs.reduce((acc, r) => acc + (Number(r[field]) || 0), 0);
+}
+
+function sumStatField(runs: CronRun[], key: string): number {
+  return runs.reduce((acc, r) => {
+    const v = r.stats?.[key];
+    return acc + (typeof v === 'number' ? v : 0);
+  }, 0);
+}
+
+function lastStatField(runs: CronRun[], key: string): unknown {
+  for (const r of runs) {
+    const v = r.stats?.[key];
+    if (v != null) return v;
+  }
+  return null;
+}
+
 export interface SyncHealthData {
   days: SyncDay[];
   lastSync: { status: string; finishedAt: string } | null;
   recentErrors: { date: string; errors: string[] }[];
+  runs: CronRun[];
+  todayChips: {
+    propertiesAdded: number;
+    propertiesUpdated: number;
+    propertiesDeleted: number;
+    photosAdded: number;
+  };
 }
 
 export async function getSyncHealth(): Promise<SyncHealthData> {
@@ -459,11 +507,11 @@ export async function getSyncHealth(): Promise<SyncHealthData> {
 
   const { data } = await supabaseAdmin
     .from('cron_sync_log')
-    .select('started_at, finished_at, status, properties_updated, errors, error_message')
+    .select('id, started_at, finished_at, status, properties_added, properties_updated, properties_deleted, photos_added, photos_removed, errors, error_message')
     .gte('started_at', sevenDaysAgo)
     .order('started_at', { ascending: true });
 
-  if (!data?.length) return { days: [], lastSync: null, recentErrors: [] };
+  if (!data?.length) return { days: [], lastSync: null, recentErrors: [], runs: [], todayChips: { propertiesAdded: 0, propertiesUpdated: 0, propertiesDeleted: 0, photosAdded: 0 } };
 
   const byDay = new Map<string, SyncDay>();
   const recentErrors: { date: string; errors: string[] }[] = [];
@@ -498,6 +546,26 @@ export async function getSyncHealth(): Promise<SyncHealthData> {
   }
 
   const lastRow = data[data.length - 1];
+  const today = todayART();
+
+  // Reverse so newest runs come first (query is ascending)
+  const runs: CronRun[] = data.map(row => ({
+    id: row.id,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at,
+    status: row.status,
+    propertiesAdded: row.properties_added ?? 0,
+    propertiesUpdated: row.properties_updated ?? 0,
+    propertiesDeleted: row.properties_deleted ?? 0,
+    photosAdded: row.photos_added ?? 0,
+    photosRemoved: row.photos_removed ?? 0,
+  })).reverse();
+
+  const todayRuns = runs.filter(r =>
+    new Date(r.startedAt).toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+    }) === today
+  );
 
   return {
     days: Array.from(byDay.values()),
@@ -506,6 +574,13 @@ export async function getSyncHealth(): Promise<SyncHealthData> {
       finishedAt: lastRow.finished_at ?? lastRow.started_at,
     },
     recentErrors: recentErrors.reverse(),
+    runs,
+    todayChips: {
+      propertiesAdded: sumRunField(todayRuns, 'propertiesAdded'),
+      propertiesUpdated: sumRunField(todayRuns, 'propertiesUpdated'),
+      propertiesDeleted: sumRunField(todayRuns, 'propertiesDeleted'),
+      photosAdded: sumRunField(todayRuns, 'photosAdded'),
+    },
   };
 }
 
@@ -521,6 +596,8 @@ export interface CronJobHealth {
   days: CronJobDay[];
   lastRun: { status: string; finishedAt: string; stats: Record<string, unknown> | null } | null;
   recentErrors: { date: string; message: string }[];
+  runs: CronRun[];
+  todayChips: Record<string, unknown>;
 }
 
 export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> {
@@ -528,12 +605,12 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
 
   const { data } = await supabaseAdmin
     .from('cron_job_log')
-    .select('started_at, finished_at, status, stats, error_message')
+    .select('id, started_at, finished_at, status, stats, error_message')
     .eq('job_name', jobName)
     .gte('started_at', sevenDaysAgo)
     .order('started_at', { ascending: true });
 
-  if (!data?.length) return { days: [], lastRun: null, recentErrors: [] };
+  if (!data?.length) return { days: [], lastRun: null, recentErrors: [], runs: [], todayChips: {} };
 
   const byDay = new Map<string, CronJobDay>();
   const recentErrors: { date: string; message: string }[] = [];
@@ -569,6 +646,50 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
   }
 
   const lastRow = data[data.length - 1];
+  const today = todayART();
+
+  // Reverse so newest runs come first (query is ascending)
+  const runs: CronRun[] = data.map(row => ({
+    id: row.id,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at,
+    status: row.status,
+    stats: row.stats as Record<string, unknown> | null,
+  })).reverse();
+
+  const todayRuns = runs.filter(r =>
+    new Date(r.startedAt).toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+    }) === today
+  );
+
+  // Per-job chip computation
+  let todayChips: Record<string, unknown> = {};
+  if (jobName === 'visitas') {
+    todayChips = {
+      reminder24h: sumStatField(todayRuns, 'reminder24h'),
+      reminder2h: sumStatField(todayRuns, 'reminder2h'),
+      postvisit: sumStatField(todayRuns, 'postvisit'),
+    };
+  } else if (jobName === 'exchange-rate') {
+    todayChips = {
+      rate: lastStatField(todayRuns, 'rate'),
+      rebuilt: lastStatField(todayRuns, 'rebuilt'),
+    };
+  } else if (jobName === 'mailing-novedades') {
+    todayChips = {
+      emailsSent: sumStatField(todayRuns, 'emailsSent'),
+      usersChecked: lastStatField(todayRuns, 'usersChecked'),
+      skipped: sumStatField(todayRuns, 'skipped'),
+    };
+  } else if (jobName === 'ipc') {
+    todayChips = {
+      latestMonth: lastStatField(todayRuns, 'latestMonth'),
+      latestRate: lastStatField(todayRuns, 'latestRate'),
+      monthsUpserted: sumStatField(todayRuns, 'monthsUpserted'),
+    };
+  }
+
   return {
     days: Array.from(byDay.values()),
     lastRun: {
@@ -577,6 +698,8 @@ export async function getCronJobHealth(jobName: string): Promise<CronJobHealth> 
       stats: lastRow.stats as Record<string, unknown> | null,
     },
     recentErrors: recentErrors.reverse(),
+    runs,
+    todayChips,
   };
 }
 

@@ -20,6 +20,7 @@ export interface IncrementalSyncTarget {
 }
 
 export interface IncrementalSyncStats {
+  propertiesAdded: number;
   propertiesUpdated: number;
   propertiesDeleted: number;
   photosAdded: number;
@@ -159,6 +160,7 @@ export async function syncTargetIncremental(
   cache?: SyncCache,
 ): Promise<IncrementalSyncStats> {
   const stats: IncrementalSyncStats = {
+    propertiesAdded: 0,
     propertiesUpdated: 0,
     propertiesDeleted: 0,
     photosAdded: 0,
@@ -215,7 +217,11 @@ export async function syncTargetIncremental(
               const photoDiff = await diffAndSyncPhotos(result.propertyId, tkkProp.photos);
               stats.photosAdded += photoDiff.added;
               stats.photosRemoved += photoDiff.removed;
-              stats.propertiesUpdated++;
+              if (result.isNew) {
+                stats.propertiesAdded++;
+              } else {
+                stats.propertiesUpdated++;
+              }
               if (photoDiff.added > 0) needsPhotoMigration = true;
             }
           } else {
@@ -334,7 +340,7 @@ async function syncSingleProperty(
   companyId: number | null,
   tkkProp: TokkoProperty,
   cache?: SyncCache,
-): Promise<{ propertyId: number } | null> {
+): Promise<{ propertyId: number; isNew: boolean } | null> {
 
   // ── Step 0: Resolve location FIRST (skip early if unknown) ──
   let locationId: number | null = null;
@@ -510,6 +516,14 @@ async function syncSingleProperty(
     updated_at: tkkProp.updated_at || null,
   };
 
+  // Check existence before upsert to distinguish new inserts from updates
+  const { data: existingProp } = await supabaseAdmin
+    .from('properties')
+    .select('id')
+    .eq('tokko_id', tkkProp.id)
+    .eq('user_id', userId)
+    .maybeSingle();
+
   const { data: upserted, error: upsertError } = await supabaseAdmin
     .from('properties')
     .upsert(propertyRow, { onConflict: 'tokko_id,user_id' })
@@ -536,7 +550,7 @@ async function syncSingleProperty(
       .upsert(tagLinks, { onConflict: 'property_id,tag_id', ignoreDuplicates: true });
   }
 
-  return { propertyId };
+  return { propertyId, isNew: !existingProp };
 }
 
 /**

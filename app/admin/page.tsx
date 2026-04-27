@@ -21,7 +21,8 @@ import { LeadsChart } from "@/components/admin/charts/LeadsChart";
 import { PlanDonutToggle } from "@/components/admin/charts/PlanDonutToggle";
 import { SyncHealthChart } from "@/components/admin/charts/SyncHealthChart";
 import { CronJobChart } from "@/components/admin/charts/CronJobChart";
-import { CronErrors } from "@/components/admin/CronErrors";
+import { CronStatChips, type StatChip } from "@/components/admin/CronStatChips";
+import { CronRunLog, type CronRunColumn } from "@/components/admin/CronRunLog";
 import TopPropertiesTable from "@/components/admin/TopPropertiesTable";
 import TopUsersTable from "@/components/admin/TopUsersTable";
 import {
@@ -44,6 +45,22 @@ function parsePeriod(raw: string | undefined): number | null {
   if (!raw || raw === "all") return null;
   const n = parseInt(raw, 10);
   return isNaN(n) ? 30 : n;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
 }
 
 export default async function AdminPage({
@@ -357,8 +374,24 @@ export default async function AdminPage({
               )}
             </CardHeader>
             <CardContent>
+              <CronStatChips chips={[
+                { label: `+${sync.todayChips.propertiesAdded} nuevas hoy`, color: "green" },
+                { label: `↺ ${sync.todayChips.propertiesUpdated} actualizadas hoy`, color: "blue" },
+                { label: `✕ ${sync.todayChips.propertiesDeleted} eliminadas hoy`, color: "red" },
+                { label: `+${sync.todayChips.photosAdded} fotos hoy`, color: "purple" },
+              ] satisfies StatChip[]} />
               <SyncHealthChart data={sync.days} />
-              <CronErrors errors={sync.recentErrors} />
+              <CronRunLog
+                runs={sync.runs}
+                columns={[
+                  { header: "Hora",   getValue: (r) => formatTime(r.startedAt),   color: "text-sky-400" },
+                  { header: "Nuevas", getValue: (r) => r.propertiesAdded,          color: "text-green-400" },
+                  { header: "Act.",   getValue: (r) => r.propertiesUpdated,         color: "text-sky-300" },
+                  { header: "Elim.",  getValue: (r) => r.propertiesDeleted,         color: "text-red-400" },
+                  { header: "Fotos+", getValue: (r) => r.photosAdded,              color: "text-purple-400" },
+                  { header: "Fotos−", getValue: (r) => r.photosRemoved,            color: "text-amber-400" },
+                ] satisfies CronRunColumn[]}
+              />
             </CardContent>
           </Card>
 
@@ -393,8 +426,21 @@ export default async function AdminPage({
               )}
             </CardHeader>
             <CardContent>
+              <CronStatChips chips={[
+                { label: `🔔 ${Number(visitasCron.todayChips.reminder24h ?? 0)} recordatorios 24h hoy`, color: "blue" },
+                { label: `⏰ ${Number(visitasCron.todayChips.reminder2h ?? 0)} recordatorios 2h hoy`, color: "purple" },
+                { label: `✅ ${Number(visitasCron.todayChips.postvisit ?? 0)} post-visita hoy`, color: "green" },
+              ] satisfies StatChip[]} />
               <CronJobChart data={visitasCron.days} />
-              <CronErrors errors={visitasCron.recentErrors} />
+              <CronRunLog
+                runs={visitasCron.runs}
+                columns={[
+                  { header: "Hora",        getValue: (r) => formatTime(r.startedAt),                    color: "text-sky-400" },
+                  { header: "24h",         getValue: (r) => r.stats?.reminder24h as number | undefined, color: "text-sky-300" },
+                  { header: "2h",          getValue: (r) => r.stats?.reminder2h as number | undefined,  color: "text-purple-300" },
+                  { header: "Post-visita", getValue: (r) => r.stats?.postvisit as number | undefined,   color: "text-green-400" },
+                ] satisfies CronRunColumn[]}
+              />
             </CardContent>
           </Card>
 
@@ -439,8 +485,23 @@ export default async function AdminPage({
               )}
             </CardHeader>
             <CardContent>
+              <CronStatChips chips={[
+                ...(exchangeRateCron.todayChips.rate != null
+                  ? [{ label: `$ ${Number(exchangeRateCron.todayChips.rate).toLocaleString("es-AR")} ARS/USD hoy`, color: "green" as const }]
+                  : []),
+                ...(exchangeRateCron.todayChips.rebuilt != null
+                  ? [{ label: `↺ ${Number(exchangeRateCron.todayChips.rebuilt)} recalculados`, color: "blue" as const }]
+                  : []),
+              ]} />
               <CronJobChart data={exchangeRateCron.days} />
-              <CronErrors errors={exchangeRateCron.recentErrors} />
+              <CronRunLog
+                runs={exchangeRateCron.runs}
+                columns={[
+                  { header: "Fecha",        getValue: (r) => formatDate(r.startedAt) },
+                  { header: "ARS/USD",      getValue: (r) => r.stats?.rate != null ? Number(r.stats.rate).toLocaleString("es-AR") : null, color: "text-green-400" },
+                  { header: "Recalculados", getValue: (r) => r.stats?.rebuilt as number | undefined, color: "text-sky-300" },
+                ] satisfies CronRunColumn[]}
+              />
             </CardContent>
           </Card>
 
@@ -482,8 +543,24 @@ export default async function AdminPage({
               )}
             </CardHeader>
             <CardContent>
+              <CronStatChips chips={[
+                { label: `✉ ${Number(mailingCron.todayChips.emailsSent ?? 0)} emails hoy`, color: "green" },
+                { label: `👥 ${Number(mailingCron.todayChips.usersChecked ?? 0)} revisados`, color: "blue" },
+                ...(Number(mailingCron.todayChips.skipped ?? 0) > 0
+                  ? [{ label: `— ${Number(mailingCron.todayChips.skipped)} saltados`, color: "gray" as const }]
+                  : []),
+              ] satisfies StatChip[]} />
               <CronJobChart data={mailingCron.days} />
-              <CronErrors errors={mailingCron.recentErrors} />
+              <CronRunLog
+                runs={mailingCron.runs}
+                columns={[
+                  { header: "Hora",      getValue: (r) => formatTime(r.startedAt),                      color: "text-sky-400" },
+                  { header: "Emails",    getValue: (r) => r.stats?.emailsSent as number | undefined,     color: "text-green-400" },
+                  { header: "Revisados", getValue: (r) => r.stats?.usersChecked as number | undefined,   color: "text-sky-300" },
+                  { header: "Saltados",  getValue: (r) => r.stats?.skipped as number | undefined },
+                  { header: "Chain",     getValue: (r) => r.stats?.chain as number | undefined,          color: "text-amber-400" },
+                ] satisfies CronRunColumn[]}
+              />
             </CardContent>
           </Card>
 
@@ -526,8 +603,23 @@ export default async function AdminPage({
               )}
             </CardHeader>
             <CardContent>
+              <CronStatChips chips={[
+                ...(ipcCron.todayChips.latestMonth != null
+                  ? [{ label: `📈 ${String(ipcCron.todayChips.latestMonth)}: ${Number(ipcCron.todayChips.latestRate).toFixed(1)}% IPC`, color: "green" as const }]
+                  : []),
+                ...(Number(ipcCron.todayChips.monthsUpserted ?? 0) > 0
+                  ? [{ label: `${Number(ipcCron.todayChips.monthsUpserted)} meses actualizados`, color: "blue" as const }]
+                  : []),
+              ]} />
               <CronJobChart data={ipcCron.days} />
-              <CronErrors errors={ipcCron.recentErrors} />
+              <CronRunLog
+                runs={ipcCron.runs}
+                columns={[
+                  { header: "Fecha",      getValue: (r) => formatDate(r.startedAt) },
+                  { header: "Último mes", getValue: (r) => r.stats?.latestMonth as string | undefined,  color: "text-sky-300" },
+                  { header: "IPC %",      getValue: (r) => r.stats?.latestRate != null ? `${Number(r.stats.latestRate).toFixed(1)}%` : null, color: "text-green-400" },
+                ] satisfies CronRunColumn[]}
+              />
             </CardContent>
           </Card>
         </div>

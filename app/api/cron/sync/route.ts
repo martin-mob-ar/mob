@@ -126,6 +126,7 @@ export async function GET(request: NextRequest) {
 
   const totals = {
     targetsProcessed: 0,
+    propertiesAdded: 0,
     propertiesUpdated: 0,
     propertiesDeleted: 0,
     photosAdded: 0,
@@ -143,6 +144,7 @@ export async function GET(request: NextRequest) {
     try {
       console.log(`[Cron Sync] Processing target: ${target.name} (company: ${target.companyId ?? 'standalone'})`);
       const stats = await syncTargetIncremental(target, timeGuard, cache);
+      totals.propertiesAdded += stats.propertiesAdded;
       totals.propertiesUpdated += stats.propertiesUpdated;
       totals.propertiesDeleted += stats.propertiesDeleted;
       totals.photosAdded += stats.photosAdded;
@@ -167,6 +169,7 @@ export async function GET(request: NextRequest) {
         .from('cron_sync_log')
         .update({
           companies_processed: totals.targetsProcessed,
+          properties_added: totals.propertiesAdded,
           properties_updated: totals.propertiesUpdated,
           properties_deleted: totals.propertiesDeleted,
           photos_added: totals.photosAdded,
@@ -200,6 +203,7 @@ export async function GET(request: NextRequest) {
       .from('cron_sync_log')
       .update({
         companies_processed: totals.targetsProcessed,
+        properties_added: totals.propertiesAdded,
         properties_updated: totals.propertiesUpdated,
         properties_deleted: totals.propertiesDeleted,
         photos_added: totals.photosAdded,
@@ -247,6 +251,7 @@ export async function GET(request: NextRequest) {
       finished_at: new Date().toISOString(),
       chain_index: chainIndex,
       companies_processed: totals.targetsProcessed,
+      properties_added: totals.propertiesAdded,
       properties_updated: totals.propertiesUpdated,
       properties_deleted: totals.propertiesDeleted,
       photos_added: totals.photosAdded,
