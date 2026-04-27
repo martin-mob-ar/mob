@@ -22,13 +22,19 @@ export default async function PropertyDetailAdminPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ period?: string; eventsPage?: string }>;
+  searchParams: Promise<{ period?: string; eventsPage?: string; eventsType?: string; eventsAttribution?: string; eventsUserType?: string }>;
 }) {
   const { id: rawId } = await params;
   const propertyId = parseInt(rawId, 10);
   if (isNaN(propertyId)) notFound();
 
-  const { period: rawPeriod, eventsPage: rawEventsPage } = await searchParams;
+  const { period: rawPeriod, eventsPage: rawEventsPage, eventsType, eventsAttribution, eventsUserType } = await searchParams;
+
+  const eventsFilters = {
+    eventType: eventsType ?? "all",
+    attribution: eventsAttribution ?? "all",
+    userType: (eventsUserType === "auth" || eventsUserType === "anon") ? eventsUserType : "all",
+  };
   const periodDays = parsePeriod(rawPeriod);
   const cutoff = periodDays
     ? new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString()
@@ -44,7 +50,7 @@ export default async function PropertyDetailAdminPage({
       .eq("property_id", propertyId)
       .maybeSingle(),
     getPropertyEventStats(propertyId, cutoff),
-    getPropertyRecentEvents(propertyId, eventsPage, 50),
+    getPropertyRecentEvents(propertyId, eventsPage, 50, eventsFilters),
     getPropertyAttributionBreakdown(propertyId, cutoff),
   ]);
 
@@ -227,6 +233,9 @@ export default async function PropertyDetailAdminPage({
         total={eventsResult.total}
         currentPage={eventsPage}
         pageSize={50}
+        currentEventsType={eventsFilters.eventType}
+        currentAttribution={eventsFilters.attribution}
+        currentEventsUserType={eventsFilters.userType}
       />
     </div>
   );

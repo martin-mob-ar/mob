@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminSelect } from "@/components/admin/AdminSelect";
 import type { PropertyRecentEvent } from "@/lib/admin/queries";
 
 const EVENT_LABELS: Record<string, string> = {
@@ -22,6 +23,9 @@ interface PropertyEventsTableProps {
   total: number;
   currentPage: number;
   pageSize: number;
+  currentEventsType: string;
+  currentAttribution: string;
+  currentEventsUserType: string;
 }
 
 function getDisplayName(event: PropertyRecentEvent): string {
@@ -33,6 +37,9 @@ export function PropertyEventsTable({
   total,
   currentPage,
   pageSize,
+  currentEventsType,
+  currentAttribution,
+  currentEventsUserType,
 }: PropertyEventsTableProps) {
   const router = useRouter();
   const params = useSearchParams();
@@ -81,6 +88,17 @@ export function PropertyEventsTable({
     router.replace(`?${sp.toString()}`, { scroll: false });
   }
 
+  function applyFilter(param: string, value: string) {
+    const sp = new URLSearchParams(params.toString());
+    if (value && value !== "all") {
+      sp.set(param, value);
+    } else {
+      sp.delete(param);
+    }
+    sp.delete("eventsPage");
+    router.replace(`?${sp.toString()}`, { scroll: false });
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -94,6 +112,40 @@ export function PropertyEventsTable({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Filter bar */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <AdminSelect
+            value={currentEventsType}
+            onChange={(v) => applyFilter("eventsType", v)}
+            options={[
+              { value: "all", label: "Tipo: Todos" },
+              { value: "property_view", label: "Vista" },
+              { value: "agendar_visita_submit_started", label: "Envío iniciado" },
+              { value: "agendar_visita_verification_requested", label: "Verificación" },
+              { value: "agendar_visita_submit", label: "Visita creada" },
+            ]}
+          />
+          <AdminSelect
+            value={currentAttribution}
+            onChange={(v) => applyFilter("eventsAttribution", v)}
+            options={[
+              { value: "all", label: "Atribución: Todas" },
+              { value: "direct_session", label: "Sesión directa" },
+              { value: "recovered_via_user", label: "Recuperado" },
+              { value: "unattributed", label: "No atribuido" },
+            ]}
+          />
+          <AdminSelect
+            value={currentEventsUserType}
+            onChange={(v) => applyFilter("eventsUserType", v)}
+            options={[
+              { value: "all", label: "Usuario: Todos" },
+              { value: "auth", label: "Autenticados" },
+              { value: "anon", label: "Anónimos" },
+            ]}
+          />
+        </div>
+
         {events.length === 0 && total === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             Sin eventos registrados.
