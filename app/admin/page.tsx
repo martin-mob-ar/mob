@@ -51,9 +51,10 @@ function parsePeriod(raw: string | undefined): number | null {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; usersPage?: string; usersSearch?: string }>;
+  searchParams: Promise<{ period?: string; usersPage?: string; usersSearch?: string; usersType?: string }>;
 }) {
-  const { period: rawPeriod, usersPage: rawUsersPage, usersSearch } = await searchParams;
+  const { period: rawPeriod, usersPage: rawUsersPage, usersSearch, usersType: rawUsersType } = await searchParams;
+  const usersType = (rawUsersType === "auth" || rawUsersType === "anon") ? rawUsersType : "all";
   const periodDays = parsePeriod(rawPeriod);
   const usersPage = Math.max(1, parseInt(rawUsersPage ?? "1", 10) || 1);
 
@@ -96,7 +97,7 @@ export default async function AdminPage({
         : '2020-01-01T00:00:00Z',
       20,
     ),
-    getTopUsersByEvents(periodDays, usersPage, 20, usersSearch),
+    getTopUsersByEvents(periodDays, usersPage, 20, usersSearch, usersType),
   ]);
 
   const periodLabel = periodDays ? `últimos ${periodDays} días` : "todo el tiempo";
@@ -152,7 +153,7 @@ export default async function AdminPage({
           icon={ShieldCheck}
           label="Verificaciones"
           value={kpis.verifTotalUsers}
-          subtitle={`Hoggax: ${kpis.verifHoggaxUsers} · Truora: ${kpis.verifTruoraUsers}`}
+          subtitle={`Hoggax: ${kpis.verifHoggaxApproved}/${kpis.verifHoggaxTotal} · Truora: ${kpis.verifTruoraVerified}/${kpis.verifTruoraTotal}`}
         />
       </div>
 
@@ -632,6 +633,7 @@ export default async function AdminPage({
               currentPage={usersPage}
               pageSize={20}
               currentSearch={usersSearch ?? ""}
+            currentUsersType={usersType}
             />
           </CardContent>
         </Card>

@@ -7,6 +7,7 @@ import { ChevronRight, User, Globe, Search, X } from "lucide-react";
 import { AnimateHeight } from "@/components/ui/animate-height";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AdminSelect } from "@/components/admin/AdminSelect";
 import type { UserEventRow, UserPropertyBreakdownRow } from "@/lib/admin/queries";
 
 interface TopUsersTableProps {
@@ -16,6 +17,7 @@ interface TopUsersTableProps {
   currentPage: number;
   pageSize: number;
   currentSearch: string;
+  currentUsersType: "all" | "auth" | "anon";
 }
 
 export default function TopUsersTable({
@@ -25,6 +27,7 @@ export default function TopUsersTable({
   currentPage,
   pageSize,
   currentSearch,
+  currentUsersType,
 }: TopUsersTableProps) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [searchValue, setSearchValue] = useState(currentSearch);
@@ -60,6 +63,17 @@ export default function TopUsersTable({
     applySearch("");
   }
 
+  function applyUsersType(value: string) {
+    const sp = new URLSearchParams(params.toString());
+    if (value && value !== "all") {
+      sp.set("usersType", value);
+    } else {
+      sp.delete("usersType");
+    }
+    sp.delete("usersPage");
+    router.replace(`?${sp.toString()}`, { scroll: false });
+  }
+
   const totalPages = Math.max(1, Math.ceil(totalActors / pageSize));
 
   function toggleExpand(key: string) {
@@ -90,24 +104,35 @@ export default function TopUsersTable({
 
   return (
     <div>
-      {/* Search input */}
-      <div className="relative mb-3">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Buscar por nombre o email..."
-          value={searchValue}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-8 pr-8 h-8 text-sm"
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Buscar por nombre o email..."
+            value={searchValue}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-8 pr-8 h-8 text-sm"
+          />
+          {searchValue && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <AdminSelect
+          value={currentUsersType}
+          onChange={applyUsersType}
+          options={[
+            { value: "all", label: "Todos" },
+            { value: "auth", label: "Autenticados" },
+            { value: "anon", label: "Anónimos" },
+          ]}
         />
-        {searchValue && (
-          <button
-            onClick={clearSearch}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
 
       {data.length === 0 && currentSearch ? (
@@ -156,14 +181,43 @@ export default function TopUsersTable({
                       />
                     </td>
                     <td className="py-2 pr-3">
-                      <span className="flex items-center gap-1.5 min-w-0">
+                      <div className="flex items-start gap-1.5 min-w-0">
                         {row.isAuthenticated ? (
-                          <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
                         ) : (
-                          <Globe className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          <Globe className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
                         )}
-                        <span className="truncate">{row.displayName}</span>
-                      </span>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="truncate">{row.displayName}</span>
+                          {(row.email || row.phone) && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {row.email && (
+                                <span className="text-[10px] text-muted-foreground truncate max-w-[160px]">
+                                  {row.email}
+                                </span>
+                              )}
+                              {row.phone && (() => {
+                                const waHref = row.phone_country_code
+                                  ? `https://wa.me/${row.phone_country_code.replace("+", "")}${row.phone}`
+                                  : `https://wa.me/${row.phone}`;
+                                return (
+                                  <a
+                                    href={waHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] text-green-600 hover:text-green-700 hover:underline whitespace-nowrap"
+                                  >
+                                    {row.phone_country_code
+                                      ? `+${row.phone_country_code.replace("+", "")} ${row.phone}`
+                                      : row.phone}
+                                  </a>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="py-2 px-2 text-right tabular-nums">{fmt(row.property_view)}</td>
                     <td className="py-2 px-2 text-right tabular-nums">{fmt(row.agendar_visita_submit_started)}</td>
