@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
@@ -62,7 +62,6 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.35.2",
     "html-to-image": "^1.11.13",
-    "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.462.0",
@@ -94,6 +93,7 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
     "caniuse-lite": "^1.0.30001774",
+    "cross-env": "^10.1.0",
     "eslint": "^9.32.0",
     "eslint-config-next": "^16.1.6",
     "eslint-plugin-react-hooks": "^5.2.0",

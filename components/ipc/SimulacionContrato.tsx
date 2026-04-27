@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,14 @@ export default function SimulacionContrato() {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [allIPCData, setAllIPCData] = useState<IPCDataPoint[]>([]);
   const [allIPCLoaded, setAllIPCLoaded] = useState(false);
+
+  // Last day of the latest month we have IPC data for — used to cap the date picker.
+  // e.g. if last available is "2026-03", maxSelectableDate = March 31, 2026.
+  const maxSelectableDate = useMemo(() => {
+    if (!allIPCData.length) return new Date();
+    const [y, m] = allIPCData[allIPCData.length - 1].month.split("-").map(Number);
+    return new Date(y, m, 0); // day 0 of month m+1 (0-indexed) = last day of month m
+  }, [allIPCData]);
 
   // Load all IPC data on mount for the reference table
   useEffect(() => {
@@ -138,7 +146,7 @@ export default function SimulacionContrato() {
                   selected={startDate}
                   onSelect={(d) => setStartDate(d)}
                   minDate={MIN_DATE}
-                  maxDate={new Date()}
+                  maxDate={maxSelectableDate}
                 />
               </PopoverContent>
             </Popover>

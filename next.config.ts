@@ -29,6 +29,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@google-cloud/storage'],
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -61,14 +62,18 @@ const nextConfig: NextConfig = {
 
 const isProduction = process.env.VERCEL_ENV === "production";
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  widenClientFileUpload: isProduction,
-  sourcemaps: {
-    disable: !isProduction,
-  },
-  tunnelRoute: "/monitoring",
-  silent: !process.env.CI,
-});
+// Skip Sentry instrumentation in local dev and on preview — it adds build overhead
+// and causes memory pressure. Sentry only runs on production Vercel builds.
+export default (isDev || !isProduction)
+  ? nextConfig
+  : withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      widenClientFileUpload: isProduction,
+      sourcemaps: {
+        disable: !isProduction,
+      },
+      tunnelRoute: "/monitoring",
+      silent: !process.env.CI,
+    });
