@@ -44,8 +44,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Apply full security headers to all routes except Sanity Studio
+        source: "/((?!studio).*)",
         headers: securityHeaders,
+      },
+      {
+        // Sanity Studio handles its own security — only apply non-CSP headers
+        source: "/studio(.*)",
+        headers: securityHeaders.filter(
+          (h) => h.key !== "Content-Security-Policy"
+        ),
       },
     ];
   },
