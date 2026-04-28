@@ -107,9 +107,10 @@ interface SubirPropiedadProps {
   existingDrafts?: DraftProperty[];
   fromPropietarios?: boolean;
   resumeAfterAuth?: boolean;
+  googleAuthError?: string | null;
 }
 
-const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false }: SubirPropiedadProps) => {
+const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], fromPropietarios = false, resumeAfterAuth = false, googleAuthError = null }: SubirPropiedadProps) => {
   const router = useRouter();
   const pathname = "/subir-propiedad";
   const { isAuthenticated, isLoading: authLoading, user: authUser, login, register, authError, clearError, refreshUser } = useAuth();
@@ -506,6 +507,32 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
       maxStepReachedRef.current = 3;
     } catch { /* ignore parse errors */ }
     localStorage.removeItem(SUBIR_DRAFT_KEY);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle auth error after Google OAuth redirect failed
+  useEffect(() => {
+    if (!googleAuthError) return;
+    // Restore saved form data so the user doesn't lose progress
+    const raw = localStorage.getItem(SUBIR_DRAFT_KEY);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        if (data.typeId) setTypeId(data.typeId);
+        if (data.locationId) setLocationId(data.locationId);
+        if (data.selectedLocation) setSelectedLocation(data.selectedLocation);
+        if (data.address) { setAddress(data.address); setPlaceSelected(!!data.placeSelected); }
+        if (data.geoLat) setGeoLat(data.geoLat);
+        if (data.geoLong) setGeoLong(data.geoLong);
+        if (data.piso) setPiso(data.piso);
+        if (data.depto) setDepto(data.depto);
+      } catch { /* ignore */ }
+    }
+    // Show the inline auth form at step 2 so they can retry
+    setCurrentStep(2);
+    maxStepReachedRef.current = 2;
+    setShowInlineAuth(true);
+    toast.error("No se pudo iniciar sesión con Google. Intentá de nuevo.");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

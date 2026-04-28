@@ -17,6 +17,7 @@ interface PageProps {
     editId?: string;
     from?: string;
     resume?: string;
+    auth_error?: string;
   }>;
 }
 
@@ -25,6 +26,7 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const fromPropietarios = params?.from === "propietarios";
   const resumeAfterAuth = params?.resume === "true";
+  const authError = params?.auth_error || null;
 
   // Unregistered users see intro + step 1 only (auth gate enforced client-side)
   if (!user) {
@@ -34,6 +36,7 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
         userId={null}
         fromPropietarios={fromPropietarios}
         resumeAfterAuth={false}
+        googleAuthError={authError}
       />
     );
   }
@@ -114,6 +117,7 @@ export default async function SubirPropiedadPage({ searchParams }: PageProps) {
       existingDrafts={existingDrafts || []}
       fromPropietarios={fromPropietarios}
       resumeAfterAuth={resumeAfterAuth}
+      googleAuthError={authError}
     />
   );
 }

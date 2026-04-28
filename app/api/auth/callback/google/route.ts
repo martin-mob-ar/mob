@@ -5,8 +5,12 @@ import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 import { sanitizeRedirect } from "@/lib/utils/sanitize-redirect";
 
 function errorRedirect(origin: string, next: string, reason: string) {
-  const base = `${origin}/login?error=auth&redirect=${encodeURIComponent(next)}`;
-  return NextResponse.redirect(`${base}&debug=${encodeURIComponent(reason)}`);
+  // Redirect directly to the original destination with an auth_error flag
+  // instead of bouncing through /login (which loses wizard state).
+  const separator = next.includes("?") ? "&" : "?";
+  return NextResponse.redirect(
+    `${origin}${next}${separator}auth_error=${encodeURIComponent(reason)}`
+  );
 }
 
 export async function GET(request: NextRequest) {
