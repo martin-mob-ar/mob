@@ -1142,20 +1142,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
           return;
         }
 
-        // Fire Truora outbound for identity verification (fire-and-forget)
-        // No propertyId — use the generic verification flow (not visit request)
-        if (authUser?.phone && !authUser?.isVerified) {
-          fetch("/api/truora/outbound", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              phone: authUser.phone,
-              country_code: authUser.phoneCountryCode || "+54",
-              name: authUser.name || "",
-              accountType: authUser.accountType || 2,
-            }),
-          }).catch(() => {});
-        }
+        // Truora verification WhatsApp is now sent server-side by /api/properties/create
 
         // Use slug directly to avoid permanentRedirect dropping ?verification=true
         const destination = result.slug ?? result.id;

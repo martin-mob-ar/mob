@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Loader2, MessageCircle, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +33,13 @@ const VerificationSuccessModal = ({ open, onOpenChange }: VerificationSuccessMod
   const [editCountryCode, setEditCountryCode] = useState(user?.phoneCountryCode || "+54");
   const [isSending, setIsSending] = useState(false);
   const [resent, setResent] = useState(false);
+
+  // If the auth context doesn't have the phone (stale state), refresh from DB
+  useEffect(() => {
+    if (open && !user?.phone) {
+      refreshUser();
+    }
+  }, [open, user?.phone, refreshUser]);
 
   const formattedPhone = user?.phone
     ? `${user.phoneCountryCode || "+54"} ${user.phone}`
