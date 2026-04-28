@@ -9,27 +9,22 @@ export interface FoundUser {
 }
 
 /**
- * Look up a user by phone number across multiple formats.
- * Handles: digits-only, with country code, and Argentina WhatsApp mobile prefix (9).
+ * Look up a user by phone number using a database function that handles
+ * multiple formats: digits-only, with country code, and Argentina mobile prefix (9).
  */
 export async function findUserByPhone(phone: string): Promise<FoundUser | null> {
   const cleanPhone = phone.replace(/[^0-9]/g, '');
 
-  const { data: users } = await supabaseAdmin
-    .from('users')
-    .select('id, name, email, telefono, telefono_country_code')
-    .not('telefono', 'is', null);
-
-  if (!users) return null;
-
-  const match = users.find((u) => {
-    const codeDigits = (u.telefono_country_code || '').replace(/[^0-9]/g, '');
-    const userPhone = u.telefono || '';
-    const full = codeDigits + userPhone;
-    // Also try with '9' inserted after country code (Argentina WhatsApp mobile prefix)
-    const fullWithMobile9 = codeDigits + '9' + userPhone;
-    return full === cleanPhone || fullWithMobile9 === cleanPhone || userPhone === cleanPhone;
+  const { data, error } = await supabaseAdmin.rpc('find_user_by_phone', {
+    p_phone: cleanPhone,
   });
 
-  return match ?? null;
+  if (error) {
+    console.error('[findUserByPhone] RPC error:', error);
+    return null;
+  }
+
+  if (!data || data.length === 0) return null;
+
+  return data[0] as FoundUser;
 }

@@ -41,8 +41,28 @@ export async function POST(request: Request) {
 
     const payload = parsed.data;
 
-    // --- Look up user by phone ---
-    const user = await findUserByPhone(payload.phone);
+    // --- Run user lookup and Hoggax call in parallel ---
+    const [user, hoggaxResult] = await Promise.all([
+      findUserByPhone(payload.phone),
+      qualify(payload)
+        .then(({ response, rawResponse }) => ({
+          approved: response.approved ?? null,
+          maxRent: typeof response.max_rent_plus_expenses === 'number'
+            ? response.max_rent_plus_expenses
+            : null,
+          rawResponse: rawResponse as Record<string, unknown>,
+        }))
+        .catch((hoggaxError) => {
+          console.error('[TruoraWebhook] Hoggax API call failed:', hoggaxError);
+          return {
+            approved: null as boolean | null,
+            maxRent: null as number | null,
+            rawResponse: {
+              error: hoggaxError instanceof Error ? hoggaxError.message : 'Unknown error',
+            } as Record<string, unknown>,
+          };
+        }),
+    ]);
 
     if (!user) {
       return NextResponse.json(
@@ -52,26 +72,9 @@ export async function POST(request: Request) {
     }
 
     const userId = user.id;
-
-    // --- Call Hoggax Calificación API ---
-    let hoggaxApproved: boolean | null = null;
-    let hoggaxMaxRent: number | null = null;
-    let hoggaxRawResponse: Record<string, unknown> | null = null;
-
-    try {
-      const { response, rawResponse } = await qualify(payload);
-      hoggaxRawResponse = rawResponse;
-      hoggaxApproved = response.approved ?? null;
-      hoggaxMaxRent = typeof response.max_rent_plus_expenses === 'number'
-        ? response.max_rent_plus_expenses
-        : null;
-    } catch (hoggaxError) {
-      console.error('[TruoraWebhook] Hoggax API call failed:', hoggaxError);
-      // Store the error but don't fail the whole request
-      hoggaxRawResponse = {
-        error: hoggaxError instanceof Error ? hoggaxError.message : 'Unknown error',
-      };
-    }
+    const hoggaxApproved = hoggaxResult.approved;
+    const hoggaxMaxRent = hoggaxResult.maxRent;
+    const hoggaxRawResponse = hoggaxResult.rawResponse;
 
     // --- Extract reason_code and message from raw response ---
     const reasonCode = hoggaxRawResponse && 'body' in hoggaxRawResponse

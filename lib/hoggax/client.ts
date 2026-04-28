@@ -117,6 +117,7 @@ export async function qualify(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(request),
+    signal: AbortSignal.timeout(10_000), // 10s timeout
   });
 
   const responseBody = await res.json();
