@@ -4,6 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin, getOrCreateUserFromAuth } from "@/lib/supabase/server";
 import { sanitizeRedirect } from "@/lib/utils/sanitize-redirect";
 
+function errorRedirect(origin: string, next: string, reason: string) {
+  const base = `${origin}/login?error=auth&redirect=${encodeURIComponent(next)}`;
+  return NextResponse.redirect(`${base}&debug=${encodeURIComponent(reason)}`);
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -12,18 +17,26 @@ export async function GET(request: NextRequest) {
 
   // Parse redirect destination from state (sanitized to prevent open redirects)
   const next = sanitizeRedirect(state ? decodeURIComponent(state) : "/");
-  const errorUrl = `${origin}/login?error=auth&redirect=${encodeURIComponent(next)}`;
 
   if (error) {
-    return NextResponse.redirect(errorUrl);
+    return errorRedirect(origin, next, `google_denied:${error}`);
   }
 
   if (!code) {
-    return NextResponse.redirect(errorUrl);
+    return errorRedirect(origin, next, "no_code");
   }
 
   // Accumulate cookies from Supabase sign-in to apply on the final response
   const pendingCookies: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
+
+  // Fall back to NEXT_PUBLIC_ variant (always available server-side) in case
+  // the server-only GOOGLE_CLIENT_ID was not configured in this environment.
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    return errorRedirect(origin, next, `missing_env:client_id=${!!clientId},secret=${!!clientSecret}`);
+  }
 
   try {
     // Exchange Google auth code for tokens
@@ -32,8 +45,8 @@ export async function GET(request: NextRequest) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: `${origin}/api/auth/callback/google`,
         grant_type: "authorization_code",
       }),
@@ -42,8 +55,7 @@ export async function GET(request: NextRequest) {
     const tokens = await tokenRes.json();
 
     if (!tokens.id_token) {
-      console.error("Google token exchange failed:", tokens);
-      return NextResponse.redirect(errorUrl);
+      return errorRedirect(origin, next, `token_exchange:${tokens.error || "no_id_token"}`);
     }
 
     // Use the Google ID token to sign in with Supabase.
@@ -71,8 +83,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (signInError) {
-      console.error("Supabase signInWithIdToken failed:", signInError);
-      return NextResponse.redirect(errorUrl);
+      return errorRedirect(origin, next, `supabase_signin:${signInError.message}`);
     }
 
     // Invalidate all RSC cached pages so they re-render with new auth state
@@ -116,13 +127,7 @@ export async function GET(request: NextRequest) {
     }
     return response;
   } catch (err) {
-    console.error("Google OAuth callback error:", err);
-    // Preserve redirect destination so the user can retry from the right page
-    const response = NextResponse.redirect(errorUrl);
-    // Still apply any cookies that were set before the error
-    for (const { name, value, options } of pendingCookies) {
-      response.cookies.set(name, value, options);
-    }
-    return response;
+    const msg = err instanceof Error ? err.message : String(err);
+    return errorRedirect(origin, next, `catch:${msg}`);
   }
 }
