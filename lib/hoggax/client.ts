@@ -101,6 +101,33 @@ export function buildQualifyRequest(payload: TruoraWebhookPayload): HoggaxQualif
   return request;
 }
 
+// Errors worth retrying (transient upstream failures)
+const RETRYABLE_REASONS = ['BCRA_UNAVAILABLE'];
+
+function isRetryableError(status: number, body: Record<string, unknown>): boolean {
+  if (status !== 502 && status !== 503) return false;
+  const message = typeof body.message === 'string' ? body.message : '';
+  return RETRYABLE_REASONS.some((r) => message.includes(r));
+}
+
+async function fetchQualify(
+  request: HoggaxQualifyRequest,
+  timeoutMs: number,
+): Promise<{ res: Response; responseBody: Record<string, unknown> }> {
+  const res = await fetch(`${HOGGAX_API_URL}/hoggax-partner-qualify`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+
+  const responseBody = await res.json();
+  return { res, responseBody };
+}
+
 export async function qualify(
   payload: TruoraWebhookPayload
 ): Promise<{ request: HoggaxQualifyRequest; response: HoggaxQualifyResponse; rawResponse: Record<string, unknown> }> {
@@ -110,17 +137,13 @@ export async function qualify(
 
   const request = buildQualifyRequest(payload);
 
-  const res = await fetch(`${HOGGAX_API_URL}/hoggax-partner-qualify`, {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-    signal: AbortSignal.timeout(10_000), // 10s timeout
-  });
+  let { res, responseBody } = await fetchQualify(request, 10_000);
 
-  const responseBody = await res.json();
+  // Retry once on transient upstream errors (e.g. BCRA down)
+  if (!res.ok && isRetryableError(res.status, responseBody)) {
+    console.warn('[Hoggax] Retryable error, retrying once:', responseBody.message);
+    ({ res, responseBody } = await fetchQualify(request, 10_000));
+  }
 
   // Hoggax returns 422 for rejections (e.g. SCORE_TOO_LOW) — this is a valid
   // business response, not an error.  Extract the nested body when present.

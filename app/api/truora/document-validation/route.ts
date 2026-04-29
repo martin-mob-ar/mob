@@ -82,6 +82,7 @@ export async function POST(request: Request) {
 
     if (documentVerified) {
       userUpdate.truora_last_verification_date = new Date().toISOString();
+      userUpdate.hoggax_approved = true;
     }
 
     const { error: updateError } = await supabaseAdmin

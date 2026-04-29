@@ -89,6 +89,13 @@ export async function POST(request: Request) {
       ? (rent ?? 0) + (expenses ?? 0)
       : null;
 
+    // Verificacion independiente: no property involved (rent & expenses are null)
+    const isVerificacionIndependiente = rent == null && expenses == null;
+
+    // For verificacion independiente, force hoggax_approved to true on user record
+    // (identity verification is sufficient, no rent comparison needed)
+    const effectiveHoggaxApproved = isVerificacionIndependiente ? true : hoggaxApproved;
+
     let verificationCase: number | null = null;
     if (hoggaxApproved === true && hoggaxMaxRent != null && propertyRentPlusExpenses != null) {
       verificationCase = hoggaxMaxRent >= propertyRentPlusExpenses ? 1 : 2;
@@ -101,7 +108,7 @@ export async function POST(request: Request) {
       .from('verificaciones_hoggax')
       .insert({
         user_id: userId,
-        flow_name: 'verificacion_para_agendar_visita',
+        flow_name: isVerificacionIndependiente ? 'verificacion_independiente' : 'verificacion_para_agendar_visita',
         hoggax_max_rent_plus_expenses: hoggaxMaxRent,
         hoggax_approved: hoggaxApproved,
         dni: payload.document_value,
@@ -117,19 +124,43 @@ export async function POST(request: Request) {
       });
 
     if (insertError) {
-      console.error('[TruoraWebhook] Insert verificacion error:', insertError);
+      console.error('[TruoraWebhook] Insert verificacion_hoggax error:', insertError);
+    }
+
+    // --- For verificacion independiente, also insert into verificaciones_truora ---
+    if (isVerificacionIndependiente) {
+      const { error: truoraInsertError } = await supabaseAdmin
+        .from('verificaciones_truora')
+        .insert({
+          user_id: userId,
+          flow_name: 'verificacion_independiente',
+          status: 'success',
+          truora_document_verified: true,
+          document_number: payload.document_value,
+          gender: payload.gender_id,
+        });
+
+      if (truoraInsertError) {
+        console.error('[TruoraWebhook] Insert verificacion_truora error:', truoraInsertError);
+      }
     }
 
     // --- Update users table ---
     const userUpdate: Record<string, unknown> = {
       hoggax_max_rent_plus_expenses: hoggaxMaxRent,
-      hoggax_approved: hoggaxApproved,
+      hoggax_approved: effectiveHoggaxApproved,
       dni: payload.document_value,
     };
 
     // Set hoggax_last_verification_date only when approved
-    if (hoggaxApproved === true) {
+    if (effectiveHoggaxApproved === true) {
       userUpdate.hoggax_last_verification_date = new Date().toISOString();
+    }
+
+    // For verificacion independiente, also set truora fields
+    if (isVerificacionIndependiente) {
+      userUpdate.truora_last_verification_date = new Date().toISOString();
+      userUpdate.truora_document_verified = true;
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -145,10 +176,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Rebuild property listings when verificacion independiente completes ---
+    if (isVerificacionIndependiente) {
+      await supabaseAdmin.rpc('rebuild_user_property_listings', {
+        p_user_id: userId,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       userId,
-      hoggax_approved: hoggaxApproved,
+      hoggax_approved: effectiveHoggaxApproved,
       hoggax_max_rent_plus_expenses: hoggaxMaxRent,
       property_rent_plus_expenses: propertyRentPlusExpenses,
       case: verificationCase,

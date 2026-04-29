@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { MessageCircle, Search, PenLine, Home, BadgeCheck } from "lucide-react";
+import { MessageCircle, Search, PenLine, Home, BadgeCheck, CheckCircle } from "lucide-react";
 import Header from "@/components/Header";
 import { GarantiaTooltip } from "@/components/GarantiaTooltip";
 import {
@@ -47,6 +47,15 @@ export default function VerificatePage() {
   // them through a certificate-specific Truora template + tailored confirmation copy.
   const fromCertificado = searchParams.get("certificado") === "true";
 
+  const isVerified = !!user?.isVerified;
+
+  // Auto-redirect verified users after a brief delay
+  useEffect(() => {
+    if (!isVerified) return;
+    const timer = setTimeout(() => router.replace("/alquileres"), 3000);
+    return () => clearTimeout(timer);
+  }, [isVerified, router]);
+
   const form = useForm<VerificateFormValues>({
     resolver: zodResolver(verificateFormSchema),
     defaultValues: {
@@ -55,6 +64,37 @@ export default function VerificatePage() {
       country_code: user?.phoneCountryCode || "+54",
     },
   });
+
+  // Already verified — show message and auto-redirect
+  if (isVerified) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-[60vh] flex items-center justify-center px-4 py-12">
+          <div className="max-w-md w-full text-center space-y-6">
+            <div className="h-14 w-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+              <CheckCircle className="h-7 w-7 text-green-600" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="font-display text-2xl font-bold text-foreground">
+                ¡Ya estás verificado!
+              </h1>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Tu perfil ya fue verificado. Te redirigimos para que sigas explorando propiedades.
+              </p>
+            </div>
+            <Button
+              onClick={() => router.replace("/alquileres")}
+              className="w-full h-12 rounded-xl text-sm font-semibold"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Explorar propiedades
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   async function onSubmit(values: VerificateFormValues) {
     setIsSubmitting(true);
