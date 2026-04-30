@@ -30,6 +30,13 @@ CREATE POLICY "Allow trigger inserts" ON public.price_history
 CREATE POLICY "Service role full access" ON public.price_history
   FOR SELECT USING (true);
 
+-- Table-level GRANTs (RLS policies alone are not enough)
+GRANT INSERT, SELECT ON public.price_history TO service_role;
+GRANT INSERT, SELECT ON public.price_history TO authenticated;
+GRANT SELECT ON public.price_history TO anon;
+GRANT USAGE, SELECT ON SEQUENCE public.price_history_id_seq TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.price_history_id_seq TO authenticated;
+
 -- 2. Trigger function: track_price_change()
 -- ============================================================================
 
