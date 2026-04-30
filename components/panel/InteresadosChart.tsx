@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -13,18 +13,30 @@ export interface ViewSeriesPoint {
   views: number;
 }
 
+export interface PriceChangePoint {
+  date: string;
+  oldPrice: number;
+  newPrice: number;
+  currency: string;
+}
+
 const config: ChartConfig = {
   views: { label: "Vistas", color: "hsl(var(--chart-1))" },
 };
 
-export function InteresadosChart({ data }: { data: ViewSeriesPoint[] }) {
+interface InteresadosChartProps {
+  data: ViewSeriesPoint[];
+  priceChanges?: PriceChangePoint[];
+}
+
+export function InteresadosChart({ data, priceChanges }: InteresadosChartProps) {
   if (!data.length) return null;
 
   return (
     <ChartContainer config={config} className="aspect-auto h-[220px] w-full">
       <AreaChart
         data={data}
-        margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+        margin={{ top: 16, right: 4, bottom: 0, left: 0 }}
       >
         <defs>
           <linearGradient id="fillViews" x1="0" y1="0" x2="0" y2="1">
@@ -62,6 +74,21 @@ export function InteresadosChart({ data }: { data: ViewSeriesPoint[] }) {
             />
           }
         />
+        {priceChanges?.map((pc, i) => (
+          <ReferenceLine
+            key={i}
+            x={pc.date}
+            stroke="hsl(var(--chart-2))"
+            strokeDasharray="4 4"
+            strokeWidth={1.5}
+            label={{
+              value: `${pc.currency === "USD" ? "USD " : "$"}${pc.newPrice.toLocaleString("es-AR")}`,
+              position: "top",
+              fill: "hsl(var(--chart-2))",
+              fontSize: 10,
+            }}
+          />
+        ))}
         <Area
           dataKey="views"
           type="monotone"

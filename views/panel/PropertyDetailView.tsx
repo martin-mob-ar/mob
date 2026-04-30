@@ -43,6 +43,7 @@ import { getMockPropertyDetail } from "@/lib/mock/gestion-mock-data";
 import {
   InteresadosChart,
   type ViewSeriesPoint,
+  type PriceChangePoint,
 } from "@/components/panel/InteresadosChart";
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -131,6 +132,14 @@ const visitaStatusConfig: Record<string, { label: string; className: string; dot
   rejected: { label: "Rechazada", className: "bg-destructive/10 text-destructive", dotColor: "bg-destructive" },
 };
 
+interface PriceHistoryRow {
+  old_price: number | null;
+  old_currency: string | null;
+  new_price: number | null;
+  new_currency: string | null;
+  changed_at: string;
+}
+
 interface PropertyDetailViewProps {
   property: any;
   operations: OperationHistoryEntry[];
@@ -143,6 +152,7 @@ interface PropertyDetailViewProps {
   interesadosStats?: InteresadosStats;
   mobPlan?: string;
   visitas?: VisitaItem[];
+  priceHistory?: PriceHistoryRow[];
 }
 
 // ─── Main Component ───────────────────────────────────────────────────
@@ -159,6 +169,7 @@ const PropertyDetailView = ({
   interesadosStats,
   mobPlan = "basico",
   visitas = [],
+  priceHistory = [],
 }: PropertyDetailViewProps) => {
   const router = useRouter();
   const [useMock, setUseMock] = useState(mockMode ?? false);
@@ -180,6 +191,15 @@ const PropertyDetailView = ({
 
   const stats = interesadosStats ?? { uniqueViewers: 0, totalViews: 0, savesCount: 0, viewsSeries: [] };
   const hasInteresadosData = stats.totalViews > 0 || stats.savesCount > 0;
+
+  const priceChangePoints: PriceChangePoint[] = priceHistory
+    .filter((ph) => ph.new_price != null && ph.changed_at)
+    .map((ph) => ({
+      date: ph.changed_at.slice(0, 10),
+      oldPrice: Number(ph.old_price || 0),
+      newPrice: Number(ph.new_price || 0),
+      currency: ph.new_currency || "ARS",
+    }));
 
   // ─── Derived values ─────────────────────────────────────────────
   const handleDelete = async () => {
@@ -601,7 +621,7 @@ const PropertyDetailView = ({
                   <h4 className="font-display font-semibold text-sm mb-4">
                     Vistas desde la publicación
                   </h4>
-                  <InteresadosChart data={stats.viewsSeries} />
+                  <InteresadosChart data={stats.viewsSeries} priceChanges={priceChangePoints} />
                 </div>
               )}
             </>

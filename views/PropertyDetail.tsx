@@ -779,7 +779,17 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                   <span className="text-xs text-muted-foreground uppercase tracking-wider">
                     {showUsdTotal ? "Total" : "Alquiler"}
                   </span>
+                  {property.discountPct != null && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold bg-green-500/15 text-green-600">
+                      {Math.round(property.discountPct)}%
+                    </span>
+                  )}
                 </div>
+                {property.discountPct != null && property.previousPrice != null && (
+                  <p className="text-sm text-muted-foreground line-through mb-1">
+                    USD {property.previousPrice.toLocaleString("es-AR")}
+                  </p>
+                )}
                 {!showUsdTotal && (
                   <p className="text-sm text-muted-foreground mb-3">
                     {hasExpensas
@@ -789,14 +799,26 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                 )}
               </>
             ) : (
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="font-display text-2xl font-bold text-foreground">
-                  ${property.price.toLocaleString("es-AR")}
-                </span>
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Total
-                </span>
-              </div>
+              <>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="font-display text-2xl font-bold text-foreground">
+                    ${property.price.toLocaleString("es-AR")}
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                    Total
+                  </span>
+                  {property.discountPct != null && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold bg-green-500/15 text-green-600">
+                      {Math.round(property.discountPct)}%
+                    </span>
+                  )}
+                </div>
+                {property.discountPct != null && property.previousPrice != null && (
+                  <p className="text-sm text-muted-foreground line-through mb-3">
+                    ${property.previousPrice.toLocaleString("es-AR")}
+                  </p>
+                )}
+              </>
             );
           })()}
 
@@ -1124,18 +1146,32 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
 
               return isUsd ? (
                 <>
-                  <p className="font-display text-lg font-bold text-foreground">
-                    USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
-                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="font-display text-lg font-bold text-foreground">
+                      USD {(showUsdTotal ? rentUsd + expensasInUsd : rentUsd).toLocaleString("es-AR")}
+                    </p>
+                    {property.discountPct != null && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-500/15 text-green-600">
+                        {Math.round(property.discountPct)}%
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {showUsdTotal ? "Total mensual" : hasExpensas ? `$${property.expensas!.toLocaleString("es-AR")} expensas` : "Sin expensas"}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="font-display text-lg font-bold text-foreground">
-                    ${property.price.toLocaleString("es-AR")}
-                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="font-display text-lg font-bold text-foreground">
+                      ${property.price.toLocaleString("es-AR")}
+                    </p>
+                    {property.discountPct != null && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-500/15 text-green-600">
+                        {Math.round(property.discountPct)}%
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {hasExpensas ? "Total mensual" : "Sin expensas"}
                   </p>
@@ -1337,7 +1373,17 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">
                           {showUsdTotal ? "Total" : "Alquiler"}
                         </span>
+                        {property.discountPct != null && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold bg-green-500/15 text-green-600">
+                            {Math.round(property.discountPct)}%
+                          </span>
+                        )}
                       </div>
+                      {property.discountPct != null && property.previousPrice != null && (
+                        <p className="text-sm text-muted-foreground line-through mt-1">
+                          USD {property.previousPrice.toLocaleString("es-AR")}
+                        </p>
+                      )}
                       {showUsdTotal ? (
                         <div className="mt-3 space-y-1.5" style={{ fontVariantNumeric: "tabular-nums" }}>
                           <div className="flex justify-between text-sm">
@@ -1364,7 +1410,17 @@ const PropertyDetail = ({ property: propProperty, photos: propPhotos, photoDescr
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">
                           Total
                         </span>
+                        {property.discountPct != null && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold bg-green-500/15 text-green-600">
+                            {Math.round(property.discountPct)}%
+                          </span>
+                        )}
                       </div>
+                      {property.discountPct != null && property.previousPrice != null && (
+                        <p className="text-sm text-muted-foreground line-through mt-1">
+                          ${property.previousPrice.toLocaleString("es-AR")}
+                        </p>
+                      )}
                       <div className="mt-3 space-y-1.5" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {property.rentPrice != null && property.rentPrice > 0 && (
                           <div className="flex justify-between text-sm">

@@ -260,6 +260,19 @@ export default async function GestionPropertyDetailPage({
     // visitas table may not exist on test DB
   }
 
+  // ─── Price history (for chart annotations) ──────────────────────────
+  let priceHistoryData: any[] = [];
+  try {
+    const { data } = await supabaseAdmin
+      .from("price_history")
+      .select("old_price, old_currency, new_price, new_currency, changed_at")
+      .eq("property_id", numericPropertyId)
+      .order("changed_at", { ascending: true });
+    priceHistoryData = data || [];
+  } catch {
+    // price_history table may not exist yet
+  }
+
   return (
     <PropertyDetailView
       property={property}
@@ -272,6 +285,7 @@ export default async function GestionPropertyDetailPage({
       interesadosStats={interesadosStats}
       mobPlan={mobPlan}
       visitas={visitasData}
+      priceHistory={priceHistoryData}
     />
   );
 }

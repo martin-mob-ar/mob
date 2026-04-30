@@ -482,6 +482,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
                 body: JSON.stringify({
                   telefono: guest.phone,
                   telefono_country_code: guest.country_code || "+54",
+                  source: "subir-propiedad",
                 }),
               });
               refreshUser();
@@ -557,6 +558,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
               body: JSON.stringify({
                 telefono: guest.phone,
                 telefono_country_code: guest.country_code || "+54",
+                source: "subir-propiedad",
               }),
             }).then(() => refreshUser()).catch(() => {});
           }
@@ -684,7 +686,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
-        return new Date(fechaDisponible) >= tomorrow;
+        return new Date(fechaDisponible + "T00:00:00") >= tomorrow;
       }
       case 8:
         return !!selectedPlan;
@@ -817,6 +819,7 @@ const SubirPropiedad = ({ userId, draftData, editData, existingDrafts = [], from
               body: JSON.stringify({
                 telefono: guestPhone,
                 telefono_country_code: guestCountryCode,
+                source: "subir-propiedad",
               }),
             }).then(() => refreshUser()).catch(() => {});
           }

@@ -26,6 +26,9 @@ export function transformPropertyRead(row: any): Property {
     verified: true,
     propertyType: row.property_type_name || undefined,
     publisherType: derivePublisherType(row.tokko_id != null, row.company_name, row.mob_plan),
+    previousPrice: row.previous_price ? Number(row.previous_price) : undefined,
+    discountPct: row.discount_pct != null ? Number(row.discount_pct) : undefined,
+    priceChangedAt: row.price_changed_at || undefined,
   };
 }
 

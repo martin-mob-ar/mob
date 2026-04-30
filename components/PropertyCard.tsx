@@ -35,6 +35,9 @@ export interface Property {
   verified?: boolean;
   propertyType?: string;
   publisherType?: PublisherType;
+  previousPrice?: number;
+  discountPct?: number;
+  priceChangedAt?: string;
 }
 
 interface PropertyCardProps {
@@ -239,6 +242,11 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
                       <span className="text-[10px] text-muted-foreground">
                         Total
                       </span>
+                      {property.discountPct != null && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-500/15 text-green-600">
+                          {Math.round(property.discountPct)}%
+                        </span>
+                      )}
                     </div>
                     {hasExpensas ? (
                       isMobile ? (
@@ -272,6 +280,11 @@ const PropertyCard = ({ property, showDetails = false, compactVerified = false, 
                   <span className="text-[10px] text-muted-foreground">
                     Total
                   </span>
+                  {property.discountPct != null && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-green-500/15 text-green-600">
+                      {Math.round(property.discountPct)}%
+                    </span>
+                  )}
                 </div>
                 {property.rentPrice != null && property.expensas != null && property.rentPrice > 0 && property.expensas > 0 ? (
                   isMobile ? (
