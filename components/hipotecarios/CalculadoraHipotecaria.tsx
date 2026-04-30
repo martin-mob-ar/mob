@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Calculator, Building2, AlertTriangle, Info, Loader2, DollarSign, TrendingUp } from "lucide-react";
+import { Calculator, Building2, AlertTriangle, Info, DollarSign, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,11 @@ interface BancoData {
 interface DolarData {
   venta: number;
   fecha: string;
-  exact: boolean;
 }
 
 interface UvaData {
   valor: number;
   fecha: string;
-  exact: boolean;
 }
 
 interface SimulationResult {
@@ -99,28 +97,27 @@ function getTodayAR(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
 }
 
-// ── UVA Cache ──────────────────────────────────────────────────────
-
-function getCachedUVA(): UvaData | null {
-  try {
-    const today = getTodayAR();
-    const cached = localStorage.getItem(`uva_${today}`);
-    if (cached) return JSON.parse(cached);
-  } catch { /* ignore */ }
-  return null;
-}
-
-function setCachedUVA(data: UvaData) {
-  try {
-    const today = getTodayAR();
-    localStorage.setItem(`uva_${today}`, JSON.stringify(data));
-  } catch { /* ignore */ }
-}
-
 // ── Component ──────────────────────────────────────────────────────
 
-export default function CalculadoraHipotecaria() {
+interface CalculadoraProps {
+  rates: {
+    dolarVenta: number | null;
+    dolarFecha: string | null;
+    uvaValor: number | null;
+    uvaFecha: string | null;
+  };
+}
+
+export default function CalculadoraHipotecaria({ rates }: CalculadoraProps) {
   const bancos = useMemo(() => sortBancos(bancosData as BancoData[]), []);
+
+  // Rates from server (DB)
+  const dolar: DolarData | null = rates.dolarVenta
+    ? { venta: rates.dolarVenta, fecha: rates.dolarFecha ?? getTodayAR() }
+    : null;
+  const uva: UvaData | null = rates.uvaValor
+    ? { valor: rates.uvaValor, fecha: rates.uvaFecha ?? getTodayAR() }
+    : null;
 
   // Form state
   const [selectedBanco, setSelectedBanco] = useState(bancos[0]?.banco ?? "");
@@ -129,77 +126,6 @@ export default function CalculadoraHipotecaria() {
   const [valorViviendaStr, setValorViviendaStr] = useState("");
   const [montoCreditoStr, setMontoCreditoStr] = useState("");
   const [result, setResult] = useState<SimulationResult | null>(null);
-
-  // API state
-  const [dolar, setDolar] = useState<DolarData | null>(null);
-  const [dolarLoading, setDolarLoading] = useState(true);
-  const [dolarError, setDolarError] = useState(false);
-  const [uva, setUva] = useState<UvaData | null>(null);
-  const [uvaLoading, setUvaLoading] = useState(true);
-  const [uvaError, setUvaError] = useState(false);
-
-  // ── Fetch Dollar ──
-  useEffect(() => {
-    const fetchDolar = async () => {
-      try {
-        const res = await fetch("https://api.argentinadatos.com/v1/cotizaciones/dolares");
-        const data = await res.json();
-        const oficiales = data.filter((d: any) => d.casa === "oficial" && d.venta);
-        if (!oficiales.length) throw new Error("No data");
-
-        const today = getTodayAR();
-        const todayEntry = oficiales.find((d: any) => d.fecha === today);
-
-        if (todayEntry) {
-          setDolar({ venta: todayEntry.venta, fecha: todayEntry.fecha, exact: true });
-        } else {
-          oficiales.sort((a: any, b: any) => b.fecha.localeCompare(a.fecha));
-          setDolar({ venta: oficiales[0].venta, fecha: oficiales[0].fecha, exact: false });
-        }
-      } catch {
-        setDolarError(true);
-      } finally {
-        setDolarLoading(false);
-      }
-    };
-    fetchDolar();
-  }, []);
-
-  // ── Fetch UVA (with localStorage cache) ──
-  useEffect(() => {
-    const cached = getCachedUVA();
-    if (cached) {
-      setUva(cached);
-      setUvaLoading(false);
-      return;
-    }
-
-    const fetchUVA = async () => {
-      try {
-        const res = await fetch("https://api.argentinadatos.com/v1/finanzas/indices/uva");
-        const data: { fecha: string; valor: number }[] = await res.json();
-        if (!data.length) throw new Error("No data");
-
-        const today = getTodayAR();
-        const todayEntry = data.find((d) => d.fecha === today);
-
-        let uvaData: UvaData;
-        if (todayEntry) {
-          uvaData = { valor: todayEntry.valor, fecha: todayEntry.fecha, exact: true };
-        } else {
-          data.sort((a, b) => b.fecha.localeCompare(a.fecha));
-          uvaData = { valor: data[0].valor, fecha: data[0].fecha, exact: false };
-        }
-        setUva(uvaData);
-        setCachedUVA(uvaData);
-      } catch {
-        setUvaError(true);
-      } finally {
-        setUvaLoading(false);
-      }
-    };
-    fetchUVA();
-  }, []);
 
   // ── Derived values ──
   const banco = useMemo(() => bancos.find((b) => b.banco === selectedBanco), [bancos, selectedBanco]);
@@ -273,8 +199,6 @@ export default function CalculadoraHipotecaria() {
 
   const clearResult = () => setResult(null);
 
-  const isLoading = dolarLoading || uvaLoading;
-
   return (
     <Card className="border-border/40 bg-card mb-8">
       <CardHeader className="pb-4">
@@ -288,13 +212,6 @@ export default function CalculadoraHipotecaria() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Cargando cotizaciones…
-          </div>
-        )}
 
         {/* ── Form ── */}
         <div className="grid sm:grid-cols-2 gap-4" onKeyDown={handleKeyDown}>
@@ -425,23 +342,19 @@ export default function CalculadoraHipotecaria() {
           </div>
         </div>
 
-        {/* ── API info line ── */}
+        {/* ── Rate info line ── */}
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-muted-foreground border-t border-border/30 pt-3">
-          {dolarLoading ? (
-            <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Dólar…</span>
-          ) : dolarError ? (
+          {dolar ? (
+            <span>Dólar oficial (venta): ${dolar.venta.toLocaleString("es-AR")} — {dolar.fecha}</span>
+          ) : (
             <span>Dólar oficial no disponible</span>
-          ) : dolar ? (
-            <span>Dólar oficial (venta): ${dolar.venta.toLocaleString("es-AR")} — {dolar.exact ? dolar.fecha : `última: ${dolar.fecha}`}</span>
-          ) : null}
+          )}
 
-          {uvaLoading ? (
-            <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> UVA…</span>
-          ) : uvaError ? (
+          {uva ? (
+            <span>UVA: ${formatNumber(uva.valor)} — {uva.fecha}</span>
+          ) : (
             <span>UVA no disponible</span>
-          ) : uva ? (
-            <span>UVA: ${formatNumber(uva.valor)} — {uva.exact ? uva.fecha : `última: ${uva.fecha}`}</span>
-          ) : null}
+          )}
         </div>
 
         {/* ── Info badges ── */}

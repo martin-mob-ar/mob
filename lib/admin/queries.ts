@@ -253,6 +253,31 @@ export async function getLeadsByDay(periodDays: number | null): Promise<LeadDay[
   return Array.from(byDay.entries()).map(([date, count]) => ({ date, count }));
 }
 
+// ── Shared helpers ───────────────────────────────────────────────────────────
+
+type PropertyClassification = { mob_plan: string | null; owner_account_type: number | null };
+
+async function fetchPropertyClassifications(
+  propertyIds: number[],
+): Promise<Map<number, PropertyClassification>> {
+  if (propertyIds.length === 0) return new Map();
+  const { data } = await supabaseAdmin
+    .from('properties_read')
+    .select('property_id, mob_plan, owner_account_type')
+    .in('property_id', propertyIds);
+  return new Map(data?.map(p => [p.property_id, p]) ?? []);
+}
+
+function isVisitaFlow(
+  propertyId: number,
+  propMap: Map<number, PropertyClassification>,
+): boolean {
+  const p = propMap.get(propertyId);
+  if (!p) return false;
+  return (p.mob_plan === 'acompanado' || p.mob_plan === 'experiencia')
+    && (p.owner_account_type === 1 || p.owner_account_type === 2);
+}
+
 // ── Conversion funnel ────────────────────────────────────────────────────────
 
 export interface FunnelData {
@@ -282,28 +307,14 @@ export async function getConversionFunnel(periodDays: number | null): Promise<Fu
     return { consulta: { ...empty }, visita: { ...empty } };
   }
 
-  // Fetch property info to classify each property's form type
   const propertyIds = [...new Set(events.map(e => e.property_id))];
-  const { data: properties } = await supabaseAdmin
-    .from('properties_read')
-    .select('property_id, mob_plan, owner_account_type')
-    .in('property_id', propertyIds);
-
-  const propMap = new Map(properties?.map(p => [p.property_id, p]) ?? []);
-
-  // Classify: VisitLeadForm when plan is acompanado/experiencia + owner is inquilino/dueño
-  function isVisitaFlow(propertyId: number): boolean {
-    const p = propMap.get(propertyId);
-    if (!p) return false;
-    return (p.mob_plan === 'acompanado' || p.mob_plan === 'experiencia')
-      && (p.owner_account_type === 1 || p.owner_account_type === 2);
-  }
+  const propMap = await fetchPropertyClassifications(propertyIds);
 
   const consulta: FunnelData = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
   const visita: FunnelData = { views: 0, submits_started: 0, verifications_requested: 0, submits: 0 };
 
   for (const e of events) {
-    const target = isVisitaFlow(e.property_id) ? visita : consulta;
+    const target = isVisitaFlow(e.property_id, propMap) ? visita : consulta;
     const meta = e.metadata as Record<string, unknown> | null;
     switch (e.event_type) {
       case 'property_view': {
@@ -318,6 +329,124 @@ export async function getConversionFunnel(periodDays: number | null): Promise<Fu
   }
 
   return { consulta, visita };
+}
+
+// ── Property creation funnel (Propietarios) ─────────────────────────────────
+
+export interface PropertyCreationFunnelData {
+  borradorCreado: number;
+  detalles: number;
+  precio: number;
+  fotos: number;
+  plan: number;
+  publicada: number;
+}
+
+export async function getPropertyCreationFunnel(
+  periodDays: number | null,
+): Promise<PropertyCreationFunnelData> {
+  const cutoff = periodDays
+    ? new Date(Date.now() - periodDays * 86400000).toISOString()
+    : '1970-01-01T00:00:00Z';
+
+  const { data } = await supabaseAdmin
+    .from('properties')
+    .select('draft_step, status')
+    .eq('tokko', false)
+    .is('deleted_at', null)
+    .gte('created_at', cutoff);
+
+  if (!data || data.length === 0) {
+    return { borradorCreado: 0, detalles: 0, precio: 0, fotos: 0, plan: 0, publicada: 0 };
+  }
+
+  let borradorCreado = 0;
+  let detalles = 0;
+  let precio = 0;
+  let fotos = 0;
+  let plan = 0;
+  let publicada = 0;
+
+  for (const row of data) {
+    const ds = row.draft_step;
+    const isPublished = row.status === 2;
+
+    borradorCreado++;
+    if ((ds !== null && ds >= 3) || isPublished) detalles++;
+    if ((ds !== null && ds >= 4) || isPublished) precio++;
+    if ((ds !== null && ds >= 5) || isPublished) fotos++;
+    if ((ds !== null && ds >= 8) || isPublished) plan++;
+    if (isPublished) publicada++;
+  }
+
+  return { borradorCreado, detalles, precio, fotos, plan, publicada };
+}
+
+// ── Visit conversion funnel (Inquilinos) ────────────────────────────────────
+
+export interface VisitConversionFunnelData {
+  vistas: number;
+  inicioAgenda: number;
+  visitaSolicitada: number;
+  visitaAceptada: number;
+  visitaCompletada: number;
+}
+
+export async function getVisitConversionFunnel(
+  periodDays: number | null,
+): Promise<VisitConversionFunnelData> {
+  const cutoff = periodDays
+    ? new Date(Date.now() - periodDays * 86400000).toISOString()
+    : '2020-01-01T00:00:00Z';
+
+  const { data: events } = await supabaseAdmin
+    .from('property_events')
+    .select('property_id, event_type, metadata')
+    .gte('created_at', cutoff);
+
+  const propertyIds = [...new Set((events ?? []).map(e => e.property_id))];
+  const propMap = await fetchPropertyClassifications(propertyIds);
+
+  let vistas = 0;
+  let inicioAgenda = 0;
+  let visitaSolicitada = 0;
+
+  for (const e of events ?? []) {
+    if (!isVisitaFlow(e.property_id, propMap)) continue;
+
+    const meta = e.metadata as Record<string, unknown> | null;
+    switch (e.event_type) {
+      case 'property_view': {
+        const count = meta?.source === 'clarity_backfill' && typeof meta.count === 'number'
+          ? meta.count : 1;
+        vistas += count;
+        break;
+      }
+      case 'agendar_visita_submit_started': inicioAgenda++; break;
+      case 'agendar_visita_submit': visitaSolicitada++; break;
+    }
+  }
+
+  const [acceptedResult, completedResult] = await Promise.all([
+    supabaseAdmin
+      .from('visitas')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['accepted', 'completed'])
+      .gte('created_at', cutoff),
+    supabaseAdmin
+      .from('visitas')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .gte('created_at', cutoff),
+  ]);
+
+  return {
+    vistas,
+    inicioAgenda,
+    visitaSolicitada,
+    visitaAceptada: acceptedResult.count ?? 0,
+    visitaCompletada: completedResult.count ?? 0,
+  };
 }
 
 // ── Plan distribution ────────────────────────────────────────────────────────
@@ -1335,4 +1464,188 @@ export async function getPropertyAttributionBreakdown(propertyId: number, cutoff
     else result.unattributed++;
   }
   return result;
+}
+
+// ── Inmobiliarias listing ─────────────────────────────────────────────────────
+
+export interface InmobiliariaRow {
+  id: string;
+  name: string | null;
+  email: string;
+  telefono: string | null;
+  telefono_country_code: string | null;
+  logo: string | null;
+  account_type: number | null;
+  created_at: string;
+  tokko_last_sync_at: string | null;
+  sync_status: string | null;
+  hoggax_approved: boolean | null;
+  activeProperties: number;
+  draftProperties: number;
+  totalLeads: number;
+  totalVisitas: number;
+  visitasPending: number;
+  visitasAccepted: number;
+  visitasCompleted: number;
+  totalViews: number;
+  companyCount: number;
+}
+
+export interface InmobiliariasKpis {
+  totalInmobiliarias: number;
+  totalInmobiliariasType3: number;
+  totalInmobiliariasType4: number;
+  totalActiveProperties: number;
+  avgPropertiesPerInmobiliaria: number;
+  totalLeads: number;
+  totalVisitas: number;
+  totalViews: number;
+  hoggaxApprovedCount: number;
+  withSyncCount: number;
+}
+
+export interface InmobiliariasResult {
+  rows: InmobiliariaRow[];
+  kpis: InmobiliariasKpis;
+}
+
+export async function getInmobiliarias(): Promise<InmobiliariasResult> {
+  const { data: users } = await supabaseAdmin
+    .from('users')
+    .select('id, name, email, telefono, telefono_country_code, logo, account_type, created_at, tokko_last_sync_at, sync_status, hoggax_approved')
+    .in('account_type', [3, 4])
+    .order('created_at', { ascending: false });
+
+  if (!users || users.length === 0) {
+    return {
+      rows: [],
+      kpis: {
+        totalInmobiliarias: 0, totalInmobiliariasType3: 0, totalInmobiliariasType4: 0,
+        totalActiveProperties: 0, avgPropertiesPerInmobiliaria: 0,
+        totalLeads: 0, totalVisitas: 0, totalViews: 0,
+        hoggaxApprovedCount: 0, withSyncCount: 0,
+      },
+    };
+  }
+
+  const userIds = users.map(u => u.id);
+
+  const [
+    propertiesResult,
+    draftPropertiesResult,
+    leadsResult,
+    visitasResult,
+    viewsResult,
+    companiesResult,
+  ] = await Promise.all([
+    supabaseAdmin
+      .from('properties')
+      .select('user_id')
+      .in('user_id', userIds)
+      .eq('status', 2)
+      .is('deleted_at', null)
+      .is('draft_step', null),
+    supabaseAdmin
+      .from('properties')
+      .select('user_id')
+      .in('user_id', userIds)
+      .not('draft_step', 'is', null)
+      .is('deleted_at', null),
+    supabaseAdmin
+      .from('leads')
+      .select('owner_id')
+      .in('owner_id', userIds),
+    supabaseAdmin
+      .from('visitas')
+      .select('owner_user_id, status')
+      .in('owner_user_id', userIds),
+    supabaseAdmin
+      .from('properties_read')
+      .select('user_id, views_count')
+      .in('user_id', userIds),
+    supabaseAdmin
+      .from('tokko_company')
+      .select('user_id')
+      .in('user_id', userIds),
+  ]);
+
+  const activePropsMap = new Map<string, number>();
+  for (const row of propertiesResult.data ?? []) {
+    activePropsMap.set(row.user_id, (activePropsMap.get(row.user_id) ?? 0) + 1);
+  }
+
+  const draftPropsMap = new Map<string, number>();
+  for (const row of draftPropertiesResult.data ?? []) {
+    draftPropsMap.set(row.user_id, (draftPropsMap.get(row.user_id) ?? 0) + 1);
+  }
+
+  const leadsMap = new Map<string, number>();
+  for (const row of leadsResult.data ?? []) {
+    leadsMap.set(row.owner_id, (leadsMap.get(row.owner_id) ?? 0) + 1);
+  }
+
+  const visitasMap = new Map<string, { total: number; pending: number; accepted: number; completed: number }>();
+  for (const row of visitasResult.data ?? []) {
+    let entry = visitasMap.get(row.owner_user_id);
+    if (!entry) {
+      entry = { total: 0, pending: 0, accepted: 0, completed: 0 };
+      visitasMap.set(row.owner_user_id, entry);
+    }
+    entry.total++;
+    if (row.status === 'pending') entry.pending++;
+    else if (row.status === 'accepted') entry.accepted++;
+    else if (row.status === 'completed') entry.completed++;
+  }
+
+  const viewsMap = new Map<string, number>();
+  for (const row of viewsResult.data ?? []) {
+    viewsMap.set(row.user_id, (viewsMap.get(row.user_id) ?? 0) + (row.views_count ?? 0));
+  }
+
+  const companyMap = new Map<string, number>();
+  for (const row of companiesResult.data ?? []) {
+    companyMap.set(row.user_id, (companyMap.get(row.user_id) ?? 0) + 1);
+  }
+
+  const rows: InmobiliariaRow[] = users.map(u => {
+    const visitaEntry = visitasMap.get(u.id);
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      telefono: u.telefono,
+      telefono_country_code: u.telefono_country_code,
+      logo: u.logo,
+      account_type: u.account_type,
+      created_at: u.created_at,
+      tokko_last_sync_at: u.tokko_last_sync_at,
+      sync_status: u.sync_status,
+      hoggax_approved: u.hoggax_approved,
+      activeProperties: activePropsMap.get(u.id) ?? 0,
+      draftProperties: draftPropsMap.get(u.id) ?? 0,
+      totalLeads: leadsMap.get(u.id) ?? 0,
+      totalVisitas: visitaEntry?.total ?? 0,
+      visitasPending: visitaEntry?.pending ?? 0,
+      visitasAccepted: visitaEntry?.accepted ?? 0,
+      visitasCompleted: visitaEntry?.completed ?? 0,
+      totalViews: viewsMap.get(u.id) ?? 0,
+      companyCount: companyMap.get(u.id) ?? 0,
+    };
+  });
+
+  const totalActiveProperties = rows.reduce((sum, r) => sum + r.activeProperties, 0);
+  const kpis: InmobiliariasKpis = {
+    totalInmobiliarias: rows.length,
+    totalInmobiliariasType3: rows.filter(r => r.account_type === 3).length,
+    totalInmobiliariasType4: rows.filter(r => r.account_type === 4).length,
+    totalActiveProperties,
+    avgPropertiesPerInmobiliaria: rows.length > 0 ? Math.round(totalActiveProperties / rows.length) : 0,
+    totalLeads: rows.reduce((sum, r) => sum + r.totalLeads, 0),
+    totalVisitas: rows.reduce((sum, r) => sum + r.totalVisitas, 0),
+    totalViews: rows.reduce((sum, r) => sum + r.totalViews, 0),
+    hoggaxApprovedCount: rows.filter(r => r.hoggax_approved === true).length,
+    withSyncCount: rows.filter(r => r.tokko_last_sync_at !== null).length,
+  };
+
+  return { rows, kpis };
 }

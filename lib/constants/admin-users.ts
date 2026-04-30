@@ -6,4 +6,5 @@ export const ADMIN_AUTH_IDS: string[] = [
   'c3c73db1-669a-44fb-a9e4-f39ddc531b64',
   '62ec9e2c-987a-48ce-bb94-5623d80fcb21',
   '58a53d71-5fce-465c-a545-a40b18081b13', //martin@mob.ar en proyecto dev
+  '6dede28a-7ee6-4a2b-8a07-5970184f1bf5', //martin@mob.ar en branch dev
 ];

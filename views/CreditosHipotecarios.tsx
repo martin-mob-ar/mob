@@ -40,7 +40,14 @@ const BANCOS_RESTO = BANCOS_DISPONIBLES
   .filter((b) => !BANCOS_DESTACADOS.includes(b))
   .sort((a, b) => a.localeCompare(b, "es"));
 
-export default function CreditosHipotecarios() {
+export interface ExchangeRates {
+  dolarVenta: number | null;
+  dolarFecha: string | null;
+  uvaValor: number | null;
+  uvaFecha: string | null;
+}
+
+export default function CreditosHipotecarios({ rates }: { rates: ExchangeRates }) {
   const [destino, setDestino] = useState("Todos");
   const [banco, setBanco] = useState("Todos");
   const [tipo, setTipo] = useState("Todos");
@@ -111,7 +118,7 @@ export default function CreditosHipotecarios() {
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 pb-20">
         {/* Calculator */}
-        <CalculadoraHipotecaria />
+        <CalculadoraHipotecaria rates={rates} />
 
         {/* Filters */}
         <Card className="border-border/40 bg-card mb-8">

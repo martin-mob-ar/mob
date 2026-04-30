@@ -25,6 +25,8 @@ import { CronStatChips, type StatChip } from "@/components/admin/CronStatChips";
 import { CronRunLog, type CronRunColumn } from "@/components/admin/CronRunLog";
 import TopPropertiesTable from "@/components/admin/TopPropertiesTable";
 import TopUsersTable from "@/components/admin/TopUsersTable";
+import InmobiliariasTable from "@/components/admin/InmobiliariasTable";
+import { GenericFunnelBars } from "@/components/admin/GenericFunnelBars";
 import {
   getKpis,
   getSignupsByDay,
@@ -39,6 +41,9 @@ import {
   getCronJobHealth,
   getTopPropertiesByEngagement,
   getTopUsersByEvents,
+  getPropertyCreationFunnel,
+  getVisitConversionFunnel,
+  getInmobiliarias,
 } from "@/lib/admin/queries";
 
 function parsePeriod(raw: string | undefined): number | null {
@@ -76,6 +81,9 @@ export default async function AdminPage({
     ipcCron,
     topProperties,
     topUsers,
+    inmobiliarias,
+    propCreationFunnel,
+    visitConversionFunnel,
   ] = await Promise.all([
     getKpis(periodDays),
     getSignupsByDay(periodDays),
@@ -98,6 +106,9 @@ export default async function AdminPage({
       20,
     ),
     getTopUsersByEvents(periodDays, usersPage, 20, usersSearch, usersType),
+    getInmobiliarias(),
+    getPropertyCreationFunnel(periodDays),
+    getVisitConversionFunnel(periodDays),
   ]);
 
   const periodLabel = periodDays ? `últimos ${periodDays} días` : "todo el tiempo";
@@ -634,6 +645,59 @@ export default async function AdminPage({
               pageSize={20}
               currentSearch={usersSearch ?? ""}
             currentUsersType={usersType}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Inmobiliarias */}
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-base">Listado de inmobiliarias</CardTitle>
+            <a
+              href="/admin/inmobiliarias"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Ver más
+            </a>
+          </CardHeader>
+          <CardContent>
+            <InmobiliariasTable data={inmobiliarias.rows} />
+          </CardContent>
+        </Card>
+
+        {/* Conversión Propietarios */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Conversión Propietarios</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GenericFunnelBars
+              steps={[
+                { label: "Borrador creado", value: propCreationFunnel.borradorCreado },
+                { label: "Detalles", value: propCreationFunnel.detalles },
+                { label: "Precio", value: propCreationFunnel.precio },
+                { label: "Fotos", value: propCreationFunnel.fotos },
+                { label: "Plan", value: propCreationFunnel.plan },
+                { label: "Publicada", value: propCreationFunnel.publicada },
+              ]}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Conversión Inquilinos */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Conversión Inquilinos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GenericFunnelBars
+              steps={[
+                { label: "Vistas", value: visitConversionFunnel.vistas },
+                { label: "Inicio de agenda", value: visitConversionFunnel.inicioAgenda },
+                { label: "Visita solicitada", value: visitConversionFunnel.visitaSolicitada },
+                { label: "Visita aceptada", value: visitConversionFunnel.visitaAceptada },
+                { label: "Visita completada", value: visitConversionFunnel.visitaCompletada },
+              ]}
             />
           </CardContent>
         </Card>

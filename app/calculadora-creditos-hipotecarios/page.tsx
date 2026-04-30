@@ -3,6 +3,7 @@ import CreditosHipotecarios from "@/views/CreditosHipotecarios";
 import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import FAQJsonLd from "@/components/seo/FAQJsonLd";
 import HowToJsonLd from "@/components/seo/HowToJsonLd";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Calculadora de creditos hipotecarios",
@@ -11,7 +12,25 @@ export const metadata: Metadata = {
   alternates: { canonical: "/calculadora-creditos-hipotecarios" },
 };
 
-export default function CreditosHipotecariosPage() {
+async function getExchangeRates() {
+  const { data } = await supabaseAdmin
+    .from("exchange_rates")
+    .select("currency_pair, rate, updated_at")
+    .in("currency_pair", ["USD_ARS", "UVA_ARS"]);
+
+  const usd = data?.find((r) => r.currency_pair === "USD_ARS");
+  const uva = data?.find((r) => r.currency_pair === "UVA_ARS");
+
+  return {
+    dolarVenta: usd ? Number(usd.rate) : null,
+    dolarFecha: usd?.updated_at?.slice(0, 10) ?? null,
+    uvaValor: uva ? Number(uva.rate) : null,
+    uvaFecha: uva?.updated_at?.slice(0, 10) ?? null,
+  };
+}
+
+export default async function CreditosHipotecariosPage() {
+  const rates = await getExchangeRates();
   return (
     <>
       <BreadcrumbJsonLd
@@ -44,7 +63,7 @@ export default function CreditosHipotecariosPage() {
           { name: "Aprobación definitiva, escritura y desembolso", text: "Si la tasación, la documentación y los seguros están en orden, el banco libera los fondos. Se firma la escritura traslativa de dominio y se inscribe la hipoteca." },
         ]}
       />
-      <CreditosHipotecarios />
+      <CreditosHipotecarios rates={rates} />
     </>
   );
 }

@@ -411,7 +411,7 @@ export async function sendAlertNuevaVisita(params: {
   });
 }
 
-/** Internal alert: new property published */
+/** Internal alert: new property created or published */
 export async function sendAlertNuevaPropiedad(params: {
   propertyId: number;
   address: string;
@@ -419,6 +419,7 @@ export async function sendAlertNuevaPropiedad(params: {
   userEmail: string | null;
   userPhone: string | null;
   userCountryCode: string | null;
+  status: string;
 }): Promise<void> {
   const env = getEnvLabel();
   const waLink = params.userPhone
@@ -434,10 +435,37 @@ export async function sendAlertNuevaPropiedad(params: {
       components: [{
         type: 'body',
         parameters: [
-          { type: 'text', text: env },
+          { type: 'text', text: `${env} | ${params.status}` },
           { type: 'text', text: params.address },
           { type: 'text', text: contacto },
           { type: 'text', text: String(params.propertyId) },
+        ],
+      }],
+    },
+  });
+}
+
+/** Internal alert: dueño/property-uploader set their phone for the first time */
+export async function sendAlertDuenoTelefono(params: {
+  userName: string;
+  userEmail: string | null;
+  userPhone: string;
+  userCountryCode: string;
+}): Promise<void> {
+  const env = getEnvLabel();
+  const waLink = `wa.me/${toKapsoPhone(params.userCountryCode, params.userPhone)}`;
+  const contacto = `${params.userName} — ${params.userEmail ?? 'Sin email'} — ${waLink}`;
+
+  await sendWhatsApp(ALERT_PHONE, {
+    type: 'template',
+    template: {
+      name: 'mob_alerta_dueno_telefono',
+      language: { code: 'es_AR' },
+      components: [{
+        type: 'body',
+        parameters: [
+          { type: 'text', text: env },
+          { type: 'text', text: contacto },
         ],
       }],
     },

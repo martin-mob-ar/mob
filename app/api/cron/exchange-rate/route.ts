@@ -63,6 +63,55 @@ async function fetchBCRARate(): Promise<{ rate: number } | { error: string }> {
 }
 
 /**
+ * Fetch latest UVA value from BCRA Estadísticas Monetarias API (variable 31).
+ * Returns the most recent UVA value and its date.
+ */
+async function fetchBCRAUva(): Promise<{ valor: number; fecha: string } | { error: string }> {
+  try {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+
+    const res = await fetch(
+      `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/31?limit=5&offset=0&desde=${weekAgo}&hasta=${today}`,
+      {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(15_000),
+      }
+    );
+
+    if (!res.ok) {
+      const msg = `BCRA UVA API returned HTTP ${res.status}`;
+      console.error(`[cron/exchange-rate] ${msg}`);
+      return { error: msg };
+    }
+
+    const data = await res.json();
+    const detalle = data?.results?.[0]?.detalle;
+    if (!Array.isArray(detalle) || detalle.length === 0) {
+      return { error: 'BCRA UVA response missing detalle array' };
+    }
+
+    // detalle is sorted descending by date; first entry is the latest
+    const latest = detalle[0];
+    const valor = parseFloat(String(latest.valor));
+    const fecha = String(latest.fecha).slice(0, 10);
+
+    // Sanity check: UVA should be between 10 and 100000
+    if (isNaN(valor) || valor < 10 || valor > 100000) {
+      const msg = `BCRA UVA value out of bounds: ${valor}`;
+      console.error(`[cron/exchange-rate] ${msg}`);
+      return { error: msg };
+    }
+
+    return { valor, fecha };
+  } catch (e) {
+    const msg = `BCRA UVA fetch failed: ${e instanceof Error ? e.message : String(e)}`;
+    console.error(`[cron/exchange-rate] ${msg}`);
+    return { error: msg };
+  }
+}
+
+/**
  * GET /api/cron/exchange-rate
  *
  * Daily cron (midnight UTC) that:
@@ -85,87 +134,91 @@ export async function GET(request: NextRequest) {
     .single();
   const logId = logRow?.id ?? null;
 
-  const bcraResult = await fetchBCRARate();
+  // Fetch USD rate and UVA in parallel
+  const [bcraResult, uvaResult] = await Promise.all([
+    fetchBCRARate(),
+    fetchBCRAUva(),
+  ]);
+
+  const errors: string[] = [];
+
+  // ── USD/ARS ──
+  let rate: number | null = null;
+  let rebuilt: number | null = null;
 
   if ('error' in bcraResult) {
-    if (logId) {
-      await supabaseAdmin
-        .from('cron_job_log')
-        .update({
-          finished_at: new Date().toISOString(),
-          status: 'failed',
-          error_message: bcraResult.error,
-        })
-        .eq('id', logId);
+    errors.push(`USD: ${bcraResult.error}`);
+  } else {
+    rate = bcraResult.rate;
+
+    const { error: upsertError } = await supabaseAdmin
+      .from('exchange_rates')
+      .upsert(
+        { currency_pair: 'USD_ARS', rate, updated_at: new Date().toISOString() },
+        { onConflict: 'currency_pair' }
+      );
+
+    if (upsertError) {
+      console.error('[cron/exchange-rate] USD upsert failed:', upsertError);
+      errors.push(`USD upsert: ${upsertError.message}`);
+    } else {
+      // Rebuild only USD-priced property listings
+      const { data: rebuildData, error: rebuildError } = await supabaseAdmin.rpc(
+        'rebuild_usd_property_listings'
+      );
+
+      if (rebuildError) {
+        console.error('[cron/exchange-rate] Rebuild failed:', rebuildError);
+        errors.push(`Rebuild: ${rebuildError.message}`);
+      } else {
+        rebuilt = rebuildData;
+      }
     }
-    return NextResponse.json(
-      { error: bcraResult.error },
-      { status: 502 }
-    );
   }
 
-  const rate = bcraResult.rate;
+  // ── UVA ──
+  let uvaValor: number | null = null;
+  let uvaFecha: string | null = null;
 
-  // Store in DB
-  const { error: upsertError } = await supabaseAdmin
-    .from('exchange_rates')
-    .upsert(
-      { currency_pair: 'USD_ARS', rate, updated_at: new Date().toISOString() },
-      { onConflict: 'currency_pair' }
-    );
+  if ('error' in uvaResult) {
+    errors.push(`UVA: ${uvaResult.error}`);
+  } else {
+    uvaValor = uvaResult.valor;
+    uvaFecha = uvaResult.fecha;
 
-  if (upsertError) {
-    console.error('[cron/exchange-rate] DB upsert failed:', upsertError);
-    if (logId) {
-      await supabaseAdmin
-        .from('cron_job_log')
-        .update({
-          finished_at: new Date().toISOString(),
-          status: 'failed',
-          error_message: `DB upsert failed: ${upsertError.message}`,
-        })
-        .eq('id', logId);
+    const { error: uvaUpsertError } = await supabaseAdmin
+      .from('exchange_rates')
+      .upsert(
+        { currency_pair: 'UVA_ARS', rate: uvaValor, updated_at: new Date().toISOString() },
+        { onConflict: 'currency_pair' }
+      );
+
+    if (uvaUpsertError) {
+      console.error('[cron/exchange-rate] UVA upsert failed:', uvaUpsertError);
+      errors.push(`UVA upsert: ${uvaUpsertError.message}`);
     }
-    return NextResponse.json({ error: 'DB upsert failed' }, { status: 500 });
   }
 
-  // Rebuild only USD-priced property listings
-  const { data: rebuilt, error: rebuildError } = await supabaseAdmin.rpc(
-    'rebuild_usd_property_listings'
-  );
+  // ── Log & respond ──
+  const status = errors.length === 0 ? 'completed' : (rate || uvaValor) ? 'partial' : 'failed';
 
-  if (rebuildError) {
-    console.error('[cron/exchange-rate] Rebuild failed:', rebuildError);
-    if (logId) {
-      await supabaseAdmin
-        .from('cron_job_log')
-        .update({
-          finished_at: new Date().toISOString(),
-          status: 'failed',
-          error_message: `Rebuild failed: ${rebuildError.message}`,
-          stats: { rate, rebuilt: 0, source: 'bcra' },
-        })
-        .eq('id', logId);
-    }
-    return NextResponse.json({
-      rate,
-      rebuilt: 0,
-      error: rebuildError.message,
-    });
-  }
-
-  console.log(`[cron/exchange-rate] Rate: ${rate}, rebuilt ${rebuilt} USD listings`);
+  console.log(`[cron/exchange-rate] USD: ${rate}, UVA: ${uvaValor} (${uvaFecha}), rebuilt ${rebuilt} listings, status: ${status}`);
 
   if (logId) {
     await supabaseAdmin
       .from('cron_job_log')
       .update({
         finished_at: new Date().toISOString(),
-        status: 'completed',
-        stats: { rate, rebuilt, source: 'bcra' },
+        status,
+        error_message: errors.length ? errors.join('; ') : null,
+        stats: { rate, uva: uvaValor, uvaFecha, rebuilt, source: 'bcra' },
       })
       .eq('id', logId);
   }
 
-  return NextResponse.json({ rate, rebuilt, source: 'bcra' });
+  if (status === 'failed') {
+    return NextResponse.json({ error: errors.join('; ') }, { status: 502 });
+  }
+
+  return NextResponse.json({ rate, uva: uvaValor, uvaFecha, rebuilt, source: 'bcra' });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server-component';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { sendAlertDuenoTelefono } from '@/lib/kapso/client';
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, telefono, telefono_country_code, dni, account_type } = body;
+    const { name, telefono, telefono_country_code, dni, account_type, source } = body;
 
     // Normalize Argentine phone: strip leading '9' mobile prefix so we store consistently
     let normalizedPhone = telefono;
@@ -55,6 +56,13 @@ export async function POST(request: Request) {
       }
     }
 
+    // Fetch current user state before update (for account_type guard + alert logic)
+    const { data: currentState } = await supabaseAdmin
+      .from('users')
+      .select('telefono, account_type')
+      .eq('id', authUser.id)
+      .single();
+
     // Update public.users row
     const updateData: Record<string, string | number | null> = {};
     if (name !== undefined) updateData.name = name || null;
@@ -69,12 +77,7 @@ export async function POST(request: Request) {
       account_type >= 1 &&
       account_type <= 4
     ) {
-      const { data: currentAccountType } = await supabaseAdmin
-        .from('users')
-        .select('account_type')
-        .eq('id', authUser.id)
-        .single();
-      if (currentAccountType?.account_type == null) {
+      if (currentState?.account_type == null) {
         updateData.account_type = account_type;
       }
     }
@@ -118,6 +121,13 @@ export async function POST(request: Request) {
         .is('deleted_at', null);
     }
 
+    // Alert: dueño or subir-propiedad user set phone for the first time
+    const effectiveAccountType = updateData.account_type ?? currentState?.account_type;
+    const shouldAlert = source === 'subir-propiedad' || effectiveAccountType === 2;
+    if (shouldAlert && !currentState?.telefono && normalizedPhone) {
+      dispatchAlertDuenoTelefono(updatedUser);
+    }
+
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error('[Profile] Unexpected error:', error);
@@ -156,4 +166,21 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+/** Fire-and-forget: send internal WhatsApp alert when dueño/property-uploader sets phone */
+function dispatchAlertDuenoTelefono(user: {
+  name: string | null;
+  telefono: string | null;
+  telefono_country_code: string | null;
+  email: string | null;
+}) {
+  (async () => {
+    await sendAlertDuenoTelefono({
+      userName: user.name ?? 'Sin nombre',
+      userEmail: user.email ?? null,
+      userPhone: user.telefono!,
+      userCountryCode: user.telefono_country_code ?? '+54',
+    });
+  })().catch((err) => console.error('[users/profile] Dueño phone alert failed:', err));
 }

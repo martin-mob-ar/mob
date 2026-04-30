@@ -171,7 +171,11 @@
     -moz-appearance: textfield;
   }
 
-  /* Date input: left-align text (iOS centers by default) and hide native calendar icon */
+  /* Date input: normalize native appearance, left-align text and hide native calendar icon */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
   input[type="date"]::-webkit-date-and-time-value {
     text-align: left;
   }

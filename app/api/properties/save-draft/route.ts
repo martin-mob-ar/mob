@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin, getOrCreateUserFromAuth } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/supabase/auth';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { sendAlertNuevaPropiedad } from '@/lib/kapso/client';
 
 export async function POST(request: Request) {
   try {
@@ -153,6 +154,9 @@ export async function POST(request: Request) {
       }
 
       propertyId = newProp.id;
+
+      // Fire-and-forget: internal WhatsApp alert for new draft
+      dispatchAlertNuevaPropiedad(resolvedUserId, propertyId, address);
     }
 
     // Upsert tags: delete existing + insert new
@@ -211,4 +215,25 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+/** Fire-and-forget: fetch user details and send internal WhatsApp alert for draft */
+function dispatchAlertNuevaPropiedad(userId: string, propertyId: number, address: string | undefined) {
+  (async () => {
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('name, email, telefono, telefono_country_code')
+      .eq('id', userId)
+      .single();
+
+    await sendAlertNuevaPropiedad({
+      propertyId,
+      address: address ?? 'Sin dirección',
+      userName: user?.name ?? 'Sin nombre',
+      userEmail: user?.email ?? null,
+      userPhone: user?.telefono ?? null,
+      userCountryCode: user?.telefono_country_code ?? null,
+      status: 'BORRADOR',
+    });
+  })().catch((err) => console.error('[save-draft] Alert send failed:', err));
 }
