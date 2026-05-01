@@ -31,18 +31,34 @@ const KAPSO_WEBHOOK_SECRET = process.env.KAPSO_WEBHOOK_SECRET ?? '';
 
 // ─── Slot conflict helpers ────────────────────────────────────────────────────
 
-/** Check if an accepted visita already exists at this property+date+time. */
-async function checkSlotConflict(propertyId: number, date: string, time: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
+/** Check if a visita (accepted or pending) already exists at this property+date+time. */
+async function checkSlotConflict(propertyId: number, date: string, time: string, excludeVisitaId?: number): Promise<boolean> {
+  // Check accepted visitas with confirmed date/time
+  let acceptedQuery = supabaseAdmin
     .from('visitas')
     .select('id')
     .eq('property_id', propertyId)
     .eq('status', 'accepted')
     .eq('confirmed_date', date)
     .eq('confirmed_time', time)
-    .limit(1)
-    .maybeSingle();
-  return !!data;
+    .limit(1);
+  if (excludeVisitaId) acceptedQuery = acceptedQuery.neq('id', excludeVisitaId);
+  const { data: accepted } = await acceptedQuery.maybeSingle();
+  if (accepted) return true;
+
+  // Check pending visitas with a matching pending proposal
+  let pendingQuery = supabaseAdmin
+    .from('visita_proposals')
+    .select('id, visitas!inner(id)')
+    .eq('visitas.property_id', propertyId)
+    .eq('visitas.status', 'pending')
+    .eq('status', 'pending')
+    .eq('proposed_date', date)
+    .eq('proposed_time', time)
+    .limit(1);
+  if (excludeVisitaId) pendingQuery = pendingQuery.neq('visitas.id', excludeVisitaId);
+  const { data: pending } = await pendingQuery.maybeSingle();
+  return !!pending;
 }
 
 /** Map Spanish day IDs to JS getDay() numbers */
@@ -71,6 +87,7 @@ async function findNearbyAvailableSlots(
   propertyId: number,
   date: string,
   time: string,
+  excludeVisitaId?: number,
 ): Promise<string[]> {
   // Fetch property's visit_hours
   const { data: prop } = await supabaseAdmin
@@ -95,16 +112,32 @@ async function findNearbyAvailableSlots(
 
   const allSlots = generateTimeSlots(match[1], match[2]);
 
-  // Fetch already-booked slots for this date
-  const { data: booked } = await supabaseAdmin
+  // Fetch accepted booked slots for this date
+  let acceptedQuery = supabaseAdmin
     .from('visitas')
     .select('confirmed_time')
     .eq('property_id', propertyId)
     .eq('status', 'accepted')
     .eq('confirmed_date', date)
     .not('confirmed_time', 'is', null);
+  if (excludeVisitaId) acceptedQuery = acceptedQuery.neq('id', excludeVisitaId);
+  const { data: acceptedBooked } = await acceptedQuery;
 
-  const bookedSet = new Set((booked ?? []).map((v) => v.confirmed_time!));
+  // Fetch pending proposals for the same property+date
+  let pendingQuery = supabaseAdmin
+    .from('visita_proposals')
+    .select('proposed_time, visitas!inner(id)')
+    .eq('visitas.property_id', propertyId)
+    .eq('visitas.status', 'pending')
+    .eq('status', 'pending')
+    .eq('proposed_date', date);
+  if (excludeVisitaId) pendingQuery = pendingQuery.neq('visitas.id', excludeVisitaId);
+  const { data: pendingBooked } = await pendingQuery;
+
+  const bookedSet = new Set([
+    ...(acceptedBooked ?? []).map((v) => v.confirmed_time!),
+    ...(pendingBooked ?? []).map((v) => v.proposed_time),
+  ]);
   const available = allSlots.filter((s) => !bookedSet.has(s));
 
   if (available.length === 0) return [];
@@ -544,9 +577,9 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
       if (!proposal) return;
 
       // Check for double-booking before confirming
-      const conflict = await checkSlotConflict(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+      const conflict = await checkSlotConflict(visita.property_id, proposal.proposed_date, proposal.proposed_time, visita.id);
       if (conflict) {
-        const nearby = await findNearbyAvailableSlots(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+        const nearby = await findNearbyAvailableSlots(visita.property_id, proposal.proposed_date, proposal.proposed_time, visita.id);
         const nearbyText = nearby.length > 0
           ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
           : '';
@@ -626,9 +659,9 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     const { date, time } = parsed;
 
     // Check for double-booking before creating proposal
-    const conflict = await checkSlotConflict(visita.property_id, date, time);
+    const conflict = await checkSlotConflict(visita.property_id, date, time, visita.id);
     if (conflict) {
-      const nearby = await findNearbyAvailableSlots(visita.property_id, date, time);
+      const nearby = await findNearbyAvailableSlots(visita.property_id, date, time, visita.id);
       const nearbyText = nearby.length > 0
         ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
         : '';
@@ -683,9 +716,9 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
       if (!proposal) return;
 
       // Check for double-booking before confirming
-      const conflict = await checkSlotConflict(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+      const conflict = await checkSlotConflict(visita.property_id, proposal.proposed_date, proposal.proposed_time, visita.id);
       if (conflict) {
-        const nearby = await findNearbyAvailableSlots(visita.property_id, proposal.proposed_date, proposal.proposed_time);
+        const nearby = await findNearbyAvailableSlots(visita.property_id, proposal.proposed_date, proposal.proposed_time, visita.id);
         const nearbyText = nearby.length > 0
           ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
           : '';
@@ -765,9 +798,9 @@ async function handleIncomingMessage(senderPhone: string, msg: KapsoMessage): Pr
     const { date, time } = parsed;
 
     // Check for double-booking before creating proposal
-    const conflict = await checkSlotConflict(visita.property_id, date, time);
+    const conflict = await checkSlotConflict(visita.property_id, date, time, visita.id);
     if (conflict) {
-      const nearby = await findNearbyAvailableSlots(visita.property_id, date, time);
+      const nearby = await findNearbyAvailableSlots(visita.property_id, date, time, visita.id);
       const nearbyText = nearby.length > 0
         ? ` Horarios cercanos disponibles: ${nearby.join(', ')}.`
         : '';

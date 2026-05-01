@@ -44,8 +44,8 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     throw new Error(`Property ${propertyId} not found`);
   }
 
-  // 2a. Check for existing accepted visita at the same date+time
-  const { data: conflict } = await supabaseAdmin
+  // 2a. Check for existing visita at the same date+time (accepted or pending)
+  const { data: acceptedConflict } = await supabaseAdmin
     .from('visitas')
     .select('id')
     .eq('property_id', propertyId)
@@ -55,8 +55,23 @@ export async function createVisita(params: CreateVisitaParams): Promise<CreateVi
     .limit(1)
     .maybeSingle();
 
-  if (conflict) {
+  if (acceptedConflict) {
     throw new Error('Ya hay una visita confirmada en ese horario');
+  }
+
+  const { data: pendingConflict } = await supabaseAdmin
+    .from('visita_proposals')
+    .select('id, visitas!inner(id)')
+    .eq('visitas.property_id', propertyId)
+    .eq('visitas.status', 'pending')
+    .eq('status', 'pending')
+    .eq('proposed_date', proposedDate)
+    .eq('proposed_time', proposedTime)
+    .limit(1)
+    .maybeSingle();
+
+  if (pendingConflict) {
+    throw new Error('Ya hay una visita pendiente en ese horario');
   }
 
   // 2b. Check for duplicate submission from the same requester (pending or accepted)
